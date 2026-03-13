@@ -1,0 +1,12 @@
+{
+  "name": "zwibba-website",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Zwibba - Petites Annonces | Landing page for DRC classifieds",
+  "scripts": {
+    "start": "npx serve . -l $PORT --no-clipboard -s"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
