@@ -1,3 +1,4 @@
+import { renderInAppBrand } from '../../components/in-app-brand.mjs';
 import { escapeHtml } from '../../utils/rendering.mjs';
 
 export function renderOtpScreen({
@@ -7,7 +8,10 @@ export function renderOtpScreen({
   return `
     <section class="app-flow app-flow--auth">
       <header class="app-flow__header">
-        <a class="app-flow__back" href="#phone">Retour</a>
+        <div class="app-flow__meta">
+          <a class="app-flow__back" href="#phone">Retour</a>
+          ${renderInAppBrand({ compact: true })}
+        </div>
         <div>
           <p class="app-flow__eyebrow">Étape 2</p>
           <h2 class="app-flow__title">Confirmez le code OTP</h2>

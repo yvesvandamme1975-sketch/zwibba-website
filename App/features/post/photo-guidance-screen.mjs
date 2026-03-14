@@ -2,6 +2,7 @@ import {
   getGuidedPhotoPrompts,
   getMissingRequiredPhotoPrompts,
 } from './post-flow-controller.mjs';
+import { renderInAppBrand } from '../../components/in-app-brand.mjs';
 import { escapeAttribute, escapeHtml } from '../../utils/rendering.mjs';
 
 function renderPrompt(prompt) {
@@ -30,7 +31,10 @@ export function renderPhotoGuidanceScreen({ draft }) {
   return `
     <section class="app-flow app-flow--guidance">
       <header class="app-flow__header">
-        <a class="app-flow__back" href="#capture">Retour</a>
+        <div class="app-flow__meta">
+          <a class="app-flow__back" href="#capture">Retour</a>
+          ${renderInAppBrand({ compact: true })}
+        </div>
         <div>
           <p class="app-flow__eyebrow">Étape 2</p>
           <h2 class="app-flow__title">Photos guidées</h2>

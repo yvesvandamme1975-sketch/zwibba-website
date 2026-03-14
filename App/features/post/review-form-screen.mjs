@@ -2,6 +2,7 @@ import {
   getMissingRequiredPhotoPrompts,
   isConditionRequired,
 } from './post-flow-controller.mjs';
+import { renderInAppBrand } from '../../components/in-app-brand.mjs';
 import {
   escapeAttribute,
   escapeHtml,
@@ -47,7 +48,10 @@ export function renderReviewFormScreen({
   return `
     <section class="app-flow app-flow--review">
       <header class="app-flow__header">
-        <a class="app-flow__back" href="#guidance">Retour</a>
+        <div class="app-flow__meta">
+          <a class="app-flow__back" href="#guidance">Retour</a>
+          ${renderInAppBrand({ compact: true })}
+        </div>
         <div>
           <p class="app-flow__eyebrow">Étape 3</p>
           <h2 class="app-flow__title">Corrigez le brouillon</h2>

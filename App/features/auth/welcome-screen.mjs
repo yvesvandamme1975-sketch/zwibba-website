@@ -1,8 +1,13 @@
+import { renderInAppBrand } from '../../components/in-app-brand.mjs';
+
 export function renderAuthWelcomeScreen() {
   return `
     <section class="app-flow app-flow--auth">
       <header class="app-flow__header">
-        <a class="app-flow__back" href="#review">Retour</a>
+        <div class="app-flow__meta">
+          <a class="app-flow__back" href="#review">Retour</a>
+          ${renderInAppBrand({ compact: true })}
+        </div>
         <div>
           <p class="app-flow__eyebrow">OTP à la publication</p>
           <h2 class="app-flow__title">Publiez seulement après vérification</h2>

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { renderCaptureScreen } from '../App/features/post/capture-screen.mjs';
 import { renderPhotoGuidanceScreen } from '../App/features/post/photo-guidance-screen.mjs';
 import {
   addGuidedPhotoToDraft,
@@ -97,6 +98,25 @@ test('AI category suggestion drives guided-photo prompts', async () => {
   assert.match(html, /Face/);
   assert.match(html, /Dos/);
   assert.match(html, /Écran allumé/);
+});
+
+test('capture screen keeps the Zwibba brand visible inside the app shell', () => {
+  const html = renderCaptureScreen({
+    busyLabel: '',
+    captureOptions: [
+      {
+        id: 'phone-front',
+        label: 'Téléphone premium',
+        description: 'Démo smartphone.',
+        accent: '#6BE66B',
+        glow: 'rgba(107, 230, 107, 0.32)',
+      },
+    ],
+    draft: null,
+  });
+
+  assert.match(html, /\/assets\/brand\/favicon\.svg/);
+  assert.match(html, /Zwibba/);
 });
 
 test('required categories block publish until all required photos are present', () => {

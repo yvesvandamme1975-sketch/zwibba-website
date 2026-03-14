@@ -1,3 +1,4 @@
+import { renderInAppBrand } from '../../components/in-app-brand.mjs';
 import { escapeAttribute, escapeHtml } from '../../utils/rendering.mjs';
 
 function renderDraftResume(draft) {
@@ -44,7 +45,10 @@ export function renderCaptureScreen({
   return `
     <section class="app-flow app-flow--capture">
       <header class="app-flow__header">
-        <a class="app-flow__back" href="#home">Retour</a>
+        <div class="app-flow__meta">
+          <a class="app-flow__back" href="#home">Retour</a>
+          ${renderInAppBrand({ compact: true })}
+        </div>
         <div>
           <p class="app-flow__eyebrow">Étape 1</p>
           <h2 class="app-flow__title">Prenez la première photo</h2>

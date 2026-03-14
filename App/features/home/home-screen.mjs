@@ -1,3 +1,4 @@
+import { renderInAppBrand } from '../../components/in-app-brand.mjs';
 import { renderPostEntryCard } from './post-entry-card.mjs';
 import {
   renderFeaturedSection,
@@ -19,10 +20,7 @@ export function renderHomeScreen({
   return `
     <section class="app-home">
       <div class="app-home__topbar">
-        <div class="app-home__heading">
-          <strong>Zwibba</strong>
-          <span>Vendez en un clic</span>
-        </div>
+        ${renderInAppBrand({ subtitle: 'Vendez en un clic' })}
         <span class="app-home__badge">Seller-first</span>
       </div>
 

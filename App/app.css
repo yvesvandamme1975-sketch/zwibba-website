@@ -115,18 +115,55 @@
   gap: 14px;
 }
 
-.app-home__heading {
-  display: grid;
-  gap: 4px;
+.app-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.app-home__heading strong {
+.app-brand-mark__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  background: rgba(107, 230, 107, 0.12);
+  border: 1px solid rgba(107, 230, 107, 0.22);
+  box-shadow: var(--shadow-green);
+}
+
+.app-brand-mark__icon img {
+  width: 24px;
+  height: 24px;
+}
+
+.app-brand-mark__copy {
+  display: grid;
+  gap: 3px;
+}
+
+.app-brand-mark__copy strong {
   font-size: 1rem;
 }
 
-.app-home__heading span {
+.app-brand-mark__copy span {
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
+}
+
+.app-brand-mark--compact {
+  gap: 10px;
+}
+
+.app-brand-mark--compact .app-brand-mark__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+}
+
+.app-brand-mark--compact .app-brand-mark__copy strong {
+  font-size: 0.92rem;
 }
 
 .app-home__badge {
@@ -348,6 +385,13 @@
 .app-flow__header {
   display: grid;
   gap: 10px;
+}
+
+.app-flow__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .app-flow__back {
@@ -711,6 +755,19 @@
 
   .app-flow {
     padding-top: 30px;
+  }
+
+  .app-brand-mark {
+    gap: 10px;
+  }
+
+  .app-brand-mark__icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .app-brand-mark__copy strong {
+    font-size: 0.92rem;
   }
 
   .app-photo-preset {

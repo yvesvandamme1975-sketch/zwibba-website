@@ -1,3 +1,4 @@
+import { renderInAppBrand } from '../../components/in-app-brand.mjs';
 import { escapeAttribute, escapeHtml } from '../../utils/rendering.mjs';
 
 export function renderPhoneInputScreen({
@@ -7,7 +8,10 @@ export function renderPhoneInputScreen({
   return `
     <section class="app-flow app-flow--auth">
       <header class="app-flow__header">
-        <a class="app-flow__back" href="#auth-welcome">Retour</a>
+        <div class="app-flow__meta">
+          <a class="app-flow__back" href="#auth-welcome">Retour</a>
+          ${renderInAppBrand({ compact: true })}
+        </div>
         <div>
           <p class="app-flow__eyebrow">Étape 1</p>
           <h2 class="app-flow__title">Entrez votre numéro</h2>

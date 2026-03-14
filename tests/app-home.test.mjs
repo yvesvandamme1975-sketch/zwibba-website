@@ -69,3 +69,15 @@ test('post entry card renders above the feed', () => {
     'expected post entry card markup before recent feed markup',
   );
 });
+
+test('home screen shows the Zwibba in-app brand mark', () => {
+  const html = renderHomeScreen({
+    draft: null,
+    featuredListings,
+    recentListings,
+    categories,
+  });
+
+  assert.match(html, /\/assets\/brand\/favicon\.svg/);
+  assert.match(html, /Zwibba/);
+});
