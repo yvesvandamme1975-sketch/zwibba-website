@@ -617,11 +617,21 @@
   display: grid;
   gap: 8px;
   margin: 0;
-  padding: 14px 16px 14px 34px;
+  padding: 0 0 0 18px;
+  color: #ffd0cf;
+}
+
+.app-review__error-summary {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
   border-radius: 18px;
   background: rgba(239, 83, 80, 0.12);
   border: 1px solid rgba(239, 83, 80, 0.22);
-  color: #ffd0cf;
+}
+
+.app-review__error-summary strong {
+  font-size: 0.88rem;
 }
 
 .app-review__photos {
@@ -686,6 +696,17 @@
 
 .app-review__field textarea {
   min-height: 108px;
+}
+
+.app-review__field--invalid span {
+  color: #ffd0cf;
+}
+
+.app-review__field--invalid input,
+.app-review__field--invalid select,
+.app-review__field--invalid textarea {
+  border-color: rgba(239, 83, 80, 0.45);
+  box-shadow: 0 0 0 1px rgba(239, 83, 80, 0.18);
 }
 
 .app-auth__code {

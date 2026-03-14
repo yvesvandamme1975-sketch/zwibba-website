@@ -10,7 +10,7 @@ import {
 } from '../../utils/rendering.mjs';
 
 function renderError(error) {
-  return `<li>${escapeHtml(error.message)}</li>`;
+  return `<li data-review-error-field="${escapeAttribute(error.field)}">${escapeHtml(error.message)}</li>`;
 }
 
 function renderOption(option, currentValue) {
@@ -26,6 +26,43 @@ function renderPhoto(photo) {
     <div class="app-review__photo${photo.kind !== 'primary' ? ' is-guided' : ''}">
       <strong>${escapeHtml(photo.promptId || 'Photo principale')}</strong>
       <span>${escapeHtml(photo.url || photo.previewUrl || 'Photo locale')}</span>
+    </div>
+  `;
+}
+
+function hasFieldError(validationErrors, field) {
+  return validationErrors.some((error) => error.field === field);
+}
+
+function renderFieldClass({
+  isFull = false,
+  validationErrors,
+  field,
+}) {
+  const classes = ['app-review__field'];
+
+  if (isFull) {
+    classes.push('app-review__field--full');
+  }
+
+  if (hasFieldError(validationErrors, field)) {
+    classes.push('app-review__field--invalid');
+  }
+
+  return classes.join(' ');
+}
+
+function renderValidationSummary(validationErrors) {
+  if (!validationErrors.length) {
+    return '';
+  }
+
+  return `
+    <div class="app-review__error-summary" data-review-errors>
+      <strong>Complétez ces champs avant de publier</strong>
+      <ul class="app-review__errors">
+        ${validationErrors.map(renderError).join('')}
+      </ul>
     </div>
   `;
 }
@@ -69,16 +106,6 @@ export function renderReviewFormScreen({
         </div>
       </div>
 
-      ${
-        validationErrors.length
-          ? `
-            <ul class="app-review__errors">
-              ${validationErrors.map(renderError).join('')}
-            </ul>
-          `
-          : ''
-      }
-
       <div class="app-review__photos">
         ${draft.photos.map(renderPhoto).join('')}
       </div>
@@ -96,12 +123,12 @@ export function renderReviewFormScreen({
 
       <form class="app-review__form" data-form="review-draft">
         <div class="app-review__grid">
-          <label class="app-review__field">
+          <label class="${renderFieldClass({ validationErrors, field: 'title' })}">
             <span>Titre</span>
             <input name="title" type="text" value="${escapeAttribute(draft.details.title)}" />
           </label>
 
-          <label class="app-review__field">
+          <label class="${renderFieldClass({ validationErrors, field: 'category' })}">
             <span>Catégorie</span>
             <select name="categoryId">
               <option value="">Choisir</option>
@@ -109,7 +136,7 @@ export function renderReviewFormScreen({
             </select>
           </label>
 
-          <label class="app-review__field">
+          <label class="${renderFieldClass({ validationErrors, field: 'condition' })}">
             <span>État ${isConditionRequired(draft) ? '' : '(facultatif)'}</span>
             <select name="condition">
               <option value="">Choisir</option>
@@ -117,19 +144,19 @@ export function renderReviewFormScreen({
             </select>
           </label>
 
-          <label class="app-review__field">
+          <label class="${renderFieldClass({ validationErrors, field: 'price' })}">
             <span>Prix final (CDF)</span>
             <input name="priceCdf" type="number" min="0" step="1000" value="${escapeAttribute(
               draft.details.priceCdf ?? '',
             )}" />
           </label>
 
-          <label class="app-review__field app-review__field--full">
+          <label class="${renderFieldClass({ isFull: true, validationErrors, field: 'description' })}">
             <span>Description</span>
             <textarea name="description" rows="4">${escapeHtml(draft.details.description)}</textarea>
           </label>
 
-          <label class="app-review__field app-review__field--full">
+          <label class="${renderFieldClass({ isFull: true, validationErrors, field: 'area' })}">
             <span>Zone</span>
             <select name="area">
               <option value="">Choisir une zone</option>
@@ -137,6 +164,8 @@ export function renderReviewFormScreen({
             </select>
           </label>
         </div>
+
+        ${renderValidationSummary(validationErrors)}
 
         <div class="app-flow__actions">
           <button class="app-flow__button" type="submit">Publier l'annonce</button>

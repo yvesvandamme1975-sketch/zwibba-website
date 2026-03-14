@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import { renderCaptureScreen } from '../App/features/post/capture-screen.mjs';
 import { renderPhotoGuidanceScreen } from '../App/features/post/photo-guidance-screen.mjs';
+import { renderReviewFormScreen } from '../App/features/post/review-form-screen.mjs';
 import {
   addGuidedPhotoToDraft,
   createPostFlowController,
@@ -173,4 +174,24 @@ test('publish validation requires photo, category, condition when relevant, pric
   const categoryErrors = validateDraftForPublish(categoryDraft);
 
   assert.ok(categoryErrors.some((error) => error.field === 'condition'));
+});
+
+test('review form highlights publish blockers next to the submit action', () => {
+  const draft = createReadyDraft({
+    priceCdf: null,
+    area: '',
+  });
+  const validationErrors = validateDraftForPublish(draft);
+  const html = renderReviewFormScreen({
+    areaOptions: ['Golf', 'Bel Air'],
+    categories: [{ id: 'phones_tablets', label: 'Téléphones' }],
+    conditionOptions: [{ value: 'like_new', label: 'Comme neuf' }],
+    draft,
+    validationErrors,
+  });
+
+  assert.match(html, /data-review-errors/);
+  assert.match(html, /data-review-error-field="price"/);
+  assert.match(html, /data-review-error-field="area"/);
+  assert.match(html, /app-review__field app-review__field--invalid/);
 });
