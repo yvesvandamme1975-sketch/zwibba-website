@@ -52,6 +52,7 @@ async function withServer(run) {
 test('build creates the full static site map required by the Zwibba website plan', () => {
   buildSite();
 
+  const distEntries = new Set(readdirSync(distDir));
   const requiredPages = [
     'index.html',
     'App/index.html',
@@ -67,6 +68,8 @@ test('build creates the full static site map required by the Zwibba website plan
   for (const page of requiredPages) {
     assert.equal(existsSync(path.join(distDir, page)), true, `${page} should exist`);
   }
+
+  assert.equal(distEntries.has('App'), true, 'App directory should exist');
 
   const listingRoot = path.join(distDir, 'annonce');
   const listingPages = readdirSync(listingRoot, { withFileTypes: true }).filter((entry) => entry.isDirectory());
@@ -146,6 +149,31 @@ test('runtime serves the standalone App route', async () => {
     assert.equal(response.status, 200);
     assert.match(body, /data-app-root/i);
     assert.match(body, /Zwibba/i);
+  });
+});
+
+test('runtime serves the lowercase app route', async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/app`, {
+      signal: AbortSignal.timeout(3000),
+    });
+    const body = await response.text();
+
+    assert.equal(response.status, 200);
+    assert.match(body, /data-app-root/i);
+    assert.match(body, /Zwibba/i);
+    assert.equal(response.headers.get('x-zwibba-canonical-route'), '/App/');
+  });
+});
+
+test('runtime serves App module assets with a JavaScript MIME type', async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/assets/app/services/draft-storage.mjs`, {
+      signal: AbortSignal.timeout(3000),
+    });
+
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get('content-type') || '', /application\/javascript/i);
   });
 });
 

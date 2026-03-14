@@ -1162,9 +1162,10 @@ function build() {
     writeText(path.join(assetsDir, 'listings', `${listing.slug}.svg`), buildListingImage(listing));
   }
 
+  const appPage = renderAppPage();
   const pages = [
     { file: 'index.html', path: '/', html: renderLandingPage() },
-    { file: 'App/index.html', path: '/App/', html: renderAppPage() },
+    { file: 'App/index.html', path: '/App/', html: appPage },
     { file: 'annonces/index.html', path: '/annonces/', html: renderBrowsePage() },
     { file: 'ambassadeur/index.html', path: '/ambassadeur/', html: renderAmbassadorPage() },
     { file: 'a-propos/index.html', path: '/a-propos/', html: renderAboutPage() },

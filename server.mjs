@@ -13,6 +13,7 @@ const contentTypes = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.js': 'application/javascript; charset=utf-8',
+  '.mjs': 'application/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
@@ -35,30 +36,37 @@ function resolveFile(urlPath) {
   const decodedPath = decodeURIComponent(urlPath);
   const cleanPath = decodedPath.replace(/\/+/g, '/');
 
+  if (cleanPath === '/app' || cleanPath === '/app/') {
+    return {
+      canonicalRoute: '/App/',
+      filePath: path.join(distDir, 'App', 'index.html'),
+    };
+  }
+
   if (cleanPath.startsWith('/r/') && cleanPath !== '/r/' && !path.extname(cleanPath)) {
-    return path.join(distDir, 'r', 'index.html');
+    return { canonicalRoute: null, filePath: path.join(distDir, 'r', 'index.html') };
   }
 
   if (cleanPath === '/') {
-    return path.join(distDir, 'index.html');
+    return { canonicalRoute: null, filePath: path.join(distDir, 'index.html') };
   }
 
   const relativePath = cleanPath.replace(/^\/+/, '');
   const directFile = path.join(distDir, relativePath);
 
   if (existsSync(directFile) && statSync(directFile).isFile()) {
-    return directFile;
+    return { canonicalRoute: null, filePath: directFile };
   }
 
   if (!path.extname(relativePath)) {
     const nestedIndex = path.join(distDir, relativePath, 'index.html');
     if (existsSync(nestedIndex)) {
-      return nestedIndex;
+      return { canonicalRoute: null, filePath: nestedIndex };
     }
 
     const htmlFile = `${directFile}.html`;
     if (existsSync(htmlFile)) {
-      return htmlFile;
+      return { canonicalRoute: null, filePath: htmlFile };
     }
   }
 
@@ -67,7 +75,8 @@ function resolveFile(urlPath) {
 
 createServer((request, response) => {
   const url = new URL(request.url || '/', `http://${request.headers.host || 'localhost'}`);
-  const filePath = resolveFile(url.pathname);
+  const resolvedFile = resolveFile(url.pathname);
+  const filePath = resolvedFile?.filePath;
 
   if (!filePath || !filePath.startsWith(distDir)) {
     send(response, 404, 'Not Found', { 'Content-Type': 'text/plain; charset=utf-8' });
@@ -84,6 +93,7 @@ createServer((request, response) => {
       'Cache-Control': cacheControl,
       'Content-Length': body.length,
       'Content-Type': contentType,
+      ...(resolvedFile?.canonicalRoute ? { 'X-Zwibba-Canonical-Route': resolvedFile.canonicalRoute } : {}),
     });
   } catch {
     send(response, 500, 'Internal Server Error', { 'Content-Type': 'text/plain; charset=utf-8' });
