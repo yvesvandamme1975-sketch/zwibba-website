@@ -14,6 +14,12 @@ test('root package exposes a workspace smoke script while preserving the website
   assert.equal(typeof packageJson.scripts['smoke:workspaces'], 'string');
 });
 
+test('root package keeps a website compatibility smoke script during monorepo bootstrap', () => {
+  const packageJson = JSON.parse(readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
+
+  assert.equal(typeof packageJson.scripts['smoke:website'], 'string');
+});
+
 test('root monorepo workspaces are scaffolded', () => {
   const requiredFiles = [
     'pnpm-workspace.yaml',
