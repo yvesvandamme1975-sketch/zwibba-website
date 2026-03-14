@@ -1,0 +1,9 @@
+{
+  "name": "@zwibba/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "echo \"API scaffold only\"",
+    "test": "node --test"
+  }
+}

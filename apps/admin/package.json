@@ -1,0 +1,9 @@
+{
+  "name": "@zwibba/admin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "echo \"Admin scaffold only\"",
+    "test": "node --test"
+  }
+}
