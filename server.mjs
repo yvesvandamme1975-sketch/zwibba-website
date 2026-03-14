@@ -22,6 +22,14 @@ const contentTypes = {
   '.xml': 'application/xml; charset=utf-8',
 };
 
+const noCacheExtensions = new Set([
+  '.css',
+  '.html',
+  '.js',
+  '.json',
+  '.mjs',
+]);
+
 function send(response, statusCode, body, headers = {}) {
   response.writeHead(statusCode, headers);
   if (response.req.method !== 'HEAD') {
@@ -87,7 +95,7 @@ createServer((request, response) => {
     const body = readFileSync(filePath);
     const extension = path.extname(filePath);
     const contentType = contentTypes[extension] || 'application/octet-stream';
-    const cacheControl = extension === '.html' ? 'no-cache' : 'public, max-age=86400';
+    const cacheControl = noCacheExtensions.has(extension) ? 'no-cache' : 'public, max-age=86400';
 
     send(response, 200, body, {
       'Cache-Control': cacheControl,

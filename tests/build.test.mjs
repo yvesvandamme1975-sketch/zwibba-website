@@ -182,6 +182,7 @@ test('runtime serves App module assets with a JavaScript MIME type', async () =>
 
     assert.equal(response.status, 200);
     assert.match(response.headers.get('content-type') || '', /application\/javascript/i);
+    assert.match(response.headers.get('cache-control') || '', /no-cache/i);
   });
 });
 
