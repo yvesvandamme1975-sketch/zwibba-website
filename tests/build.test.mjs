@@ -54,6 +54,7 @@ test('build creates the full static site map required by the Zwibba website plan
 
   const requiredPages = [
     'index.html',
+    'App/index.html',
     'annonces/index.html',
     'ambassadeur/index.html',
     'a-propos/index.html',
@@ -134,6 +135,17 @@ test('runtime serves referral short links through the dedicated referral page', 
     assert.equal(response.status, 200);
     assert.match(body, /Transmission du code en cours/i);
     assert.match(body, /referral-code-output/i);
+  });
+});
+
+test('runtime serves the standalone App route', async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/App/`, { signal: AbortSignal.timeout(3000) });
+    const body = await response.text();
+
+    assert.equal(response.status, 200);
+    assert.match(body, /data-app-root/i);
+    assert.match(body, /Zwibba/i);
   });
 });
 

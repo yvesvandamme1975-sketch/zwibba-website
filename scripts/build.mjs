@@ -224,6 +224,84 @@ function renderFooter() {
   `;
 }
 
+function renderAppPage() {
+  return `<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zwibba App</title>
+    <meta name="description" content="Prototype browser-first de l'application Zwibba pour le parcours vendeur." />
+    <meta name="theme-color" content="#1E1E20" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <link rel="stylesheet" href="/assets/app/app.css" />
+  </head>
+  <body class="app-route">
+    <a class="skip-link" href="#main-content">Aller au contenu</a>
+    <main class="app-standalone" id="main-content">
+      <div class="app-standalone__topbar">
+        <a class="app-standalone__brand" href="/" aria-label="Retour au site Zwibba">
+          <img src="/assets/brand/logo-zwibba.svg" alt="" width="42" height="42" />
+          <span class="app-standalone__brand-copy">
+            <strong>Zwibba App</strong>
+            <span>Prototype vendeur</span>
+          </span>
+        </a>
+        <a class="button button--ghost" href="/">Retour au site</a>
+      </div>
+
+      <section class="app-standalone__entry">
+        <div class="app-standalone__note">
+          <p class="eyebrow">App mobile, version navigateur</p>
+          <h1>Le parcours vendeur Zwibba commence ici.</h1>
+          <p>
+            Cette entrée /App/ devient l'espace de travail du flux vendeur: brouillon,
+            publication, OTP, modération et partage.
+          </p>
+          <div class="store-row">
+            <a class="button button--primary" href="#home">Ouvrir le prototype</a>
+          </div>
+        </div>
+
+        <div class="app-standalone__frame">
+          <div class="app-shell" data-app-root>
+            <div class="app-shell__placeholder">
+              <section class="app-shell__hero">
+                <strong>Seller-first</strong>
+                <h2>Zwibba App</h2>
+                <p>Le shell navigateur est prêt. Les prochains lots y branchent le brouillon local et l'entrée vendeur.</p>
+              </section>
+              <div class="app-shell__stack">
+                <article class="app-shell__card">
+                  <h3>Brouillons locaux</h3>
+                  <p>Le stockage local et la reprise du flux arrivent au prochain lot.</p>
+                </article>
+                <article class="app-shell__card">
+                  <h3>Publication guidée</h3>
+                  <p>Photo, IA, OTP et modération seront simulés ici écran par écran.</p>
+                </article>
+              </div>
+            </div>
+            <div class="app-shell__bottom">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script src="/assets/app/app.js" defer></script>
+  </body>
+</html>`;
+}
+
 function renderLayout({
   currentPath,
   title,
@@ -1102,6 +1180,8 @@ function build() {
   writeText(path.join(assetsDir, 'brand', 'favicon.svg'), renderFavicon());
   writeText(path.join(assetsDir, 'styles.css'), readFileSync(path.join(repoRoot, 'src/site/styles.css'), 'utf8'));
   writeText(path.join(assetsDir, 'app.js'), readFileSync(path.join(repoRoot, 'src/site/app.js'), 'utf8'));
+  writeText(path.join(assetsDir, 'app', 'app.css'), readFileSync(path.join(repoRoot, 'App/app.css'), 'utf8'));
+  writeText(path.join(assetsDir, 'app', 'app.js'), readFileSync(path.join(repoRoot, 'App/app.js'), 'utf8'));
 
   for (const listing of listings) {
     writeText(path.join(assetsDir, 'listings', `${listing.slug}.svg`), buildListingImage(listing));
@@ -1109,6 +1189,7 @@ function build() {
 
   const pages = [
     { file: 'index.html', path: '/', html: renderLandingPage() },
+    { file: 'App/index.html', path: '/App/', html: renderAppPage() },
     { file: 'annonces/index.html', path: '/annonces/', html: renderBrowsePage() },
     { file: 'ambassadeur/index.html', path: '/ambassadeur/', html: renderAmbassadorPage() },
     { file: 'a-propos/index.html', path: '/a-propos/', html: renderAboutPage() },

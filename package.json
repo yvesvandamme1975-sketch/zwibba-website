@@ -5,6 +5,7 @@
   "description": "Zwibba - Petites Annonces | Landing page for DRC classifieds",
   "scripts": {
     "build": "node scripts/build.mjs",
+    "smoke:app": "node scripts/build.mjs && test -f dist/App/index.html && test -f dist/assets/app/app.css && test -f dist/assets/app/app.js",
     "prestart": "node scripts/build.mjs",
     "start": "node server.mjs",
     "test": "node --test tests/build.test.mjs"
