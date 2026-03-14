@@ -269,35 +269,11 @@ function renderAppPage() {
         </div>
 
         <div class="app-standalone__frame">
-          <div class="app-shell" data-app-root>
-            <div class="app-shell__placeholder">
-              <section class="app-shell__hero">
-                <strong>Seller-first</strong>
-                <h2>Zwibba App</h2>
-                <p>Le shell navigateur est prêt. Les prochains lots y branchent le brouillon local et l'entrée vendeur.</p>
-              </section>
-              <div class="app-shell__stack">
-                <article class="app-shell__card">
-                  <h3>Brouillons locaux</h3>
-                  <p>Le stockage local et la reprise du flux arrivent au prochain lot.</p>
-                </article>
-                <article class="app-shell__card">
-                  <h3>Publication guidée</h3>
-                  <p>Photo, IA, OTP et modération seront simulés ici écran par écran.</p>
-                </article>
-              </div>
-            </div>
-            <div class="app-shell__bottom">
-              <span></span>
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-          </div>
+          <div class="app-shell" data-app-root data-screen="home"></div>
         </div>
       </section>
     </main>
-    <script src="/assets/app/app.js" defer></script>
+    <script type="module" src="/assets/app/app.js"></script>
   </body>
 </html>`;
 }
@@ -1180,8 +1156,7 @@ function build() {
   writeText(path.join(assetsDir, 'brand', 'favicon.svg'), renderFavicon());
   writeText(path.join(assetsDir, 'styles.css'), readFileSync(path.join(repoRoot, 'src/site/styles.css'), 'utf8'));
   writeText(path.join(assetsDir, 'app.js'), readFileSync(path.join(repoRoot, 'src/site/app.js'), 'utf8'));
-  writeText(path.join(assetsDir, 'app', 'app.css'), readFileSync(path.join(repoRoot, 'App/app.css'), 'utf8'));
-  writeText(path.join(assetsDir, 'app', 'app.js'), readFileSync(path.join(repoRoot, 'App/app.js'), 'utf8'));
+  cpSync(path.join(repoRoot, 'App'), path.join(assetsDir, 'app'), { recursive: true });
 
   for (const listing of listings) {
     writeText(path.join(assetsDir, 'listings', `${listing.slug}.svg`), buildListingImage(listing));
