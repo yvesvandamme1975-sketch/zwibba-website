@@ -88,6 +88,14 @@ test('landing page ships the key conversion sections from the plan', () => {
   assert.match(landing, /Lubumbashi/i);
 });
 
+test('app entry page opens the interactive flow instead of linking to the current home hash', () => {
+  buildSite();
+
+  const appEntry = readFileSync(path.join(distDir, 'App/index.html'), 'utf8');
+  assert.match(appEntry, /Ouvrir le prototype/);
+  assert.match(appEntry, /href="#capture"/i);
+});
+
 test('site shell includes accessibility hooks and page-level structured data', () => {
   buildSite();
 

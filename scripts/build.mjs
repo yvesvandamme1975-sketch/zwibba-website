@@ -264,7 +264,7 @@ function renderAppPage() {
             publication, OTP, modération et partage.
           </p>
           <div class="store-row">
-            <a class="button button--primary" href="#home">Ouvrir le prototype</a>
+            <a class="button button--primary" href="#capture">Ouvrir le prototype</a>
           </div>
         </div>
 
