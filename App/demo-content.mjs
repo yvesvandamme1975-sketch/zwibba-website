@@ -1,5 +1,6 @@
 export const sellerCategories = [
   { id: 'phones_tablets', label: 'Téléphones' },
+  { id: 'electronics', label: 'Électronique' },
   { id: 'vehicles', label: 'Véhicules' },
   { id: 'real_estate', label: 'Immobilier' },
   { id: 'fashion', label: 'Mode' },
@@ -38,4 +39,52 @@ export const recentListings = [
     location: 'Lubumbashi Centre',
     publishedAt: 'Il y a 53 min',
   },
+];
+
+export const demoCaptureOptions = [
+  {
+    id: 'phone-front',
+    label: 'Téléphone premium',
+    description: 'Bon test pour déclencher les photos guidées d’un smartphone.',
+    previewUrl: '/assets/demo/phone-front.jpg',
+    sizeBytes: 3_400_000,
+    accent: '#6BE66B',
+    glow: 'rgba(107, 230, 107, 0.32)',
+  },
+  {
+    id: 'sofa-showroom',
+    label: 'Canapé salon',
+    description: 'Démo maison et jardin avec prix conseillé et vues latérales.',
+    previewUrl: '/assets/demo/sofa-showroom.jpg',
+    sizeBytes: 2_600_000,
+    accent: '#9effb6',
+    glow: 'rgba(158, 255, 182, 0.22)',
+  },
+  {
+    id: 'vehicle-front',
+    label: 'SUV en vente',
+    description: 'Déclenche les vues guidées avant, profil et tableau de bord.',
+    previewUrl: '/assets/demo/vehicle-front.jpg',
+    sizeBytes: 3_900_000,
+    accent: '#9dc6ff',
+    glow: 'rgba(157, 198, 255, 0.24)',
+  },
+];
+
+export const areaOptions = [
+  'Bel Air',
+  'Golf',
+  'Lubumbashi Centre',
+  'Q. Industriel',
+  'Kamalondo',
+  'Kenya',
+];
+
+export const conditionOptions = [
+  { value: 'new_item', label: 'Neuf' },
+  { value: 'like_new', label: 'Comme neuf' },
+  { value: 'used_good', label: 'Bon état' },
+  { value: 'used_fair', label: 'État correct' },
+  { value: 'used_poor', label: 'Usé' },
+  { value: 'for_parts', label: 'Pour pièces' },
 ];
