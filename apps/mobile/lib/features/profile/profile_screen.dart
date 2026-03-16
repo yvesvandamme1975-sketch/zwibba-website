@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../../services/auth_api_service.dart';
+
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({
+    super.key,
+    this.session,
+  });
+
+  final SellerSession? session;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isVerified = session != null;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -13,9 +21,18 @@ class ProfileScreen extends StatelessWidget {
         Text('Mon profil', style: theme.textTheme.headlineMedium),
         const SizedBox(height: 10),
         Text(
-          '+243 990 000 001',
+          session?.phoneNumber ?? 'Aucune session vérifiée',
           style: theme.textTheme.titleMedium?.copyWith(
-            color: const Color(0xFF6BE66B),
+            color: isVerified
+                ? const Color(0xFF6BE66B)
+                : theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          isVerified ? 'Session vérifiée' : 'Vérification requise',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 18),

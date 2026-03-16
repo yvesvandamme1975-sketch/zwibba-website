@@ -5,6 +5,7 @@ import 'package:zwibba_mobile/models/listing_draft.dart';
 import 'package:zwibba_mobile/services/ai_draft_api_service.dart';
 import 'package:zwibba_mobile/services/auth_api_service.dart';
 import 'package:zwibba_mobile/services/draft_api_service.dart';
+import 'package:zwibba_mobile/services/session_storage_service.dart';
 
 void main() {
   testWidgets('otp gate appears only when publish is attempted',
@@ -44,6 +45,9 @@ void main() {
       aiDraftApiService: _FakeAiDraftApiService(),
       authApiService: authApiService,
       draftApiService: draftApiService,
+      sessionStorageService: SessionStorageService(
+        backend: _MemorySessionStorageBackend(),
+      ),
     ));
 
     await tester.tap(find.widgetWithText(FilledButton, 'Prendre une photo'));
@@ -66,6 +70,43 @@ void main() {
 
     expect(authApiService.requestOtpCalls, 1);
     expect(authApiService.verifyOtpCalls, 1);
+    expect(draftApiService.syncCalls, 1);
+    expect(find.text('Brouillon synchronisé'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Publier maintenant'),
+        findsOneWidget);
+  });
+
+  testWidgets('restored seller session skips the otp gate on the next draft',
+      (tester) async {
+    final draftApiService = _FakeDraftApiService();
+
+    await tester.pumpWidget(ZwibbaApp(
+      aiDraftApiService: _FakeAiDraftApiService(),
+      authApiService: _FakeAuthApiService(),
+      draftApiService: draftApiService,
+      sessionStorageService: SessionStorageService(
+        backend: _MemorySessionStorageBackend(
+          initialValues: {
+            'zwibba_session_can_sync_drafts': 'true',
+            'zwibba_session_phone_number': '+243990000001',
+            'zwibba_session_token': 'zwibba_session_243990000001',
+          },
+        ),
+      ),
+    ));
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Prendre une photo'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Téléphone premium'));
+    await tester.pumpAndSettle();
+    await tester
+        .tap(find.widgetWithText(FilledButton, 'Continuer vers le brouillon'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, "Publier l'annonce"));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Publiez seulement après vérification'), findsNothing);
     expect(draftApiService.syncCalls, 1);
     expect(find.text('Brouillon synchronisé'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Publier maintenant'),
@@ -153,5 +194,32 @@ class _FakeDraftApiService implements DraftApiService {
       status: 'approved',
       statusLabel: 'Annonce approuvée et prête à partager',
     );
+  }
+}
+
+class _MemorySessionStorageBackend implements SessionStorageBackend {
+  _MemorySessionStorageBackend({
+    this.initialValues = const {},
+  }) : _store = Map<String, String>.from(initialValues);
+
+  final Map<String, String> initialValues;
+  final Map<String, String> _store;
+
+  @override
+  Future<void> delete(String key) async {
+    _store.remove(key);
+  }
+
+  @override
+  Future<String?> read(String key) async {
+    return _store[key];
+  }
+
+  @override
+  Future<void> write({
+    required String key,
+    required String value,
+  }) async {
+    _store[key] = value;
   }
 }

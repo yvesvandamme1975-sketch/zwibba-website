@@ -7,12 +7,12 @@ export class AuthController {
   constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
   @Post('request-otp')
-  requestOtp(@Body() body: { phoneNumber?: string }) {
+  async requestOtp(@Body() body: { phoneNumber?: string }) {
     return this.authService.requestOtp(body.phoneNumber ?? '');
   }
 
   @Post('verify-otp')
-  verifyOtp(
+  async verifyOtp(
     @Body()
     body: {
       code?: string;

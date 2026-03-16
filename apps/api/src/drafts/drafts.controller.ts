@@ -1,18 +1,18 @@
-import { Body, Controller, Headers, Inject, Post } from '@nestjs/common';
+import { Body, Controller, Inject, Post, UseGuards } from '@nestjs/common';
 
-import { AuthService } from '../auth/auth.service';
+import type { SessionRecord } from '../auth/auth.service';
+import { CurrentSession } from '../auth/current-session.decorator';
+import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { DraftsService } from './drafts.service';
 
 @Controller('drafts')
 export class DraftsController {
-  constructor(
-    @Inject(AuthService) private readonly authService: AuthService,
-    @Inject(DraftsService) private readonly draftsService: DraftsService,
-  ) {}
+  constructor(@Inject(DraftsService) private readonly draftsService: DraftsService) {}
 
   @Post('sync')
+  @UseGuards(SessionAuthGuard)
   syncDraft(
-    @Headers('authorization') authorizationHeader: string | undefined,
+    @CurrentSession() session: SessionRecord,
     @Body()
     body: {
       area?: string;
@@ -21,9 +21,6 @@ export class DraftsController {
       title?: string;
     },
   ) {
-    const sessionToken = authorizationHeader?.replace(/^Bearer\s+/i, '').trim();
-    const session = this.authService.requireSessionToken(sessionToken);
-
     return this.draftsService.syncDraft({
       area: body.area ?? '',
       categoryId: body.categoryId ?? '',

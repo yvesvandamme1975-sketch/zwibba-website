@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'config/api_base_url.dart';
@@ -27,6 +29,7 @@ import 'services/auth_api_service.dart';
 import 'services/chat_api_service.dart';
 import 'services/draft_api_service.dart';
 import 'services/listings_api_service.dart';
+import 'services/session_storage_service.dart';
 import 'services/wallet_api_service.dart';
 
 class ZwibbaApp extends StatelessWidget {
@@ -38,6 +41,7 @@ class ZwibbaApp extends StatelessWidget {
     this.chatApiService,
     this.draftApiService,
     this.listingsApiService,
+    this.sessionStorageService,
     this.walletApiService,
   });
 
@@ -47,6 +51,7 @@ class ZwibbaApp extends StatelessWidget {
   final ChatApiService? chatApiService;
   final DraftApiService? draftApiService;
   final ListingsApiService? listingsApiService;
+  final SessionStorageService? sessionStorageService;
   final WalletApiService? walletApiService;
 
   @override
@@ -67,6 +72,7 @@ class ZwibbaApp extends StatelessWidget {
             HttpDraftApiService(apiClient: resolvedApiClient),
         listingsApiService: listingsApiService ??
             HttpListingsApiService(apiClient: resolvedApiClient),
+        sessionStorageService: sessionStorageService ?? SessionStorageService(),
         walletApiService: walletApiService ??
             HttpWalletApiService(apiClient: resolvedApiClient),
       ),
@@ -89,6 +95,7 @@ class _RootAppShell extends StatefulWidget {
     required this.chatApiService,
     required this.draftApiService,
     required this.listingsApiService,
+    required this.sessionStorageService,
     required this.walletApiService,
   });
 
@@ -97,6 +104,7 @@ class _RootAppShell extends StatefulWidget {
   final ChatApiService chatApiService;
   final DraftApiService draftApiService;
   final ListingsApiService listingsApiService;
+  final SessionStorageService sessionStorageService;
   final WalletApiService walletApiService;
 
   @override
@@ -104,7 +112,34 @@ class _RootAppShell extends StatefulWidget {
 }
 
 class _RootAppShellState extends State<_RootAppShell> {
+  SellerSession? _activeSession;
   _AppSection _section = _AppSection.seller;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreSession();
+  }
+
+  Future<void> _handleSessionChanged(SellerSession session) async {
+    setState(() {
+      _activeSession = session;
+    });
+
+    unawaited(widget.sessionStorageService.writeSession(session));
+  }
+
+  Future<void> _restoreSession() async {
+    final session = await widget.sessionStorageService.readSession();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _activeSession = session;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,9 +155,11 @@ class _RootAppShellState extends State<_RootAppShell> {
         child: SafeArea(
           child: switch (_section) {
             _AppSection.seller => _SellerFlowShell(
+                activeSession: _activeSession,
                 aiDraftApiService: widget.aiDraftApiService,
                 authApiService: widget.authApiService,
                 draftApiService: widget.draftApiService,
+                onSessionChanged: _handleSessionChanged,
                 walletApiService: widget.walletApiService,
               ),
             _AppSection.buyer => _BuyerFlowShell(
@@ -134,7 +171,9 @@ class _RootAppShellState extends State<_RootAppShell> {
             _AppSection.wallet => _WalletFlowShell(
                 walletApiService: widget.walletApiService,
               ),
-            _AppSection.profile => const ProfileScreen(),
+            _AppSection.profile => ProfileScreen(
+                session: _activeSession,
+              ),
           },
         ),
       ),
@@ -450,15 +489,19 @@ enum _SellerStep {
 
 class _SellerFlowShell extends StatefulWidget {
   const _SellerFlowShell({
+    required this.activeSession,
     required this.aiDraftApiService,
     required this.authApiService,
     required this.draftApiService,
+    required this.onSessionChanged,
     required this.walletApiService,
   });
 
+  final SellerSession? activeSession;
   final AiDraftApiService aiDraftApiService;
   final AuthApiService authApiService;
   final DraftApiService draftApiService;
+  final Future<void> Function(SellerSession session) onSessionChanged;
   final WalletApiService walletApiService;
 
   @override
@@ -519,6 +562,21 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
   SellerSession? _session;
   _SellerStep _step = _SellerStep.home;
 
+  @override
+  void initState() {
+    super.initState();
+    _session = widget.activeSession;
+  }
+
+  @override
+  void didUpdateWidget(covariant _SellerFlowShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (widget.activeSession?.sessionToken != _session?.sessionToken) {
+      _session = widget.activeSession;
+    }
+  }
+
   void _goHome() {
     setState(() {
       _publishOutcome = null;
@@ -545,7 +603,6 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
       _draft = localDraft;
       _isBusy = true;
       _publishOutcome = null;
-      _session = null;
     });
 
     try {
@@ -633,6 +690,12 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
         return;
       }
 
+      await widget.onSessionChanged(session);
+
+      if (!mounted) {
+        return;
+      }
+
       setState(() {
         _draft = syncedDraft;
         _isBusy = false;
@@ -651,9 +714,52 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
     }
   }
 
+  Future<void> _handleSyncDraftWithActiveSession() async {
+    final draft = _draft;
+    final session = _session;
+
+    if (draft == null || session == null) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+    });
+
+    try {
+      final syncedDraft = await widget.draftApiService.syncDraft(
+        draft: draft,
+        session: session,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _draft = syncedDraft;
+        _isBusy = false;
+        _step = _SellerStep.review;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isBusy = false;
+      });
+    }
+  }
+
   Future<void> _handlePublishAttempt() async {
     if (_draft?.isSynced ?? false) {
       await _handlePublishNow();
+      return;
+    }
+
+    if (_session != null) {
+      await _handleSyncDraftWithActiveSession();
       return;
     }
 

@@ -24,3 +24,14 @@ model Session {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
 }
+
+model VerificationAttempt {
+  id          String   @id @default(cuid())
+  challengeId String
+  createdAt   DateTime @default(now())
+  phoneNumber String
+  status      String
+  updatedAt   DateTime @updatedAt
+
+  @@index([phoneNumber, status])
+}

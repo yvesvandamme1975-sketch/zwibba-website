@@ -1,19 +1,21 @@
-import { Body, Controller, Get, Headers, Inject, Post } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, UseGuards } from '@nestjs/common';
 
-import { AuthService } from '../auth/auth.service';
+import type { SessionRecord } from '../auth/auth.service';
+import { CurrentSession } from '../auth/current-session.decorator';
+import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ModerationService } from './moderation.service';
 
 @Controller('moderation')
 export class ModerationController {
   constructor(
-    @Inject(AuthService) private readonly authService: AuthService,
     @Inject(ModerationService)
     private readonly moderationService: ModerationService,
   ) {}
 
   @Post('publish')
+  @UseGuards(SessionAuthGuard)
   publish(
-    @Headers('authorization') authorizationHeader: string | undefined,
+    @CurrentSession() session: SessionRecord,
     @Body()
     body: {
       categoryId?: string;
@@ -24,9 +26,6 @@ export class ModerationController {
       title?: string;
     },
   ) {
-    const sessionToken = authorizationHeader?.replace(/^Bearer\s+/i, '').trim();
-    const session = this.authService.requireSessionToken(sessionToken);
-
     return this.moderationService.publish({
       categoryId: body.categoryId ?? '',
       description: body.description ?? '',

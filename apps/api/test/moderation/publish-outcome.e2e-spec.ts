@@ -7,11 +7,105 @@ import test from 'node:test';
 import request from 'supertest';
 
 import { AppModule } from '../../src/app.module';
+import { PrismaService } from '../../src/database/prisma.service';
+import { TwilioVerifyService } from '../../src/auth/twilio-verify.service';
+
+class _FakeTwilioVerifyService {
+  async checkVerification({
+    code,
+  }: {
+    code: string;
+    phoneNumber: string;
+  }) {
+    return {
+      sid: 'VE243990000001',
+      status: code == '123456' ? 'approved' : 'pending',
+    };
+  }
+
+  async requestVerification(phoneNumber: string) {
+    return {
+      sid: `VE${phoneNumber.replaceAll('+', '')}`,
+      status: 'pending',
+    };
+  }
+}
+
+class _FakePrismaService {
+  readonly sessions = new Map<string, {
+    token: string;
+    user: {
+      phoneNumber: string;
+    };
+  }>();
+
+  readonly session = {
+    create: async ({
+      data,
+    }: {
+      data: {
+        token: string;
+        userId: string;
+      };
+    }) => {
+      const phoneNumber = this.users.get(data.userId) ?? '+243990000001';
+      const session = {
+        token: data.token,
+        user: {
+          phoneNumber,
+        },
+        userId: data.userId,
+      };
+      this.sessions.set(session.token, session);
+      return session;
+    },
+    findUnique: async ({
+      where,
+    }: {
+      where: {
+        token: string;
+      };
+    }) => {
+      return this.sessions.get(where.token) ?? null;
+    },
+  };
+
+  readonly users = new Map<string, string>();
+
+  readonly user = {
+    upsert: async ({
+      where,
+    }: {
+      where: {
+        phoneNumber: string;
+      };
+    }) => {
+      const userId = `user_${where.phoneNumber.replaceAll('+', '')}`;
+      this.users.set(userId, where.phoneNumber);
+
+      return {
+        id: userId,
+        phoneNumber: where.phoneNumber,
+      };
+    },
+  };
+
+  readonly verificationAttempt = {
+    create: async () => ({ id: 'attempt_1' }),
+    updateMany: async () => ({ count: 1 }),
+  };
+}
 
 async function createTestApp(): Promise<INestApplication> {
+  const prisma = new _FakePrismaService();
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
-  }).compile();
+  })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .overrideProvider(TwilioVerifyService)
+      .useValue(new _FakeTwilioVerifyService())
+      .compile();
 
   const app = moduleRef.createNestApplication();
   await app.init();

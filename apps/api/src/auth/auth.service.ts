@@ -1,6 +1,15 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 
-type SessionRecord = {
+import { PrismaService } from '../database/prisma.service';
+import { TwilioVerifyService } from './twilio-verify.service';
+
+export type SessionRecord = {
   canSyncDrafts: true;
   phoneNumber: string;
   sessionToken: string;
@@ -8,26 +17,38 @@ type SessionRecord = {
 
 @Injectable()
 export class AuthService {
-  private readonly pendingPhones = new Set<string>();
-  private readonly sessions = new Map<string, SessionRecord>();
+  constructor(
+    @Inject(PrismaService) private readonly prismaService: PrismaService,
+    @Inject(TwilioVerifyService)
+    private readonly twilioVerifyService: TwilioVerifyService,
+  ) {}
 
-  requestOtp(phoneNumber: string) {
+  async requestOtp(phoneNumber: string) {
     const normalizedPhone = phoneNumber.trim();
 
     if (!normalizedPhone.startsWith('+243')) {
       throw new BadRequestException('Le numéro doit commencer par +243.');
     }
 
-    this.pendingPhones.add(normalizedPhone);
+    const verification = await this.twilioVerifyService.requestVerification(
+      normalizedPhone,
+    );
+    await this.prismaService.verificationAttempt.create({
+      data: {
+        challengeId: verification.sid,
+        phoneNumber: normalizedPhone,
+        status: verification.status,
+      },
+    });
 
     return {
-      challengeId: `otp_${normalizedPhone.replaceAll('+', '').replaceAll(' ', '')}`,
+      challengeId: verification.sid,
       expiresInSeconds: 300,
       phoneNumber: normalizedPhone,
     };
   }
 
-  verifyOtp({
+  async verifyOtp({
     code,
     phoneNumber,
   }: {
@@ -35,38 +56,74 @@ export class AuthService {
     phoneNumber: string;
   }) {
     const normalizedPhone = phoneNumber.trim();
+    const verification = await this.twilioVerifyService.checkVerification({
+      code,
+      phoneNumber: normalizedPhone,
+    });
 
-    if (!this.pendingPhones.has(normalizedPhone)) {
-      throw new UnauthorizedException('Aucun challenge OTP actif.');
-    }
-
-    if (code.trim() != '123456') {
+    if (verification.status != 'approved') {
       throw new UnauthorizedException('Code OTP invalide.');
     }
+
+    const user = await this.prismaService.user.upsert({
+      where: {
+        phoneNumber: normalizedPhone,
+      },
+      update: {},
+      create: {
+        phoneNumber: normalizedPhone,
+      },
+    });
+    const sessionToken = `zwibba_session_${randomUUID().replaceAll('-', '')}`;
+
+    await this.prismaService.session.create({
+      data: {
+        token: sessionToken,
+        userId: user.id,
+      },
+    });
+    await this.prismaService.verificationAttempt.updateMany({
+      where: {
+        phoneNumber: normalizedPhone,
+        status: 'pending',
+      },
+      data: {
+        challengeId: verification.sid,
+        status: 'approved',
+      },
+    });
 
     const session = {
       canSyncDrafts: true as const,
       phoneNumber: normalizedPhone,
-      sessionToken: `zwibba_session_${normalizedPhone.replaceAll('+', '').replaceAll(' ', '')}`,
+      sessionToken,
     };
-
-    this.pendingPhones.delete(normalizedPhone);
-    this.sessions.set(session.sessionToken, session);
 
     return session;
   }
 
-  requireSessionToken(sessionToken: string | undefined) {
+  async requireSessionToken(sessionToken: string | undefined) {
     if (!sessionToken) {
       throw new UnauthorizedException('Session manquante.');
     }
 
-    const session = this.sessions.get(sessionToken);
+    const session = await this.prismaService.session.findUnique({
+      where: {
+        token: sessionToken,
+      },
+      include: {
+        user: true,
+      },
+    });
 
     if (!session) {
       throw new UnauthorizedException('Session inconnue.');
     }
 
-    return session;
+    return {
+      canSyncDrafts: true as const,
+      phoneNumber: session.user.phoneNumber,
+      sessionToken: session.token,
+    };
   }
 }
