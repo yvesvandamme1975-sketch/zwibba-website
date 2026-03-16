@@ -6,6 +6,8 @@ import 'features/auth/otp_screen.dart';
 import 'features/auth/phone_input_screen.dart';
 import 'features/auth/welcome_screen.dart';
 import 'features/browse/browse_screen.dart';
+import 'features/chat/inbox_screen.dart';
+import 'features/chat/thread_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/listings/contact_actions_sheet.dart';
 import 'features/listings/listing_detail_screen.dart';
@@ -15,10 +17,12 @@ import 'features/post/publish_blocked_screen.dart';
 import 'features/post/publish_pending_screen.dart';
 import 'features/post/publish_success_screen.dart';
 import 'features/post/review_form_screen.dart';
+import 'features/profile/profile_screen.dart';
 import 'models/listing_draft.dart';
 import 'services/ai_draft_api_service.dart';
 import 'services/api_client.dart';
 import 'services/auth_api_service.dart';
+import 'services/chat_api_service.dart';
 import 'services/draft_api_service.dart';
 import 'services/listings_api_service.dart';
 
@@ -28,6 +32,7 @@ class ZwibbaApp extends StatelessWidget {
     this.aiDraftApiService,
     this.apiClient,
     this.authApiService,
+    this.chatApiService,
     this.draftApiService,
     this.listingsApiService,
   });
@@ -35,6 +40,7 @@ class ZwibbaApp extends StatelessWidget {
   final AiDraftApiService? aiDraftApiService;
   final ApiClient? apiClient;
   final AuthApiService? authApiService;
+  final ChatApiService? chatApiService;
   final DraftApiService? draftApiService;
   final ListingsApiService? listingsApiService;
 
@@ -50,6 +56,8 @@ class ZwibbaApp extends StatelessWidget {
             HttpAiDraftApiService(apiClient: resolvedApiClient),
         authApiService:
             authApiService ?? HttpAuthApiService(apiClient: resolvedApiClient),
+        chatApiService:
+            chatApiService ?? HttpChatApiService(apiClient: resolvedApiClient),
         draftApiService: draftApiService ??
             HttpDraftApiService(apiClient: resolvedApiClient),
         listingsApiService: listingsApiService ??
@@ -62,18 +70,22 @@ class ZwibbaApp extends StatelessWidget {
 enum _AppSection {
   seller,
   buyer,
+  messages,
+  profile,
 }
 
 class _RootAppShell extends StatefulWidget {
   const _RootAppShell({
     required this.aiDraftApiService,
     required this.authApiService,
+    required this.chatApiService,
     required this.draftApiService,
     required this.listingsApiService,
   });
 
   final AiDraftApiService aiDraftApiService;
   final AuthApiService authApiService;
+  final ChatApiService chatApiService;
   final DraftApiService draftApiService;
   final ListingsApiService listingsApiService;
 
@@ -96,15 +108,20 @@ class _RootAppShellState extends State<_RootAppShell> {
           ),
         ),
         child: SafeArea(
-          child: _section == _AppSection.seller
-              ? _SellerFlowShell(
-                  aiDraftApiService: widget.aiDraftApiService,
-                  authApiService: widget.authApiService,
-                  draftApiService: widget.draftApiService,
-                )
-              : _BuyerFlowShell(
-                  listingsApiService: widget.listingsApiService,
-                ),
+          child: switch (_section) {
+            _AppSection.seller => _SellerFlowShell(
+                aiDraftApiService: widget.aiDraftApiService,
+                authApiService: widget.authApiService,
+                draftApiService: widget.draftApiService,
+              ),
+            _AppSection.buyer => _BuyerFlowShell(
+                listingsApiService: widget.listingsApiService,
+              ),
+            _AppSection.messages => _MessagesFlowShell(
+                chatApiService: widget.chatApiService,
+              ),
+            _AppSection.profile => const ProfileScreen(),
+          },
         ),
       ),
       bottomNavigationBar: NavigationBar(
@@ -127,8 +144,140 @@ class _RootAppShellState extends State<_RootAppShell> {
             selectedIcon: Icon(Icons.storefront),
             label: 'Acheter',
           ),
+          NavigationDestination(
+            icon: Icon(Icons.chat_bubble_outline),
+            selectedIcon: Icon(Icons.chat_bubble),
+            label: 'Messages',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profil',
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _MessagesFlowShell extends StatefulWidget {
+  const _MessagesFlowShell({
+    required this.chatApiService,
+  });
+
+  final ChatApiService chatApiService;
+
+  @override
+  State<_MessagesFlowShell> createState() => _MessagesFlowShellState();
+}
+
+class _MessagesFlowShellState extends State<_MessagesFlowShell> {
+  String _draftMessage = '';
+  bool _isLoading = true;
+  bool _isSending = false;
+  ChatThread? _selectedThread;
+  List<ChatThreadSummary> _threads = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInbox();
+  }
+
+  Future<void> _loadInbox() async {
+    final threads = await widget.chatApiService.fetchInbox();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = false;
+      _threads = threads;
+    });
+  }
+
+  Future<void> _openThread(ChatThreadSummary thread) async {
+    final detail = await widget.chatApiService.fetchThread(thread.id);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _draftMessage = '';
+      _selectedThread = detail;
+    });
+  }
+
+  Future<void> _sendMessage() async {
+    final selectedThread = _selectedThread;
+    final messageBody = _draftMessage.trim();
+
+    if (selectedThread == null || messageBody.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isSending = true;
+    });
+
+    final updatedThread = await widget.chatApiService.sendMessage(
+      body: messageBody,
+      threadId: selectedThread.id,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _draftMessage = '';
+      _isSending = false;
+      _selectedThread = updatedThread;
+      _threads = _threads
+          .map(
+            (thread) => thread.id == updatedThread.id
+                ? ChatThreadSummary(
+                    id: thread.id,
+                    lastMessagePreview: updatedThread.messages.last.body,
+                    listingSlug: thread.listingSlug,
+                    listingTitle: thread.listingTitle,
+                    participantName: thread.participantName,
+                    unreadCount: 0,
+                  )
+                : thread,
+          )
+          .toList(growable: false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_selectedThread != null) {
+      return ThreadScreen(
+        draftMessage: _draftMessage,
+        isSending: _isSending,
+        onBack: () {
+          setState(() {
+            _draftMessage = '';
+            _selectedThread = null;
+          });
+        },
+        onDraftMessageChanged: (value) {
+          setState(() {
+            _draftMessage = value;
+          });
+        },
+        onSend: _sendMessage,
+        thread: _selectedThread!,
+      );
+    }
+
+    return InboxScreen(
+      isLoading: _isLoading,
+      onOpenThread: _openThread,
+      threads: _threads,
     );
   }
 }
