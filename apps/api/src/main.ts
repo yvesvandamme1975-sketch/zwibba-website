@@ -1,5 +1,12 @@
-import { AppModule } from './app.module.js';
+import 'reflect-metadata';
 
-void AppModule;
+import { NestFactory } from '@nestjs/core';
 
-console.log('Zwibba API scaffold ready');
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  await app.listen(process.env.PORT ? Number(process.env.PORT) : 3200);
+}
+
+void bootstrap();
