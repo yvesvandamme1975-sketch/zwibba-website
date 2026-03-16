@@ -14,6 +14,7 @@ import { renderCaptureScreen } from './features/post/capture-screen.mjs';
 import { renderPhotoGuidanceScreen } from './features/post/photo-guidance-screen.mjs';
 import { renderPublishGateScreen } from './features/post/publish-gate-screen.mjs';
 import { renderReviewFormScreen } from './features/post/review-form-screen.mjs';
+import { renderSuccessScreen } from './features/post/success-screen.mjs';
 import { getCategoryGuidance } from './models/category-guidance.mjs';
 import {
   markDraftOtpVerified,
@@ -40,6 +41,7 @@ const appRoutes = new Set([
   '#phone',
   '#publish',
   '#review',
+  '#success',
 ]);
 
 if (appRoot) {
@@ -61,6 +63,7 @@ if (appRoot) {
     pendingChallenge: authService.getPendingChallenge(),
     phoneError: '',
     phoneNumber: authService.getPendingChallenge()?.phoneNumber ?? '+243',
+    publishedListingUrl: '',
     reviewErrors: [],
     session: authService.loadSession(),
   };
@@ -87,6 +90,35 @@ if (appRoot) {
       previewUrl: `/assets/demo/${promptId}.jpg`,
       sizeBytes: 900_000,
     };
+  }
+
+  function slugifyTitle(value) {
+    return String(value || '')
+      .normalize('NFD')
+      .replaceAll(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replaceAll(/[^a-z0-9]+/g, '-')
+      .replaceAll(/^-+|-+$/g, '');
+  }
+
+  function buildListingUrl(draft) {
+    const previewByCategory = {
+      electronics: '/annonce/ordinateur-portable-hp-elitebook/',
+      fashion: '/annonce/robe-wax-africaine-taille-m/',
+      home_garden: '/annonce/canape-3-places-style-contemporain/',
+      phones_tablets: '/annonce/samsung-galaxy-a54-neuf-lubumbashi/',
+      real_estate: '/annonce/appartement-2-chambres-quartier-industriel/',
+      vehicles: '/annonce/toyota-hilux-2019-4x4/',
+    };
+    const previewUrl = previewByCategory[draft?.details.categoryId];
+
+    if (previewUrl) {
+      return previewUrl;
+    }
+
+    const slug = slugifyTitle(draft?.details.title || 'annonce-zwibba') || 'annonce-zwibba';
+
+    return `/annonce/${slug}/`;
   }
 
   function persistDraft(nextDraft) {
@@ -144,6 +176,11 @@ if (appRoot) {
         return renderPublishGateScreen({
           draft: state.draft,
           session: state.session,
+        });
+      case '#success':
+        return renderSuccessScreen({
+          draft: state.draft,
+          listingUrl: state.publishedListingUrl || buildListingUrl(state.draft),
         });
       case '#home':
       default:
@@ -272,6 +309,17 @@ if (appRoot) {
     }
   }
 
+  async function handleListingLinkCopy(rawListingUrl) {
+    const absoluteUrl = new URL(rawListingUrl, window.location.origin).toString();
+
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(absoluteUrl);
+      return;
+    }
+
+    window.prompt('Copiez ce lien', absoluteUrl);
+  }
+
   appRoot.addEventListener('click', async (event) => {
     const trigger = event.target.closest('[data-action]');
 
@@ -289,6 +337,27 @@ if (appRoot) {
     if (trigger.dataset.action === 'capture-guided-photo') {
       handleGuidedCapture(trigger.dataset.promptId);
       return;
+    }
+
+    if (trigger.dataset.action === 'submit-publish') {
+      if (!state.draft || !state.session) {
+        return;
+      }
+
+      state.publishedListingUrl = buildListingUrl(state.draft);
+      window.location.hash = '#success';
+      return;
+    }
+
+    if (trigger.dataset.action === 'copy-listing-link') {
+      await handleListingLinkCopy(trigger.dataset.listingUrl || buildListingUrl(state.draft));
+      return;
+    }
+
+    if (trigger.dataset.action === 'view-listing-link') {
+      const listingUrl = trigger.dataset.listingUrl || buildListingUrl(state.draft);
+
+      window.open(new URL(listingUrl, window.location.origin).toString(), '_blank', 'noopener');
     }
   });
 

@@ -727,6 +727,26 @@
   font-weight: 800;
 }
 
+.app-success__link {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.app-success__link span {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.app-success__link strong {
+  font-size: 0.92rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
 @media (min-width: 920px) {
   .app-standalone__entry {
     grid-template-columns: minmax(0, 1fr) 410px;

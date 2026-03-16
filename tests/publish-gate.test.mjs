@@ -5,6 +5,8 @@ import {
   createReadyDraft,
   decidePublishGate,
 } from '../App/features/post/post-flow-controller.mjs';
+import { renderPublishGateScreen } from '../App/features/post/publish-gate-screen.mjs';
+import { renderSuccessScreen } from '../App/features/post/success-screen.mjs';
 import { markDraftOtpVerified } from '../App/models/listing-draft.mjs';
 import { createMemoryStorage } from '../App/services/draft-storage.mjs';
 import { createAuthService } from '../App/services/auth-service.mjs';
@@ -66,4 +68,29 @@ test('otp verify returns a session usable for draft sync', () => {
   assert.equal(session.phoneNumber, '+243990000001');
   assert.equal(session.canSyncDrafts, true);
   assert.equal(authService.loadSession().phoneNumber, '+243990000001');
+});
+
+test('verified publish gate shows a final publish CTA', () => {
+  const html = renderPublishGateScreen({
+    draft: createReadyDraft(),
+    session: {
+      phoneNumber: '+243990000001',
+      canSyncDrafts: true,
+    },
+  });
+
+  assert.match(html, /Publier maintenant/);
+});
+
+test('success screen exposes the post-publish sharing actions', () => {
+  const html = renderSuccessScreen({
+    draft: createReadyDraft({
+      title: 'Samsung Galaxy A54 128 Go',
+    }),
+    listingUrl: '/annonce/samsung-galaxy-a54-128-go',
+  });
+
+  assert.match(html, /Partager sur WhatsApp/);
+  assert.match(html, /Copier le lien/);
+  assert.match(html, /Voir mon annonce/);
 });

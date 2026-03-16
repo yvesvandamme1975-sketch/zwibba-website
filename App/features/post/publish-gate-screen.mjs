@@ -35,7 +35,7 @@ export function renderPublishGateScreen({ draft, session }) {
       <div class="app-flow__actions">
         ${
           session
-            ? '<a class="app-flow__button" href="#home">Retour à l’accueil</a>'
+            ? '<button class="app-flow__button" type="button" data-action="submit-publish">Publier maintenant</button>'
             : '<a class="app-flow__button" href="#auth-welcome">Vérifier mon numéro</a>'
         }
         <a class="app-flow__button app-flow__button--secondary" href="#review">Modifier le brouillon</a>
