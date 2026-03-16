@@ -6,6 +6,7 @@ import 'features/auth/otp_screen.dart';
 import 'features/auth/phone_input_screen.dart';
 import 'features/auth/welcome_screen.dart';
 import 'features/browse/browse_screen.dart';
+import 'features/boost/boost_offer_sheet.dart';
 import 'features/chat/inbox_screen.dart';
 import 'features/chat/thread_screen.dart';
 import 'features/home/home_screen.dart';
@@ -18,6 +19,7 @@ import 'features/post/publish_pending_screen.dart';
 import 'features/post/publish_success_screen.dart';
 import 'features/post/review_form_screen.dart';
 import 'features/profile/profile_screen.dart';
+import 'features/wallet/wallet_screen.dart';
 import 'models/listing_draft.dart';
 import 'services/ai_draft_api_service.dart';
 import 'services/api_client.dart';
@@ -25,6 +27,7 @@ import 'services/auth_api_service.dart';
 import 'services/chat_api_service.dart';
 import 'services/draft_api_service.dart';
 import 'services/listings_api_service.dart';
+import 'services/wallet_api_service.dart';
 
 class ZwibbaApp extends StatelessWidget {
   const ZwibbaApp({
@@ -35,6 +38,7 @@ class ZwibbaApp extends StatelessWidget {
     this.chatApiService,
     this.draftApiService,
     this.listingsApiService,
+    this.walletApiService,
   });
 
   final AiDraftApiService? aiDraftApiService;
@@ -43,6 +47,7 @@ class ZwibbaApp extends StatelessWidget {
   final ChatApiService? chatApiService;
   final DraftApiService? draftApiService;
   final ListingsApiService? listingsApiService;
+  final WalletApiService? walletApiService;
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +67,8 @@ class ZwibbaApp extends StatelessWidget {
             HttpDraftApiService(apiClient: resolvedApiClient),
         listingsApiService: listingsApiService ??
             HttpListingsApiService(apiClient: resolvedApiClient),
+        walletApiService: walletApiService ??
+            HttpWalletApiService(apiClient: resolvedApiClient),
       ),
     );
   }
@@ -71,6 +78,7 @@ enum _AppSection {
   seller,
   buyer,
   messages,
+  wallet,
   profile,
 }
 
@@ -81,6 +89,7 @@ class _RootAppShell extends StatefulWidget {
     required this.chatApiService,
     required this.draftApiService,
     required this.listingsApiService,
+    required this.walletApiService,
   });
 
   final AiDraftApiService aiDraftApiService;
@@ -88,6 +97,7 @@ class _RootAppShell extends StatefulWidget {
   final ChatApiService chatApiService;
   final DraftApiService draftApiService;
   final ListingsApiService listingsApiService;
+  final WalletApiService walletApiService;
 
   @override
   State<_RootAppShell> createState() => _RootAppShellState();
@@ -113,12 +123,16 @@ class _RootAppShellState extends State<_RootAppShell> {
                 aiDraftApiService: widget.aiDraftApiService,
                 authApiService: widget.authApiService,
                 draftApiService: widget.draftApiService,
+                walletApiService: widget.walletApiService,
               ),
             _AppSection.buyer => _BuyerFlowShell(
                 listingsApiService: widget.listingsApiService,
               ),
             _AppSection.messages => _MessagesFlowShell(
                 chatApiService: widget.chatApiService,
+              ),
+            _AppSection.wallet => _WalletFlowShell(
+                walletApiService: widget.walletApiService,
               ),
             _AppSection.profile => const ProfileScreen(),
           },
@@ -148,6 +162,11 @@ class _RootAppShellState extends State<_RootAppShell> {
             icon: Icon(Icons.chat_bubble_outline),
             selectedIcon: Icon(Icons.chat_bubble),
             label: 'Messages',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.account_balance_wallet_outlined),
+            selectedIcon: Icon(Icons.account_balance_wallet),
+            label: 'Portefeuille',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),
@@ -361,6 +380,61 @@ class _BuyerFlowShellState extends State<_BuyerFlowShell> {
   }
 }
 
+class _WalletFlowShell extends StatefulWidget {
+  const _WalletFlowShell({
+    required this.walletApiService,
+  });
+
+  final WalletApiService walletApiService;
+
+  @override
+  State<_WalletFlowShell> createState() => _WalletFlowShellState();
+}
+
+class _WalletFlowShellState extends State<_WalletFlowShell> {
+  bool _isLoading = true;
+  WalletOverview? _wallet;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWallet();
+  }
+
+  Future<void> _loadWallet() async {
+    final wallet = await widget.walletApiService.fetchWallet();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = false;
+      _wallet = wallet;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    final wallet = _wallet;
+
+    if (wallet == null) {
+      return const SizedBox.shrink();
+    }
+
+    return WalletScreen(
+      balanceCdf: wallet.balanceCdf,
+      transactions: wallet.transactions,
+    );
+  }
+}
+
 enum _SellerStep {
   authWelcome,
   camera,
@@ -379,11 +453,13 @@ class _SellerFlowShell extends StatefulWidget {
     required this.aiDraftApiService,
     required this.authApiService,
     required this.draftApiService,
+    required this.walletApiService,
   });
 
   final AiDraftApiService aiDraftApiService;
   final AuthApiService authApiService;
   final DraftApiService draftApiService;
+  final WalletApiService walletApiService;
 
   @override
   State<_SellerFlowShell> createState() => _SellerFlowShellState();
@@ -693,6 +769,19 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
         return PublishSuccessScreen(
           listingTitle: _draft?.title ?? 'Annonce Zwibba',
           onBackHome: _goHome,
+          onBoost: () {
+            final listingId =
+                _publishOutcome?.id ?? _draft?.syncedDraftId ?? '';
+
+            showModalBottomSheet<void>(
+              context: context,
+              backgroundColor: const Color(0xFF17191A),
+              builder: (context) => BoostOfferSheet(
+                listingId: listingId,
+                walletApiService: widget.walletApiService,
+              ),
+            );
+          },
           onViewListing: _goHome,
           reasonSummary: _publishOutcome?.reasonSummary ??
               'Annonce approuvée et prête à partager.',

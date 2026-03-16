@@ -13,6 +13,21 @@ assert.equal(
   'node scripts/smoke-monorepo.mjs',
   'root package must expose smoke:monorepo',
 );
+assert.equal(
+  scripts['smoke:api-tests'],
+  'pnpm -C apps/api test',
+  'root package must expose smoke:api-tests',
+);
+assert.equal(
+  scripts['smoke:admin-tests'],
+  'pnpm -C apps/admin test',
+  'root package must expose smoke:admin-tests',
+);
+assert.equal(
+  scripts['smoke:mobile-tests'],
+  'sh -lc "cd apps/mobile && flutter test"',
+  'root package must expose smoke:mobile-tests',
+);
 assert.equal(scripts['dev:api'], 'sh scripts/dev-api.sh', 'root package must expose dev:api');
 assert.equal(
   scripts['dev:admin'],
@@ -34,6 +49,18 @@ execFileSync(npmCommand, ['run', 'smoke:website'], {
   stdio: 'inherit',
 });
 execFileSync(npmCommand, ['run', 'smoke:workspaces'], {
+  cwd: repoRoot,
+  stdio: 'inherit',
+});
+execFileSync(npmCommand, ['run', 'smoke:api-tests'], {
+  cwd: repoRoot,
+  stdio: 'inherit',
+});
+execFileSync(npmCommand, ['run', 'smoke:admin-tests'], {
+  cwd: repoRoot,
+  stdio: 'inherit',
+});
+execFileSync(npmCommand, ['run', 'smoke:mobile-tests'], {
   cwd: repoRoot,
   stdio: 'inherit',
 });

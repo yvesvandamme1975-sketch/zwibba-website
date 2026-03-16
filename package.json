@@ -6,6 +6,9 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "smoke:app": "node scripts/build.mjs && test -f dist/App/index.html && test -f dist/assets/app/app.css && test -f dist/assets/app/app.js",
+    "smoke:api-tests": "pnpm -C apps/api test",
+    "smoke:admin-tests": "pnpm -C apps/admin test",
+    "smoke:mobile-tests": "sh -lc \"cd apps/mobile && flutter test\"",
     "smoke:monorepo": "node scripts/smoke-monorepo.mjs",
     "smoke:website": "node scripts/build.mjs && test -f dist/index.html && test -f dist/App/index.html && test -f dist/assets/app/app.js",
     "smoke:workspaces": "test -f apps/mobile/pubspec.yaml && test -f apps/api/package.json && test -f apps/admin/package.json",

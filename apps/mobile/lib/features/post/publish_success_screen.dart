@@ -4,6 +4,7 @@ class PublishSuccessScreen extends StatelessWidget {
   const PublishSuccessScreen({
     required this.listingTitle,
     required this.onBackHome,
+    required this.onBoost,
     required this.onViewListing,
     required this.reasonSummary,
     required this.statusLabel,
@@ -12,6 +13,7 @@ class PublishSuccessScreen extends StatelessWidget {
 
   final String listingTitle;
   final VoidCallback onBackHome;
+  final VoidCallback onBoost;
   final VoidCallback onViewListing;
   final String reasonSummary;
   final String statusLabel;
@@ -51,6 +53,11 @@ class PublishSuccessScreen extends StatelessWidget {
         FilledButton(
           onPressed: () {},
           child: const Text('Partager sur WhatsApp'),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton(
+          onPressed: onBoost,
+          child: const Text('Booster cette annonce'),
         ),
         const SizedBox(height: 12),
         OutlinedButton(
