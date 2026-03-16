@@ -5,7 +5,7 @@ class ReviewFormScreen extends StatelessWidget {
     required this.areaOptions,
     required this.areaValue,
     required this.descriptionValue,
-    required this.isOtpVerified,
+    required this.isDraftSynced,
     required this.onAreaChanged,
     required this.onBack,
     required this.onDescriptionChanged,
@@ -13,6 +13,7 @@ class ReviewFormScreen extends StatelessWidget {
     required this.onPublish,
     required this.onTitleChanged,
     required this.priceValue,
+    this.syncSummary,
     required this.titleValue,
     super.key,
   });
@@ -20,14 +21,15 @@ class ReviewFormScreen extends StatelessWidget {
   final List<String> areaOptions;
   final String areaValue;
   final String descriptionValue;
-  final bool isOtpVerified;
+  final bool isDraftSynced;
   final ValueChanged<String?> onAreaChanged;
   final VoidCallback onBack;
   final ValueChanged<String> onDescriptionChanged;
   final ValueChanged<String> onPriceChanged;
-  final VoidCallback onPublish;
+  final Future<void> Function() onPublish;
   final ValueChanged<String> onTitleChanged;
   final String priceValue;
+  final String? syncSummary;
   final String titleValue;
 
   @override
@@ -50,7 +52,7 @@ class ReviewFormScreen extends StatelessWidget {
           style: theme.textTheme.bodyLarge
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
-        if (isOtpVerified) ...[
+        if (isDraftSynced) ...[
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
@@ -59,9 +61,21 @@ class ReviewFormScreen extends StatelessWidget {
               color: const Color(0x126BE66B),
               border: Border.all(color: const Color(0x336BE66B)),
             ),
-            child: Text(
-              'Session vérifiée. La publication réelle sera branchée avec l’API.',
-              style: theme.textTheme.bodyMedium,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Brouillon synchronisé',
+                  style: theme.textTheme.titleMedium,
+                ),
+                if (syncSummary != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    syncSummary!,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
+              ],
             ),
           ),
         ],
@@ -100,7 +114,11 @@ class ReviewFormScreen extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         FilledButton(
-          onPressed: onPublish,
+          onPressed: isDraftSynced
+              ? null
+              : () async {
+                  await onPublish();
+                },
           child: const Text("Publier l'annonce"),
         ),
       ],

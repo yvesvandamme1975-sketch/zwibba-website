@@ -24,14 +24,16 @@ class CameraPreset {
 
 class CameraScreen extends StatelessWidget {
   const CameraScreen({
+    this.busyLabel,
     required this.onBack,
     required this.onCapture,
     required this.presets,
     super.key,
   });
 
+  final String? busyLabel;
   final VoidCallback onBack;
-  final ValueChanged<CameraPreset> onCapture;
+  final Future<void> Function(CameraPreset preset) onCapture;
   final List<CameraPreset> presets;
 
   @override
@@ -55,11 +57,23 @@ class CameraScreen extends StatelessWidget {
           style: theme.textTheme.bodyLarge
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
+        if (busyLabel != null) ...[
+          const SizedBox(height: 18),
+          Text(
+            busyLabel!,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: const Color(0xFF6BE66B),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
         const SizedBox(height: 18),
         for (final preset in presets) ...[
           _CaptureCard(
             preset: preset,
-            onTap: () => onCapture(preset),
+            onTap: () async {
+              await onCapture(preset);
+            },
           ),
           const SizedBox(height: 14),
         ],
@@ -74,7 +88,7 @@ class _CaptureCard extends StatelessWidget {
     required this.preset,
   });
 
-  final VoidCallback onTap;
+  final Future<void> Function() onTap;
   final CameraPreset preset;
 
   @override
@@ -102,7 +116,9 @@ class _CaptureCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             FilledButton(
-              onPressed: onTap,
+              onPressed: () async {
+                await onTap();
+              },
               child: Text(preset.label),
             ),
           ],

@@ -2,14 +2,20 @@ import 'package:flutter/material.dart';
 
 class OtpScreen extends StatelessWidget {
   const OtpScreen({
+    required this.isBusy,
     required this.onBack,
+    required this.onOtpCodeChanged,
     required this.onVerify,
+    required this.otpCode,
     required this.phoneNumber,
     super.key,
   });
 
+  final bool isBusy;
   final VoidCallback onBack;
-  final VoidCallback onVerify;
+  final ValueChanged<String> onOtpCodeChanged;
+  final Future<void> Function() onVerify;
+  final String otpCode;
   final String phoneNumber;
 
   @override
@@ -33,13 +39,20 @@ class OtpScreen extends StatelessWidget {
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 18),
-        const TextField(
-          decoration: InputDecoration(labelText: 'Code reçu'),
+        TextFormField(
+          enabled: !isBusy,
+          initialValue: otpCode,
+          onChanged: onOtpCodeChanged,
+          decoration: const InputDecoration(labelText: 'Code reçu'),
         ),
         const SizedBox(height: 18),
         FilledButton(
-          onPressed: onVerify,
-          child: const Text('Vérifier et continuer'),
+          onPressed: isBusy
+              ? null
+              : () async {
+                  await onVerify();
+                },
+          child: Text(isBusy ? 'Synchronisation...' : 'Vérifier et continuer'),
         ),
       ],
     );

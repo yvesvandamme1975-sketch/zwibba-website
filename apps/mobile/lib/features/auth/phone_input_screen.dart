@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 class PhoneInputScreen extends StatelessWidget {
   const PhoneInputScreen({
+    required this.isBusy,
     required this.onBack,
     required this.onContinue,
     required this.onPhoneNumberChanged,
@@ -9,8 +10,9 @@ class PhoneInputScreen extends StatelessWidget {
     super.key,
   });
 
+  final bool isBusy;
   final VoidCallback onBack;
-  final VoidCallback onContinue;
+  final Future<void> Function() onContinue;
   final ValueChanged<String> onPhoneNumberChanged;
   final String phoneNumber;
 
@@ -36,6 +38,7 @@ class PhoneInputScreen extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         TextFormField(
+          enabled: !isBusy,
           initialValue: phoneNumber,
           keyboardType: TextInputType.phone,
           onChanged: onPhoneNumberChanged,
@@ -43,8 +46,12 @@ class PhoneInputScreen extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         FilledButton(
-          onPressed: onContinue,
-          child: const Text('Recevoir le code'),
+          onPressed: isBusy
+              ? null
+              : () async {
+                  await onContinue();
+                },
+          child: Text(isBusy ? 'Connexion...' : 'Recevoir le code'),
         ),
       ],
     );

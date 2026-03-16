@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'config/api_base_url.dart';
 import 'config/theme.dart';
 import 'features/auth/otp_screen.dart';
 import 'features/auth/phone_input_screen.dart';
@@ -8,32 +9,65 @@ import 'features/home/home_screen.dart';
 import 'features/post/camera_screen.dart';
 import 'features/post/photo_guidance_screen.dart';
 import 'features/post/review_form_screen.dart';
+import 'models/listing_draft.dart';
+import 'services/ai_draft_api_service.dart';
+import 'services/api_client.dart';
+import 'services/auth_api_service.dart';
+import 'services/draft_api_service.dart';
 
 class ZwibbaApp extends StatelessWidget {
-  const ZwibbaApp({super.key});
+  const ZwibbaApp({
+    super.key,
+    this.aiDraftApiService,
+    this.apiClient,
+    this.authApiService,
+    this.draftApiService,
+  });
+
+  final AiDraftApiService? aiDraftApiService;
+  final ApiClient? apiClient;
+  final AuthApiService? authApiService;
+  final DraftApiService? draftApiService;
 
   @override
   Widget build(BuildContext context) {
+    final resolvedApiClient = apiClient ?? HttpApiClient(baseUrl: apiBaseUrl);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: buildZwibbaTheme(),
-      home: const _SellerFlowShell(),
+      home: _SellerFlowShell(
+        aiDraftApiService: aiDraftApiService ??
+            HttpAiDraftApiService(apiClient: resolvedApiClient),
+        authApiService:
+            authApiService ?? HttpAuthApiService(apiClient: resolvedApiClient),
+        draftApiService: draftApiService ??
+            HttpDraftApiService(apiClient: resolvedApiClient),
+      ),
     );
   }
 }
 
 enum _SellerStep {
-  home,
+  authWelcome,
   camera,
   guidance,
-  review,
-  authWelcome,
-  phoneInput,
+  home,
   otpInput,
+  phoneInput,
+  review,
 }
 
 class _SellerFlowShell extends StatefulWidget {
-  const _SellerFlowShell();
+  const _SellerFlowShell({
+    required this.aiDraftApiService,
+    required this.authApiService,
+    required this.draftApiService,
+  });
+
+  final AiDraftApiService aiDraftApiService;
+  final AuthApiService authApiService;
+  final DraftApiService draftApiService;
 
   @override
   State<_SellerFlowShell> createState() => _SellerFlowShellState();
@@ -85,10 +119,12 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
     'Kenya',
   ];
 
+  ListingDraft? _draft;
+  bool _isBusy = false;
+  String _otpCode = '123456';
+  String _phoneNumber = '+243990000001';
+  SellerSession? _session;
   _SellerStep _step = _SellerStep.home;
-  _ListingDraft? _draft;
-  String _phoneNumber = '+243';
-  bool _otpVerified = false;
 
   void _goHome() {
     setState(() {
@@ -102,59 +138,160 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
     });
   }
 
-  void _handleCapture(CameraPreset preset) {
+  Future<void> _handleCapture(CameraPreset preset) async {
+    final localDraft = ListingDraft.fromCapturePreset(
+      area: preset.defaultArea,
+      description: preset.defaultDescription,
+      guidancePrompts: preset.guidancePrompts,
+      priceCdf: preset.defaultPriceCdf,
+      title: preset.defaultTitle,
+    );
+
     setState(() {
-      _draft = _ListingDraft.fromPreset(preset);
-      _otpVerified = false;
-      _step = _SellerStep.guidance;
+      _draft = localDraft;
+      _isBusy = true;
+      _session = null;
     });
+
+    try {
+      final preparedDraft = await widget.aiDraftApiService.prepareDraft(
+        draft: localDraft,
+        photoPresetId: preset.id,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _draft = preparedDraft;
+        _isBusy = false;
+        _step = _SellerStep.guidance;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _draft = localDraft;
+        _isBusy = false;
+        _step = _SellerStep.guidance;
+      });
+    }
+  }
+
+  Future<void> _handleOtpRequest() async {
+    setState(() {
+      _isBusy = true;
+    });
+
+    try {
+      final challenge = await widget.authApiService.requestOtp(
+        phoneNumber: _phoneNumber,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _phoneNumber = challenge.phoneNumber;
+        _isBusy = false;
+        _step = _SellerStep.otpInput;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isBusy = false;
+      });
+    }
+  }
+
+  Future<void> _handleOtpVerify() async {
+    final draft = _draft;
+
+    if (draft == null) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+    });
+
+    try {
+      final session = await widget.authApiService.verifyOtp(
+        code: _otpCode,
+        phoneNumber: _phoneNumber,
+      );
+      final syncedDraft = await widget.draftApiService.syncDraft(
+        draft: draft,
+        session: session,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _draft = syncedDraft;
+        _isBusy = false;
+        _session = session;
+        _step = _SellerStep.review;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isBusy = false;
+      });
+    }
   }
 
   void _handlePublishAttempt() {
-    setState(() {
-      _step = _otpVerified ? _SellerStep.review : _SellerStep.authWelcome;
-    });
-
-    if (_otpVerified) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'La publication réelle sera branchée à la prochaine tâche API.'),
-        ),
-      );
+    if (_draft?.isSynced ?? false) {
+      return;
     }
+
+    setState(() {
+      _step = _SellerStep.authWelcome;
+    });
   }
 
   Widget _buildCurrentScreen() {
     switch (_step) {
       case _SellerStep.camera:
         return CameraScreen(
-          presets: _capturePresets,
+          busyLabel: _isBusy ? 'Connexion à l’IA Zwibba...' : null,
           onBack: _goHome,
           onCapture: _handleCapture,
+          presets: _capturePresets,
         );
       case _SellerStep.guidance:
         return PhotoGuidanceScreen(
           listingTitle: _draft?.title ?? 'Annonce en préparation',
-          prompts: _draft?.guidancePrompts ?? const <String>[],
           onBackHome: _goHome,
           onContinue: () {
             setState(() {
               _step = _SellerStep.review;
             });
           },
+          prompts: _draft?.guidancePrompts ?? const <String>[],
         );
       case _SellerStep.review:
         return ReviewFormScreen(
           areaOptions: _areaOptions,
           areaValue: _draft?.area ?? '',
           descriptionValue: _draft?.description ?? '',
-          isOtpVerified: _otpVerified,
-          priceValue: _draft?.priceCdf ?? '',
-          titleValue: _draft?.title ?? '',
+          isDraftSynced: _draft?.isSynced ?? false,
           onAreaChanged: (value) {
             setState(() {
-              _draft = _draft?.copyWith(area: value);
+              _draft = _draft?.copyWith(area: value ?? '');
             });
           },
           onBack: () {
@@ -172,12 +309,19 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
               _draft = _draft?.copyWith(priceCdf: value);
             });
           },
-          onPublish: _handlePublishAttempt,
+          onPublish: () async {
+            _handlePublishAttempt();
+          },
           onTitleChanged: (value) {
             setState(() {
               _draft = _draft?.copyWith(title: value);
             });
           },
+          priceValue: _draft?.priceCdf ?? '',
+          syncSummary: _draft?.isSynced ?? false
+              ? 'Brouillon synchronisé pour ${_draft?.ownerPhoneNumber ?? _session?.phoneNumber ?? _phoneNumber}.'
+              : null,
+          titleValue: _draft?.title ?? '',
         );
       case _SellerStep.authWelcome:
         return AuthWelcomeScreen(
@@ -194,37 +338,36 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
         );
       case _SellerStep.phoneInput:
         return PhoneInputScreen(
-          phoneNumber: _phoneNumber,
+          isBusy: _isBusy,
           onBack: () {
             setState(() {
               _step = _SellerStep.authWelcome;
             });
           },
-          onContinue: () {
-            setState(() {
-              _step = _SellerStep.otpInput;
-            });
-          },
+          onContinue: _handleOtpRequest,
           onPhoneNumberChanged: (value) {
             setState(() {
               _phoneNumber = value;
             });
           },
+          phoneNumber: _phoneNumber,
         );
       case _SellerStep.otpInput:
         return OtpScreen(
-          phoneNumber: _phoneNumber,
+          isBusy: _isBusy,
           onBack: () {
             setState(() {
               _step = _SellerStep.phoneInput;
             });
           },
-          onVerify: () {
+          onOtpCodeChanged: (value) {
             setState(() {
-              _otpVerified = true;
-              _step = _SellerStep.review;
+              _otpCode = value;
             });
           },
+          onVerify: _handleOtpVerify,
+          otpCode: _otpCode,
+          phoneNumber: _phoneNumber,
         );
       case _SellerStep.home:
         return HomeScreen(
@@ -258,47 +401,6 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ListingDraft {
-  const _ListingDraft({
-    required this.area,
-    required this.description,
-    required this.guidancePrompts,
-    required this.priceCdf,
-    required this.title,
-  });
-
-  factory _ListingDraft.fromPreset(CameraPreset preset) {
-    return _ListingDraft(
-      area: preset.defaultArea,
-      description: preset.defaultDescription,
-      guidancePrompts: preset.guidancePrompts,
-      priceCdf: preset.defaultPriceCdf,
-      title: preset.defaultTitle,
-    );
-  }
-
-  final String area;
-  final String description;
-  final List<String> guidancePrompts;
-  final String priceCdf;
-  final String title;
-
-  _ListingDraft copyWith({
-    String? area,
-    String? description,
-    String? priceCdf,
-    String? title,
-  }) {
-    return _ListingDraft(
-      area: area ?? this.area,
-      description: description ?? this.description,
-      guidancePrompts: guidancePrompts,
-      priceCdf: priceCdf ?? this.priceCdf,
-      title: title ?? this.title,
     );
   }
 }
