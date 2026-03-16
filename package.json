@@ -6,8 +6,11 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "smoke:app": "node scripts/build.mjs && test -f dist/App/index.html && test -f dist/assets/app/app.css && test -f dist/assets/app/app.js",
+    "smoke:monorepo": "node scripts/smoke-monorepo.mjs",
     "smoke:website": "node scripts/build.mjs && test -f dist/index.html && test -f dist/App/index.html && test -f dist/assets/app/app.js",
     "smoke:workspaces": "test -f apps/mobile/pubspec.yaml && test -f apps/api/package.json && test -f apps/admin/package.json",
+    "dev:api": "sh scripts/dev-api.sh",
+    "dev:admin": "sh scripts/dev-admin.sh",
     "prestart": "node scripts/build.mjs",
     "start": "node server.mjs",
     "test": "node --test tests/*.test.mjs"
