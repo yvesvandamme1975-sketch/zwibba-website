@@ -50,15 +50,33 @@ class HttpDraftApiService implements DraftApiService {
       body: {
         'area': draft.area,
         'categoryId': draft.categoryId,
+        'description': draft.description,
+        'draftId': draft.syncedDraftId,
+        'photos': draft.photos
+            .map((photo) => {
+                  'objectKey': photo.objectKey,
+                  'photoId': photo.photoId,
+                  'publicUrl': photo.publicUrl,
+                  'sourcePresetId': photo.sourcePresetId,
+                  'uploadStatus': photo.uploadStatus,
+                })
+            .toList(),
         'priceCdf': draft.priceCdfValue,
         'title': draft.title,
       },
     );
+    final responsePhotos =
+        (json['photos'] as List<dynamic>? ?? const <dynamic>[])
+            .map((photo) => DraftPhoto.fromJson(
+                Map<String, dynamic>.from(photo as Map<dynamic, dynamic>)))
+            .toList();
 
     return draft.copyWith(
       area: json['area'] as String,
       categoryId: json['categoryId'] as String,
+      description: json['description'] as String? ?? draft.description,
       ownerPhoneNumber: json['ownerPhoneNumber'] as String,
+      photos: responsePhotos,
       priceCdf: '${json['priceCdf']}',
       syncedDraftId: json['draftId'] as String,
       syncStatus: json['syncStatus'] as String,

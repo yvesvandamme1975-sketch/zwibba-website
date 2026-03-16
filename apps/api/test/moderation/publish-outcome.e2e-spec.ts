@@ -32,6 +32,8 @@ class _FakeTwilioVerifyService {
 }
 
 class _FakePrismaService {
+  readonly draftPhotosByDraftId = new Map<string, Array<Record<string, unknown>>>();
+  readonly drafts = new Map<string, Record<string, unknown>>();
   readonly sessions = new Map<string, {
     token: string;
     user: {
@@ -93,6 +95,98 @@ class _FakePrismaService {
   readonly verificationAttempt = {
     create: async () => ({ id: 'attempt_1' }),
     updateMany: async () => ({ count: 1 }),
+  };
+
+  readonly draft = {
+    create: async ({
+      data,
+    }: {
+      data: Record<string, unknown>;
+    }) => {
+      this.drafts.set(data.id as string, data);
+      return data;
+    },
+    findFirst: async ({
+      where,
+    }: {
+      where: {
+        id: string;
+        ownerPhoneNumber: string;
+      };
+    }) => {
+      const draft = this.drafts.get(where.id);
+
+      if (!draft || draft.ownerPhoneNumber !== where.ownerPhoneNumber) {
+        return null;
+      }
+
+      return draft;
+    },
+    findUnique: async ({
+      where,
+      include,
+    }: {
+      include?: {
+        photos?: boolean;
+      };
+      where: {
+        id: string;
+      };
+    }) => {
+      const draft = this.drafts.get(where.id);
+
+      if (!draft) {
+        return null;
+      }
+
+      return {
+        ...draft,
+        photos: include?.photos
+            ? this.draftPhotosByDraftId.get(where.id) ?? []
+            : undefined,
+      };
+    },
+    update: async ({
+      data,
+      where,
+    }: {
+      data: Record<string, unknown>;
+      where: {
+        id: string;
+      };
+    }) => {
+      const existingDraft = this.drafts.get(where.id) ?? {};
+      const nextDraft = {
+        ...existingDraft,
+        ...data,
+      };
+      this.drafts.set(where.id, nextDraft);
+      return nextDraft;
+    },
+  };
+
+  readonly draftPhoto = {
+    create: async ({
+      data,
+    }: {
+      data: Record<string, unknown>;
+    }) => {
+      const draftId = data.draftId as string;
+      const currentPhotos = this.draftPhotosByDraftId.get(draftId) ?? [];
+      currentPhotos.push(data);
+      this.draftPhotosByDraftId.set(draftId, currentPhotos);
+      return data;
+    },
+    deleteMany: async ({
+      where,
+    }: {
+      where: {
+        draftId: string;
+      };
+    }) => {
+      this.draftPhotosByDraftId.set(where.draftId, []);
+      return { count: 0 };
+    },
   };
 }
 
@@ -187,7 +281,10 @@ test('publishing a synced phone draft is approved', async (t) => {
     publishResponse.body.statusLabel,
     'Annonce approuvée et prête à partager',
   );
-  assert.match(publishResponse.body.shareUrl, /\/annonces\/draft_samsung-galaxy-a54-128-go$/);
+  assert.match(
+    publishResponse.body.shareUrl,
+    /\/annonces\/draft_samsung-galaxy-a54-128-go_[a-z0-9]{8}$/,
+  );
 });
 
 test('publishing a synced vehicle draft is queued for manual review', async (t) => {

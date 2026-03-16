@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
@@ -29,6 +30,8 @@ import 'services/auth_api_service.dart';
 import 'services/chat_api_service.dart';
 import 'services/draft_api_service.dart';
 import 'services/listings_api_service.dart';
+import 'services/local_draft_cache_service.dart';
+import 'services/media_api_service.dart';
 import 'services/session_storage_service.dart';
 import 'services/wallet_api_service.dart';
 
@@ -41,6 +44,8 @@ class ZwibbaApp extends StatelessWidget {
     this.chatApiService,
     this.draftApiService,
     this.listingsApiService,
+    this.localDraftCacheService,
+    this.mediaApiService,
     this.sessionStorageService,
     this.walletApiService,
   });
@@ -51,6 +56,8 @@ class ZwibbaApp extends StatelessWidget {
   final ChatApiService? chatApiService;
   final DraftApiService? draftApiService;
   final ListingsApiService? listingsApiService;
+  final LocalDraftCacheService? localDraftCacheService;
+  final MediaApiService? mediaApiService;
   final SessionStorageService? sessionStorageService;
   final WalletApiService? walletApiService;
 
@@ -72,6 +79,10 @@ class ZwibbaApp extends StatelessWidget {
             HttpDraftApiService(apiClient: resolvedApiClient),
         listingsApiService: listingsApiService ??
             HttpListingsApiService(apiClient: resolvedApiClient),
+        localDraftCacheService:
+            localDraftCacheService ?? LocalDraftCacheService(),
+        mediaApiService: mediaApiService ??
+            HttpMediaApiService(apiClient: resolvedApiClient),
         sessionStorageService: sessionStorageService ?? SessionStorageService(),
         walletApiService: walletApiService ??
             HttpWalletApiService(apiClient: resolvedApiClient),
@@ -95,6 +106,8 @@ class _RootAppShell extends StatefulWidget {
     required this.chatApiService,
     required this.draftApiService,
     required this.listingsApiService,
+    required this.localDraftCacheService,
+    required this.mediaApiService,
     required this.sessionStorageService,
     required this.walletApiService,
   });
@@ -104,6 +117,8 @@ class _RootAppShell extends StatefulWidget {
   final ChatApiService chatApiService;
   final DraftApiService draftApiService;
   final ListingsApiService listingsApiService;
+  final LocalDraftCacheService localDraftCacheService;
+  final MediaApiService mediaApiService;
   final SessionStorageService sessionStorageService;
   final WalletApiService walletApiService;
 
@@ -159,6 +174,8 @@ class _RootAppShellState extends State<_RootAppShell> {
                 aiDraftApiService: widget.aiDraftApiService,
                 authApiService: widget.authApiService,
                 draftApiService: widget.draftApiService,
+                localDraftCacheService: widget.localDraftCacheService,
+                mediaApiService: widget.mediaApiService,
                 onSessionChanged: _handleSessionChanged,
                 walletApiService: widget.walletApiService,
               ),
@@ -493,6 +510,8 @@ class _SellerFlowShell extends StatefulWidget {
     required this.aiDraftApiService,
     required this.authApiService,
     required this.draftApiService,
+    required this.localDraftCacheService,
+    required this.mediaApiService,
     required this.onSessionChanged,
     required this.walletApiService,
   });
@@ -501,6 +520,8 @@ class _SellerFlowShell extends StatefulWidget {
   final AiDraftApiService aiDraftApiService;
   final AuthApiService authApiService;
   final DraftApiService draftApiService;
+  final LocalDraftCacheService localDraftCacheService;
+  final MediaApiService mediaApiService;
   final Future<void> Function(SellerSession session) onSessionChanged;
   final WalletApiService walletApiService;
 
@@ -566,6 +587,7 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
   void initState() {
     super.initState();
     _session = widget.activeSession;
+    _restoreDraft();
   }
 
   @override
@@ -584,6 +606,32 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
     });
   }
 
+  Future<void> _cacheDraft(ListingDraft draft) {
+    return widget.localDraftCacheService.writeDraft(draft);
+  }
+
+  Future<void> _clearCachedDraft() {
+    return widget.localDraftCacheService.clearDraft();
+  }
+
+  List<int> _buildPresetPhotoBytes(CameraPreset preset) {
+    return utf8.encode(
+      '${preset.id}|${preset.label}|${preset.description}|${preset.defaultTitle}',
+    );
+  }
+
+  Future<void> _restoreDraft() async {
+    final cachedDraft = await widget.localDraftCacheService.readDraft();
+
+    if (!mounted || cachedDraft == null) {
+      return;
+    }
+
+    setState(() {
+      _draft = cachedDraft;
+    });
+  }
+
   void _handlePrimaryAction() {
     setState(() {
       _step = _draft == null ? _SellerStep.camera : _SellerStep.review;
@@ -591,25 +639,44 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
   }
 
   Future<void> _handleCapture(CameraPreset preset) async {
-    final localDraft = ListingDraft.fromCapturePreset(
-      area: preset.defaultArea,
-      description: preset.defaultDescription,
-      guidancePrompts: preset.guidancePrompts,
-      priceCdf: preset.defaultPriceCdf,
-      title: preset.defaultTitle,
-    );
+    ListingDraft? localDraft;
 
     setState(() {
-      _draft = localDraft;
       _isBusy = true;
       _publishOutcome = null;
     });
 
     try {
+      final uploadSlot = await widget.mediaApiService.requestUploadSlot(
+        contentType: 'image/jpeg',
+        fileName: '${preset.id}.jpg',
+        sourcePresetId: preset.id,
+      );
+      await widget.mediaApiService.uploadBytes(
+        bytes: _buildPresetPhotoBytes(preset),
+        contentType: 'image/jpeg',
+        uploadUrl: uploadSlot.uploadUrl,
+      );
+      final uploadedPhoto = DraftPhoto(
+        objectKey: uploadSlot.objectKey,
+        photoId: uploadSlot.photoId,
+        publicUrl: uploadSlot.publicUrl,
+        sourcePresetId: uploadSlot.sourcePresetId,
+        uploadStatus: 'uploaded',
+      );
+      localDraft = ListingDraft.fromCapturePreset(
+        area: preset.defaultArea,
+        description: preset.defaultDescription,
+        guidancePrompts: preset.guidancePrompts,
+        photos: [uploadedPhoto],
+        priceCdf: preset.defaultPriceCdf,
+        title: preset.defaultTitle,
+      );
       final preparedDraft = await widget.aiDraftApiService.prepareDraft(
         draft: localDraft,
         photoPresetId: preset.id,
       );
+      await _cacheDraft(preparedDraft);
 
       if (!mounted) {
         return;
@@ -622,12 +689,23 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
         _step = _SellerStep.guidance;
       });
     } catch (_) {
+      final fallbackDraft = localDraft ??
+          ListingDraft.fromCapturePreset(
+            area: preset.defaultArea,
+            description: preset.defaultDescription,
+            guidancePrompts: preset.guidancePrompts,
+            photos: const [],
+            priceCdf: preset.defaultPriceCdf,
+            title: preset.defaultTitle,
+          );
+      await _cacheDraft(fallbackDraft);
+
       if (!mounted) {
         return;
       }
 
       setState(() {
-        _draft = localDraft;
+        _draft = fallbackDraft;
         _isBusy = false;
         _publishOutcome = null;
         _step = _SellerStep.guidance;
@@ -685,6 +763,7 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
         draft: draft,
         session: session,
       );
+      await _cacheDraft(syncedDraft);
 
       if (!mounted) {
         return;
@@ -731,6 +810,7 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
         draft: draft,
         session: session,
       );
+      await _cacheDraft(syncedDraft);
 
       if (!mounted) {
         return;
@@ -785,6 +865,10 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
         draft: draft,
         session: session,
       );
+      if (publishOutcome.status == 'approved' ||
+          publishOutcome.status == 'pending_manual_review') {
+        await _clearCachedDraft();
+      }
 
       if (!mounted) {
         return;
@@ -828,6 +912,7 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
               _step = _SellerStep.review;
             });
           },
+          photoCount: _draft?.photos.length ?? 0,
           prompts: _draft?.guidancePrompts ?? const <String>[],
         );
       case _SellerStep.review:
@@ -837,10 +922,16 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
           descriptionValue: _draft?.description ?? '',
           isBusy: _isBusy,
           isDraftSynced: _draft?.isSynced ?? false,
+          photoSummary:
+              '${_draft?.photos.length ?? 0} photo${(_draft?.photos.length ?? 0) > 1 ? 's' : ''} prête${(_draft?.photos.length ?? 0) > 1 ? 's' : ''}',
           onAreaChanged: (value) {
             setState(() {
               _draft = _draft?.copyWith(area: value ?? '');
             });
+            final nextDraft = _draft;
+            if (nextDraft != null) {
+              unawaited(_cacheDraft(nextDraft));
+            }
           },
           onBack: () {
             setState(() {
@@ -851,11 +942,19 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
             setState(() {
               _draft = _draft?.copyWith(description: value);
             });
+            final nextDraft = _draft;
+            if (nextDraft != null) {
+              unawaited(_cacheDraft(nextDraft));
+            }
           },
           onPriceChanged: (value) {
             setState(() {
               _draft = _draft?.copyWith(priceCdf: value);
             });
+            final nextDraft = _draft;
+            if (nextDraft != null) {
+              unawaited(_cacheDraft(nextDraft));
+            }
           },
           onPublish: () async {
             await _handlePublishAttempt();
@@ -864,6 +963,10 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
             setState(() {
               _draft = _draft?.copyWith(title: value);
             });
+            final nextDraft = _draft;
+            if (nextDraft != null) {
+              unawaited(_cacheDraft(nextDraft));
+            }
           },
           priceValue: _draft?.priceCdf ?? '',
           syncSummary: _draft?.isSynced ?? false

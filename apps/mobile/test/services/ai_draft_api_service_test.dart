@@ -27,6 +27,7 @@ void main() {
       area: 'Lubumbashi Centre',
       description: 'Brouillon local',
       guidancePrompts: const ['Face', 'Dos', 'Écran allumé'],
+      photos: const [],
       priceCdf: '4256000',
       title: 'Annonce locale',
     );

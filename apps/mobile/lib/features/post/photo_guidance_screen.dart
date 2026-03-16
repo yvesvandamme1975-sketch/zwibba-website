@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class PhotoGuidanceScreen extends StatelessWidget {
   const PhotoGuidanceScreen({
     required this.listingTitle,
+    required this.photoCount,
     required this.onBackHome,
     required this.onContinue,
     required this.prompts,
@@ -10,6 +11,7 @@ class PhotoGuidanceScreen extends StatelessWidget {
   });
 
   final String listingTitle;
+  final int photoCount;
   final VoidCallback onBackHome;
   final VoidCallback onContinue;
   final List<String> prompts;
@@ -39,6 +41,28 @@ class PhotoGuidanceScreen extends StatelessWidget {
           'Zwibba vous indique les vues les plus utiles avant la relecture du brouillon.',
           style: theme.textTheme.bodyLarge
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: const Color(0x0FFFFFFF),
+            border: Border.all(color: const Color(0x14FFFFFF)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.photo_library_outlined,
+                  color: Color(0xFF6BE66B)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '$photoCount photo${photoCount > 1 ? 's' : ''} uploadée${photoCount > 1 ? 's' : ''} pour ce brouillon.',
+                  style: theme.textTheme.titleMedium,
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 18),
         for (final prompt in prompts) ...[

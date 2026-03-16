@@ -7,6 +7,7 @@ class ReviewFormScreen extends StatelessWidget {
     required this.descriptionValue,
     required this.isBusy,
     required this.isDraftSynced,
+    required this.photoSummary,
     required this.onAreaChanged,
     required this.onBack,
     required this.onDescriptionChanged,
@@ -24,6 +25,7 @@ class ReviewFormScreen extends StatelessWidget {
   final String descriptionValue;
   final bool isBusy;
   final bool isDraftSynced;
+  final String photoSummary;
   final ValueChanged<String?> onAreaChanged;
   final VoidCallback onBack;
   final ValueChanged<String> onDescriptionChanged;
@@ -62,6 +64,28 @@ class ReviewFormScreen extends StatelessWidget {
                   'La version Flutter reprend le flux validé dans le prototype navigateur.',
                   style: theme.textTheme.bodyLarge
                       ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: const Color(0x0FFFFFFF),
+                    border: Border.all(color: const Color(0x14FFFFFF)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.photo_outlined,
+                          color: Color(0xFF6BE66B)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          photoSummary,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 if (isDraftSynced) ...[
                   const SizedBox(height: 16),

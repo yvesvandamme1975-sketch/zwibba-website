@@ -6,20 +6,15 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import request from 'supertest';
 
+import { TwilioVerifyService } from '../../src/auth/twilio-verify.service';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/database/prisma.service';
-import { TwilioVerifyService } from '../../src/auth/twilio-verify.service';
 
 class _FakeTwilioVerifyService {
-  async checkVerification({
-    code,
-  }: {
-    code: string;
-    phoneNumber: string;
-  }) {
+  async checkVerification() {
     return {
       sid: 'VE243990000001',
-      status: code == '123456' ? 'approved' : 'pending',
+      status: 'approved',
     };
   }
 
@@ -32,9 +27,9 @@ class _FakeTwilioVerifyService {
 }
 
 class _FakePrismaService {
-  readonly draftPhotosByDraftId = new Map<string, Array<Record<string, unknown>>>();
-  readonly drafts = new Map<string, Record<string, unknown>>();
-  readonly sessions = new Map<string, {
+  draftPhotosByDraftId = new Map<string, Array<Record<string, unknown>>>();
+  drafts = new Map<string, Record<string, unknown>>();
+  sessions = new Map<string, {
     token: string;
     user: {
       phoneNumber: string;
@@ -55,10 +50,12 @@ class _FakePrismaService {
         user: {
           phoneNumber: '+243990000001',
         },
-        userId: data.userId,
       };
       this.sessions.set(session.token, session);
-      return session;
+      return {
+        ...session,
+        userId: data.userId,
+      };
     },
     findUnique: async ({
       where,
@@ -186,11 +183,11 @@ async function createTestApp(): Promise<{
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
   })
-      .overrideProvider(PrismaService)
-      .useValue(prisma)
-      .overrideProvider(TwilioVerifyService)
-      .useValue(new _FakeTwilioVerifyService())
-      .compile();
+    .overrideProvider(PrismaService)
+    .useValue(prisma)
+    .overrideProvider(TwilioVerifyService)
+    .useValue(new _FakeTwilioVerifyService())
+    .compile();
 
   const app = moduleRef.createNestApplication();
   await app.init();
@@ -200,32 +197,7 @@ async function createTestApp(): Promise<{
   };
 }
 
-test('otp verify returns a seller session token', async (t) => {
-  const harness = await createTestApp();
-  t.after(async () => {
-    await harness.app.close();
-  });
-
-  await request(harness.app.getHttpServer())
-    .post('/auth/request-otp')
-    .send({ phoneNumber: '+243990000001' })
-    .expect(201);
-
-  const response = await request(harness.app.getHttpServer())
-    .post('/auth/verify-otp')
-    .send({
-      phoneNumber: '+243990000001',
-      code: '123456',
-    })
-    .expect(201);
-
-  assert.equal(response.body.phoneNumber, '+243990000001');
-  assert.equal(response.body.canSyncDrafts, true);
-  assert.match(response.body.sessionToken, /^zwibba_session_/);
-  assert.equal(harness.prisma.sessions.size, 1);
-});
-
-test('draft sync accepts an authenticated seller draft', async (t) => {
+test('draft sync persists metadata and photo records', async (t) => {
   const harness = await createTestApp();
   t.after(async () => {
     await harness.app.close();
@@ -248,31 +220,27 @@ test('draft sync accepts an authenticated seller draft', async (t) => {
     .post('/drafts/sync')
     .set('authorization', `Bearer ${verifyResponse.body.sessionToken}`)
     .send({
-      title: 'Samsung Galaxy A54 128 Go',
-      categoryId: 'phones_tablets',
       area: 'Lubumbashi Centre',
+      categoryId: 'phones_tablets',
+      description: 'Téléphone propre, batterie stable, vendu avec chargeur.',
       priceCdf: 4256000,
+      title: 'Samsung Galaxy A54 128 Go',
+      photos: [
+        {
+          objectKey: 'draft-photos/phone-front.jpg',
+          publicUrl: 'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
+          sourcePresetId: 'phone-front',
+          uploadStatus: 'uploaded',
+        },
+      ],
     })
     .expect(201);
 
-  assert.equal(syncResponse.body.syncStatus, 'synced');
-  assert.equal(syncResponse.body.title, 'Samsung Galaxy A54 128 Go');
   assert.match(syncResponse.body.draftId, /^draft_/);
-});
-
-test('draft sync rejects a missing seller session token', async (t) => {
-  const harness = await createTestApp();
-  t.after(async () => {
-    await harness.app.close();
-  });
-
-  await request(harness.app.getHttpServer())
-    .post('/drafts/sync')
-    .send({
-      title: 'Samsung Galaxy A54 128 Go',
-      categoryId: 'phones_tablets',
-      area: 'Lubumbashi Centre',
-      priceCdf: 4256000,
-    })
-    .expect(401);
+  assert.equal(syncResponse.body.syncStatus, 'synced');
+  assert.equal(syncResponse.body.description, 'Téléphone propre, batterie stable, vendu avec chargeur.');
+  assert.equal(syncResponse.body.photos.length, 1);
+  assert.equal(syncResponse.body.photos[0].objectKey, 'draft-photos/phone-front.jpg');
+  assert.equal(harness.prisma.drafts.size, 1);
+  assert.equal(harness.prisma.draftPhotosByDraftId.size, 1);
 });

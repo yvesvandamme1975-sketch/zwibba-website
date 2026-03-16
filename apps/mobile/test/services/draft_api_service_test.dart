@@ -11,8 +11,19 @@ void main() {
         '/drafts/sync': {
           'area': 'Lubumbashi Centre',
           'categoryId': 'phones_tablets',
+          'description': 'Téléphone propre, version 128 Go.',
           'draftId': 'draft_samsung-galaxy-a54-128-go',
           'ownerPhoneNumber': '+243990000001',
+          'photos': [
+            {
+              'objectKey': 'draft-photos/phone-front.jpg',
+              'photoId': 'photo_phone_front',
+              'publicUrl':
+                  'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
+              'sourcePresetId': 'phone-front',
+              'uploadStatus': 'uploaded',
+            },
+          ],
           'priceCdf': 4256000,
           'syncStatus': 'synced',
           'title': 'Samsung Galaxy A54 128 Go',
@@ -26,6 +37,15 @@ void main() {
       condition: 'like_new',
       description: 'Téléphone propre, version 128 Go.',
       guidancePrompts: const ['Face', 'Dos', 'Écran allumé'],
+      photos: const [
+        DraftPhoto(
+          objectKey: 'draft-photos/phone-front.jpg',
+          photoId: 'photo_phone_front',
+          publicUrl: 'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
+          sourcePresetId: 'phone-front',
+          uploadStatus: 'uploaded',
+        ),
+      ],
       priceCdf: '4256000',
       title: 'Samsung Galaxy A54 128 Go',
     );
@@ -49,6 +69,7 @@ void main() {
       'Bearer zwibba_session_243990000001',
     );
     expect(apiClient.requests.single.body['priceCdf'], 4256000);
+    expect((apiClient.requests.single.body['photos'] as List).length, 1);
   });
 }
 

@@ -8,6 +8,7 @@ import { DatabaseModule } from './database/database.module';
 import { DraftsModule } from './drafts/drafts.module';
 import { HealthModule } from './health/health.module';
 import { ListingsModule } from './listings/listings.module';
+import { MediaModule } from './media/media.module';
 import { ModerationModule } from './moderation/moderation.module';
 import { WalletModule } from './wallet/wallet.module';
 
@@ -17,6 +18,7 @@ import { WalletModule } from './wallet/wallet.module';
     HealthModule,
     AuthModule,
     DraftsModule,
+    MediaModule,
     AiModule,
     ModerationModule,
     ListingsModule,

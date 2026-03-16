@@ -31,7 +31,7 @@ export class ModerationService {
 
   private readonly queueItems = new Map<string, ModerationQueueItem>();
 
-  publish({
+  async publish({
     categoryId,
     description,
     draftId,
@@ -45,8 +45,8 @@ export class ModerationService {
     ownerPhoneNumber: string;
     priceCdf: number;
     title: string;
-  }): PublishOutcome {
-    const syncedDraft = this.draftsService.getSyncedDraft(draftId);
+  }): Promise<PublishOutcome> {
+    const syncedDraft = await this.draftsService.getSyncedDraft(draftId);
     const normalizedDescription = description.trim();
 
     if (

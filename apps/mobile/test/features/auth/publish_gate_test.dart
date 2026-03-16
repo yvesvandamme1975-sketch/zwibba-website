@@ -4,7 +4,10 @@ import 'package:zwibba_mobile/app.dart';
 import 'package:zwibba_mobile/models/listing_draft.dart';
 import 'package:zwibba_mobile/services/ai_draft_api_service.dart';
 import 'package:zwibba_mobile/services/auth_api_service.dart';
+import 'package:zwibba_mobile/services/chat_api_service.dart';
 import 'package:zwibba_mobile/services/draft_api_service.dart';
+import 'package:zwibba_mobile/services/local_draft_cache_service.dart';
+import 'package:zwibba_mobile/services/media_api_service.dart';
 import 'package:zwibba_mobile/services/session_storage_service.dart';
 
 void main() {
@@ -13,7 +16,11 @@ void main() {
     await tester.pumpWidget(ZwibbaApp(
       aiDraftApiService: _FakeAiDraftApiService(),
       authApiService: _FakeAuthApiService(),
+      chatApiService: _FakeChatApiService(),
       draftApiService: _FakeDraftApiService(),
+      localDraftCacheService:
+          LocalDraftCacheService(backend: _MemoryDraftCacheBackend()),
+      mediaApiService: _FakeMediaApiService(),
     ));
 
     expect(find.text('Publiez seulement après vérification'), findsNothing);
@@ -22,9 +29,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Téléphone premium'));
     await tester.pumpAndSettle();
-    await tester
-        .tap(find.widgetWithText(FilledButton, 'Continuer vers le brouillon'));
-    await tester.pumpAndSettle();
+    await _tapPrimaryButton(tester, 'Continuer vers le brouillon');
 
     expect(find.text('Publiez seulement après vérification'), findsNothing);
 
@@ -44,7 +49,11 @@ void main() {
     await tester.pumpWidget(ZwibbaApp(
       aiDraftApiService: _FakeAiDraftApiService(),
       authApiService: authApiService,
+      chatApiService: _FakeChatApiService(),
       draftApiService: draftApiService,
+      localDraftCacheService:
+          LocalDraftCacheService(backend: _MemoryDraftCacheBackend()),
+      mediaApiService: _FakeMediaApiService(),
       sessionStorageService: SessionStorageService(
         backend: _MemorySessionStorageBackend(),
       ),
@@ -54,11 +63,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Téléphone premium'));
     await tester.pumpAndSettle();
-    await tester
-        .tap(find.widgetWithText(FilledButton, 'Continuer vers le brouillon'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, "Publier l'annonce"));
-    await tester.pumpAndSettle();
+    await _tapPrimaryButton(tester, 'Continuer vers le brouillon');
+    await _tapPrimaryButton(tester, "Publier l'annonce");
     await tester
         .tap(find.widgetWithText(FilledButton, 'Continuer avec mon numéro'));
     await tester.pumpAndSettle();
@@ -83,7 +89,11 @@ void main() {
     await tester.pumpWidget(ZwibbaApp(
       aiDraftApiService: _FakeAiDraftApiService(),
       authApiService: _FakeAuthApiService(),
+      chatApiService: _FakeChatApiService(),
       draftApiService: draftApiService,
+      localDraftCacheService:
+          LocalDraftCacheService(backend: _MemoryDraftCacheBackend()),
+      mediaApiService: _FakeMediaApiService(),
       sessionStorageService: SessionStorageService(
         backend: _MemorySessionStorageBackend(
           initialValues: {
@@ -100,11 +110,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Téléphone premium'));
     await tester.pumpAndSettle();
-    await tester
-        .tap(find.widgetWithText(FilledButton, 'Continuer vers le brouillon'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, "Publier l'annonce"));
-    await tester.pumpAndSettle();
+    await _tapPrimaryButton(tester, 'Continuer vers le brouillon');
+    await _tapPrimaryButton(tester, "Publier l'annonce");
 
     expect(find.text('Publiez seulement après vérification'), findsNothing);
     expect(draftApiService.syncCalls, 1);
@@ -112,6 +119,15 @@ void main() {
     expect(find.widgetWithText(FilledButton, 'Publier maintenant'),
         findsOneWidget);
   });
+}
+
+Future<void> _tapPrimaryButton(WidgetTester tester, String label) async {
+  final finder = find.widgetWithText(FilledButton, label);
+
+  expect(finder, findsOneWidget);
+  tester.widget<FilledButton>(finder).onPressed!.call();
+  await tester.pump();
+  await tester.pumpAndSettle();
 }
 
 class _FakeAiDraftApiService implements AiDraftApiService {
@@ -221,5 +237,86 @@ class _MemorySessionStorageBackend implements SessionStorageBackend {
     required String value,
   }) async {
     _store[key] = value;
+  }
+}
+
+class _FakeMediaApiService implements MediaApiService {
+  @override
+  Future<MediaUploadSlot> requestUploadSlot({
+    required String contentType,
+    required String fileName,
+    required String sourcePresetId,
+  }) async {
+    return MediaUploadSlot(
+      objectKey: 'draft-photos/$fileName',
+      photoId: 'photo_$sourcePresetId',
+      publicUrl: 'https://cdn.zwibba.example/draft-photos/$fileName',
+      sourcePresetId: sourcePresetId,
+      uploadUrl: Uri.parse('https://uploads.zwibba.example/$sourcePresetId'),
+    );
+  }
+
+  @override
+  Future<void> uploadBytes({
+    required List<int> bytes,
+    required String contentType,
+    required Uri uploadUrl,
+  }) async {}
+}
+
+class _MemoryDraftCacheBackend implements DraftCacheBackend {
+  final Map<String, String> _store = <String, String>{};
+
+  @override
+  Future<void> delete(String key) async {
+    _store.remove(key);
+  }
+
+  @override
+  Future<String?> read(String key) async {
+    return _store[key];
+  }
+
+  @override
+  Future<void> write({
+    required String key,
+    required String value,
+  }) async {
+    _store[key] = value;
+  }
+}
+
+class _FakeChatApiService implements ChatApiService {
+  @override
+  Future<List<ChatThreadSummary>> fetchInbox() async => const [];
+
+  @override
+  Future<ChatThread> fetchThread(String threadId) async {
+    return const ChatThread(
+      id: 'thread_1',
+      listingTitle: 'Annonce',
+      messages: [],
+      participantName: 'Buyer',
+    );
+  }
+
+  @override
+  Future<ChatThread> sendMessage({
+    required String body,
+    required String threadId,
+  }) async {
+    return ChatThread(
+      id: threadId,
+      listingTitle: 'Annonce',
+      messages: [
+        ChatMessage(
+          body: body,
+          id: 'message_1',
+          senderRole: 'seller',
+          sentAtLabel: 'Maintenant',
+        ),
+      ],
+      participantName: 'Buyer',
+    );
   }
 }

@@ -17,6 +17,15 @@ export class DraftsController {
     body: {
       area?: string;
       categoryId?: string;
+      description?: string;
+      draftId?: string;
+      photos?: Array<{
+        objectKey?: string;
+        photoId?: string;
+        publicUrl?: string;
+        sourcePresetId?: string;
+        uploadStatus?: string;
+      }>;
       priceCdf?: number;
       title?: string;
     },
@@ -24,7 +33,16 @@ export class DraftsController {
     return this.draftsService.syncDraft({
       area: body.area ?? '',
       categoryId: body.categoryId ?? '',
+      description: body.description ?? '',
+      draftId: body.draftId,
       phoneNumber: session.phoneNumber,
+      photos: (body.photos ?? []).map((photo) => ({
+        objectKey: photo.objectKey ?? '',
+        photoId: photo.photoId ?? '',
+        publicUrl: photo.publicUrl ?? '',
+        sourcePresetId: photo.sourcePresetId ?? '',
+        uploadStatus: photo.uploadStatus ?? 'pending',
+      })),
       priceCdf: body.priceCdf ?? 0,
       title: body.title ?? '',
     });

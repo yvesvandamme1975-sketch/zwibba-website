@@ -15,6 +15,37 @@ model User {
   sessions    Session[]
 }
 
+model Draft {
+  id               String      @id @default(cuid())
+  area             String
+  categoryId       String
+  condition        String      @default("")
+  createdAt        DateTime    @default(now())
+  description      String
+  ownerPhoneNumber String
+  photos           DraftPhoto[]
+  priceCdf         Int
+  syncStatus       String      @default("synced")
+  title            String
+  updatedAt        DateTime    @updatedAt
+
+  @@index([ownerPhoneNumber])
+}
+
+model DraftPhoto {
+  id             String   @id
+  createdAt      DateTime @default(now())
+  draft          Draft    @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  draftId        String
+  objectKey      String
+  publicUrl      String
+  sourcePresetId String
+  updatedAt      DateTime @updatedAt
+  uploadStatus   String
+
+  @@index([draftId])
+}
+
 model Session {
   id        String   @id @default(cuid())
   token     String   @unique
