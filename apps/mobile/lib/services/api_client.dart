@@ -3,6 +3,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 abstract class ApiClient {
+  Future<Map<String, dynamic>> getJson(
+    String path, {
+    Map<String, String>? headers,
+  });
+
   Future<Map<String, dynamic>> postJson(
     String path, {
     Map<String, String>? headers,
@@ -18,6 +23,27 @@ class HttpApiClient implements ApiClient {
 
   final String baseUrl;
   final http.Client _httpClient;
+
+  @override
+  Future<Map<String, dynamic>> getJson(
+    String path, {
+    Map<String, String>? headers,
+  }) async {
+    final response = await _httpClient.get(
+      Uri.parse('$baseUrl$path'),
+      headers: {
+        ...?headers,
+      },
+    );
+
+    if (response.statusCode >= 400) {
+      throw Exception('API request failed for $path (${response.statusCode})');
+    }
+
+    return Map<String, dynamic>.from(
+      jsonDecode(response.body) as Map,
+    );
+  }
 
   @override
   Future<Map<String, dynamic>> postJson(

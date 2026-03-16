@@ -48,6 +48,14 @@ class _FakeApiClient implements ApiClient {
   final Map<String, Map<String, dynamic>> responses;
 
   @override
+  Future<Map<String, dynamic>> getJson(
+    String path, {
+    Map<String, String>? headers,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<Map<String, dynamic>> postJson(
     String path, {
     Map<String, String>? headers,

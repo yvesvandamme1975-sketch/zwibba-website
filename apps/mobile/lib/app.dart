@@ -5,7 +5,10 @@ import 'config/theme.dart';
 import 'features/auth/otp_screen.dart';
 import 'features/auth/phone_input_screen.dart';
 import 'features/auth/welcome_screen.dart';
+import 'features/browse/browse_screen.dart';
 import 'features/home/home_screen.dart';
+import 'features/listings/contact_actions_sheet.dart';
+import 'features/listings/listing_detail_screen.dart';
 import 'features/post/camera_screen.dart';
 import 'features/post/photo_guidance_screen.dart';
 import 'features/post/publish_blocked_screen.dart';
@@ -17,6 +20,7 @@ import 'services/ai_draft_api_service.dart';
 import 'services/api_client.dart';
 import 'services/auth_api_service.dart';
 import 'services/draft_api_service.dart';
+import 'services/listings_api_service.dart';
 
 class ZwibbaApp extends StatelessWidget {
   const ZwibbaApp({
@@ -25,12 +29,14 @@ class ZwibbaApp extends StatelessWidget {
     this.apiClient,
     this.authApiService,
     this.draftApiService,
+    this.listingsApiService,
   });
 
   final AiDraftApiService? aiDraftApiService;
   final ApiClient? apiClient;
   final AuthApiService? authApiService;
   final DraftApiService? draftApiService;
+  final ListingsApiService? listingsApiService;
 
   @override
   Widget build(BuildContext context) {
@@ -39,14 +45,169 @@ class ZwibbaApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: buildZwibbaTheme(),
-      home: _SellerFlowShell(
+      home: _RootAppShell(
         aiDraftApiService: aiDraftApiService ??
             HttpAiDraftApiService(apiClient: resolvedApiClient),
         authApiService:
             authApiService ?? HttpAuthApiService(apiClient: resolvedApiClient),
         draftApiService: draftApiService ??
             HttpDraftApiService(apiClient: resolvedApiClient),
+        listingsApiService: listingsApiService ??
+            HttpListingsApiService(apiClient: resolvedApiClient),
       ),
+    );
+  }
+}
+
+enum _AppSection {
+  seller,
+  buyer,
+}
+
+class _RootAppShell extends StatefulWidget {
+  const _RootAppShell({
+    required this.aiDraftApiService,
+    required this.authApiService,
+    required this.draftApiService,
+    required this.listingsApiService,
+  });
+
+  final AiDraftApiService aiDraftApiService;
+  final AuthApiService authApiService;
+  final DraftApiService draftApiService;
+  final ListingsApiService listingsApiService;
+
+  @override
+  State<_RootAppShell> createState() => _RootAppShellState();
+}
+
+class _RootAppShellState extends State<_RootAppShell> {
+  _AppSection _section = _AppSection.seller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1A1D1B), Color(0xFF111214)],
+          ),
+        ),
+        child: SafeArea(
+          child: _section == _AppSection.seller
+              ? _SellerFlowShell(
+                  aiDraftApiService: widget.aiDraftApiService,
+                  authApiService: widget.authApiService,
+                  draftApiService: widget.draftApiService,
+                )
+              : _BuyerFlowShell(
+                  listingsApiService: widget.listingsApiService,
+                ),
+        ),
+      ),
+      bottomNavigationBar: NavigationBar(
+        backgroundColor: const Color(0xFF17191A),
+        indicatorColor: const Color(0x336BE66B),
+        selectedIndex: _section.index,
+        onDestinationSelected: (index) {
+          setState(() {
+            _section = _AppSection.values[index];
+          });
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.add_a_photo_outlined),
+            selectedIcon: Icon(Icons.add_a_photo),
+            label: 'Vendre',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.storefront_outlined),
+            selectedIcon: Icon(Icons.storefront),
+            label: 'Acheter',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BuyerFlowShell extends StatefulWidget {
+  const _BuyerFlowShell({
+    required this.listingsApiService,
+  });
+
+  final ListingsApiService listingsApiService;
+
+  @override
+  State<_BuyerFlowShell> createState() => _BuyerFlowShellState();
+}
+
+class _BuyerFlowShellState extends State<_BuyerFlowShell> {
+  List<ListingSummary> _listings = const [];
+  ListingDetail? _selectedDetail;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadListings();
+  }
+
+  Future<void> _loadListings() async {
+    final listings = await widget.listingsApiService.fetchBrowseListings();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = false;
+      _listings = listings;
+    });
+  }
+
+  Future<void> _openListing(ListingSummary listing) async {
+    final detail = await widget.listingsApiService.fetchListingDetail(
+      listing.slug,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _selectedDetail = detail;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_selectedDetail != null) {
+      return ListingDetailScreen(
+        detail: _selectedDetail!,
+        onBack: () {
+          setState(() {
+            _selectedDetail = null;
+          });
+        },
+        onContact: () {
+          showModalBottomSheet<void>(
+            context: context,
+            backgroundColor: const Color(0xFF17191A),
+            builder: (context) => ContactActionsSheet(
+              actions: _selectedDetail!.contactActions,
+            ),
+          );
+        },
+      );
+    }
+
+    return BrowseScreen(
+      isLoading: _isLoading,
+      listings: _listings,
+      onOpenListing: _openListing,
     );
   }
 }
@@ -466,26 +627,13 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1A1D1B), Color(0xFF111214)],
-          ),
-        ),
-        child: SafeArea(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            child: KeyedSubtree(
-              key: ValueKey<_SellerStep>(_step),
-              child: _buildCurrentScreen(),
-            ),
-          ),
-        ),
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      child: KeyedSubtree(
+        key: ValueKey<_SellerStep>(_step),
+        child: _buildCurrentScreen(),
       ),
     );
   }
