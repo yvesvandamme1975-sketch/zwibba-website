@@ -4,13 +4,17 @@ import { AiModule } from './ai/ai.module';
 import { AuthModule } from './auth/auth.module';
 import { BoostModule } from './boost/boost.module';
 import { ChatModule } from './chat/chat.module';
+import { DatabaseModule } from './database/database.module';
 import { DraftsModule } from './drafts/drafts.module';
+import { HealthModule } from './health/health.module';
 import { ListingsModule } from './listings/listings.module';
 import { ModerationModule } from './moderation/moderation.module';
 import { WalletModule } from './wallet/wallet.module';
 
 @Module({
   imports: [
+    DatabaseModule,
+    HealthModule,
     AuthModule,
     DraftsModule,
     AiModule,
