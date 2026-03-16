@@ -84,6 +84,20 @@ class _FakeAuthApiService implements AuthApiService {
 
 class _FakeDraftApiService implements DraftApiService {
   @override
+  Future<PublishOutcome> publishDraft({
+    required ListingDraft draft,
+    required SellerSession session,
+  }) async {
+    return const PublishOutcome(
+      id: 'draft_samsung-galaxy-a54-128-go',
+      reasonSummary: 'Annonce approuvée et prête à partager.',
+      shareUrl: 'https://zwibba.com/annonces/draft_samsung-galaxy-a54-128-go',
+      status: 'approved',
+      statusLabel: 'Annonce approuvée et prête à partager',
+    );
+  }
+
+  @override
   Future<ListingDraft> syncDraft({
     required ListingDraft draft,
     required SellerSession session,

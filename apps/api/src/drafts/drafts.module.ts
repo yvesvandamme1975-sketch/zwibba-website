@@ -7,6 +7,7 @@ import { DraftsService } from './drafts.service';
 @Module({
   controllers: [DraftsController],
   imports: [AuthModule],
+  exports: [DraftsService],
   providers: [DraftsService],
 })
 export class DraftsModule {}

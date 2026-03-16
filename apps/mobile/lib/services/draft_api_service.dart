@@ -2,8 +2,29 @@ import '../models/listing_draft.dart';
 import 'api_client.dart';
 import 'auth_api_service.dart';
 
+class PublishOutcome {
+  const PublishOutcome({
+    required this.id,
+    required this.reasonSummary,
+    required this.shareUrl,
+    required this.status,
+    required this.statusLabel,
+  });
+
+  final String id;
+  final String reasonSummary;
+  final String shareUrl;
+  final String status;
+  final String statusLabel;
+}
+
 abstract class DraftApiService {
   Future<ListingDraft> syncDraft({
+    required ListingDraft draft,
+    required SellerSession session,
+  });
+
+  Future<PublishOutcome> publishDraft({
     required ListingDraft draft,
     required SellerSession session,
   });
@@ -42,6 +63,35 @@ class HttpDraftApiService implements DraftApiService {
       syncedDraftId: json['draftId'] as String,
       syncStatus: json['syncStatus'] as String,
       title: json['title'] as String,
+    );
+  }
+
+  @override
+  Future<PublishOutcome> publishDraft({
+    required ListingDraft draft,
+    required SellerSession session,
+  }) async {
+    final json = await _apiClient.postJson(
+      '/moderation/publish',
+      headers: {
+        'authorization': 'Bearer ${session.sessionToken}',
+      },
+      body: {
+        'categoryId': draft.categoryId,
+        'description': draft.description,
+        'draftId': draft.syncedDraftId,
+        'ownerPhoneNumber': draft.ownerPhoneNumber ?? session.phoneNumber,
+        'priceCdf': draft.priceCdfValue,
+        'title': draft.title,
+      },
+    );
+
+    return PublishOutcome(
+      id: json['id'] as String,
+      reasonSummary: json['reasonSummary'] as String,
+      shareUrl: json['shareUrl'] as String,
+      status: json['status'] as String,
+      statusLabel: json['statusLabel'] as String,
     );
   }
 }

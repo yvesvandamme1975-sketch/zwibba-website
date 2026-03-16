@@ -8,6 +8,9 @@ import 'features/auth/welcome_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/post/camera_screen.dart';
 import 'features/post/photo_guidance_screen.dart';
+import 'features/post/publish_blocked_screen.dart';
+import 'features/post/publish_pending_screen.dart';
+import 'features/post/publish_success_screen.dart';
 import 'features/post/review_form_screen.dart';
 import 'models/listing_draft.dart';
 import 'services/ai_draft_api_service.dart';
@@ -55,6 +58,9 @@ enum _SellerStep {
   home,
   otpInput,
   phoneInput,
+  publishBlocked,
+  publishPending,
+  publishSuccess,
   review,
 }
 
@@ -123,11 +129,13 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
   bool _isBusy = false;
   String _otpCode = '123456';
   String _phoneNumber = '+243990000001';
+  PublishOutcome? _publishOutcome;
   SellerSession? _session;
   _SellerStep _step = _SellerStep.home;
 
   void _goHome() {
     setState(() {
+      _publishOutcome = null;
       _step = _SellerStep.home;
     });
   }
@@ -150,6 +158,7 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
     setState(() {
       _draft = localDraft;
       _isBusy = true;
+      _publishOutcome = null;
       _session = null;
     });
 
@@ -166,6 +175,7 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
       setState(() {
         _draft = preparedDraft;
         _isBusy = false;
+        _publishOutcome = null;
         _step = _SellerStep.guidance;
       });
     } catch (_) {
@@ -176,6 +186,7 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
       setState(() {
         _draft = localDraft;
         _isBusy = false;
+        _publishOutcome = null;
         _step = _SellerStep.guidance;
       });
     }
@@ -239,6 +250,7 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
       setState(() {
         _draft = syncedDraft;
         _isBusy = false;
+        _publishOutcome = null;
         _session = session;
         _step = _SellerStep.review;
       });
@@ -253,14 +265,57 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
     }
   }
 
-  void _handlePublishAttempt() {
+  Future<void> _handlePublishAttempt() async {
     if (_draft?.isSynced ?? false) {
+      await _handlePublishNow();
       return;
     }
 
     setState(() {
       _step = _SellerStep.authWelcome;
     });
+  }
+
+  Future<void> _handlePublishNow() async {
+    final draft = _draft;
+    final session = _session;
+
+    if (draft == null || session == null) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+    });
+
+    try {
+      final publishOutcome = await widget.draftApiService.publishDraft(
+        draft: draft,
+        session: session,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isBusy = false;
+        _publishOutcome = publishOutcome;
+        _step = switch (publishOutcome.status) {
+          'approved' => _SellerStep.publishSuccess,
+          'pending_manual_review' => _SellerStep.publishPending,
+          _ => _SellerStep.publishBlocked,
+        };
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isBusy = false;
+      });
+    }
   }
 
   Widget _buildCurrentScreen() {
@@ -288,6 +343,7 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
           areaOptions: _areaOptions,
           areaValue: _draft?.area ?? '',
           descriptionValue: _draft?.description ?? '',
+          isBusy: _isBusy,
           isDraftSynced: _draft?.isSynced ?? false,
           onAreaChanged: (value) {
             setState(() {
@@ -310,7 +366,7 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
             });
           },
           onPublish: () async {
-            _handlePublishAttempt();
+            await _handlePublishAttempt();
           },
           onTitleChanged: (value) {
             setState(() {
@@ -322,6 +378,36 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
               ? 'Brouillon synchronisé pour ${_draft?.ownerPhoneNumber ?? _session?.phoneNumber ?? _phoneNumber}.'
               : null,
           titleValue: _draft?.title ?? '',
+        );
+      case _SellerStep.publishSuccess:
+        return PublishSuccessScreen(
+          listingTitle: _draft?.title ?? 'Annonce Zwibba',
+          onBackHome: _goHome,
+          onViewListing: _goHome,
+          reasonSummary: _publishOutcome?.reasonSummary ??
+              'Annonce approuvée et prête à partager.',
+          statusLabel: _publishOutcome?.statusLabel ??
+              'Annonce approuvée et prête à partager',
+        );
+      case _SellerStep.publishPending:
+        return PublishPendingScreen(
+          onBackHome: _goHome,
+          reasonSummary: _publishOutcome?.reasonSummary ??
+              'Votre annonce passe en revue manuelle.',
+          statusLabel: _publishOutcome?.statusLabel ??
+              'Annonce envoyée en revue manuelle',
+        );
+      case _SellerStep.publishBlocked:
+        return PublishBlockedScreen(
+          onEditDraft: () {
+            setState(() {
+              _step = _SellerStep.review;
+            });
+          },
+          reasonSummary: _publishOutcome?.reasonSummary ??
+              'Complétez les informations manquantes avant de republier.',
+          statusLabel: _publishOutcome?.statusLabel ??
+              'Annonce bloquée: informations à corriger',
         );
       case _SellerStep.authWelcome:
         return AuthWelcomeScreen(

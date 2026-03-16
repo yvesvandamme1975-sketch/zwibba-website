@@ -26,7 +26,7 @@ function formatStatus(status: ModerationStatus) {
 
 function renderQueueItem(item: ModerationQueueItem) {
   return `
-    <li data-moderation-item="${escapeHtml(item.id)}">
+    <li data-moderation-item="${escapeHtml(item.id)}" data-status="${escapeHtml(item.status)}">
       <strong>${escapeHtml(item.listingTitle)}</strong>
       <span>Seller: ${escapeHtml(item.sellerPhoneNumber)}</span>
       <span>Status: ${escapeHtml(formatStatus(item.status))}</span>
@@ -40,6 +40,11 @@ export function renderModerationPage({
 }: {
   items: ModerationQueueItem[];
 }) {
+  const queueMarkup =
+    items.length === 0
+      ? '<li>Aucune annonce en revue pour le moment.</li>'
+      : items.map(renderQueueItem).join('');
+
   return `
     <section>
       <header>
@@ -47,7 +52,7 @@ export function renderModerationPage({
         <h1>Pending moderation queue</h1>
       </header>
       <ul>
-        ${items.map(renderQueueItem).join('')}
+        ${queueMarkup}
       </ul>
     </section>
   `;

@@ -68,8 +68,8 @@ void main() {
     expect(authApiService.verifyOtpCalls, 1);
     expect(draftApiService.syncCalls, 1);
     expect(find.text('Brouillon synchronisé'), findsOneWidget);
-    expect(find.text('La publication réelle sera branchée avec l’API.'),
-        findsNothing);
+    expect(find.widgetWithText(FilledButton, 'Publier maintenant'),
+        findsOneWidget);
   });
 }
 
@@ -122,6 +122,7 @@ class _FakeAuthApiService implements AuthApiService {
 }
 
 class _FakeDraftApiService implements DraftApiService {
+  int publishCalls = 0;
   int syncCalls = 0;
 
   @override
@@ -135,6 +136,22 @@ class _FakeDraftApiService implements DraftApiService {
       ownerPhoneNumber: session.phoneNumber,
       syncedDraftId: 'draft_samsung-galaxy-a54-128-go',
       syncStatus: 'synced',
+    );
+  }
+
+  @override
+  Future<PublishOutcome> publishDraft({
+    required ListingDraft draft,
+    required SellerSession session,
+  }) async {
+    publishCalls += 1;
+
+    return const PublishOutcome(
+      id: 'draft_samsung-galaxy-a54-128-go',
+      reasonSummary: 'Annonce approuvée et prête à partager.',
+      shareUrl: 'https://zwibba.com/annonces/draft_samsung-galaxy-a54-128-go',
+      status: 'approved',
+      statusLabel: 'Annonce approuvée et prête à partager',
     );
   }
 }
