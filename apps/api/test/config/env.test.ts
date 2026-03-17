@@ -26,3 +26,16 @@ test('loadEnv returns the validated production env contract', () => {
   assert.equal(env.r2.bucket, 'zwibba-media');
   assert.equal(env.twilio.verifyServiceSid, 'VA123456789');
 });
+
+test('loadEnv rejects missing Twilio and R2 secrets in production', () => {
+  assert.throws(
+    () =>
+      loadEnv({
+        APP_BASE_URL: 'https://zwibba.example',
+        DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
+        NODE_ENV: 'production',
+        PORT: '3200',
+      }),
+    /Missing required env value: R2_ACCESS_KEY_ID/,
+  );
+});

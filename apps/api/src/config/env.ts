@@ -37,7 +37,8 @@ const defaultEnvValues = {
 } as const;
 
 function readRequiredString(source: EnvSource, key: keyof typeof defaultEnvValues) {
-  const value = source[key] ?? defaultEnvValues[key];
+  const isProduction = source.NODE_ENV?.trim() === 'production';
+  const value = isProduction ? source[key] : (source[key] ?? defaultEnvValues[key]);
 
   if (!value || value.trim().length === 0) {
     throw new Error(`Missing required env value: ${key}`);
@@ -47,7 +48,8 @@ function readRequiredString(source: EnvSource, key: keyof typeof defaultEnvValue
 }
 
 function readPort(source: EnvSource) {
-  const rawValue = source.PORT ?? defaultEnvValues.PORT;
+  const isProduction = source.NODE_ENV?.trim() === 'production';
+  const rawValue = isProduction ? source.PORT : (source.PORT ?? defaultEnvValues.PORT);
   const parsedValue = Number(rawValue);
 
   if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
