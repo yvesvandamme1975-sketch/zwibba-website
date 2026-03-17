@@ -48,6 +48,10 @@ execFileSync(npmCommand, ['run', 'smoke:website'], {
   cwd: repoRoot,
   stdio: 'inherit',
 });
+execFileSync(npmCommand, ['run', 'smoke:production-contracts'], {
+  cwd: repoRoot,
+  stdio: 'inherit',
+});
 execFileSync(npmCommand, ['run', 'smoke:workspaces'], {
   cwd: repoRoot,
   stdio: 'inherit',

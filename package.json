@@ -10,6 +10,7 @@
     "smoke:admin-tests": "pnpm -C apps/admin test",
     "smoke:mobile-tests": "sh -lc \"cd apps/mobile && flutter test\"",
     "smoke:monorepo": "node scripts/smoke-monorepo.mjs",
+    "smoke:production-contracts": "node scripts/smoke-production-contracts.mjs",
     "smoke:website": "node scripts/build.mjs && test -f dist/index.html && test -f dist/App/index.html && test -f dist/assets/app/app.js",
     "smoke:workspaces": "test -f apps/mobile/pubspec.yaml && test -f apps/api/package.json && test -f apps/admin/package.json",
     "dev:api": "sh scripts/dev-api.sh",

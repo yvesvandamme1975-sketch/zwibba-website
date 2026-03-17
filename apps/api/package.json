@@ -3,10 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "pnpm prisma:generate && tsc -p tsconfig.build.json",
     "dev": "tsx watch src/main.ts",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:generate": "prisma generate",
-    "start": "tsx src/main.ts",
+    "start": "node --enable-source-maps --experimental-specifier-resolution=node dist/main.js",
     "test": "node ./scripts/run-tests.mjs"
   },
   "dependencies": {

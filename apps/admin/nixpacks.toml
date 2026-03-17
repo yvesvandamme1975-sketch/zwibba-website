@@ -1,0 +1,19 @@
+[variables]
+NODE_ENV = "production"
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "pnpm"]
+
+[phases.install]
+cmds = [
+  "corepack enable",
+  "pnpm install --dir ../.. --frozen-lockfile"
+]
+
+[phases.build]
+cmds = [
+  "pnpm --dir ../.. --filter @zwibba/admin build"
+]
+
+[start]
+cmd = "pnpm --dir ../.. --filter @zwibba/admin start"
