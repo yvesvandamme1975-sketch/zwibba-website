@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 import { loadEnv } from '../config/env';
 
@@ -18,13 +22,29 @@ export class TwilioVerifyService {
     code: string;
     phoneNumber: string;
   }): Promise<TwilioVerificationResponse> {
+    if (this.env.otp.provider === 'demo') {
+      if (!this.env.otp.demoAllowlist.includes(phoneNumber)) {
+        throw new ForbiddenException('Numéro non autorisé pour le mode demo.');
+      }
+
+      return {
+        sid: `DEMO${phoneNumber.replaceAll('+', '')}`,
+        status: code === this.env.otp.demoCode ? 'approved' : 'pending',
+      };
+    }
+
     const body = new URLSearchParams({
       Code: code,
       To: phoneNumber,
     });
+    const twilio = this.env.twilio;
+
+    if (!twilio) {
+      throw new UnauthorizedException('Twilio Verify n’est pas configuré.');
+    }
 
     const response = await fetch(
-      `https://verify.twilio.com/v2/Services/${this.env.twilio.verifyServiceSid}/VerificationCheck`,
+      `https://verify.twilio.com/v2/Services/${twilio.verifyServiceSid}/VerificationCheck`,
       {
         method: 'POST',
         headers: {
@@ -53,13 +73,29 @@ export class TwilioVerifyService {
   async requestVerification(
     phoneNumber: string,
   ): Promise<TwilioVerificationResponse> {
+    if (this.env.otp.provider === 'demo') {
+      if (!this.env.otp.demoAllowlist.includes(phoneNumber)) {
+        throw new ForbiddenException('Numéro non autorisé pour le mode demo.');
+      }
+
+      return {
+        sid: `DEMO${phoneNumber.replaceAll('+', '')}`,
+        status: 'pending',
+      };
+    }
+
     const body = new URLSearchParams({
       Channel: 'sms',
       To: phoneNumber,
     });
+    const twilio = this.env.twilio;
+
+    if (!twilio) {
+      throw new UnauthorizedException('Twilio Verify n’est pas configuré.');
+    }
 
     const response = await fetch(
-      `https://verify.twilio.com/v2/Services/${this.env.twilio.verifyServiceSid}/Verifications`,
+      `https://verify.twilio.com/v2/Services/${twilio.verifyServiceSid}/Verifications`,
       {
         method: 'POST',
         headers: {
@@ -86,8 +122,14 @@ export class TwilioVerifyService {
   }
 
   private buildAuthorizationHeader() {
+    const twilio = this.env.twilio;
+
+    if (!twilio) {
+      throw new UnauthorizedException('Twilio Verify n’est pas configuré.');
+    }
+
     const credentials = Buffer.from(
-      `${this.env.twilio.accountSid}:${this.env.twilio.authToken}`,
+      `${twilio.accountSid}:${twilio.authToken}`,
     ).toString('base64');
 
     return `Basic ${credentials}`;

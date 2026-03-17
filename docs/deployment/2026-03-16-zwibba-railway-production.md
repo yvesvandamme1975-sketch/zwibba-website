@@ -44,9 +44,12 @@ NODE_ENV=production
 PORT=8080
 DATABASE_URL=postgresql://...
 APP_BASE_URL=https://zwibba-api.up.railway.app
+OTP_PROVIDER=twilio
 TWILIO_ACCOUNT_SID=AC...
 TWILIO_AUTH_TOKEN=...
 TWILIO_VERIFY_SERVICE_SID=VA...
+DEMO_OTP_CODE=123456
+DEMO_OTP_ALLOWLIST=+243990000001
 R2_ACCOUNT_ID=...
 R2_ACCESS_KEY_ID=...
 R2_SECRET_ACCESS_KEY=...
@@ -59,6 +62,8 @@ Notes:
 
 - `DATABASE_URL` should come from the Railway Postgres service.
 - `APP_BASE_URL` should be the public API URL for the deployed Railway service until a separate app domain is introduced.
+- `OTP_PROVIDER=twilio` is the default production path once Twilio Verify is ready.
+- `OTP_PROVIDER=demo` is the temporary beta path. In that mode, `DEMO_OTP_CODE` and `DEMO_OTP_ALLOWLIST` are required, and Twilio vars are not used.
 - The API health check endpoint is `GET /healthz`.
 
 ## 3. Create the admin service
@@ -107,6 +112,16 @@ The API already issues presigned upload URLs, so the mobile client can upload me
 3. Copy `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN` into Railway.
 4. Confirm Verify deliverability and geo permissions for the Democratic Republic of the Congo before the first live OTP test.
 
+## 5b. Temporary demo OTP mode
+
+Use this only for a controlled beta while Twilio is not ready.
+
+1. Set `OTP_PROVIDER=demo` on the API service.
+2. Set `DEMO_OTP_CODE` to a temporary code such as `123456`.
+3. Set `DEMO_OTP_ALLOWLIST` to a comma-separated list of approved numbers.
+4. Keep the allowlist narrow because anyone with the code and an allowed number can obtain a session.
+5. Switch back to `OTP_PROVIDER=twilio` before public launch.
+
 ## 6. Run the first deployment
 
 Before the first Railway rollout, run the local contract checks:
@@ -140,7 +155,7 @@ curl \
 
 3. Confirm the admin service can reach `ZWIBBA_API_BASE_URL`.
 4. Confirm the API can read `DATABASE_URL` and start without env validation errors.
-5. Confirm the API can issue a Twilio Verify OTP challenge in test mode.
+5. Confirm the API can issue an OTP challenge through the configured provider.
 6. Confirm the API can return an R2 presigned upload URL.
 
 ## 7. First production smoke checklist
@@ -148,7 +163,7 @@ curl \
 - `GET /healthz` returns `status: ok` and `database: up`
 - the admin service returns `401` without `x-zwibba-admin-secret`
 - the admin service returns HTML for `/moderation` with the correct secret
-- the seller flow can request OTP through Twilio Verify
+- the seller flow can request OTP through the configured provider
 - the seller flow can create a draft with R2-backed photo metadata
 - a synced draft can publish into a persisted listing and moderation decision
 
@@ -157,4 +172,5 @@ curl \
 - Never store Twilio or R2 secrets in Flutter or the browser prototype.
 - Keep `ZWIBBA_ADMIN_SHARED_SECRET` unique to production and rotate it if exposed.
 - Keep Railway Postgres credentials only in Railway service variables.
+- Treat demo OTP as temporary and restrict it with a narrow allowlist.
 - Keep Twilio Verify geo permissions and sender readiness checked before live rollout.

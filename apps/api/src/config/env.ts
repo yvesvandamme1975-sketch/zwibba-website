@@ -1,9 +1,15 @@
 type EnvSource = NodeJS.ProcessEnv | Record<string, string | undefined>;
+type OtpProvider = 'demo' | 'twilio';
 
 export type ZwibbaEnv = {
   appBaseUrl: string;
   databaseUrl: string;
   nodeEnv: string;
+  otp: {
+    demoAllowlist: string[];
+    demoCode?: string;
+    provider: OtpProvider;
+  };
   port: number;
   r2: {
     accessKeyId: string;
@@ -13,7 +19,7 @@ export type ZwibbaEnv = {
     s3Endpoint: string;
     secretAccessKey: string;
   };
-  twilio: {
+  twilio?: {
     accountSid: string;
     authToken: string;
     verifyServiceSid: string;
@@ -23,7 +29,10 @@ export type ZwibbaEnv = {
 const defaultEnvValues = {
   APP_BASE_URL: 'http://127.0.0.1:3003',
   DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
+  DEMO_OTP_ALLOWLIST: '+243990000001',
+  DEMO_OTP_CODE: '123456',
   NODE_ENV: 'development',
+  OTP_PROVIDER: 'twilio',
   PORT: '3200',
   R2_ACCESS_KEY_ID: 'r2-access-key',
   R2_ACCOUNT_ID: 'r2-account-id',
@@ -36,8 +45,12 @@ const defaultEnvValues = {
   TWILIO_VERIFY_SERVICE_SID: 'VA00000000000000000000000000000000',
 } as const;
 
+function isProductionEnv(source: EnvSource) {
+  return (source.NODE_ENV ?? defaultEnvValues.NODE_ENV).trim() === 'production';
+}
+
 function readRequiredString(source: EnvSource, key: keyof typeof defaultEnvValues) {
-  const isProduction = source.NODE_ENV?.trim() === 'production';
+  const isProduction = isProductionEnv(source);
   const value = isProduction ? source[key] : (source[key] ?? defaultEnvValues[key]);
 
   if (!value || value.trim().length === 0) {
@@ -47,8 +60,19 @@ function readRequiredString(source: EnvSource, key: keyof typeof defaultEnvValue
   return value.trim();
 }
 
+function readOptionalString(source: EnvSource, key: keyof typeof defaultEnvValues) {
+  const isProduction = isProductionEnv(source);
+  const value = isProduction ? source[key] : (source[key] ?? defaultEnvValues[key]);
+
+  if (!value || value.trim().length === 0) {
+    return undefined;
+  }
+
+  return value.trim();
+}
+
 function readPort(source: EnvSource) {
-  const isProduction = source.NODE_ENV?.trim() === 'production';
+  const isProduction = isProductionEnv(source);
   const rawValue = isProduction ? source.PORT : (source.PORT ?? defaultEnvValues.PORT);
   const parsedValue = Number(rawValue);
 
@@ -59,11 +83,38 @@ function readPort(source: EnvSource) {
   return parsedValue;
 }
 
+function readOtpProvider(source: EnvSource): OtpProvider {
+  const isProduction = isProductionEnv(source);
+  const rawValue = isProduction
+    ? source.OTP_PROVIDER
+    : (source.OTP_PROVIDER ?? defaultEnvValues.OTP_PROVIDER);
+
+  if (rawValue === 'demo' || rawValue === 'twilio') {
+    return rawValue;
+  }
+
+  throw new Error('OTP_PROVIDER must be either "demo" or "twilio".');
+}
+
 export function loadEnv(source: EnvSource = process.env): ZwibbaEnv {
+  const otpProvider = readOtpProvider(source);
+
   return {
     appBaseUrl: readRequiredString(source, 'APP_BASE_URL'),
     databaseUrl: readRequiredString(source, 'DATABASE_URL'),
     nodeEnv: readRequiredString(source, 'NODE_ENV'),
+    otp: {
+      demoAllowlist: otpProvider === 'demo'
+        ? readRequiredString(source, 'DEMO_OTP_ALLOWLIST')
+          .split(',')
+          .map((value) => value.trim())
+          .filter((value) => value.length > 0)
+        : [],
+      demoCode: otpProvider === 'demo'
+        ? readRequiredString(source, 'DEMO_OTP_CODE')
+        : readOptionalString(source, 'DEMO_OTP_CODE'),
+      provider: otpProvider,
+    },
     port: readPort(source),
     r2: {
       accessKeyId: readRequiredString(source, 'R2_ACCESS_KEY_ID'),
@@ -73,10 +124,12 @@ export function loadEnv(source: EnvSource = process.env): ZwibbaEnv {
       s3Endpoint: readRequiredString(source, 'R2_S3_ENDPOINT'),
       secretAccessKey: readRequiredString(source, 'R2_SECRET_ACCESS_KEY'),
     },
-    twilio: {
-      accountSid: readRequiredString(source, 'TWILIO_ACCOUNT_SID'),
-      authToken: readRequiredString(source, 'TWILIO_AUTH_TOKEN'),
-      verifyServiceSid: readRequiredString(source, 'TWILIO_VERIFY_SERVICE_SID'),
-    },
+    twilio: otpProvider === 'twilio'
+      ? {
+          accountSid: readRequiredString(source, 'TWILIO_ACCOUNT_SID'),
+          authToken: readRequiredString(source, 'TWILIO_AUTH_TOKEN'),
+          verifyServiceSid: readRequiredString(source, 'TWILIO_VERIFY_SERVICE_SID'),
+        }
+      : undefined,
   };
 }
