@@ -289,10 +289,16 @@ class _MemoryDraftCacheBackend implements DraftCacheBackend {
 
 class _FakeChatApiService implements ChatApiService {
   @override
-  Future<List<ChatThreadSummary>> fetchInbox() async => const [];
+  Future<List<ChatThreadSummary>> fetchInbox({
+    required SellerSession session,
+  }) async =>
+      const [];
 
   @override
-  Future<ChatThread> fetchThread(String threadId) async {
+  Future<ChatThread> fetchThread(
+    String threadId, {
+    required SellerSession session,
+  }) async {
     return const ChatThread(
       id: 'thread_1',
       listingTitle: 'Annonce',
@@ -304,6 +310,7 @@ class _FakeChatApiService implements ChatApiService {
   @override
   Future<ChatThread> sendMessage({
     required String body,
+    required SellerSession session,
     required String threadId,
   }) async {
     return ChatThread(

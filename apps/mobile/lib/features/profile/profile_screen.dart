@@ -37,6 +37,11 @@ class ProfileScreen extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         _ProfileCard(
+          title: 'Jeton de session',
+          body: session?.sessionToken ?? 'Aucun jeton actif pour le moment.',
+        ),
+        const SizedBox(height: 18),
+        _ProfileCard(
           title: 'Mes annonces publiées',
           body: '2 annonces actives, 1 en revue manuelle.',
         ),

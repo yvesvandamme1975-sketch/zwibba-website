@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zwibba_mobile/app.dart';
+import 'package:zwibba_mobile/services/auth_api_service.dart';
 import 'package:zwibba_mobile/services/chat_api_service.dart';
 import 'package:zwibba_mobile/services/listings_api_service.dart';
 import 'package:zwibba_mobile/services/session_storage_service.dart';
@@ -29,24 +30,31 @@ void main() {
     expect(find.text('Mon profil'), findsOneWidget);
     expect(find.text('+243990000111'), findsOneWidget);
     expect(find.text('Session vérifiée'), findsOneWidget);
+    expect(find.textContaining('Jeton de session'), findsOneWidget);
     expect(find.text('Mes annonces publiées'), findsOneWidget);
   });
 }
 
 class _FakeChatApiService implements ChatApiService {
   @override
-  Future<ChatThread> fetchThread(String threadId) async {
+  Future<ChatThread> fetchThread(
+    String threadId, {
+    required SellerSession session,
+  }) async {
     throw UnimplementedError();
   }
 
   @override
-  Future<List<ChatThreadSummary>> fetchInbox() async {
+  Future<List<ChatThreadSummary>> fetchInbox({
+    required SellerSession session,
+  }) async {
     return const [];
   }
 
   @override
   Future<ChatThread> sendMessage({
     required String body,
+    required SellerSession session,
     required String threadId,
   }) async {
     throw UnimplementedError();

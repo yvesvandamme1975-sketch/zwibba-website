@@ -201,9 +201,11 @@ class _RootAppShellState extends State<_RootAppShell> {
                 requestedListingSlug: _requestedBuyerListingSlug,
               ),
             _AppSection.messages => _MessagesFlowShell(
+                activeSession: _activeSession,
                 chatApiService: widget.chatApiService,
               ),
             _AppSection.wallet => _WalletFlowShell(
+                activeSession: _activeSession,
                 walletApiService: widget.walletApiService,
               ),
             _AppSection.profile => ProfileScreen(
@@ -255,9 +257,11 @@ class _RootAppShellState extends State<_RootAppShell> {
 
 class _MessagesFlowShell extends StatefulWidget {
   const _MessagesFlowShell({
+    required this.activeSession,
     required this.chatApiService,
   });
 
+  final SellerSession? activeSession;
   final ChatApiService chatApiService;
 
   @override
@@ -274,11 +278,52 @@ class _MessagesFlowShellState extends State<_MessagesFlowShell> {
   @override
   void initState() {
     super.initState();
-    _loadInbox();
+    if (widget.activeSession != null) {
+      _loadInbox();
+      return;
+    }
+
+    _isLoading = false;
+  }
+
+  @override
+  void didUpdateWidget(covariant _MessagesFlowShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final previousToken = oldWidget.activeSession?.sessionToken;
+    final nextToken = widget.activeSession?.sessionToken;
+
+    if (previousToken == nextToken) {
+      return;
+    }
+
+    _selectedThread = null;
+    _draftMessage = '';
+
+    if (widget.activeSession == null) {
+      setState(() {
+        _isLoading = false;
+        _isSending = false;
+        _threads = const [];
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _threads = const [];
+    });
+    unawaited(_loadInbox());
   }
 
   Future<void> _loadInbox() async {
-    final threads = await widget.chatApiService.fetchInbox();
+    final session = widget.activeSession;
+
+    if (session == null) {
+      return;
+    }
+
+    final threads = await widget.chatApiService.fetchInbox(session: session);
 
     if (!mounted) {
       return;
@@ -291,7 +336,16 @@ class _MessagesFlowShellState extends State<_MessagesFlowShell> {
   }
 
   Future<void> _openThread(ChatThreadSummary thread) async {
-    final detail = await widget.chatApiService.fetchThread(thread.id);
+    final session = widget.activeSession;
+
+    if (session == null) {
+      return;
+    }
+
+    final detail = await widget.chatApiService.fetchThread(
+      thread.id,
+      session: session,
+    );
 
     if (!mounted) {
       return;
@@ -304,10 +358,11 @@ class _MessagesFlowShellState extends State<_MessagesFlowShell> {
   }
 
   Future<void> _sendMessage() async {
+    final session = widget.activeSession;
     final selectedThread = _selectedThread;
     final messageBody = _draftMessage.trim();
 
-    if (selectedThread == null || messageBody.isEmpty) {
+    if (session == null || selectedThread == null || messageBody.isEmpty) {
       return;
     }
 
@@ -317,6 +372,7 @@ class _MessagesFlowShellState extends State<_MessagesFlowShell> {
 
     final updatedThread = await widget.chatApiService.sendMessage(
       body: messageBody,
+      session: session,
       threadId: selectedThread.id,
     );
 
@@ -347,6 +403,14 @@ class _MessagesFlowShellState extends State<_MessagesFlowShell> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.activeSession == null) {
+      return const _SessionRequiredView(
+        body:
+            'Vérifiez votre numéro pour retrouver vos conversations.',
+        title: 'Messages sécurisés',
+      );
+    }
+
     if (_selectedThread != null) {
       return ThreadScreen(
         draftMessage: _draftMessage,
@@ -483,9 +547,11 @@ class _BuyerFlowShellState extends State<_BuyerFlowShell> {
 
 class _WalletFlowShell extends StatefulWidget {
   const _WalletFlowShell({
+    required this.activeSession,
     required this.walletApiService,
   });
 
+  final SellerSession? activeSession;
   final WalletApiService walletApiService;
 
   @override
@@ -499,11 +565,48 @@ class _WalletFlowShellState extends State<_WalletFlowShell> {
   @override
   void initState() {
     super.initState();
-    _loadWallet();
+    if (widget.activeSession != null) {
+      _loadWallet();
+      return;
+    }
+
+    _isLoading = false;
+  }
+
+  @override
+  void didUpdateWidget(covariant _WalletFlowShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final previousToken = oldWidget.activeSession?.sessionToken;
+    final nextToken = widget.activeSession?.sessionToken;
+
+    if (previousToken == nextToken) {
+      return;
+    }
+
+    if (widget.activeSession == null) {
+      setState(() {
+        _isLoading = false;
+        _wallet = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _wallet = null;
+    });
+    unawaited(_loadWallet());
   }
 
   Future<void> _loadWallet() async {
-    final wallet = await widget.walletApiService.fetchWallet();
+    final session = widget.activeSession;
+
+    if (session == null) {
+      return;
+    }
+
+    final wallet = await widget.walletApiService.fetchWallet(session: session);
 
     if (!mounted) {
       return;
@@ -517,6 +620,14 @@ class _WalletFlowShellState extends State<_WalletFlowShell> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.activeSession == null) {
+      return const _SessionRequiredView(
+        body:
+            'Vérifiez votre numéro pour consulter votre portefeuille.',
+        title: 'Portefeuille sécurisé',
+      );
+    }
+
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(),
@@ -1034,6 +1145,7 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
               backgroundColor: const Color(0xFF17191A),
               builder: (context) => BoostOfferSheet(
                 listingId: listingId,
+                session: _session!,
                 walletApiService: widget.walletApiService,
               ),
             );
@@ -1138,6 +1250,43 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
         key: ValueKey<_SellerStep>(_step),
         child: _buildCurrentScreen(),
       ),
+    );
+  }
+}
+
+class _SessionRequiredView extends StatelessWidget {
+  const _SessionRequiredView({
+    required this.body,
+    required this.title,
+  });
+
+  final String body;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+      children: [
+        Text(title, style: theme.textTheme.headlineMedium),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            color: const Color(0x0FFFFFFF),
+            border: Border.all(color: const Color(0x14FFFFFF)),
+          ),
+          child: Text(
+            body,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

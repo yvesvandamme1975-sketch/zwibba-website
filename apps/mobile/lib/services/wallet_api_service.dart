@@ -1,4 +1,5 @@
 import 'api_client.dart';
+import 'auth_api_service.dart';
 
 class WalletTransaction {
   const WalletTransaction({
@@ -41,10 +42,13 @@ class BoostResult {
 }
 
 abstract class WalletApiService {
-  Future<WalletOverview> fetchWallet();
+  Future<WalletOverview> fetchWallet({
+    required SellerSession session,
+  });
 
   Future<BoostResult> activateBoost({
     required String listingId,
+    required SellerSession session,
   });
 }
 
@@ -58,9 +62,11 @@ class HttpWalletApiService implements WalletApiService {
   @override
   Future<BoostResult> activateBoost({
     required String listingId,
+    required SellerSession session,
   }) async {
     final json = await _apiClient.postJson(
       '/boost',
+      headers: _sessionHeaders(session),
       body: {
         'listingId': listingId,
       },
@@ -75,8 +81,13 @@ class HttpWalletApiService implements WalletApiService {
   }
 
   @override
-  Future<WalletOverview> fetchWallet() async {
-    final json = await _apiClient.getJson('/wallet');
+  Future<WalletOverview> fetchWallet({
+    required SellerSession session,
+  }) async {
+    final json = await _apiClient.getJson(
+      '/wallet',
+      headers: _sessionHeaders(session),
+    );
     final transactions = List<Map<String, dynamic>>.from(
       (json['transactions'] as List)
           .map((item) => Map<String, dynamic>.from(item as Map)),
@@ -96,5 +107,11 @@ class HttpWalletApiService implements WalletApiService {
           )
           .toList(growable: false),
     );
+  }
+
+  Map<String, String> _sessionHeaders(SellerSession session) {
+    return {
+      'authorization': 'Bearer ${session.sessionToken}',
+    };
   }
 }

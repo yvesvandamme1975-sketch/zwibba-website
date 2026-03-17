@@ -6,54 +6,386 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import request from 'supertest';
 
+import { TwilioVerifyService } from '../../src/auth/twilio-verify.service';
 import { AppModule } from '../../src/app.module';
+import { PrismaService } from '../../src/database/prisma.service';
 
-async function createTestApp(): Promise<INestApplication> {
+class _FakeTwilioVerifyService {
+  async checkVerification({
+    code,
+  }: {
+    code: string;
+    phoneNumber: string;
+  }) {
+    return {
+      sid: 'VE243990000001',
+      status: code == '123456' ? 'approved' : 'pending',
+    };
+  }
+
+  async requestVerification(phoneNumber: string) {
+    return {
+      sid: `VE${phoneNumber.replaceAll('+', '')}`,
+      status: 'pending',
+    };
+  }
+}
+
+class _FakePrismaService {
+  readonly chatMessagesByThreadId = new Map<string, Array<Record<string, unknown>>>();
+  readonly chatThreads = new Map<string, Record<string, unknown>>();
+  readonly listings = new Map<string, Record<string, unknown>>();
+  readonly sessions = new Map<string, {
+    token: string;
+    user: {
+      id: string;
+      phoneNumber: string;
+    };
+    userId: string;
+  }>();
+  readonly users = new Map<string, {
+    id: string;
+    phoneNumber: string;
+  }>();
+
+  seedChatThread(thread: {
+    buyerPhoneNumber: string;
+    id: string;
+    listingId: string;
+    sellerPhoneNumber: string;
+  }) {
+    this.chatThreads.set(thread.id, thread);
+  }
+
+  seedListing(listing: {
+    id: string;
+    ownerPhoneNumber: string;
+    slug: string;
+    title: string;
+  }) {
+    this.listings.set(listing.id, listing);
+  }
+
+  seedMessage(threadId: string, message: {
+    body: string;
+    id: string;
+    senderRole: string;
+    sentAtLabel: string;
+  }) {
+    const current = this.chatMessagesByThreadId.get(threadId) ?? [];
+    current.push(message);
+    this.chatMessagesByThreadId.set(threadId, current);
+  }
+
+  readonly session = {
+    create: async ({
+      data,
+    }: {
+      data: {
+        token: string;
+        userId: string;
+      };
+    }) => {
+      const user = this.users.get(data.userId) ?? {
+        id: data.userId,
+        phoneNumber: '+243990000001',
+      };
+      const session = {
+        token: data.token,
+        user,
+        userId: user.id,
+      };
+      this.sessions.set(session.token, session);
+      return session;
+    },
+    findUnique: async ({
+      where,
+    }: {
+      where: {
+        token: string;
+      };
+    }) => {
+      return this.sessions.get(where.token) ?? null;
+    },
+  };
+
+  readonly user = {
+    findUnique: async ({
+      where,
+    }: {
+      where: {
+        id?: string;
+        phoneNumber?: string;
+      };
+    }) => {
+      if (where.id) {
+        return this.users.get(where.id) ?? null;
+      }
+
+      return Array.from(this.users.values()).find((user) => {
+        return user.phoneNumber === where.phoneNumber;
+      }) ?? null;
+    },
+    upsert: async ({
+      where,
+    }: {
+      where: {
+        phoneNumber: string;
+      };
+    }) => {
+      const existingUser = Array.from(this.users.values()).find((user) => {
+        return user.phoneNumber === where.phoneNumber;
+      });
+
+      if (existingUser) {
+        return existingUser;
+      }
+
+      const user = {
+        id: `user_${where.phoneNumber.replaceAll('+', '')}`,
+        phoneNumber: where.phoneNumber,
+      };
+      this.users.set(user.id, user);
+      return user;
+    },
+  };
+
+  readonly verificationAttempt = {
+    create: async () => ({ id: 'attempt_1' }),
+    updateMany: async () => ({ count: 1 }),
+  };
+
+  readonly listing = {
+    findUnique: async ({
+      where,
+    }: {
+      where: {
+        id: string;
+      };
+    }) => {
+      return this.listings.get(where.id) ?? null;
+    },
+  };
+
+  readonly chatThread = {
+    findMany: async ({
+      include,
+      where,
+    }: {
+      include?: {
+        listing?: boolean;
+        messages?: boolean;
+      };
+      where?: {
+        sellerPhoneNumber?: string;
+      };
+    } = {}) => {
+      return Array.from(this.chatThreads.values())
+        .filter((thread) => {
+          if (!where?.sellerPhoneNumber) {
+            return true;
+          }
+
+          return thread.sellerPhoneNumber === where.sellerPhoneNumber;
+        })
+        .map((thread) => ({
+          ...thread,
+          listing: include?.listing
+            ? this.listings.get(thread.listingId as string) ?? null
+            : undefined,
+          messages: include?.messages
+            ? this.chatMessagesByThreadId.get(thread.id as string) ?? []
+            : undefined,
+        }));
+    },
+    findUnique: async ({
+      include,
+      where,
+    }: {
+      include?: {
+        listing?: boolean;
+        messages?: boolean;
+      };
+      where: {
+        id: string;
+      };
+    }) => {
+      const thread = this.chatThreads.get(where.id);
+
+      if (!thread) {
+        return null;
+      }
+
+      return {
+        ...thread,
+        listing: include?.listing
+          ? this.listings.get(thread.listingId as string) ?? null
+          : undefined,
+        messages: include?.messages
+          ? this.chatMessagesByThreadId.get(thread.id as string) ?? []
+          : undefined,
+      };
+    },
+  };
+
+  readonly chatMessage = {
+    create: async ({
+      data,
+    }: {
+      data: {
+        body: string;
+        senderRole: string;
+        sentAtLabel: string;
+        threadId: string;
+      };
+    }) => {
+      const currentMessages = this.chatMessagesByThreadId.get(data.threadId) ?? [];
+      const nextMessage = {
+        ...data,
+        id: `message_${currentMessages.length + 1}`,
+      };
+      currentMessages.push(nextMessage);
+      this.chatMessagesByThreadId.set(data.threadId, currentMessages);
+      return nextMessage;
+    },
+  };
+}
+
+async function createTestApp(prisma: _FakePrismaService): Promise<INestApplication> {
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
-  }).compile();
+  })
+    .overrideProvider(PrismaService)
+    .useValue(prisma)
+    .overrideProvider(TwilioVerifyService)
+    .useValue(new _FakeTwilioVerifyService())
+    .compile();
 
   const app = moduleRef.createNestApplication();
   await app.init();
   return app;
 }
 
-test('chat inbox returns a thread associated with a listing', async (t) => {
-  const app = await createTestApp();
-  t.after(async () => {
-    await app.close();
-  });
+async function createSellerSession(
+  app: INestApplication,
+  phoneNumber: string,
+): Promise<string> {
+  await request(app.getHttpServer())
+    .post('/auth/request-otp')
+    .send({ phoneNumber })
+    .expect(201);
 
-  const response = await request(app.getHttpServer())
-    .get('/chat/threads')
-    .expect(200);
-
-  assert.ok(Array.isArray(response.body.items));
-  assert.ok(response.body.items.length >= 1);
-  assert.equal(response.body.items[0].listingSlug, 'samsung-galaxy-a54-neuf-lubumbashi');
-  assert.equal(response.body.items[0].participantName, 'Patrick Mobile');
-});
-
-test('chat send appends a message to a thread', async (t) => {
-  const app = await createTestApp();
-  t.after(async () => {
-    await app.close();
-  });
-
-  const threadResponse = await request(app.getHttpServer())
-    .get('/chat/threads/thread_samsung_galaxy_a54')
-    .expect(200);
-
-  assert.equal(threadResponse.body.messages.length, 2);
-
-  const sendResponse = await request(app.getHttpServer())
-    .post('/chat/threads/thread_samsung_galaxy_a54/messages')
+  const verifyResponse = await request(app.getHttpServer())
+    .post('/auth/verify-otp')
     .send({
-      body: 'Je peux passer ce soir ?',
+      phoneNumber,
+      code: '123456',
     })
     .expect(201);
 
-  assert.equal(sendResponse.body.messages.length, 3);
-  assert.equal(sendResponse.body.messages.at(-1).body, 'Je peux passer ce soir ?');
-  assert.equal(sendResponse.body.messages.at(-1).senderRole, 'buyer');
+  return verifyResponse.body.sessionToken as string;
+}
+
+test('chat inbox requires a real session and only returns persisted seller threads', async (t) => {
+  const prisma = new _FakePrismaService();
+  prisma.seedListing({
+    id: 'listing_1',
+    ownerPhoneNumber: '+243990000001',
+    slug: 'samsung-galaxy-a54-128-go',
+    title: 'Samsung Galaxy A54 128 Go',
+  });
+  prisma.seedListing({
+    id: 'listing_2',
+    ownerPhoneNumber: '+243990000002',
+    slug: 'toyota-hilux-2019-4x4',
+    title: 'Toyota Hilux 2019 4x4',
+  });
+  prisma.seedChatThread({
+    buyerPhoneNumber: '+243990000111',
+    id: 'thread_listing_1',
+    listingId: 'listing_1',
+    sellerPhoneNumber: '+243990000001',
+  });
+  prisma.seedMessage('thread_listing_1', {
+    body: 'Disponible aujourd’hui.',
+    id: 'message_1',
+    senderRole: 'buyer',
+    sentAtLabel: '09:10',
+  });
+  prisma.seedChatThread({
+    buyerPhoneNumber: '+243990000222',
+    id: 'thread_listing_2',
+    listingId: 'listing_2',
+    sellerPhoneNumber: '+243990000002',
+  });
+  prisma.seedMessage('thread_listing_2', {
+    body: 'Toujours en vente ?',
+    id: 'message_2',
+    senderRole: 'buyer',
+    sentAtLabel: '10:05',
+  });
+
+  const app = await createTestApp(prisma);
+  t.after(async () => {
+    await app.close();
+  });
+
+  await request(app.getHttpServer())
+    .get('/chat/threads')
+    .expect(401);
+
+  const sessionToken = await createSellerSession(app, '+243990000001');
+  const response = await request(app.getHttpServer())
+    .get('/chat/threads')
+    .set('authorization', `Bearer ${sessionToken}`)
+    .expect(200);
+
+  assert.equal(response.body.items.length, 1);
+  assert.equal(response.body.items[0].id, 'thread_listing_1');
+  assert.equal(response.body.items[0].listingSlug, 'samsung-galaxy-a54-128-go');
+  assert.equal(response.body.items[0].listingTitle, 'Samsung Galaxy A54 128 Go');
+});
+
+test('chat send persists a seller reply on the authenticated thread', async (t) => {
+  const prisma = new _FakePrismaService();
+  prisma.seedListing({
+    id: 'listing_1',
+    ownerPhoneNumber: '+243990000001',
+    slug: 'samsung-galaxy-a54-128-go',
+    title: 'Samsung Galaxy A54 128 Go',
+  });
+  prisma.seedChatThread({
+    buyerPhoneNumber: '+243990000111',
+    id: 'thread_listing_1',
+    listingId: 'listing_1',
+    sellerPhoneNumber: '+243990000001',
+  });
+  prisma.seedMessage('thread_listing_1', {
+    body: 'Bonjour, toujours disponible ?',
+    id: 'message_1',
+    senderRole: 'buyer',
+    sentAtLabel: '09:10',
+  });
+
+  const app = await createTestApp(prisma);
+  t.after(async () => {
+    await app.close();
+  });
+
+  const sessionToken = await createSellerSession(app, '+243990000001');
+  const sendResponse = await request(app.getHttpServer())
+    .post('/chat/threads/thread_listing_1/messages')
+    .set('authorization', `Bearer ${sessionToken}`)
+    .send({
+      body: 'Oui, toujours disponible.',
+    })
+    .expect(201);
+
+  assert.equal(sendResponse.body.messages.length, 2);
+  assert.equal(sendResponse.body.messages.at(-1).body, 'Oui, toujours disponible.');
+  assert.equal(sendResponse.body.messages.at(-1).senderRole, 'seller');
+  assert.equal(
+    prisma.chatMessagesByThreadId.get('thread_listing_1')?.length,
+    2,
+  );
 });

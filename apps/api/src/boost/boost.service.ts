@@ -1,12 +1,62 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+
+import type { SessionRecord } from '../auth/auth.service';
+import { PrismaService } from '../database/prisma.service';
 
 @Injectable()
 export class BoostService {
-  activateBoost(listingId: string) {
+  constructor(
+    @Inject(PrismaService) private readonly prismaService: PrismaService,
+  ) {}
+
+  async activateBoost({
+    listingId,
+    session,
+  }: {
+    listingId: string;
+    session: SessionRecord;
+  }) {
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        phoneNumber: session.phoneNumber,
+      },
+    });
+    const listing = await this.prismaService.listing.findUnique({
+      where: {
+        id: listingId,
+      },
+    });
+
+    if (!user || !listing || listing.ownerPhoneNumber !== session.phoneNumber) {
+      throw new NotFoundException('Annonce introuvable pour ce boost.');
+    }
+
+    await this.prismaService.$transaction(async (transaction) => {
+      const walletTransaction = await transaction.walletTransaction.create({
+        data: {
+          amountCdf: -15000,
+          createdAtLabel: 'Aujourd’hui',
+          kind: 'debit',
+          label: `Boost annonce ${listing.title}`,
+          userId: user.id,
+        },
+      });
+
+      await transaction.boostPurchase.create({
+        data: {
+          amountCdf: 15000,
+          durationHours: 24,
+          listingId: listing.id,
+          userId: user.id,
+          walletTransactionId: walletTransaction.id,
+        },
+      });
+    });
+
     return {
+      amountCdf: 15000,
       listingId,
       promoted: true,
-      amountCdf: 15000,
       statusLabel: 'Boost activé pour 24 h',
     };
   }

@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 
+import '../../services/auth_api_service.dart';
 import '../../services/wallet_api_service.dart';
 
 class BoostOfferSheet extends StatefulWidget {
   const BoostOfferSheet({
     required this.listingId,
+    required this.session,
     required this.walletApiService,
     super.key,
   });
 
   final String listingId;
+  final SellerSession session;
   final WalletApiService walletApiService;
 
   @override
@@ -27,6 +30,7 @@ class _BoostOfferSheetState extends State<BoostOfferSheet> {
 
     final result = await widget.walletApiService.activateBoost(
       listingId: widget.listingId,
+      session: widget.session,
     );
 
     if (!mounted) {

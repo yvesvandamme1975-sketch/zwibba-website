@@ -1,4 +1,5 @@
 import 'api_client.dart';
+import 'auth_api_service.dart';
 
 class ChatThreadSummary {
   const ChatThreadSummary({
@@ -47,12 +48,18 @@ class ChatThread {
 }
 
 abstract class ChatApiService {
-  Future<List<ChatThreadSummary>> fetchInbox();
+  Future<List<ChatThreadSummary>> fetchInbox({
+    required SellerSession session,
+  });
 
-  Future<ChatThread> fetchThread(String threadId);
+  Future<ChatThread> fetchThread(
+    String threadId, {
+    required SellerSession session,
+  });
 
   Future<ChatThread> sendMessage({
     required String body,
+    required SellerSession session,
     required String threadId,
   });
 }
@@ -65,8 +72,13 @@ class HttpChatApiService implements ChatApiService {
   final ApiClient _apiClient;
 
   @override
-  Future<List<ChatThreadSummary>> fetchInbox() async {
-    final json = await _apiClient.getJson('/chat/threads');
+  Future<List<ChatThreadSummary>> fetchInbox({
+    required SellerSession session,
+  }) async {
+    final json = await _apiClient.getJson(
+      '/chat/threads',
+      headers: _sessionHeaders(session),
+    );
     final items = List<Map<String, dynamic>>.from(
       (json['items'] as List)
           .map((item) => Map<String, dynamic>.from(item as Map)),
@@ -87,18 +99,26 @@ class HttpChatApiService implements ChatApiService {
   }
 
   @override
-  Future<ChatThread> fetchThread(String threadId) async {
-    final json = await _apiClient.getJson('/chat/threads/$threadId');
+  Future<ChatThread> fetchThread(
+    String threadId, {
+    required SellerSession session,
+  }) async {
+    final json = await _apiClient.getJson(
+      '/chat/threads/$threadId',
+      headers: _sessionHeaders(session),
+    );
     return _mapThread(json);
   }
 
   @override
   Future<ChatThread> sendMessage({
     required String body,
+    required SellerSession session,
     required String threadId,
   }) async {
     final json = await _apiClient.postJson(
       '/chat/threads/$threadId/messages',
+      headers: _sessionHeaders(session),
       body: {
         'body': body,
       },
@@ -127,5 +147,11 @@ class HttpChatApiService implements ChatApiService {
           .toList(growable: false),
       participantName: json['participantName'] as String,
     );
+  }
+
+  Map<String, String> _sessionHeaders(SellerSession session) {
+    return {
+      'authorization': 'Bearer ${session.sessionToken}',
+    };
   }
 }

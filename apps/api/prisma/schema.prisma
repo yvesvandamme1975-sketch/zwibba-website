@@ -8,11 +8,14 @@ datasource db {
 }
 
 model User {
-  id          String    @id @default(cuid())
-  phoneNumber String    @unique
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  sessions    Session[]
+  boostPurchases     BoostPurchase[]
+  chatThreadsAsBuyer ChatThread[]       @relation("BuyerThreads")
+  id                 String             @id @default(cuid())
+  phoneNumber        String             @unique
+  createdAt          DateTime           @default(now())
+  sessions           Session[]
+  updatedAt          DateTime           @updatedAt
+  walletTransactions WalletTransaction[]
 }
 
 model Draft {
@@ -60,7 +63,9 @@ model Session {
 model Listing {
   id                 String              @id @default(cuid())
   area               String
+  boostPurchases     BoostPurchase[]
   categoryId         String
+  chatThreads        ChatThread[]
   createdAt          DateTime            @default(now())
   description        String
   draft              Draft               @relation(fields: [draftId], references: [id], onDelete: Cascade)
@@ -78,6 +83,34 @@ model Listing {
   @@index([ownerPhoneNumber])
 }
 
+model ChatThread {
+  id               String        @id @default(cuid())
+  buyer            User          @relation("BuyerThreads", fields: [buyerUserId], references: [id], onDelete: Cascade)
+  buyerUserId      String
+  createdAt        DateTime      @default(now())
+  listing          Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId        String
+  messages         ChatMessage[]
+  sellerPhoneNumber String
+  updatedAt        DateTime      @updatedAt
+
+  @@index([buyerUserId])
+  @@index([listingId])
+  @@index([sellerPhoneNumber])
+}
+
+model ChatMessage {
+  id          String     @id @default(cuid())
+  body        String
+  createdAt   DateTime   @default(now())
+  senderRole  String
+  sentAtLabel String
+  thread      ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  threadId    String
+
+  @@index([threadId])
+}
+
 model ModerationDecision {
   id            String   @id @default(cuid())
   actorLabel    String
@@ -89,6 +122,34 @@ model ModerationDecision {
   updatedAt     DateTime @updatedAt
 
   @@index([status])
+}
+
+model WalletTransaction {
+  id             String   @id @default(cuid())
+  amountCdf      Int
+  createdAt      DateTime @default(now())
+  createdAtLabel String
+  kind           String
+  label          String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+
+  @@index([userId, createdAt])
+}
+
+model BoostPurchase {
+  id                  String   @id @default(cuid())
+  amountCdf           Int
+  createdAt           DateTime @default(now())
+  durationHours       Int
+  listing             Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId           String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String
+  walletTransactionId String
+
+  @@index([listingId])
+  @@index([userId, createdAt])
 }
 
 model VerificationAttempt {

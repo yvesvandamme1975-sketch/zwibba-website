@@ -1,26 +1,46 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+
+import type { SessionRecord } from '../auth/auth.service';
+import { PrismaService } from '../database/prisma.service';
 
 @Injectable()
 export class WalletService {
-  getWallet() {
+  constructor(
+    @Inject(PrismaService) private readonly prismaService: PrismaService,
+  ) {}
+
+  async getWallet(session: SessionRecord) {
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        phoneNumber: session.phoneNumber,
+      },
+    });
+
+    if (!user) {
+      return {
+        balanceCdf: 0,
+        transactions: [],
+      };
+    }
+
+    const transactions = await this.prismaService.walletTransaction.findMany({
+      where: {
+        userId: user.id,
+      },
+    });
+    const balanceCdf = transactions.reduce((total, transaction) => {
+      return total + transaction.amountCdf;
+    }, 0);
+
     return {
-      balanceCdf: 120000,
-      transactions: [
-        {
-          id: 'wallet_tx_1',
-          label: 'Vente Samsung Galaxy A54',
-          amountCdf: 450000,
-          kind: 'credit',
-          createdAtLabel: 'Aujourd’hui',
-        },
-        {
-          id: 'wallet_tx_2',
-          label: 'Boost annonce canapé',
-          amountCdf: -15000,
-          kind: 'debit',
-          createdAtLabel: 'Hier',
-        },
-      ],
+      balanceCdf,
+      transactions: transactions.map((transaction) => ({
+        amountCdf: transaction.amountCdf,
+        createdAtLabel: transaction.createdAtLabel,
+        id: transaction.id,
+        kind: transaction.kind,
+        label: transaction.label,
+      })),
     };
   }
 }
