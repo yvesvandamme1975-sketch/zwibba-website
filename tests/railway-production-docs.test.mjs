@@ -55,6 +55,43 @@ test('api and admin packages expose Railway-ready build and start scripts', () =
   );
 });
 
+test('service build scripts stay package-local for Railway subtree deploys', () => {
+  const apiPackage = JSON.parse(readFileSync(apiPackagePath, 'utf8'));
+  const adminPackage = JSON.parse(readFileSync(adminPackagePath, 'utf8'));
+
+  assert.doesNotMatch(
+    apiPackage.scripts.build,
+    /\bpnpm\b/u,
+    'apps/api build should not require pnpm inside an isolated Railway service build',
+  );
+  assert.doesNotMatch(
+    apiPackage.scripts.build,
+    /\.\.\/\.\./u,
+    'apps/api build should not depend on monorepo parent paths',
+  );
+  assert.doesNotMatch(
+    adminPackage.scripts.build,
+    /\.\.\/\.\./u,
+    'apps/admin build should not depend on monorepo parent paths',
+  );
+});
+
+test('service start scripts are runtime-safe for ESM services on Railway', () => {
+  const apiPackage = JSON.parse(readFileSync(apiPackagePath, 'utf8'));
+  const adminPackage = JSON.parse(readFileSync(adminPackagePath, 'utf8'));
+
+  assert.match(
+    apiPackage.scripts.start,
+    /\btsx\s+src\/main\.ts\b/u,
+    'apps/api should start through tsx so runtime ESM imports resolve correctly',
+  );
+  assert.match(
+    adminPackage.scripts.start,
+    /\btsx\s+src\/main\.ts\b/u,
+    'apps/admin should start through tsx so runtime ESM imports resolve correctly',
+  );
+});
+
 test('api and admin define Nixpacks config for Railway services', () => {
   assert.equal(existsSync(apiNixpacksPath), true, 'apps/api/nixpacks.toml must exist');
   assert.equal(existsSync(adminNixpacksPath), true, 'apps/admin/nixpacks.toml must exist');
