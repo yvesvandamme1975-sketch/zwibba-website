@@ -35,6 +35,7 @@ class _FakeListingsApiService implements ListingsApiService {
   Future<ListingDetail> fetchListingDetail(String slug) async {
     return ListingDetail(
       contactActions: const ['whatsapp', 'sms', 'call'],
+      id: 'listing_1',
       locationLabel: 'Lubumbashi, Bel Air',
       priceCdf: 450000,
       safetyTips: const [
@@ -55,6 +56,7 @@ class _FakeListingsApiService implements ListingsApiService {
     return const [
       ListingSummary(
         categoryLabel: 'Téléphones & Tablettes',
+        id: 'listing_1',
         locationLabel: 'Lubumbashi, Bel Air',
         priceCdf: 450000,
         slug: 'samsung-galaxy-a54-neuf-lubumbashi',

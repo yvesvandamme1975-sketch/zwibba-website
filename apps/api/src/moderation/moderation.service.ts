@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 
+import { PrismaService } from '../database/prisma.service';
 import { DraftsService } from '../drafts/drafts.service';
 
 export type ModerationStatus =
@@ -17,19 +18,141 @@ export type ModerationQueueItem = {
 
 export type PublishOutcome = {
   id: string;
+  listingSlug: string;
   reasonSummary: string;
   shareUrl: string;
   status: ModerationStatus;
   statusLabel: string;
 };
 
+function slugify(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replaceAll(/[\u0300-\u036f]/g, '')
+    .replaceAll(/[^a-z0-9]+/g, '-')
+    .replaceAll(/^-+|-+$/g, '');
+}
+
+function buildStatusLabel(status: ModerationStatus) {
+  switch (status) {
+    case 'approved':
+      return 'Annonce approuvée et prête à partager';
+    case 'pending_manual_review':
+      return 'Annonce envoyée en revue manuelle';
+    case 'blocked_needs_fix':
+      return 'Annonce bloquée: informations à corriger';
+  }
+}
+
+function buildReasonSummary({
+  status,
+  validationError,
+}: {
+  status: ModerationStatus;
+  validationError?: string;
+}) {
+  if (status === 'blocked_needs_fix') {
+    return validationError ??
+      'Les informations du produit doivent être complétées avant publication.';
+  }
+
+  if (status === 'pending_manual_review') {
+    return 'Votre annonce a été envoyée en revue manuelle.';
+  }
+
+  return 'Annonce approuvée et prête à partager.';
+}
+
+function detectValidationError({
+  description,
+  photos,
+  priceCdf,
+  title,
+}: {
+  description: string;
+  photos: Array<{ uploadStatus: string }>;
+  priceCdf: number;
+  title: string;
+}) {
+  if (title.trim().length === 0) {
+    return 'Le titre de l’annonce doit être complété avant publication.';
+  }
+
+  if (priceCdf <= 0) {
+    return 'Le prix final doit être confirmé avant publication.';
+  }
+
+  if (description.trim().length === 0) {
+    return 'La description du produit doit être complétée avant publication.';
+  }
+
+  if (
+    photos.length === 0 ||
+    !photos.some((photo) => photo.uploadStatus === 'uploaded')
+  ) {
+    return 'Ajoutez au moins une photo valide avant publication.';
+  }
+
+  return undefined;
+}
+
+function resolveModerationStatus({
+  categoryId,
+  validationError,
+}: {
+  categoryId: string;
+  validationError?: string;
+}): ModerationStatus {
+  if (validationError) {
+    return 'blocked_needs_fix';
+  }
+
+  if (categoryId === 'vehicles' || categoryId === 'real_estate') {
+    return 'pending_manual_review';
+  }
+
+  return 'approved';
+}
+
 @Injectable()
 export class ModerationService {
   constructor(
     @Inject(DraftsService) private readonly draftsService: DraftsService,
+    @Inject(PrismaService) private readonly prismaService: PrismaService,
   ) {}
 
-  private readonly queueItems = new Map<string, ModerationQueueItem>();
+  private async resolveListingSlug({
+    draftId,
+    title,
+  }: {
+    draftId: string;
+    title: string;
+  }) {
+    const existingListing = await this.prismaService.listing.findUnique({
+      where: {
+        draftId,
+      },
+    });
+
+    if (existingListing) {
+      return existingListing.slug;
+    }
+
+    const baseSlug = slugify(title) || `annonce-${draftId.slice(-8)}`;
+    const conflictingListing = await this.prismaService.listing.findUnique({
+      where: {
+        slug: baseSlug,
+      },
+    });
+
+    if (!conflictingListing) {
+      return baseSlug;
+    }
+
+    return `${baseSlug}-${draftId.slice(-6).toLowerCase()}`;
+  }
 
   async publish({
     categoryId,
@@ -47,60 +170,123 @@ export class ModerationService {
     title: string;
   }): Promise<PublishOutcome> {
     const syncedDraft = await this.draftsService.getSyncedDraft(draftId);
-    const normalizedDescription = description.trim();
 
-    if (
-      !syncedDraft ||
-      syncedDraft.ownerPhoneNumber !== ownerPhoneNumber ||
-      title.trim().length === 0 ||
-      priceCdf <= 0 ||
-      normalizedDescription.length === 0
-    ) {
-      this.queueItems.delete(draftId);
-
+    if (!syncedDraft || syncedDraft.ownerPhoneNumber !== ownerPhoneNumber) {
       return {
         id: draftId,
-        reasonSummary: 'La description du produit doit être complétée avant publication.',
+        listingSlug: '',
+        reasonSummary:
+          'Le brouillon synchronisé est introuvable ou ne correspond pas à cette session.',
         shareUrl: '',
         status: 'blocked_needs_fix',
-        statusLabel: 'Annonce bloquée: informations à corriger',
+        statusLabel: buildStatusLabel('blocked_needs_fix'),
       };
     }
 
-    if (categoryId === 'vehicles' || categoryId === 'real_estate') {
-      const queueItem = {
-        id: draftId,
-        listingTitle: title,
-        reasonSummary: 'Documents ou photo principale à vérifier avant mise en ligne.',
-        sellerPhoneNumber: ownerPhoneNumber,
-        status: 'pending_manual_review' as const,
-      };
+    const normalizedTitle = title.trim();
+    const normalizedDescription = description.trim();
+    const normalizedCategoryId = categoryId.trim() || syncedDraft.categoryId;
+    const listingSlug = await this.resolveListingSlug({
+      draftId: syncedDraft.draftId,
+      title: normalizedTitle || syncedDraft.title,
+    });
+    const validationError = detectValidationError({
+      description: normalizedDescription,
+      photos: syncedDraft.photos,
+      priceCdf,
+      title: normalizedTitle,
+    });
+    const status = resolveModerationStatus({
+      categoryId: normalizedCategoryId,
+      validationError,
+    });
+    const reasonSummary = buildReasonSummary({
+      status,
+      validationError,
+    });
 
-      this.queueItems.set(queueItem.id, queueItem);
+    const listing = await this.prismaService.$transaction(async (transaction) => {
+      const persistedListing = await transaction.listing.upsert({
+        where: {
+          draftId: syncedDraft.draftId,
+        },
+        create: {
+          area: syncedDraft.area,
+          categoryId: normalizedCategoryId,
+          description: normalizedDescription,
+          draftId: syncedDraft.draftId,
+          moderationStatus: status,
+          ownerPhoneNumber,
+          priceCdf,
+          publishedAt: status === 'approved' ? new Date() : null,
+          slug: listingSlug,
+          title: normalizedTitle,
+        },
+        update: {
+          area: syncedDraft.area,
+          categoryId: normalizedCategoryId,
+          description: normalizedDescription,
+          moderationStatus: status,
+          ownerPhoneNumber,
+          priceCdf,
+          publishedAt: status === 'approved' ? new Date() : null,
+          slug: listingSlug,
+          title: normalizedTitle,
+        },
+      });
 
-      return {
-        id: draftId,
-        reasonSummary: 'Votre annonce a été envoyée en revue manuelle.',
-        shareUrl: '',
-        status: 'pending_manual_review',
-        statusLabel: 'Annonce envoyée en revue manuelle',
-      };
-    }
+      await transaction.moderationDecision.upsert({
+        where: {
+          listingId: persistedListing.id,
+        },
+        create: {
+          actorLabel: 'system',
+          listingId: persistedListing.id,
+          reasonSummary,
+          status,
+        },
+        update: {
+          actorLabel: 'system',
+          reasonSummary,
+          status,
+        },
+      });
 
-    this.queueItems.delete(draftId);
+      return persistedListing;
+    });
 
     return {
-      id: draftId,
-      reasonSummary: 'Annonce approuvée et prête à partager.',
-      shareUrl: `https://zwibba.com/annonces/${draftId}`,
-      status: 'approved',
-      statusLabel: 'Annonce approuvée et prête à partager',
+      id: listing.id,
+      listingSlug: listing.slug,
+      reasonSummary,
+      shareUrl: status === 'approved'
+        ? `https://zwibba.com/annonces/${listing.slug}`
+        : '',
+      status,
+      statusLabel: buildStatusLabel(status),
     };
   }
 
-  listQueue() {
+  async listQueue() {
+    const decisions = await this.prismaService.moderationDecision.findMany({
+      where: {
+        status: 'pending_manual_review',
+      },
+      include: {
+        listing: true,
+      },
+    });
+
     return {
-      items: Array.from(this.queueItems.values()),
+      items: decisions
+        .filter((decision) => decision.listing != null)
+        .map((decision) => ({
+          id: decision.listingId,
+          listingTitle: decision.listing!.title,
+          reasonSummary: decision.reasonSummary,
+          sellerPhoneNumber: decision.listing!.ownerPhoneNumber,
+          status: decision.status as ModerationStatus,
+        })),
     };
   }
 }

@@ -86,6 +86,7 @@ class _FakeListingsApiService implements ListingsApiService {
   Future<ListingDetail> fetchListingDetail(String slug) async {
     return ListingDetail(
       contactActions: const ['whatsapp', 'sms', 'call'],
+      id: 'listing_1',
       locationLabel: 'Lubumbashi, Bel Air',
       priceCdf: 450000,
       safetyTips: const ['Rencontrez le vendeur dans un lieu public.'],

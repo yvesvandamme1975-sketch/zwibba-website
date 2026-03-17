@@ -114,6 +114,7 @@ class _FakeDraftApiService implements DraftApiService {
   }) async {
     return const PublishOutcome(
       id: 'draft_approved',
+      listingSlug: 'samsung-galaxy-a54-128-go',
       reasonSummary: 'Annonce approuvée et prête à partager.',
       shareUrl: 'https://zwibba.com/annonces/draft_approved',
       status: 'approved',

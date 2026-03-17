@@ -1,117 +1,148 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
-type ListingRecord = {
-  categoryLabel: string;
-  contactActions: ('whatsapp' | 'sms' | 'call')[];
-  locationLabel: string;
+import { PrismaService } from '../database/prisma.service';
+
+type PersistedListingRecord = {
+  area: string;
+  categoryId: string;
+  description: string;
+  id: string;
+  moderationStatus: string;
+  ownerPhoneNumber: string;
   priceCdf: number;
-  safetyTips: string[];
-  seller: {
-    name: string;
-    responseTime: string;
-    role: string;
-  };
   slug: string;
-  summary: string;
   title: string;
+  updatedAt?: Date;
 };
 
-const listingFixtures: ListingRecord[] = [
-  {
-    slug: 'samsung-galaxy-a54-neuf-lubumbashi',
-    title: 'Samsung Galaxy A54 neuf sous emballage',
-    categoryLabel: 'Téléphones & Tablettes',
-    priceCdf: 450000,
-    locationLabel: 'Lubumbashi, Bel Air',
-    summary: 'Smartphone Samsung garanti, 128 Go, avec câble et coque transparente. Idéal pour démarrer vite.',
-    seller: {
-      name: 'Patrick Mobile',
-      role: 'Vendeur pro',
-      responseTime: 'Répond en moyenne en 9 min',
-    },
-    safetyTips: [
-      'Rencontrez le vendeur dans un lieu public.',
-      'Vérifiez le produit avant de payer.',
-    ],
+const categoryLabels: Record<string, string> = {
+  electronics: 'Électronique',
+  phones_tablets: 'Téléphones & Tablettes',
+  real_estate: 'Immobilier',
+  vehicles: 'Véhicules',
+};
+
+function getCategoryLabel(categoryId: string) {
+  return categoryLabels[categoryId] ?? 'Annonces';
+}
+
+function buildSellerProfile({
+  categoryId,
+  ownerPhoneNumber,
+}: {
+  categoryId: string;
+  ownerPhoneNumber: string;
+}) {
+  const lastDigits = ownerPhoneNumber.slice(-4);
+  const isProfessional =
+    categoryId === 'phones_tablets' || categoryId === 'vehicles';
+
+  return {
+    name: isProfessional ? `Vendeur ${lastDigits}` : `Particulier ${lastDigits}`,
+    responseTime:
+      categoryId === 'vehicles'
+        ? 'Répond en moyenne en 22 min'
+        : 'Répond en moyenne en 9 min',
+    role: isProfessional ? 'Vendeur pro' : 'Particulier',
+  };
+}
+
+function buildSafetyTips(categoryId: string) {
+  switch (categoryId) {
+    case 'vehicles':
+      return [
+        'Demandez les papiers du véhicule avant l’essai.',
+        'Faites vérifier le véhicule avant paiement.',
+      ];
+    case 'real_estate':
+      return [
+        'Visitez le logement en journée.',
+        'Confirmez les conditions de location sur place.',
+      ];
+    case 'phones_tablets':
+      return [
+        'Rencontrez le vendeur dans un lieu public.',
+        'Vérifiez le produit avant de payer.',
+      ];
+    default:
+      return [
+        'Rencontrez le vendeur dans un lieu public.',
+        'Évitez les paiements anticipés.',
+      ];
+  }
+}
+
+function toListingSummary(listing: PersistedListingRecord) {
+  return {
+    categoryLabel: getCategoryLabel(listing.categoryId),
+    id: listing.id,
+    locationLabel: listing.area,
+    priceCdf: listing.priceCdf,
+    slug: listing.slug,
+    title: listing.title,
+  };
+}
+
+function toListingDetail(listing: PersistedListingRecord) {
+  return {
+    categoryLabel: getCategoryLabel(listing.categoryId),
     contactActions: ['whatsapp', 'sms', 'call'],
-  },
-  {
-    slug: 'appartement-2-chambres-quartier-industriel',
-    title: 'Appartement 2 chambres quartier Industriel',
-    categoryLabel: 'Immobilier',
-    priceCdf: 1200000,
-    locationLabel: 'Lubumbashi, Quartier Industriel',
-    summary: 'Appartement lumineux avec eau et sécurité, proche des grands axes.',
-    seller: {
-      name: 'Nadine Habitat',
-      role: 'Particulier',
-      responseTime: 'Répond en moyenne en 14 min',
-    },
-    safetyTips: [
-      'Visitez le logement en journée.',
-      'Confirmez les conditions de location sur place.',
-    ],
-    contactActions: ['whatsapp', 'sms', 'call'],
-  },
-  {
-    slug: 'toyota-hilux-2019-4x4',
-    title: 'Toyota Hilux 2019 diesel 4x4',
-    categoryLabel: 'Véhicules',
-    priceCdf: 45000000,
-    locationLabel: 'Lubumbashi, Golf Plateau',
-    summary: 'Pick-up 4x4 solide pour la ville et le terrain. Historique d’entretien disponible pendant la visite.',
-    seller: {
-      name: 'Garage Plateau',
-      role: 'Vendeur pro',
-      responseTime: 'Répond en moyenne en 22 min',
-    },
-    safetyTips: [
-      'Demandez les papiers du véhicule avant l’essai.',
-      'Faites vérifier le véhicule avant paiement.',
-    ],
-    contactActions: ['whatsapp', 'sms', 'call'],
-  },
-  {
-    slug: 'ordinateur-portable-hp-elitebook',
-    title: 'Ordinateur portable HP EliteBook',
-    categoryLabel: 'Électronique',
-    priceCdf: 690000,
-    locationLabel: 'Lubumbashi, Ruashi',
-    summary: 'Portable professionnel reconditionné, SSD rapide, batterie correcte.',
-    seller: {
-      name: 'Informatique Ruashi',
-      role: 'Vendeur pro',
-      responseTime: 'Répond en moyenne en 16 min',
-    },
-    safetyTips: [
-      'Testez l’allumage et la batterie avant de conclure.',
-      'Évitez les paiements anticipés.',
-    ],
-    contactActions: ['whatsapp', 'sms', 'call'],
-  },
-];
+    id: listing.id,
+    locationLabel: listing.area,
+    priceCdf: listing.priceCdf,
+    safetyTips: buildSafetyTips(listing.categoryId),
+    seller: buildSellerProfile({
+      categoryId: listing.categoryId,
+      ownerPhoneNumber: listing.ownerPhoneNumber,
+    }),
+    slug: listing.slug,
+    summary: listing.description,
+    title: listing.title,
+  };
+}
 
 @Injectable()
 export class ListingsService {
-  listBrowseFeed() {
+  constructor(
+    @Inject(PrismaService) private readonly prismaService: PrismaService,
+  ) {}
+
+  async listBrowseFeed() {
+    const listings = await this.prismaService.listing.findMany({
+      where: {
+        moderationStatus: 'approved',
+      },
+    });
+
+    const sortedListings = [...listings].sort((left, right) => {
+      const leftTime = left.updatedAt instanceof Date
+        ? left.updatedAt.getTime()
+        : 0;
+      const rightTime = right.updatedAt instanceof Date
+        ? right.updatedAt.getTime()
+        : 0;
+
+      return rightTime - leftTime;
+    });
+
     return {
-      items: listingFixtures.map((listing) => ({
-        categoryLabel: listing.categoryLabel,
-        locationLabel: listing.locationLabel,
-        priceCdf: listing.priceCdf,
-        slug: listing.slug,
-        title: listing.title,
-      })),
+      items: sortedListings.map((listing) =>
+        toListingSummary(listing as PersistedListingRecord)
+      ),
     };
   }
 
-  getListingDetail(slug: string) {
-    const listing = listingFixtures.find((entry) => entry.slug === slug);
+  async getListingDetail(slug: string) {
+    const listing = await this.prismaService.listing.findUnique({
+      where: {
+        slug,
+      },
+    });
 
-    if (!listing) {
+    if (!listing || listing.moderationStatus !== 'approved') {
       throw new NotFoundException('Annonce introuvable.');
     }
 
-    return listing;
+    return toListingDetail(listing as PersistedListingRecord);
   }
 }

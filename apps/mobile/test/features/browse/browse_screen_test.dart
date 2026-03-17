@@ -25,6 +25,7 @@ class _FakeListingsApiService implements ListingsApiService {
   Future<ListingDetail> fetchListingDetail(String slug) async {
     return ListingDetail(
       contactActions: const ['whatsapp', 'sms', 'call'],
+      id: 'listing_1',
       locationLabel: 'Lubumbashi, Bel Air',
       priceCdf: 450000,
       safetyTips: const ['Rencontrez le vendeur dans un lieu public.'],
@@ -42,6 +43,7 @@ class _FakeListingsApiService implements ListingsApiService {
     return const [
       ListingSummary(
         categoryLabel: 'Téléphones & Tablettes',
+        id: 'listing_1',
         locationLabel: 'Lubumbashi, Bel Air',
         priceCdf: 450000,
         slug: 'samsung-galaxy-a54-neuf-lubumbashi',
@@ -49,6 +51,7 @@ class _FakeListingsApiService implements ListingsApiService {
       ),
       ListingSummary(
         categoryLabel: 'Véhicules',
+        id: 'listing_2',
         locationLabel: 'Lubumbashi, Golf Plateau',
         priceCdf: 45000000,
         slug: 'toyota-hilux-2019-4x4',

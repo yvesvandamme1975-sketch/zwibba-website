@@ -32,6 +32,12 @@ class PublishSuccessScreen extends StatelessWidget {
           style: theme.textTheme.bodyLarge
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
+        const SizedBox(height: 6),
+        Text(
+          'Votre annonce est maintenant disponible dans le flux acheteur.',
+          style: theme.textTheme.bodyMedium
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
         const SizedBox(height: 18),
         Container(
           padding: const EdgeInsets.all(16),

@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
     "test": "node ./scripts/run-tests.mjs"
   },
   "devDependencies": {

@@ -26,6 +26,12 @@ class PublishPendingScreen extends StatelessWidget {
           style: theme.textTheme.bodyLarge
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
+        const SizedBox(height: 6),
+        Text(
+          'La demande reste enregistrée pendant la revue manuelle.',
+          style: theme.textTheme.bodyMedium
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
         const SizedBox(height: 18),
         Container(
           padding: const EdgeInsets.all(16),

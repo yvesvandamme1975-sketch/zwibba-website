@@ -10,6 +10,7 @@ void main() {
         '/listings': {
           'items': [
             {
+              'id': 'listing_1',
               'slug': 'samsung-galaxy-a54-neuf-lubumbashi',
               'title': 'Samsung Galaxy A54 neuf sous emballage',
               'categoryLabel': 'Téléphones & Tablettes',
@@ -19,6 +20,7 @@ void main() {
           ],
         },
         '/listings/samsung-galaxy-a54-neuf-lubumbashi': {
+          'id': 'listing_1',
           'slug': 'samsung-galaxy-a54-neuf-lubumbashi',
           'title': 'Samsung Galaxy A54 neuf sous emballage',
           'categoryLabel': 'Téléphones & Tablettes',
@@ -46,8 +48,10 @@ void main() {
     );
 
     expect(listings.single.slug, 'samsung-galaxy-a54-neuf-lubumbashi');
+    expect(listings.single.id, 'listing_1');
     expect(listings.single.categoryLabel, 'Téléphones & Tablettes');
     expect(listings.single.locationLabel, 'Lubumbashi, Bel Air');
+    expect(detail.id, 'listing_1');
     expect(detail.title, 'Samsung Galaxy A54 neuf sous emballage');
     expect(detail.sellerName, 'Patrick Mobile');
     expect(detail.contactActions, ['whatsapp', 'sms', 'call']);

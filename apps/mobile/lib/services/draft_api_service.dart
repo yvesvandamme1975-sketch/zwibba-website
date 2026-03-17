@@ -5,6 +5,7 @@ import 'auth_api_service.dart';
 class PublishOutcome {
   const PublishOutcome({
     required this.id,
+    required this.listingSlug,
     required this.reasonSummary,
     required this.shareUrl,
     required this.status,
@@ -12,6 +13,7 @@ class PublishOutcome {
   });
 
   final String id;
+  final String listingSlug;
   final String reasonSummary;
   final String shareUrl;
   final String status;
@@ -106,10 +108,21 @@ class HttpDraftApiService implements DraftApiService {
 
     return PublishOutcome(
       id: json['id'] as String,
+      listingSlug: json['listingSlug'] as String? ??
+          _extractListingSlug(json['shareUrl'] as String? ?? ''),
       reasonSummary: json['reasonSummary'] as String,
       shareUrl: json['shareUrl'] as String,
       status: json['status'] as String,
       statusLabel: json['statusLabel'] as String,
     );
   }
+}
+
+String _extractListingSlug(String shareUrl) {
+  final uri = Uri.tryParse(shareUrl);
+  final lastSegment = uri?.pathSegments.isNotEmpty == true
+      ? uri!.pathSegments.last
+      : '';
+
+  return lastSegment;
 }

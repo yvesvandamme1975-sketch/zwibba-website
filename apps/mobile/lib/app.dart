@@ -128,6 +128,7 @@ class _RootAppShell extends StatefulWidget {
 
 class _RootAppShellState extends State<_RootAppShell> {
   SellerSession? _activeSession;
+  String? _requestedBuyerListingSlug;
   _AppSection _section = _AppSection.seller;
 
   @override
@@ -156,6 +157,19 @@ class _RootAppShellState extends State<_RootAppShell> {
     });
   }
 
+  void _handleOpenPublishedListing(String slug) {
+    setState(() {
+      _requestedBuyerListingSlug = slug;
+      _section = _AppSection.buyer;
+    });
+  }
+
+  void _handleRequestedBuyerListingConsumed() {
+    setState(() {
+      _requestedBuyerListingSlug = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -176,11 +190,15 @@ class _RootAppShellState extends State<_RootAppShell> {
                 draftApiService: widget.draftApiService,
                 localDraftCacheService: widget.localDraftCacheService,
                 mediaApiService: widget.mediaApiService,
+                onOpenPublishedListing: _handleOpenPublishedListing,
                 onSessionChanged: _handleSessionChanged,
                 walletApiService: widget.walletApiService,
               ),
             _AppSection.buyer => _BuyerFlowShell(
                 listingsApiService: widget.listingsApiService,
+                onRequestedListingHandled:
+                    _handleRequestedBuyerListingConsumed,
+                requestedListingSlug: _requestedBuyerListingSlug,
               ),
             _AppSection.messages => _MessagesFlowShell(
                 chatApiService: widget.chatApiService,
@@ -360,9 +378,13 @@ class _MessagesFlowShellState extends State<_MessagesFlowShell> {
 class _BuyerFlowShell extends StatefulWidget {
   const _BuyerFlowShell({
     required this.listingsApiService,
+    required this.onRequestedListingHandled,
+    this.requestedListingSlug,
   });
 
   final ListingsApiService listingsApiService;
+  final VoidCallback onRequestedListingHandled;
+  final String? requestedListingSlug;
 
   @override
   State<_BuyerFlowShell> createState() => _BuyerFlowShellState();
@@ -377,6 +399,16 @@ class _BuyerFlowShellState extends State<_BuyerFlowShell> {
   void initState() {
     super.initState();
     _loadListings();
+    _openRequestedListingIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(covariant _BuyerFlowShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.requestedListingSlug != widget.requestedListingSlug) {
+      _openRequestedListingIfNeeded();
+    }
   }
 
   Future<void> _loadListings() async {
@@ -393,9 +425,11 @@ class _BuyerFlowShellState extends State<_BuyerFlowShell> {
   }
 
   Future<void> _openListing(ListingSummary listing) async {
-    final detail = await widget.listingsApiService.fetchListingDetail(
-      listing.slug,
-    );
+    await _openListingSlug(listing.slug);
+  }
+
+  Future<void> _openListingSlug(String slug) async {
+    final detail = await widget.listingsApiService.fetchListingDetail(slug);
 
     if (!mounted) {
       return;
@@ -404,6 +438,17 @@ class _BuyerFlowShellState extends State<_BuyerFlowShell> {
     setState(() {
       _selectedDetail = detail;
     });
+  }
+
+  Future<void> _openRequestedListingIfNeeded() async {
+    final requestedListingSlug = widget.requestedListingSlug;
+
+    if (requestedListingSlug == null || requestedListingSlug.isEmpty) {
+      return;
+    }
+
+    await _openListingSlug(requestedListingSlug);
+    widget.onRequestedListingHandled();
   }
 
   @override
@@ -512,6 +557,7 @@ class _SellerFlowShell extends StatefulWidget {
     required this.draftApiService,
     required this.localDraftCacheService,
     required this.mediaApiService,
+    required this.onOpenPublishedListing,
     required this.onSessionChanged,
     required this.walletApiService,
   });
@@ -522,6 +568,7 @@ class _SellerFlowShell extends StatefulWidget {
   final DraftApiService draftApiService;
   final LocalDraftCacheService localDraftCacheService;
   final MediaApiService mediaApiService;
+  final ValueChanged<String> onOpenPublishedListing;
   final Future<void> Function(SellerSession session) onSessionChanged;
   final WalletApiService walletApiService;
 
@@ -991,7 +1038,16 @@ class _SellerFlowShellState extends State<_SellerFlowShell> {
               ),
             );
           },
-          onViewListing: _goHome,
+          onViewListing: () {
+            final listingSlug = _publishOutcome?.listingSlug ?? '';
+
+            if (listingSlug.isEmpty) {
+              _goHome();
+              return;
+            }
+
+            widget.onOpenPublishedListing(listingSlug);
+          },
           reasonSummary: _publishOutcome?.reasonSummary ??
               'Annonce approuvée et prête à partager.',
           statusLabel: _publishOutcome?.statusLabel ??

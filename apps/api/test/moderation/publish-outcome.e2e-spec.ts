@@ -34,12 +34,19 @@ class _FakeTwilioVerifyService {
 class _FakePrismaService {
   readonly draftPhotosByDraftId = new Map<string, Array<Record<string, unknown>>>();
   readonly drafts = new Map<string, Record<string, unknown>>();
+  readonly listings = new Map<string, Record<string, unknown>>();
+  readonly moderationDecisions = new Map<string, Record<string, unknown>>();
   readonly sessions = new Map<string, {
     token: string;
     user: {
       phoneNumber: string;
     };
   }>();
+  readonly $transaction = async <T>(
+    callback: (transaction: _FakePrismaService) => Promise<T>,
+  ) => {
+    return callback(this);
+  };
 
   readonly session = {
     create: async ({
@@ -188,6 +195,123 @@ class _FakePrismaService {
       return { count: 0 };
     },
   };
+
+  readonly listing = {
+    findMany: async ({
+      where,
+    }: {
+      where?: {
+        moderationStatus?: string;
+      };
+    } = {}) => {
+      return Array.from(this.listings.values()).filter((listing) => {
+        if (!where?.moderationStatus) {
+          return true;
+        }
+
+        return listing.moderationStatus === where.moderationStatus;
+      });
+    },
+    findUnique: async ({
+      where,
+    }: {
+      where: {
+        draftId?: string;
+        id?: string;
+        slug?: string;
+      };
+    }) => {
+      return Array.from(this.listings.values()).find((listing) => {
+        if (where.id) {
+          return listing.id === where.id;
+        }
+
+        if (where.slug) {
+          return listing.slug === where.slug;
+        }
+
+        if (where.draftId) {
+          return listing.draftId === where.draftId;
+        }
+
+        return false;
+      }) ?? null;
+    },
+    upsert: async ({
+      create,
+      update,
+      where,
+    }: {
+      create: Record<string, unknown>;
+      update: Record<string, unknown>;
+      where: {
+        draftId: string;
+      };
+    }) => {
+      const existingListing = Array.from(this.listings.values()).find(
+        (listing) => listing.draftId === where.draftId,
+      );
+      const nextListing = {
+        ...existingListing,
+        ...(existingListing ? update : create),
+        draftId: where.draftId,
+        id: (existingListing?.id as string | undefined) ??
+          `listing_${where.draftId}`,
+      };
+      this.listings.set(nextListing.id as string, nextListing);
+      return nextListing;
+    },
+  };
+
+  readonly moderationDecision = {
+    findMany: async ({
+      include,
+      where,
+    }: {
+      include?: {
+        listing?: boolean;
+      };
+      where?: {
+        status?: string;
+      };
+    } = {}) => {
+      return Array.from(this.moderationDecisions.values())
+        .filter((decision) => {
+          if (!where?.status) {
+            return true;
+          }
+
+          return decision.status === where.status;
+        })
+        .map((decision) => ({
+          ...decision,
+          listing: include?.listing
+              ? this.listings.get(decision.listingId as string) ?? null
+              : undefined,
+        }));
+    },
+    upsert: async ({
+      create,
+      update,
+      where,
+    }: {
+      create: Record<string, unknown>;
+      update: Record<string, unknown>;
+      where: {
+        listingId: string;
+      };
+    }) => {
+      const existingDecision = this.moderationDecisions.get(where.listingId);
+      const nextDecision = {
+        ...existingDecision,
+        ...(existingDecision ? update : create),
+        id: where.listingId,
+        listingId: where.listingId,
+      };
+      this.moderationDecisions.set(where.listingId, nextDecision);
+      return nextDecision;
+    },
+  };
 }
 
 async function createTestApp(): Promise<INestApplication> {
@@ -204,6 +328,21 @@ async function createTestApp(): Promise<INestApplication> {
   const app = moduleRef.createNestApplication();
   await app.init();
   return app;
+}
+
+function getPersistedListing(prisma: _FakePrismaService, listingId: string) {
+  const listing = prisma.listings.get(listingId);
+  assert.ok(listing, `Expected persisted listing ${listingId}.`);
+  return listing;
+}
+
+function getPersistedModerationDecision(
+  prisma: _FakePrismaService,
+  listingId: string,
+) {
+  const decision = prisma.moderationDecisions.get(listingId);
+  assert.ok(decision, `Expected persisted moderation decision ${listingId}.`);
+  return decision;
 }
 
 async function createSellerSession(
@@ -239,7 +378,18 @@ async function syncDraft(
   const response = await request(app.getHttpServer())
     .post('/drafts/sync')
     .set('authorization', `Bearer ${sessionToken}`)
-    .send(body)
+    .send({
+      ...body,
+      photos: [
+        {
+          objectKey: 'draft-photos/phone-front.jpg',
+          photoId: 'photo_phone-front',
+          publicUrl: 'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
+          sourcePresetId: 'phone-front',
+          uploadStatus: 'uploaded',
+        },
+      ],
+    })
     .expect(201);
 
   return response.body as {
@@ -253,8 +403,19 @@ async function syncDraft(
   };
 }
 
-test('publishing a synced phone draft is approved', async (t) => {
-  const app = await createTestApp();
+test('publishing a synced phone draft persists the listing and moderation decision', async (t) => {
+  const prisma = new _FakePrismaService();
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule],
+  })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .overrideProvider(TwilioVerifyService)
+      .useValue(new _FakeTwilioVerifyService())
+      .compile();
+
+  const app = moduleRef.createNestApplication();
+  await app.init();
   t.after(async () => {
     await app.close();
   });
@@ -281,14 +442,37 @@ test('publishing a synced phone draft is approved', async (t) => {
     publishResponse.body.statusLabel,
     'Annonce approuvée et prête à partager',
   );
+  assert.match(publishResponse.body.shareUrl, /\/annonces\/samsung-galaxy-a54-128-go$/);
+
+  const persistedListing = getPersistedListing(prisma, publishResponse.body.id);
+  assert.equal(persistedListing.title, 'Samsung Galaxy A54 128 Go');
+  assert.equal(persistedListing.slug, 'samsung-galaxy-a54-128-go');
+  assert.equal(persistedListing.moderationStatus, 'approved');
+
+  const persistedDecision = getPersistedModerationDecision(
+    prisma,
+    publishResponse.body.id as string,
+  );
+  assert.equal(persistedDecision.status, 'approved');
   assert.match(
-    publishResponse.body.shareUrl,
-    /\/annonces\/draft_samsung-galaxy-a54-128-go_[a-z0-9]{8}$/,
+    persistedDecision.reasonSummary as string,
+    /prête à partager/i,
   );
 });
 
-test('publishing a synced vehicle draft is queued for manual review', async (t) => {
-  const app = await createTestApp();
+test('publishing a synced vehicle draft persists a pending moderation decision', async (t) => {
+  const prisma = new _FakePrismaService();
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule],
+  })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .overrideProvider(TwilioVerifyService)
+      .useValue(new _FakeTwilioVerifyService())
+      .compile();
+
+  const app = moduleRef.createNestApplication();
+  await app.init();
   t.after(async () => {
     await app.close();
   });
@@ -316,17 +500,39 @@ test('publishing a synced vehicle draft is queued for manual review', async (t) 
     'Annonce envoyée en revue manuelle',
   );
 
+  const persistedListing = getPersistedListing(prisma, publishResponse.body.id);
+  assert.equal(persistedListing.slug, 'toyota-hilux-2019-4x4');
+  assert.equal(persistedListing.moderationStatus, 'pending_manual_review');
+
+  const persistedDecision = getPersistedModerationDecision(
+    prisma,
+    publishResponse.body.id as string,
+  );
+  assert.equal(persistedDecision.status, 'pending_manual_review');
+
   const queueResponse = await request(app.getHttpServer())
     .get('/moderation/queue')
     .expect(200);
 
   assert.equal(queueResponse.body.items.length, 1);
-  assert.equal(queueResponse.body.items[0].id, syncedDraft.draftId);
+  assert.equal(queueResponse.body.items[0].id, publishResponse.body.id);
+  assert.equal(queueResponse.body.items[0].listingTitle, 'Toyota Hilux 2019 4x4');
   assert.equal(queueResponse.body.items[0].status, 'pending_manual_review');
 });
 
-test('publishing a synced draft with missing sensitive metadata is blocked', async (t) => {
-  const app = await createTestApp();
+test('publishing a synced draft with missing metadata persists a blocked moderation decision', async (t) => {
+  const prisma = new _FakePrismaService();
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule],
+  })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .overrideProvider(TwilioVerifyService)
+      .useValue(new _FakeTwilioVerifyService())
+      .compile();
+
+  const app = moduleRef.createNestApplication();
+  await app.init();
   t.after(async () => {
     await app.close();
   });
@@ -354,4 +560,13 @@ test('publishing a synced draft with missing sensitive metadata is blocked', asy
     'Annonce bloquée: informations à corriger',
   );
   assert.match(publishResponse.body.reasonSummary, /description/i);
+
+  const persistedListing = getPersistedListing(prisma, publishResponse.body.id);
+  assert.equal(persistedListing.moderationStatus, 'blocked_needs_fix');
+
+  const persistedDecision = getPersistedModerationDecision(
+    prisma,
+    publishResponse.body.id as string,
+  );
+  assert.equal(persistedDecision.status, 'blocked_needs_fix');
 });

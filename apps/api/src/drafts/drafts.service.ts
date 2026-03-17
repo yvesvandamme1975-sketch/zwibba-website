@@ -132,7 +132,7 @@ export class DraftsService {
     };
   }
 
-  async getSyncedDraft(draftId: string) {
+  async getSyncedDraft(draftId: string): Promise<SyncedDraftRecord | undefined> {
     const draft = await this.prismaService.draft.findUnique({
       where: {
         id: draftId,

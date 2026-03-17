@@ -6,6 +6,7 @@ import 'package:zwibba_mobile/services/ai_draft_api_service.dart';
 import 'package:zwibba_mobile/services/auth_api_service.dart';
 import 'package:zwibba_mobile/services/chat_api_service.dart';
 import 'package:zwibba_mobile/services/draft_api_service.dart';
+import 'package:zwibba_mobile/services/listings_api_service.dart';
 import 'package:zwibba_mobile/services/local_draft_cache_service.dart';
 import 'package:zwibba_mobile/services/media_api_service.dart';
 
@@ -17,6 +18,7 @@ void main() {
       authApiService: _OutcomeAuthApiService(),
       chatApiService: _FakeChatApiService(),
       draftApiService: _OutcomeDraftApiService(),
+      listingsApiService: _OutcomeListingsApiService(),
       localDraftCacheService:
           LocalDraftCacheService(backend: _MemoryDraftCacheBackend()),
       mediaApiService: _FakeMediaApiService(),
@@ -32,6 +34,12 @@ void main() {
     expect(find.text('Annonce publiée'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Partager sur WhatsApp'),
         findsOneWidget);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Voir mon annonce'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Samsung Galaxy A54 128 Go'), findsWidgets);
+    expect(find.text('Conseils de sécurité'), findsOneWidget);
   });
 
   testWidgets('vehicle publish shows the pending review screen',
@@ -189,6 +197,7 @@ class _OutcomeDraftApiService implements DraftApiService {
     if (blockedMode) {
       return const PublishOutcome(
         id: 'draft_blocked',
+        listingSlug: 'samsung-galaxy-a54-128-go',
         reasonSummary: 'La description doit être complétée avant publication.',
         shareUrl: '',
         status: 'blocked_needs_fix',
@@ -199,6 +208,7 @@ class _OutcomeDraftApiService implements DraftApiService {
     if (draft.categoryId == 'vehicles') {
       return const PublishOutcome(
         id: 'draft_vehicle',
+        listingSlug: 'toyota-hilux-2019-4x4',
         reasonSummary: 'Votre annonce passe en revue manuelle.',
         shareUrl: '',
         status: 'pending_manual_review',
@@ -208,6 +218,7 @@ class _OutcomeDraftApiService implements DraftApiService {
 
     return const PublishOutcome(
       id: 'draft_approved',
+      listingSlug: 'samsung-galaxy-a54-128-go',
       reasonSummary: 'Annonce approuvée et prête à partager.',
       shareUrl: 'https://zwibba.com/annonces/draft_approved',
       status: 'approved',
@@ -225,6 +236,39 @@ class _OutcomeDraftApiService implements DraftApiService {
       syncedDraftId: 'draft_${draft.title.toLowerCase().replaceAll(' ', '-')}',
       syncStatus: 'synced',
     );
+  }
+}
+
+class _OutcomeListingsApiService implements ListingsApiService {
+  @override
+  Future<ListingDetail> fetchListingDetail(String slug) async {
+    return ListingDetail(
+      contactActions: const ['whatsapp', 'sms', 'call'],
+      id: 'listing_approved',
+      locationLabel: 'Lubumbashi Centre',
+      priceCdf: 4256000,
+      safetyTips: const ['Rencontrez le vendeur dans un lieu public.'],
+      sellerName: 'Patrick Mobile',
+      sellerResponseTime: 'Répond en moyenne en 9 min',
+      sellerRole: 'Vendeur pro',
+      slug: slug,
+      summary: 'Téléphone propre, version 128 Go, prêt à l’emploi.',
+      title: 'Samsung Galaxy A54 128 Go',
+    );
+  }
+
+  @override
+  Future<List<ListingSummary>> fetchBrowseListings() async {
+    return const [
+      ListingSummary(
+        categoryLabel: 'Téléphones & Tablettes',
+        id: 'listing_approved',
+        locationLabel: 'Lubumbashi Centre',
+        priceCdf: 4256000,
+        slug: 'samsung-galaxy-a54-128-go',
+        title: 'Samsung Galaxy A54 128 Go',
+      ),
+    ];
   }
 }
 

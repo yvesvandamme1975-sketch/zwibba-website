@@ -3,6 +3,7 @@ import 'api_client.dart';
 class ListingSummary {
   const ListingSummary({
     required this.categoryLabel,
+    required this.id,
     required this.locationLabel,
     required this.priceCdf,
     required this.slug,
@@ -10,6 +11,7 @@ class ListingSummary {
   });
 
   final String categoryLabel;
+  final String id;
   final String locationLabel;
   final int priceCdf;
   final String slug;
@@ -19,6 +21,7 @@ class ListingSummary {
 class ListingDetail {
   const ListingDetail({
     required this.contactActions,
+    required this.id,
     required this.locationLabel,
     required this.priceCdf,
     required this.safetyTips,
@@ -31,6 +34,7 @@ class ListingDetail {
   });
 
   final List<String> contactActions;
+  final String id;
   final String locationLabel;
   final int priceCdf;
   final List<String> safetyTips;
@@ -67,6 +71,7 @@ class HttpListingsApiService implements ListingsApiService {
         .map(
           (item) => ListingSummary(
             categoryLabel: item['categoryLabel'] as String,
+            id: item['id'] as String,
             locationLabel: item['locationLabel'] as String,
             priceCdf: item['priceCdf'] as int,
             slug: item['slug'] as String,
@@ -83,6 +88,7 @@ class HttpListingsApiService implements ListingsApiService {
 
     return ListingDetail(
       contactActions: List<String>.from(json['contactActions'] as List),
+      id: json['id'] as String,
       locationLabel: json['locationLabel'] as String,
       priceCdf: json['priceCdf'] as int,
       safetyTips: List<String>.from(json['safetyTips'] as List),
