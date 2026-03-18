@@ -54,6 +54,13 @@ async function loadPhotoBytes({
     throw new Error('Photo source introuvable.');
   }
 
+  if (sourceUrl.startsWith('/assets/demo/')) {
+    return {
+      bytes: buildDemoSvgBytes(photo),
+      contentType: 'image/svg+xml',
+    };
+  }
+
   const response = await fetchFn(sourceUrl);
 
   if (!response.ok) {

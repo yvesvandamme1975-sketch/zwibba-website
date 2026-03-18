@@ -48,7 +48,7 @@ test('live publish uploads preview photos, syncs the draft, and returns the mode
   const draft = updateListingDraft(
     markDraftOtpVerified(
       createListingDraftFromFirstPhoto({
-        photoUrl: '/assets/demo/phone-front.jpg',
+        photoUrl: '/uploads/phone-front.jpg',
       }),
       { phoneNumber: session.phoneNumber },
     ),
@@ -73,7 +73,7 @@ test('live publish uploads preview photos, syncs the draft, and returns the mode
         ...options,
       });
 
-      if (url === '/assets/demo/phone-front.jpg') {
+      if (url === '/uploads/phone-front.jpg') {
         return createBinaryResponse([1, 2, 3, 4], 'image/jpeg');
       }
 
@@ -138,15 +138,15 @@ test('live publish uploads preview photos, syncs the draft, and returns the mode
   assert.equal(result.draft.photos[0].uploadStatus, 'uploaded');
   assert.equal(result.outcome.status, 'approved');
   assert.equal(result.listingUrl, 'https://zwibba.com/annonces/samsung-galaxy-a54');
-  assert.equal(requests[0].url, '/assets/demo/phone-front.jpg');
+  assert.equal(requests[0].url, '/uploads/phone-front.jpg');
   assert.equal(requests[1].url, 'https://api.example.test/media/upload-url');
   assert.equal(requests[2].url, 'https://uploads.example.test/signed-put');
   assert.equal(requests[3].url, 'https://api.example.test/drafts/sync');
   assert.equal(requests[4].url, 'https://api.example.test/moderation/publish');
 });
 
-test('live publish falls back to a generated demo image when the symbolic preview URL is not a real file', async () => {
-  const bodySizes = [];
+test('live publish generates the demo upload payload locally for symbolic preview URLs', async () => {
+  const requests = [];
   const draft = updateListingDraft(
     createListingDraftFromFirstPhoto({
       photoUrl: '/assets/demo/face.jpg',
@@ -167,16 +167,13 @@ test('live publish falls back to a generated demo image when the symbolic previe
     apiBaseUrl: 'https://api.example.test',
     draft,
     fetchFn: async (url, options = {}) => {
+      requests.push({
+        url,
+        ...options,
+      });
+
       if (url === '/assets/demo/face.jpg') {
-        return {
-          ok: false,
-          status: 404,
-          headers: {
-            get() {
-              return null;
-            },
-          },
-        };
+        throw new Error('should not fetch symbolic demo assets');
       }
 
       if (url === 'https://api.example.test/media/upload-url') {
@@ -190,7 +187,7 @@ test('live publish falls back to a generated demo image when the symbolic previe
       }
 
       if (url === 'https://uploads.example.test/signed-put') {
-        bodySizes.push(options.body.byteLength);
+        assert.ok(options.body.byteLength > 0);
 
         return {
           ok: true,
@@ -242,6 +239,6 @@ test('live publish falls back to a generated demo image when the symbolic previe
     },
   });
 
-  assert.equal(bodySizes.length, 1);
-  assert.ok(bodySizes[0] > 0);
+  assert.equal(requests[0].url, 'https://api.example.test/media/upload-url');
+  assert.equal(requests[1].url, 'https://uploads.example.test/signed-put');
 });
