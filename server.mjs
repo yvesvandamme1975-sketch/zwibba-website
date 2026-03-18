@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.join(__dirname, 'dist');
 const port = Number(process.env.PORT || 3003);
+const publicDomain = process.env.RAILWAY_PUBLIC_DOMAIN || '';
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -108,4 +109,7 @@ createServer((request, response) => {
   }
 }).listen(port, '0.0.0.0', () => {
   console.log(`Zwibba website server running on http://127.0.0.1:${port}`);
+  if (publicDomain) {
+    console.log(`Zwibba website public URL https://${publicDomain}`);
+  }
 });
