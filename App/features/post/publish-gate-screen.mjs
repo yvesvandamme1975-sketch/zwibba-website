@@ -1,7 +1,14 @@
 import { renderInAppBrand } from '../../components/in-app-brand.mjs';
 import { escapeHtml, formatCdf } from '../../utils/rendering.mjs';
 
-export function renderPublishGateScreen({ draft, session }) {
+export function renderPublishGateScreen({
+  busyLabel = '',
+  draft,
+  errorMessage = '',
+  session,
+}) {
+  const isBusy = Boolean(busyLabel);
+
   return `
     <section class="app-flow app-flow--publish">
       <header class="app-flow__header">
@@ -32,10 +39,25 @@ export function renderPublishGateScreen({ draft, session }) {
         <em>${escapeHtml(formatCdf(draft.details.priceCdf))}</em>
       </div>
 
+      ${
+        errorMessage
+          ? `
+            <div class="app-review__error-summary" data-review-errors>
+              <strong>La publication n'a pas pu aboutir</strong>
+              <ul class="app-review__errors">
+                <li>${escapeHtml(errorMessage)}</li>
+              </ul>
+            </div>
+          `
+          : ''
+      }
+
       <div class="app-flow__actions">
         ${
           session
-            ? '<button class="app-flow__button" type="button" data-action="submit-publish">Publier maintenant</button>'
+            ? `<button class="app-flow__button" type="button" data-action="submit-publish"${isBusy ? ' disabled' : ''}>${escapeHtml(
+                isBusy ? busyLabel : 'Publier maintenant',
+              )}</button>`
             : '<a class="app-flow__button" href="#auth-welcome">Vérifier mon numéro</a>'
         }
         <a class="app-flow__button app-flow__button--secondary" href="#review">Modifier le brouillon</a>

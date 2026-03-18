@@ -88,9 +88,51 @@ test('success screen exposes the post-publish sharing actions', () => {
       title: 'Samsung Galaxy A54 128 Go',
     }),
     listingUrl: '/annonce/samsung-galaxy-a54-128-go',
+    outcome: {
+      reasonSummary: 'Annonce approuvée et prête à partager.',
+      status: 'approved',
+      statusLabel: 'Annonce approuvée et prête à partager',
+    },
   });
 
   assert.match(html, /Partager sur WhatsApp/);
   assert.match(html, /Copier le lien/);
   assert.match(html, /Voir mon annonce/);
+});
+
+test('success screen adapts to pending manual review without share actions', () => {
+  const html = renderSuccessScreen({
+    draft: createReadyDraft({
+      categoryId: 'vehicles',
+      title: 'Toyota Hilux',
+    }),
+    listingUrl: '',
+    outcome: {
+      reasonSummary: 'Votre annonce a été envoyée en revue manuelle.',
+      status: 'pending_manual_review',
+      statusLabel: 'Annonce envoyée en revue manuelle',
+    },
+  });
+
+  assert.match(html, /revue manuelle/i);
+  assert.doesNotMatch(html, /Partager sur WhatsApp/i);
+  assert.doesNotMatch(html, /Voir mon annonce/i);
+});
+
+test('success screen adapts to blocked publish outcomes', () => {
+  const html = renderSuccessScreen({
+    draft: createReadyDraft({
+      title: 'Annonce incomplète',
+    }),
+    listingUrl: '',
+    outcome: {
+      reasonSummary: 'Ajoutez au moins une photo valide avant publication.',
+      status: 'blocked_needs_fix',
+      statusLabel: 'Annonce bloquée: informations à corriger',
+    },
+  });
+
+  assert.match(html, /Annonce bloqu[ée]e/i);
+  assert.match(html, /Ajoutez au moins une photo valide avant publication/i);
+  assert.doesNotMatch(html, /Partager sur WhatsApp/i);
 });

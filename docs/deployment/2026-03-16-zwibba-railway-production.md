@@ -102,6 +102,11 @@ Admin verification notes:
    - `R2_PUBLIC_BASE_URL`
    - `R2_S3_ENDPOINT`
 4. Confirm the public delivery hostname in `R2_PUBLIC_BASE_URL`.
+5. Configure bucket CORS for browser uploads from:
+   - `https://website-production-7a12.up.railway.app`
+   - `http://127.0.0.1:3003`
+   - `http://localhost:3003`
+   Allow methods `PUT`, `GET`, `HEAD`, allow header `content-type`, and expose `etag`.
 
 The API already issues presigned upload URLs, so the mobile client can upload media directly to R2.
 

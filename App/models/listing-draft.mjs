@@ -46,7 +46,12 @@ function normalizePhoto(photo = {}, index = 0) {
   return {
     id: photo.id ?? fallbackId,
     kind: photo.kind ?? (index === 0 ? 'primary' : 'guided'),
+    objectKey: photo.objectKey ?? '',
+    photoId: photo.photoId ?? '',
     promptId: photo.promptId ?? '',
+    publicUrl: photo.publicUrl ?? '',
+    sourcePresetId: photo.sourcePresetId ?? '',
+    uploadStatus: photo.uploadStatus ?? '',
     url,
     previewUrl: photo.previewUrl ?? url,
     sizeBytes: photo.sizeBytes ?? null,
@@ -83,6 +88,9 @@ function buildDraftShape(draft) {
       ...createEmptyUploadState(),
       ...draft.upload,
     },
+    ownerPhoneNumber: draft.ownerPhoneNumber ?? '',
+    remoteDraftId: draft.remoteDraftId ?? draft.syncedDraftId ?? '',
+    syncStatus: draft.syncStatus ?? '',
     canSyncToAccount: draft.syncState === draftSyncStates.accountSyncable,
   };
 }
@@ -106,6 +114,9 @@ export function createEmptyListingDraft({ now = new Date().toISOString() } = {})
     ai: createEmptyAiState(),
     guidance: createEmptyGuidance(),
     upload: createEmptyUploadState(),
+    ownerPhoneNumber: '',
+    remoteDraftId: '',
+    syncStatus: '',
   });
 }
 

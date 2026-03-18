@@ -96,6 +96,14 @@ test('app entry page opens the interactive flow instead of linking to the curren
   assert.match(appEntry, /href="#capture"/i);
 });
 
+test('app entry page bootstraps the live API base URL for the browser seller flow', () => {
+  buildSite();
+
+  const appEntry = readFileSync(path.join(distDir, 'App/index.html'), 'utf8');
+  assert.match(appEntry, /window\.ZWIBBA_API_BASE_URL/);
+  assert.match(appEntry, /https:\/\/api-production-b1b58\.up\.railway\.app/);
+});
+
 test('site shell includes accessibility hooks and page-level structured data', () => {
   buildSite();
 

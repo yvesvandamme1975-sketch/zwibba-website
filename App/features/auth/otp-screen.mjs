@@ -35,7 +35,7 @@ export function renderOtpScreen({
           <input class="app-auth__code" name="otpCode" type="text" inputmode="numeric" maxlength="6" />
         </label>
 
-        <div class="app-flow__note">Prototype local: utilisez le code <strong>123456</strong>.</div>
+        <div class="app-flow__note">Beta Railway: utilisez le code <strong>123456</strong>.</div>
 
         <div class="app-flow__actions">
           <button class="app-flow__button" type="submit">Vérifier et continuer</button>

@@ -19,6 +19,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 const distDir = path.join(repoRoot, 'dist');
 const assetsDir = path.join(distDir, 'assets');
+const appApiBaseUrl =
+  process.env.ZWIBBA_API_BASE_URL || 'https://api-production-b1b58.up.railway.app';
 const plausibleDomain = process.env.PLAUSIBLE_DOMAIN || '';
 const plausibleSrc = process.env.PLAUSIBLE_SRC || 'https://plausible.io/js/script.js';
 
@@ -273,6 +275,7 @@ function renderAppPage() {
         </div>
       </section>
     </main>
+    <script>window.ZWIBBA_API_BASE_URL = ${JSON.stringify(appApiBaseUrl)};</script>
     <script type="module" src="/assets/app/app.js"></script>
   </body>
 </html>`;
