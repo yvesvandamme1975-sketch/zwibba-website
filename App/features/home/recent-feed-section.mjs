@@ -1,41 +1,82 @@
+import {
+  escapeAttribute,
+  escapeHtml,
+  formatCdf,
+} from '../../utils/rendering.mjs';
+
 function renderListingCard(listing) {
+  const priceLabel = listing.priceLabel ?? formatCdf(listing.priceCdf);
+  const locationLabel = listing.location ?? listing.locationLabel ?? 'Localisation à confirmer';
+  const publishedAt = listing.publishedAt ?? listing.categoryLabel ?? 'Disponible maintenant';
+  const listingHref = listing.slug ? `#listing/${encodeURIComponent(listing.slug)}` : '#home';
+
   return `
-    <article class="app-home__listing-card">
+    <a class="app-home__listing-card" href="${escapeAttribute(listingHref)}">
       <div class="app-home__listing-media" aria-hidden="true"></div>
       <div class="app-home__listing-copy">
-        <strong>${listing.title}</strong>
-        <em>${listing.priceLabel}</em>
-        <span>${listing.location}</span>
-        <small>${listing.publishedAt}</small>
+        <strong>${escapeHtml(listing.title)}</strong>
+        <em>${escapeHtml(priceLabel)}</em>
+        <span>${escapeHtml(locationLabel)}</span>
+        <small>${escapeHtml(publishedAt)}</small>
       </div>
-    </article>
+    </a>
   `;
 }
 
-export function renderRecentFeedSection({ listings }) {
+function renderFeedBody({
+  emptyMessage,
+  listings,
+  loadingMessage,
+  sectionClassName,
+  status,
+}) {
+  if (status === 'loading') {
+    return `<div class="${sectionClassName} app-home__feed-state">Chargement des annonces...${loadingMessage ? ` ${escapeHtml(loadingMessage)}` : ''}</div>`;
+  }
+
+  if (!listings.length) {
+    return `<div class="${sectionClassName} app-home__feed-state">${escapeHtml(emptyMessage)}</div>`;
+  }
+
+  return `<div class="${sectionClassName}">${listings.map(renderListingCard).join('')}</div>`;
+}
+
+export function renderRecentFeedSection({
+  listings,
+  status = 'ready',
+}) {
   return `
     <section class="app-home__section" data-recent-feed-section>
       <div class="app-home__section-head">
         <h3>Récent</h3>
-        <span>Flux vendeur</span>
+        <span>Flux acheteur</span>
       </div>
-      <div class="app-home__recent-feed">
-        ${listings.map(renderListingCard).join('')}
-      </div>
+      ${renderFeedBody({
+        emptyMessage: 'Aucune annonce ne correspond à vos filtres pour le moment.',
+        listings,
+        sectionClassName: 'app-home__recent-feed',
+        status,
+      })}
     </section>
   `;
 }
 
-export function renderFeaturedSection({ listings }) {
+export function renderFeaturedSection({
+  listings,
+  status = 'ready',
+}) {
   return `
     <section class="app-home__section">
       <div class="app-home__section-head">
         <h3>En avant</h3>
-        <span>À partager vite</span>
+        <span>À découvrir</span>
       </div>
-      <div class="app-home__featured-row">
-        ${listings.map(renderListingCard).join('')}
-      </div>
+      ${renderFeedBody({
+        emptyMessage: 'Aucune annonce mise en avant pour ces filtres.',
+        listings,
+        sectionClassName: 'app-home__featured-row',
+        status,
+      })}
     </section>
   `;
 }

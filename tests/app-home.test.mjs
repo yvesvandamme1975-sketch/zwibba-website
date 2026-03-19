@@ -81,3 +81,20 @@ test('home screen shows the Zwibba in-app brand mark', () => {
   assert.match(html, /\/assets\/brand\/favicon\.svg/);
   assert.match(html, /Zwibba/);
 });
+
+test('home screen renders a real buyer search input and interactive category chips', () => {
+  const html = renderHomeScreen({
+    draft: null,
+    featuredListings,
+    recentListings,
+    categories,
+    searchQuery: 'Galaxy',
+    selectedCategoryId: 'phones_tablets',
+  });
+
+  assert.match(html, /input[^>]+name="buyerSearch"/);
+  assert.match(html, /value="Galaxy"/);
+  assert.match(html, /data-action="filter-category"/);
+  assert.match(html, /data-category-id="phones_tablets"/);
+  assert.match(html, /app-home__chip is-active/);
+});
