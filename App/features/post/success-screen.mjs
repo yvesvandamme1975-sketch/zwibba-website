@@ -51,7 +51,12 @@ function resolveOutcomeContent(outcome = {}, { listingUrl = '' } = {}) {
   }
 }
 
-export function renderSuccessScreen({ draft, listingUrl, outcome = null }) {
+export function renderSuccessScreen({
+  draft,
+  listingRoute = '',
+  listingUrl,
+  outcome = null,
+}) {
   const content = resolveOutcomeContent(outcome ?? {
     status: 'approved',
   }, { listingUrl });
@@ -115,6 +120,7 @@ export function renderSuccessScreen({ draft, listingUrl, outcome = null }) {
                 class="app-flow__button app-flow__button--secondary"
                 type="button"
                 data-action="view-listing-link"
+                data-listing-route="${escapeAttribute(listingRoute)}"
                 data-listing-url="${escapeAttribute(listingUrl)}"
               >
                 Voir mon annonce

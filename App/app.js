@@ -2,14 +2,17 @@ import {
   areaOptions,
   conditionOptions,
   demoCaptureOptions,
-  featuredListings,
-  recentListings,
   sellerCategories,
 } from './demo-content.mjs';
 import { renderAuthWelcomeScreen } from './features/auth/welcome-screen.mjs';
 import { renderPhoneInputScreen } from './features/auth/phone-input-screen.mjs';
 import { renderOtpScreen } from './features/auth/otp-screen.mjs';
+import {
+  createBuyerBrowseController,
+  parseAppRoute,
+} from './features/home/buyer-browse-controller.mjs';
 import { renderHomeScreen } from './features/home/home-screen.mjs';
+import { renderListingDetailScreen } from './features/listings/listing-detail-screen.mjs';
 import { renderCaptureScreen } from './features/post/capture-screen.mjs';
 import { renderPhotoGuidanceScreen } from './features/post/photo-guidance-screen.mjs';
 import { renderPublishGateScreen } from './features/post/publish-gate-screen.mjs';
@@ -26,6 +29,7 @@ import { createApiConfig } from './services/api-config.mjs';
 import { createAuthService } from './services/auth-service.mjs';
 import { createDraftStorageService } from './services/draft-storage.mjs';
 import { createImageCompressionService } from './services/image-compression.mjs';
+import { createListingsService } from './services/listings-service.mjs';
 import {
   createPostFlowController,
   decidePublishGate,
@@ -34,17 +38,6 @@ import {
 } from './features/post/post-flow-controller.mjs';
 
 const appRoot = document.querySelector('[data-app-root]');
-const appRoutes = new Set([
-  '#auth-welcome',
-  '#capture',
-  '#guidance',
-  '#home',
-  '#otp',
-  '#phone',
-  '#publish',
-  '#review',
-  '#success',
-]);
 
 if (appRoot) {
   const apiConfig = createApiConfig({
@@ -63,8 +56,17 @@ if (appRoot) {
     imageCompressionService: createImageCompressionService(),
     aiDraftService: createAiDraftService(),
   });
+  const buyerBrowseController = createBuyerBrowseController({
+    listingsService: createListingsService({
+      apiBaseUrl: apiConfig.apiBaseUrl,
+      fetchFn: window.fetch.bind(window),
+    }),
+  });
   const state = {
     busyLabel: '',
+    buyerFeedPromise: null,
+    buyerListingPromise: null,
+    currentListingSlug: '',
     draft: draftStorage.loadDraft(),
     otpError: '',
     pendingChallenge: authService.getPendingChallenge(),
@@ -72,6 +74,7 @@ if (appRoot) {
     phoneNumber: authService.getPendingChallenge()?.phoneNumber ?? '+243',
     publishError: '',
     publishOutcome: null,
+    publishedListingRoute: '',
     publishedListingUrl: '',
     reviewErrors: [],
     session: authService.loadSession(),
@@ -82,9 +85,7 @@ if (appRoot) {
   }
 
   function getRoute() {
-    const normalizedHash = (window.location.hash || '#home').toLowerCase();
-
-    return appRoutes.has(normalizedHash) ? normalizedHash : '#home';
+    return parseAppRoute(window.location.hash || '#home');
   }
 
   function parsePrice(rawValue) {
@@ -130,6 +131,14 @@ if (appRoot) {
     return `/annonce/${slug}/`;
   }
 
+  function buildBuyerListingRoute(listingSlug) {
+    if (!listingSlug) {
+      return '';
+    }
+
+    return `#listing/${encodeURIComponent(listingSlug)}`;
+  }
+
   function persistDraft(nextDraft) {
     state.draft = postFlowController.saveDraft(nextDraft);
     return state.draft;
@@ -138,30 +147,89 @@ if (appRoot) {
   function resolveRenderableRoute() {
     const route = getRoute();
 
-    if (!state.draft && route !== '#home' && route !== '#capture') {
-      return '#capture';
+    if (route.type === 'listing') {
+      return route;
     }
 
-    if (route === '#otp' && !state.pendingChallenge) {
-      return '#phone';
+    if (!state.draft && route.type !== 'home' && route.type !== 'capture') {
+      return {
+        type: 'capture',
+      };
+    }
+
+    if (route.type === 'otp' && !state.pendingChallenge) {
+      return {
+        type: 'phone',
+      };
     }
 
     return route;
   }
 
+  async function loadBuyerFeed() {
+    if (state.buyerFeedPromise) {
+      return state.buyerFeedPromise;
+    }
+
+    state.buyerFeedPromise = buyerBrowseController
+      .loadFeed()
+      .catch(() => undefined)
+      .finally(() => {
+        state.buyerFeedPromise = null;
+        renderApp();
+      });
+
+    return state.buyerFeedPromise;
+  }
+
+  async function loadBuyerListing(slug) {
+    if (!slug) {
+      return null;
+    }
+
+    if (state.buyerListingPromise && state.currentListingSlug === slug) {
+      return state.buyerListingPromise;
+    }
+
+    state.currentListingSlug = slug;
+    state.buyerListingPromise = buyerBrowseController
+      .loadListing(slug)
+      .finally(() => {
+        state.buyerListingPromise = null;
+        renderApp();
+      });
+
+    return state.buyerListingPromise;
+  }
+
+  function primeBuyerRouteState(route) {
+    if (route.type === 'home' && buyerBrowseController.state.feedStatus === 'idle') {
+      void loadBuyerFeed();
+    }
+
+    if (
+      route.type === 'listing' &&
+      (!buyerBrowseController.state.detail ||
+        state.currentListingSlug !== route.slug ||
+        buyerBrowseController.state.detailStatus === 'idle')
+    ) {
+      void loadBuyerListing(route.slug);
+    }
+  }
+
   function renderRoute(route) {
-    switch (route) {
-      case '#capture':
+    switch (route.type) {
+      case 'capture':
         return renderCaptureScreen({
           busyLabel: state.busyLabel,
           captureOptions: demoCaptureOptions,
           draft: state.draft,
         });
-      case '#guidance':
+      case 'guidance':
         return renderPhotoGuidanceScreen({
           draft: state.draft,
         });
-      case '#review':
+      case 'review':
         return renderReviewFormScreen({
           areaOptions,
           categories: sellerCategories,
@@ -169,38 +237,53 @@ if (appRoot) {
           draft: state.draft,
           validationErrors: state.reviewErrors,
         });
-      case '#auth-welcome':
+      case 'auth-welcome':
         return renderAuthWelcomeScreen();
-      case '#phone':
+      case 'phone':
         return renderPhoneInputScreen({
           errorMessage: state.phoneError,
           phoneNumber: state.phoneNumber,
         });
-      case '#otp':
+      case 'otp':
         return renderOtpScreen({
           errorMessage: state.otpError,
           phoneNumber: state.pendingChallenge?.phoneNumber ?? state.phoneNumber,
         });
-      case '#publish':
+      case 'publish':
         return renderPublishGateScreen({
           busyLabel: state.busyLabel,
           draft: state.draft,
           errorMessage: state.publishError,
           session: state.session,
         });
-      case '#success':
+      case 'success':
         return renderSuccessScreen({
           draft: state.draft,
+          listingRoute: state.publishedListingRoute,
           listingUrl: state.publishedListingUrl || buildListingUrl(state.draft),
           outcome: state.publishOutcome,
         });
-      case '#home':
+      case 'listing':
+        return renderListingDetailScreen({
+          detail: buyerBrowseController.state.detail,
+          errorMessage: buyerBrowseController.state.detailError,
+          state: buyerBrowseController.state.detailStatus,
+        });
+      case 'home':
       default:
+        const homeSections = buyerBrowseController.getHomeSections();
+
         return renderHomeScreen({
           draft: state.draft,
           categories: sellerCategories,
-          featuredListings,
-          recentListings,
+          featuredListings: homeSections.featuredListings,
+          feedStatus:
+            buyerBrowseController.state.feedStatus === 'idle'
+              ? 'loading'
+              : buyerBrowseController.state.feedStatus,
+          recentListings: homeSections.recentListings,
+          searchQuery: buyerBrowseController.state.searchQuery,
+          selectedCategoryId: buyerBrowseController.state.selectedCategoryId,
         });
     }
   }
@@ -208,9 +291,10 @@ if (appRoot) {
   function renderApp() {
     const route = resolveRenderableRoute();
 
+    primeBuyerRouteState(route);
     appRoot.innerHTML = renderRoute(route);
     appRoot.dataset.appReady = 'true';
-    appRoot.dataset.screen = route.replace('#', '');
+    appRoot.dataset.screen = route.type;
   }
 
   async function handleCapture(photoId) {
@@ -229,6 +313,7 @@ if (appRoot) {
     state.draft = nextDraft;
     state.publishError = '';
     state.publishOutcome = null;
+    state.publishedListingRoute = '';
     state.publishedListingUrl = '';
     state.reviewErrors = [];
     window.location.hash =
@@ -267,6 +352,7 @@ if (appRoot) {
     persistDraft(nextDraft);
     state.publishError = '';
     state.publishOutcome = null;
+    state.publishedListingRoute = '';
     state.publishedListingUrl = '';
     state.reviewErrors = validateDraftForPublish(nextDraft);
 
@@ -345,11 +431,17 @@ if (appRoot) {
         fetchFn: window.fetch.bind(window),
         session: state.session,
       });
+      const listingRoute = buildBuyerListingRoute(result.outcome?.listingSlug);
 
       state.busyLabel = '';
       state.draft = draftStorage.saveDraft(result.draft);
       state.publishOutcome = result.outcome;
-      state.publishedListingUrl = result.listingUrl || buildListingUrl(result.draft);
+      state.publishedListingRoute = listingRoute;
+      state.publishedListingUrl =
+        listingRoute ? `/App/${listingRoute}` : result.listingUrl || buildListingUrl(result.draft);
+      if (result.outcome?.status === 'approved') {
+        buyerBrowseController.state.feedStatus = 'idle';
+      }
       window.location.hash = '#success';
     } catch (error) {
       state.busyLabel = '';
@@ -389,6 +481,16 @@ if (appRoot) {
       return;
     }
 
+    if (trigger.dataset.action === 'filter-category') {
+      const categoryId = trigger.dataset.categoryId || '';
+      const nextCategoryId =
+        buyerBrowseController.state.selectedCategoryId === categoryId ? '' : categoryId;
+
+      buyerBrowseController.setSelectedCategoryId(nextCategoryId);
+      renderApp();
+      return;
+    }
+
     if (trigger.dataset.action === 'submit-publish') {
       await handlePublishSubmit();
       return;
@@ -400,9 +502,29 @@ if (appRoot) {
     }
 
     if (trigger.dataset.action === 'view-listing-link') {
+      const listingRoute = trigger.dataset.listingRoute || '';
+
+      if (listingRoute) {
+        window.location.hash = listingRoute;
+        return;
+      }
+
       const listingUrl = trigger.dataset.listingUrl || buildListingUrl(state.draft);
 
       window.open(new URL(listingUrl, window.location.origin).toString(), '_blank', 'noopener');
+    }
+  });
+
+  appRoot.addEventListener('input', (event) => {
+    const target = event.target;
+
+    if (!(target instanceof HTMLInputElement)) {
+      return;
+    }
+
+    if (target.name === 'buyerSearch') {
+      buyerBrowseController.setSearchQuery(target.value);
+      renderApp();
     }
   });
 

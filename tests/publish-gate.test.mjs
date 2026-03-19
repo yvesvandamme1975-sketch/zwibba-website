@@ -87,6 +87,7 @@ test('success screen exposes the post-publish sharing actions', () => {
     draft: createReadyDraft({
       title: 'Samsung Galaxy A54 128 Go',
     }),
+    listingRoute: '#listing/samsung-galaxy-a54-128-go',
     listingUrl: '/annonce/samsung-galaxy-a54-128-go',
     outcome: {
       reasonSummary: 'Annonce approuvée et prête à partager.',
@@ -98,6 +99,7 @@ test('success screen exposes the post-publish sharing actions', () => {
   assert.match(html, /Partager sur WhatsApp/);
   assert.match(html, /Copier le lien/);
   assert.match(html, /Voir mon annonce/);
+  assert.match(html, /data-listing-route="#listing\/samsung-galaxy-a54-128-go"/);
 });
 
 test('success screen adapts to pending manual review without share actions', () => {
