@@ -9,10 +9,22 @@ function renderListingCard(listing) {
   const locationLabel = listing.location ?? listing.locationLabel ?? 'Localisation à confirmer';
   const publishedAt = listing.publishedAt ?? listing.categoryLabel ?? 'Disponible maintenant';
   const listingHref = listing.slug ? `#listing/${encodeURIComponent(listing.slug)}` : '#home';
+  const mediaMarkup = listing.primaryImageUrl
+    ? `
+        <div class="app-home__listing-media">
+          <img
+            class="app-home__listing-image"
+            src="${escapeAttribute(listing.primaryImageUrl)}"
+            alt="${escapeAttribute(listing.title)}"
+            loading="lazy"
+          />
+        </div>
+      `
+    : '<div class="app-home__listing-media" aria-hidden="true"></div>';
 
   return `
     <a class="app-home__listing-card" href="${escapeAttribute(listingHref)}">
-      <div class="app-home__listing-media" aria-hidden="true"></div>
+      ${mediaMarkup}
       <div class="app-home__listing-copy">
         <strong>${escapeHtml(listing.title)}</strong>
         <em>${escapeHtml(priceLabel)}</em>
