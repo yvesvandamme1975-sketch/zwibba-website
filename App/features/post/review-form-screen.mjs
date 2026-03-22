@@ -30,6 +30,12 @@ function renderPhoto(photo) {
   `;
 }
 
+function resolveDraftPrimaryImage(draft) {
+  const primaryPhoto = draft.photos.find((photo) => photo.kind === 'primary') ?? draft.photos[0];
+
+  return primaryPhoto?.publicUrl || primaryPhoto?.url || primaryPhoto?.previewUrl || '';
+}
+
 function hasFieldError(validationErrors, field) {
   return validationErrors.some((error) => error.field === field);
 }
@@ -81,6 +87,7 @@ export function renderReviewFormScreen({
           draft.details.suggestedPriceMaxCdf,
         )}`
       : 'Ajoutez votre prix librement';
+  const primaryImageUrl = resolveDraftPrimaryImage(draft);
 
   return `
     <section class="app-flow app-flow--review">
@@ -105,6 +112,21 @@ export function renderReviewFormScreen({
           <strong>${escapeHtml(priceRange)}</strong>
         </div>
       </div>
+
+      ${
+        primaryImageUrl
+          ? `
+            <div class="app-review__hero-media">
+              <img
+                class="app-review__hero-image"
+                src="${escapeAttribute(primaryImageUrl)}"
+                alt="${escapeAttribute(draft.details.title || 'Aperçu du brouillon')}"
+                loading="eager"
+              />
+            </div>
+          `
+          : ''
+      }
 
       <div class="app-review__photos">
         ${draft.photos.map(renderPhoto).join('')}

@@ -195,3 +195,29 @@ test('review form highlights publish blockers next to the submit action', () => 
   assert.match(html, /data-review-error-field="area"/);
   assert.match(html, /app-review__field app-review__field--invalid/);
 });
+
+test('review form renders the first draft image as the seller preview', () => {
+  const draft = createReadyDraft({
+    photos: [
+      {
+        id: 'photo-1',
+        kind: 'primary',
+        previewUrl: '/assets/demo/phone-front.jpg',
+        publicUrl: 'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
+        url: 'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
+      },
+    ],
+  });
+  const html = renderReviewFormScreen({
+    areaOptions: ['Golf', 'Bel Air'],
+    categories: [{ id: 'electronics', label: 'Électronique' }],
+    conditionOptions: [{ value: 'like_new', label: 'Comme neuf' }],
+    draft,
+    validationErrors: [],
+  });
+
+  assert.match(
+    html,
+    /<img[^>]+class="app-review__hero-image"[^>]+src="https:\/\/cdn\.zwibba\.example\/draft-photos\/phone-front\.jpg"/,
+  );
+});

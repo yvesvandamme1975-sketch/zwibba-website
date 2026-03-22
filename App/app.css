@@ -524,6 +524,26 @@
   object-fit: cover;
 }
 
+.app-review__hero-media,
+.app-success__hero-media {
+  overflow: hidden;
+  min-height: 200px;
+  border-radius: 24px;
+  border: 1px solid rgba(107, 230, 107, 0.14);
+  background:
+    radial-gradient(circle at top left, rgba(107, 230, 107, 0.24), transparent 34%),
+    linear-gradient(145deg, rgba(107, 230, 107, 0.14), rgba(255, 255, 255, 0.03));
+}
+
+.app-review__hero-image,
+.app-success__hero-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  object-fit: cover;
+}
+
 .app-capture__resume strong,
 .app-guidance__status strong,
 .app-review__summary strong,

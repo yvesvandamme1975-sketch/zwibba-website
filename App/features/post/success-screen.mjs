@@ -16,6 +16,12 @@ function buildWhatsAppShareUrl({ draft, listingUrl }) {
   return `https://wa.me/?text=${encodeURIComponent(text)}`;
 }
 
+function resolveDraftPrimaryImage(draft) {
+  const primaryPhoto = draft.photos.find((photo) => photo.kind === 'primary') ?? draft.photos[0];
+
+  return primaryPhoto?.publicUrl || primaryPhoto?.url || primaryPhoto?.previewUrl || '';
+}
+
 function resolveOutcomeContent(outcome = {}, { listingUrl = '' } = {}) {
   switch (outcome.status) {
     case 'pending_manual_review':
@@ -60,6 +66,7 @@ export function renderSuccessScreen({
   const content = resolveOutcomeContent(outcome ?? {
     status: 'approved',
   }, { listingUrl });
+  const primaryImageUrl = resolveDraftPrimaryImage(draft);
 
   return `
     <section class="app-flow app-flow--success">
@@ -84,6 +91,21 @@ export function renderSuccessScreen({
         <span>${escapeHtml(draft.details.area || 'Zone à confirmer')}</span>
         <em>${escapeHtml(formatCdf(draft.details.priceCdf))}</em>
       </div>
+
+      ${
+        primaryImageUrl
+          ? `
+            <div class="app-success__hero-media">
+              <img
+                class="app-success__hero-image"
+                src="${escapeAttribute(primaryImageUrl)}"
+                alt="${escapeAttribute(draft.details.title || 'Annonce Zwibba')}"
+                loading="eager"
+              />
+            </div>
+          `
+          : ''
+      }
 
       ${
         content.showListingLink

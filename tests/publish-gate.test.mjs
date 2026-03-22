@@ -85,6 +85,15 @@ test('verified publish gate shows a final publish CTA', () => {
 test('success screen exposes the post-publish sharing actions', () => {
   const html = renderSuccessScreen({
     draft: createReadyDraft({
+      photos: [
+        {
+          id: 'photo-1',
+          kind: 'primary',
+          previewUrl: '/assets/demo/phone-front.jpg',
+          publicUrl: 'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
+          url: 'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
+        },
+      ],
       title: 'Samsung Galaxy A54 128 Go',
     }),
     listingRoute: '#listing/samsung-galaxy-a54-128-go',
@@ -100,6 +109,10 @@ test('success screen exposes the post-publish sharing actions', () => {
   assert.match(html, /Copier le lien/);
   assert.match(html, /Voir mon annonce/);
   assert.match(html, /data-listing-route="#listing\/samsung-galaxy-a54-128-go"/);
+  assert.match(
+    html,
+    /<img[^>]+class="app-success__hero-image"[^>]+src="https:\/\/cdn\.zwibba\.example\/draft-photos\/phone-front\.jpg"/,
+  );
 });
 
 test('success screen adapts to pending manual review without share actions', () => {
@@ -137,4 +150,32 @@ test('success screen adapts to blocked publish outcomes', () => {
   assert.match(html, /Annonce bloqu[ée]e/i);
   assert.match(html, /Ajoutez au moins une photo valide avant publication/i);
   assert.doesNotMatch(html, /Partager sur WhatsApp/i);
+});
+
+test('success screen falls back to the local draft preview when no uploaded url exists yet', () => {
+  const html = renderSuccessScreen({
+    draft: createReadyDraft({
+      photos: [
+        {
+          id: 'photo-1',
+          kind: 'primary',
+          previewUrl: '/assets/demo/phone-front.jpg',
+          url: '/assets/demo/phone-front.jpg',
+        },
+      ],
+      title: 'Samsung Galaxy A54 128 Go',
+    }),
+    listingRoute: '#listing/samsung-galaxy-a54-128-go',
+    listingUrl: '/annonce/samsung-galaxy-a54-128-go',
+    outcome: {
+      reasonSummary: 'Annonce approuvée et prête à partager.',
+      status: 'approved',
+      statusLabel: 'Annonce approuvée et prête à partager',
+    },
+  });
+
+  assert.match(
+    html,
+    /<img[^>]+class="app-success__hero-image"[^>]+src="\/assets\/demo\/phone-front\.jpg"/,
+  );
 });
