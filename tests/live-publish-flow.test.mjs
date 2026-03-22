@@ -145,7 +145,7 @@ test('live publish uploads preview photos, syncs the draft, and returns the mode
   assert.equal(requests[4].url, 'https://api.example.test/moderation/publish');
 });
 
-test('live publish generates the demo upload payload locally for symbolic preview URLs', async () => {
+test('live publish stores missing preview fallbacks as svg uploads instead of broken jpg objects', async () => {
   const requests = [];
   const draft = updateListingDraft(
     createListingDraftFromFirstPhoto({
@@ -173,15 +173,32 @@ test('live publish generates the demo upload payload locally for symbolic previe
       });
 
       if (url === '/assets/demo/face.jpg') {
-        throw new Error('should not fetch symbolic demo assets');
+        return {
+          ok: false,
+          status: 404,
+          headers: {
+            get() {
+              return null;
+            },
+          },
+        };
       }
 
       if (url === 'https://api.example.test/media/upload-url') {
+        assert.equal(
+          options.body,
+          JSON.stringify({
+            contentType: 'image/svg+xml',
+            fileName: 'face.svg',
+            sourcePresetId: 'capture',
+          }),
+        );
+
         return createJsonResponse(200, {
-          objectKey: 'draft-photos/face/photo_1-face.jpg',
+          objectKey: 'draft-photos/capture/face.svg',
           photoId: 'photo_face_1',
-          publicUrl: 'https://pub.example.test/draft-photos/face/photo_1-face.jpg',
-          sourcePresetId: 'face',
+          publicUrl: 'https://pub.example.test/draft-photos/capture/face.svg',
+          sourcePresetId: 'capture',
           uploadUrl: 'https://uploads.example.test/signed-put',
         });
       }
@@ -210,10 +227,10 @@ test('live publish generates the demo upload payload locally for symbolic previe
           ownerPhoneNumber: '+243990000001',
           photos: [
             {
-              objectKey: 'draft-photos/face/photo_1-face.jpg',
+              objectKey: 'draft-photos/capture/face.svg',
               photoId: 'photo_face_1',
-              publicUrl: 'https://pub.example.test/draft-photos/face/photo_1-face.jpg',
-              sourcePresetId: 'face',
+              publicUrl: 'https://pub.example.test/draft-photos/capture/face.svg',
+              sourcePresetId: 'capture',
               uploadStatus: 'uploaded',
             },
           ],

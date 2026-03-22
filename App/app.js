@@ -2,6 +2,7 @@ import {
   areaOptions,
   conditionOptions,
   demoCaptureOptions,
+  resolveDemoPreviewUrl,
   sellerCategories,
 } from './demo-content.mjs';
 import { renderAuthWelcomeScreen } from './features/auth/welcome-screen.mjs';
@@ -94,10 +95,10 @@ if (appRoot) {
     return Number.isFinite(nextPrice) && nextPrice > 0 ? nextPrice : null;
   }
 
-  function buildGuidedPhoto(promptId) {
+  function buildGuidedPhoto(promptId, categoryId = '') {
     return {
       id: `guided-${promptId}-${Date.now()}`,
-      previewUrl: `/assets/demo/${promptId}.jpg`,
+      previewUrl: resolveDemoPreviewUrl(promptId, categoryId),
       sizeBytes: 900_000,
     };
   }
@@ -320,8 +321,11 @@ if (appRoot) {
       getMissingRequiredPhotoPrompts(nextDraft).length > 0 ? '#guidance' : '#review';
   }
 
-  function handleGuidedCapture(promptId) {
-    state.draft = postFlowController.addGuidedPhoto(promptId, buildGuidedPhoto(promptId));
+  function handleGuidedCapture(promptId, categoryId = '') {
+    state.draft = postFlowController.addGuidedPhoto(
+      promptId,
+      buildGuidedPhoto(promptId, categoryId),
+    );
     state.publishError = '';
     state.reviewErrors = [];
     renderApp();
@@ -477,7 +481,7 @@ if (appRoot) {
     }
 
     if (trigger.dataset.action === 'capture-guided-photo') {
-      handleGuidedCapture(trigger.dataset.promptId);
+      handleGuidedCapture(trigger.dataset.promptId, state.draft?.details.categoryId || '');
       return;
     }
 

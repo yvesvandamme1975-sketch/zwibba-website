@@ -5,6 +5,10 @@ import { createMediaService } from '../../services/media-service.mjs';
 function inferContentType(url, fallback = 'image/jpeg') {
   const normalizedUrl = String(url || '').toLowerCase();
 
+  if (normalizedUrl.endsWith('.svg')) {
+    return 'image/svg+xml';
+  }
+
   if (normalizedUrl.endsWith('.png')) {
     return 'image/png';
   }
@@ -32,16 +36,29 @@ function buildDemoSvgBytes(photo) {
   return new TextEncoder().encode(svg);
 }
 
+function withFileExtension(fileName, extension) {
+  if (!extension) {
+    return fileName;
+  }
+
+  if (/\.[a-z0-9]+$/i.test(fileName)) {
+    return fileName.replace(/\.[^.]+$/, `.${extension}`);
+  }
+
+  return `${fileName}.${extension}`;
+}
+
 function resolveSourcePresetId(photo) {
   return photo.sourcePresetId || photo.promptId || (photo.kind === 'primary' ? 'capture' : 'guided');
 }
 
-function resolveFileName(photo, sourcePresetId) {
+function resolveFileName(photo, sourcePresetId, extension = '') {
   const sourceUrl = photo.previewUrl || photo.url || '';
   const parsedUrl = new URL(sourceUrl, 'https://zwibba.local');
   const pathName = parsedUrl.pathname.split('/').filter(Boolean).pop();
+  const baseName = pathName || `${sourcePresetId}-${photo.id || 'photo'}.jpg`;
 
-  return pathName || `${sourcePresetId}-${photo.id || 'photo'}.jpg`;
+  return withFileExtension(baseName, extension);
 }
 
 async function loadPhotoBytes({
@@ -58,6 +75,7 @@ async function loadPhotoBytes({
     return {
       bytes: buildDemoSvgBytes(photo),
       contentType: 'image/svg+xml',
+      fileExtension: 'svg',
     };
   }
 
@@ -67,6 +85,7 @@ async function loadPhotoBytes({
     return {
       bytes: buildDemoSvgBytes(photo),
       contentType: 'image/svg+xml',
+      fileExtension: 'svg',
     };
   }
 
@@ -77,6 +96,7 @@ async function loadPhotoBytes({
   return {
     bytes,
     contentType,
+    fileExtension: contentType === 'image/svg+xml' ? 'svg' : '',
   };
 }
 
@@ -90,11 +110,11 @@ async function ensureUploadedPhoto({
   }
 
   const sourcePresetId = resolveSourcePresetId(photo);
-  const fileName = resolveFileName(photo, sourcePresetId);
-  const { bytes, contentType } = await loadPhotoBytes({
+  const { bytes, contentType, fileExtension = '' } = await loadPhotoBytes({
     fetchFn,
     photo,
   });
+  const fileName = resolveFileName(photo, sourcePresetId, fileExtension);
   const slot = await mediaService.requestUploadSlot({
     contentType,
     fileName,

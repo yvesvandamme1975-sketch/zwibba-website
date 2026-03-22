@@ -38,6 +38,10 @@ test('listing detail screen renders the buyer detail state inside /App', () => {
   assert.match(html, /Appeler/);
   assert.match(html, /href="#home"/);
   assert.match(html, /<img[^>]+class="app-detail__image"[^>]+src="https:\/\/cdn\.zwibba\.example\/listings\/samsung-a54\.jpg"/);
+  assert.match(
+    html,
+    /onerror="this\.onerror=null;this\.src=&#39;\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.svg&#39;;"/,
+  );
 });
 
 test('listing detail screen keeps a hero placeholder when no image is available', () => {

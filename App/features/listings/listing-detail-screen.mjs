@@ -4,6 +4,7 @@ import {
   escapeHtml,
   formatCdf,
 } from '../../utils/rendering.mjs';
+import { buildImageFallbackHandler } from '../../utils/image-fallbacks.mjs';
 
 function buildBuyerMessage(detail) {
   return `Bonjour, je suis intéressé par ${detail.title} sur Zwibba.`;
@@ -46,6 +47,11 @@ function buildActionMarkup(action, detail) {
 
 function renderDetailMedia(detail) {
   if (detail.primaryImageUrl) {
+    const imageFallback = buildImageFallbackHandler({
+      categoryId: detail.categoryId,
+      categoryLabel: detail.categoryLabel,
+    });
+
     return `
       <div class="app-detail__media">
         <img
@@ -53,6 +59,7 @@ function renderDetailMedia(detail) {
           src="${escapeAttribute(detail.primaryImageUrl)}"
           alt="${escapeAttribute(detail.title)}"
           loading="eager"
+          onerror="${escapeAttribute(imageFallback)}"
         />
       </div>
     `;

@@ -1,3 +1,5 @@
+import { resolveDemoPreviewUrl } from './demo-preview-assets.mjs';
+
 export const sellerCategories = [
   { id: 'phones_tablets', label: 'Téléphones' },
   { id: 'electronics', label: 'Électronique' },
@@ -46,7 +48,7 @@ export const demoCaptureOptions = [
     id: 'phone-front',
     label: 'Téléphone premium',
     description: 'Bon test pour déclencher les photos guidées d’un smartphone.',
-    previewUrl: '/assets/demo/phone-front.jpg',
+    previewUrl: resolveDemoPreviewUrl('phone-front', 'phones_tablets'),
     sizeBytes: 3_400_000,
     accent: '#6BE66B',
     glow: 'rgba(107, 230, 107, 0.32)',
@@ -55,7 +57,7 @@ export const demoCaptureOptions = [
     id: 'sofa-showroom',
     label: 'Canapé salon',
     description: 'Démo maison et jardin avec prix conseillé et vues latérales.',
-    previewUrl: '/assets/demo/sofa-showroom.jpg',
+    previewUrl: resolveDemoPreviewUrl('sofa-showroom', 'home_garden'),
     sizeBytes: 2_600_000,
     accent: '#9effb6',
     glow: 'rgba(158, 255, 182, 0.22)',
@@ -64,12 +66,14 @@ export const demoCaptureOptions = [
     id: 'vehicle-front',
     label: 'SUV en vente',
     description: 'Déclenche les vues guidées avant, profil et tableau de bord.',
-    previewUrl: '/assets/demo/vehicle-front.jpg',
+    previewUrl: resolveDemoPreviewUrl('vehicle-front', 'vehicles'),
     sizeBytes: 3_900_000,
     accent: '#9dc6ff',
     glow: 'rgba(157, 198, 255, 0.24)',
   },
 ];
+
+export { resolveDemoPreviewUrl };
 
 export const areaOptions = [
   'Bel Air',

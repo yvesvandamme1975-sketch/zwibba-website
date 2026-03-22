@@ -3,12 +3,17 @@ import {
   escapeHtml,
   formatCdf,
 } from '../../utils/rendering.mjs';
+import { buildImageFallbackHandler } from '../../utils/image-fallbacks.mjs';
 
 function renderListingCard(listing) {
   const priceLabel = listing.priceLabel ?? formatCdf(listing.priceCdf);
   const locationLabel = listing.location ?? listing.locationLabel ?? 'Localisation à confirmer';
   const publishedAt = listing.publishedAt ?? listing.categoryLabel ?? 'Disponible maintenant';
   const listingHref = listing.slug ? `#listing/${encodeURIComponent(listing.slug)}` : '#home';
+  const imageFallback = buildImageFallbackHandler({
+    categoryId: listing.categoryId,
+    categoryLabel: listing.categoryLabel,
+  });
   const mediaMarkup = listing.primaryImageUrl
     ? `
         <div class="app-home__listing-media">
@@ -17,6 +22,7 @@ function renderListingCard(listing) {
             src="${escapeAttribute(listing.primaryImageUrl)}"
             alt="${escapeAttribute(listing.title)}"
             loading="lazy"
+            onerror="${escapeAttribute(imageFallback)}"
           />
         </div>
       `

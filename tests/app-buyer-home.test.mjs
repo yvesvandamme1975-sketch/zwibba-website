@@ -75,6 +75,10 @@ test('buyer listing cards render the primary image when the live feed provides o
   });
 
   assert.match(html, /<img[^>]+src="https:\/\/cdn\.zwibba\.example\/listings\/samsung-a54\.jpg"/);
+  assert.match(
+    html,
+    /onerror="this\.onerror=null;this\.src=&#39;\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.svg&#39;;"/,
+  );
 });
 
 test('home screen marks itself as the compact first-viewport screen', () => {

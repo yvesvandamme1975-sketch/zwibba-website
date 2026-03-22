@@ -1,4 +1,5 @@
 import { getCategoryGuidance } from '../../models/category-guidance.mjs';
+import { resolveDemoPreviewUrl } from '../../demo-preview-assets.mjs';
 import {
   createListingDraftFromFirstPhoto,
   updateListingDraft,
@@ -224,6 +225,9 @@ export function createReadyDraft(overrides = {}) {
   const now = overrides.now ?? new Date().toISOString();
   const condition =
     Object.prototype.hasOwnProperty.call(overrides, 'condition') ? overrides.condition : '';
+  const categoryId = overrides.categoryId ?? 'electronics';
+  const defaultPreviewUrl =
+    overrides.photoUrl ?? resolveDemoPreviewUrl('phone-front', categoryId);
   const photos =
     Object.prototype.hasOwnProperty.call(overrides, 'photos')
       ? overrides.photos
@@ -231,20 +235,19 @@ export function createReadyDraft(overrides = {}) {
           {
             id: 'photo-1',
             kind: 'primary',
-            url: overrides.photoUrl ?? '/assets/demo/phone-front.jpg',
-            previewUrl: overrides.photoUrl ?? '/assets/demo/phone-front.jpg',
+            url: defaultPreviewUrl,
+            previewUrl: defaultPreviewUrl,
           },
         ];
   const draft = createListingDraftFromFirstPhoto({
-    photoUrl: overrides.photoUrl ?? '/assets/demo/phone-front.jpg',
+    photoUrl: defaultPreviewUrl,
     photo: {
       id: 'photo-1',
-      previewUrl: overrides.photoUrl ?? '/assets/demo/phone-front.jpg',
+      previewUrl: defaultPreviewUrl,
       sizeBytes: 1_200_000,
     },
     now,
   });
-  const categoryId = overrides.categoryId ?? 'electronics';
 
   return updateListingDraft(
     draft,

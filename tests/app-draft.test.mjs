@@ -12,11 +12,11 @@ import {
 
 test('draft can be created from one photo', () => {
   const draft = createListingDraftFromFirstPhoto({
-    photoUrl: '/assets/demo/phone-front.jpg',
+    photoUrl: '/assets/listings/samsung-galaxy-a54-neuf-lubumbashi.svg',
   });
 
   assert.equal(draft.photos.length, 1);
-  assert.equal(draft.photos[0].url, '/assets/demo/phone-front.jpg');
+  assert.equal(draft.photos[0].url, '/assets/listings/samsung-galaxy-a54-neuf-lubumbashi.svg');
   assert.equal(draft.syncState, 'local_only');
   assert.equal(draft.canSyncToAccount, false);
 });
@@ -25,7 +25,7 @@ test('draft survives app restart', () => {
   const storage = createMemoryStorage();
   const firstSession = createDraftStorageService({ storage });
   const initialDraft = createListingDraftFromFirstPhoto({
-    photoUrl: '/assets/demo/phone-front.jpg',
+    photoUrl: '/assets/listings/samsung-galaxy-a54-neuf-lubumbashi.svg',
   });
 
   firstSession.saveDraft(initialDraft);
@@ -40,7 +40,7 @@ test('draft survives app restart', () => {
 
 test('otp state changes a draft from local-only to account-syncable', () => {
   const draft = createListingDraftFromFirstPhoto({
-    photoUrl: '/assets/demo/phone-front.jpg',
+    photoUrl: '/assets/listings/samsung-galaxy-a54-neuf-lubumbashi.svg',
   });
 
   const updatedDraft = markDraftOtpVerified(draft, {
