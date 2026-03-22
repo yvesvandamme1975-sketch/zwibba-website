@@ -168,8 +168,11 @@ curl \
 - `GET /healthz` returns `status: ok` and `database: up`
 - the admin service returns `401` without `x-zwibba-admin-secret`
 - the admin service returns HTML for `/moderation` with the correct secret
+- the public browser beta at `/App/#home` shows real listing pictures when approved listings have uploaded photos
+- the public browser beta buyer detail route at `/App/#listing/<slug>` shows the hero image for listings with uploaded photos
 - the seller flow can request OTP through the configured provider
 - the seller flow can create a draft with R2-backed photo metadata
+- the seller review and seller success screens show the first draft image when a photo exists
 - a synced draft can publish into a persisted listing and moderation decision
 
 ## 8. Secrets and operational rules
