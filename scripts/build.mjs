@@ -271,7 +271,9 @@ function renderAppPage() {
         </div>
 
         <div class="app-standalone__frame">
-          <div class="app-shell" data-app-root data-screen="home"></div>
+          <div class="app-shell">
+            <div class="app-shell__viewport" data-app-root data-screen="home"></div>
+          </div>
         </div>
       </section>
     </main>

@@ -104,6 +104,13 @@ test('app entry page bootstraps the live API base URL for the browser seller flo
   assert.match(appEntry, /https:\/\/api-production-b1b58\.up\.railway\.app/);
 });
 
+test('app entry page renders a dedicated inner phone viewport for desktop scrolling', () => {
+  buildSite();
+
+  const appEntry = readFileSync(path.join(distDir, 'App/index.html'), 'utf8');
+  assert.match(appEntry, /class="app-shell__viewport"[^>]*data-app-root/i);
+});
+
 test('site shell includes accessibility hooks and page-level structured data', () => {
   buildSite();
 

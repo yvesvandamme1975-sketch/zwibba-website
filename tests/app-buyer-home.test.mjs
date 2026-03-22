@@ -77,6 +77,18 @@ test('buyer listing cards render the primary image when the live feed provides o
   assert.match(html, /<img[^>]+src="https:\/\/cdn\.zwibba\.example\/listings\/samsung-a54\.jpg"/);
 });
 
+test('home screen marks itself as the compact first-viewport screen', () => {
+  const html = renderHomeScreen({
+    categories,
+    draft: null,
+    featuredListings: [],
+    feedStatus: 'ready',
+    recentListings: [],
+  });
+
+  assert.match(html, /class="app-home app-screen app-screen--home"/);
+});
+
 test('buyer listing cards keep the media placeholder when no image is available', () => {
   const html = renderHomeScreen({
     categories,

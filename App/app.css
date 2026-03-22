@@ -93,7 +93,8 @@
 }
 
 .app-shell {
-  min-height: 780px;
+  height: min(860px, calc(100vh - 180px));
+  min-height: 680px;
   border-radius: 28px;
   overflow: hidden;
   background:
@@ -102,10 +103,38 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.app-shell__viewport {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(107, 230, 107, 0.8) rgba(255, 255, 255, 0.08);
+}
+
+.app-shell__viewport::-webkit-scrollbar {
+  width: 10px;
+}
+
+.app-shell__viewport::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.app-shell__viewport::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(107, 230, 107, 0.92), rgba(107, 230, 107, 0.56));
+  border: 2px solid rgba(21, 23, 26, 0.95);
+}
+
+.app-screen {
+  min-height: 100%;
+}
+
 .app-home {
   display: grid;
   gap: 18px;
-  padding: 72px 20px 22px;
+  padding: 42px 18px 18px;
 }
 
 .app-home__topbar {
@@ -375,7 +404,7 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
-  padding: 0 20px 20px;
+  padding: 0 18px 18px;
 }
 
 .app-home__bottom span {
@@ -388,7 +417,7 @@
 .app-flow {
   display: grid;
   gap: 18px;
-  padding: 40px 20px 24px;
+  padding: 32px 18px 20px;
 }
 
 .app-flow__header {
@@ -837,10 +866,17 @@
   }
 
   .app-shell {
+    height: auto;
     min-height: calc(100vh - 200px);
     border-radius: 0;
     border-left: 0;
     border-right: 0;
+  }
+
+  .app-shell__viewport {
+    height: auto;
+    overflow: visible;
+    scrollbar-gutter: auto;
   }
 
   .app-home {

@@ -34,7 +34,7 @@ export function renderHomeScreen({
   selectedCategoryId = '',
 }) {
   return `
-    <section class="app-home">
+    <section class="app-home app-screen app-screen--home">
       <div class="app-home__topbar">
         ${renderInAppBrand({ subtitle: 'Vendez en un clic' })}
         <span class="app-home__badge">Seller-first</span>
