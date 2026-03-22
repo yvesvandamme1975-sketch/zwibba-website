@@ -314,7 +314,10 @@ class _FakePrismaService {
   };
 }
 
-async function createTestApp(): Promise<INestApplication> {
+async function createTestContext(): Promise<{
+  app: INestApplication;
+  prisma: _FakePrismaService;
+}> {
   const prisma = new _FakePrismaService();
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
@@ -327,7 +330,10 @@ async function createTestApp(): Promise<INestApplication> {
 
   const app = moduleRef.createNestApplication();
   await app.init();
-  return app;
+  return {
+    app,
+    prisma,
+  };
 }
 
 async function publishListing(
@@ -386,7 +392,9 @@ async function publishListing(
 }
 
 test('listings feed returns newly approved database-backed listings only', async (t) => {
-  const app = await createTestApp();
+  const {
+    app,
+  } = await createTestContext();
   t.after(async () => {
     await app.close();
   });
@@ -418,10 +426,16 @@ test('listings feed returns newly approved database-backed listings only', async
   assert.equal(response.body.items[0].categoryLabel, 'Téléphones & Tablettes');
   assert.equal(response.body.items[0].priceCdf, 4256000);
   assert.equal(response.body.items[0].locationLabel, 'Lubumbashi Centre');
+  assert.equal(
+    response.body.items[0].primaryImageUrl,
+    'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
+  );
 });
 
 test('listing detail returns a database-backed published listing with seller metadata', async (t) => {
-  const app = await createTestApp();
+  const {
+    app,
+  } = await createTestContext();
   t.after(async () => {
     await app.close();
   });
@@ -452,4 +466,58 @@ test('listing detail returns a database-backed published listing with seller met
   assert.ok(Array.isArray(response.body.safetyTips));
   assert.match(response.body.seller.name, /\S+/);
   assert.match(response.body.seller.responseTime, /\S+/);
+  assert.equal(
+    response.body.primaryImageUrl,
+    'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
+  );
+});
+
+test('listings without uploaded photos still return a null primary image', async (t) => {
+  const {
+    app,
+    prisma,
+  } = await createTestContext();
+  t.after(async () => {
+    await app.close();
+  });
+
+  prisma.drafts.set('draft_no_photo', {
+    area: 'Kenya',
+    categoryId: 'electronics',
+    condition: 'used_good',
+    description: 'Console en bon état.',
+    id: 'draft_no_photo',
+    ownerPhoneNumber: '+243990000003',
+    priceCdf: 980000,
+    syncStatus: 'synced',
+    title: 'PlayStation 4 Slim',
+  });
+  prisma.listings.set('listing_draft_no_photo', {
+    area: 'Kenya',
+    categoryId: 'electronics',
+    description: 'Console en bon état.',
+    draftId: 'draft_no_photo',
+    id: 'listing_draft_no_photo',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+243990000003',
+    priceCdf: 980000,
+    publishedAt: new Date('2026-03-22T10:00:00.000Z'),
+    slug: 'playstation-4-slim',
+    title: 'PlayStation 4 Slim',
+    updatedAt: new Date('2026-03-22T10:00:00.000Z'),
+  });
+
+  const feedResponse = await request(app.getHttpServer())
+    .get('/listings')
+    .expect(200);
+  const detailResponse = await request(app.getHttpServer())
+    .get('/listings/playstation-4-slim')
+    .expect(200);
+
+  const listing = feedResponse.body.items.find(
+    (item: { slug: string }) => item.slug === 'playstation-4-slim',
+  );
+
+  assert.equal(listing.primaryImageUrl, null);
+  assert.equal(detailResponse.body.primaryImageUrl, null);
 });

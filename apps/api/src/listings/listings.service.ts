@@ -6,6 +6,7 @@ type PersistedListingRecord = {
   area: string;
   categoryId: string;
   description: string;
+  draftId: string;
   id: string;
   moderationStatus: string;
   ownerPhoneNumber: string;
@@ -13,6 +14,11 @@ type PersistedListingRecord = {
   slug: string;
   title: string;
   updatedAt?: Date;
+};
+
+type PersistedDraftPhotoRecord = {
+  publicUrl: string;
+  uploadStatus: string;
 };
 
 const categoryLabels: Record<string, string> = {
@@ -72,24 +78,40 @@ function buildSafetyTips(categoryId: string) {
   }
 }
 
-function toListingSummary(listing: PersistedListingRecord) {
+function getPrimaryImageUrl(photos: PersistedDraftPhotoRecord[] = []) {
+  const uploadedPhoto = photos.find(
+    (photo) => photo.uploadStatus === 'uploaded' && photo.publicUrl,
+  );
+
+  return uploadedPhoto?.publicUrl ?? null;
+}
+
+function toListingSummary(
+  listing: PersistedListingRecord,
+  primaryImageUrl: string | null,
+) {
   return {
     categoryLabel: getCategoryLabel(listing.categoryId),
     id: listing.id,
     locationLabel: listing.area,
     priceCdf: listing.priceCdf,
+    primaryImageUrl,
     slug: listing.slug,
     title: listing.title,
   };
 }
 
-function toListingDetail(listing: PersistedListingRecord) {
+function toListingDetail(
+  listing: PersistedListingRecord,
+  primaryImageUrl: string | null,
+) {
   return {
     categoryLabel: getCategoryLabel(listing.categoryId),
     contactActions: ['whatsapp', 'sms', 'call'],
     id: listing.id,
     locationLabel: listing.area,
     priceCdf: listing.priceCdf,
+    primaryImageUrl,
     safetyTips: buildSafetyTips(listing.categoryId),
     seller: buildSellerProfile({
       categoryId: listing.categoryId,
@@ -106,6 +128,21 @@ export class ListingsService {
   constructor(
     @Inject(PrismaService) private readonly prismaService: PrismaService,
   ) {}
+
+  private async resolvePrimaryImageUrl(listing: PersistedListingRecord) {
+    const draft = await this.prismaService.draft.findUnique({
+      include: {
+        photos: true,
+      },
+      where: {
+        id: listing.draftId,
+      },
+    });
+
+    return getPrimaryImageUrl(
+      (draft?.photos ?? []) as PersistedDraftPhotoRecord[],
+    );
+  }
 
   async listBrowseFeed() {
     const listings = await this.prismaService.listing.findMany({
@@ -125,9 +162,18 @@ export class ListingsService {
       return rightTime - leftTime;
     });
 
+    const listingsWithImages = await Promise.all(
+      sortedListings.map(async (listing) => ({
+        listing: listing as PersistedListingRecord,
+        primaryImageUrl: await this.resolvePrimaryImageUrl(
+          listing as PersistedListingRecord,
+        ),
+      })),
+    );
+
     return {
-      items: sortedListings.map((listing) =>
-        toListingSummary(listing as PersistedListingRecord)
+      items: listingsWithImages.map(({ listing, primaryImageUrl }) =>
+        toListingSummary(listing, primaryImageUrl),
       ),
     };
   }
@@ -143,6 +189,9 @@ export class ListingsService {
       throw new NotFoundException('Annonce introuvable.');
     }
 
-    return toListingDetail(listing as PersistedListingRecord);
+    const persistedListing = listing as PersistedListingRecord;
+    const primaryImageUrl = await this.resolvePrimaryImageUrl(persistedListing);
+
+    return toListingDetail(persistedListing, primaryImageUrl);
   }
 }
