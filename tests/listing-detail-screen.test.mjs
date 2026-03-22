@@ -11,6 +11,7 @@ test('listing detail screen renders the buyer detail state inside /App', () => {
       id: 'listing_1',
       locationLabel: 'Golf',
       priceCdf: 450000,
+      primaryImageUrl: 'https://cdn.zwibba.example/listings/samsung-a54.jpg',
       safetyTips: [
         'Rencontrez le vendeur dans un lieu public.',
         'Vérifiez le produit avant de payer.',
@@ -36,6 +37,33 @@ test('listing detail screen renders the buyer detail state inside /App', () => {
   assert.match(html, /SMS/);
   assert.match(html, /Appeler/);
   assert.match(html, /href="#home"/);
+  assert.match(html, /<img[^>]+class="app-detail__image"[^>]+src="https:\/\/cdn\.zwibba\.example\/listings\/samsung-a54\.jpg"/);
+});
+
+test('listing detail screen keeps a hero placeholder when no image is available', () => {
+  const html = renderListingDetailScreen({
+    detail: {
+      categoryLabel: 'Électronique',
+      contactActions: ['whatsapp'],
+      id: 'listing_2',
+      locationLabel: 'Kenya',
+      priceCdf: 980000,
+      primaryImageUrl: null,
+      safetyTips: ['Évitez les paiements anticipés.'],
+      seller: {
+        name: 'Particulier 0003',
+        responseTime: 'Répond en moyenne en 15 min',
+        role: 'Particulier',
+      },
+      slug: 'playstation-4-slim',
+      summary: 'Console en bon état.',
+      title: 'PlayStation 4 Slim',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /class="app-detail__media app-detail__media--placeholder"/);
+  assert.doesNotMatch(html, /class="app-detail__image"/);
 });
 
 test('listing detail screen renders a loading state', () => {

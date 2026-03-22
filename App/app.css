@@ -500,6 +500,30 @@
   align-items: center;
 }
 
+.app-detail__media {
+  overflow: hidden;
+  min-height: 220px;
+  border-radius: 24px;
+  border: 1px solid rgba(107, 230, 107, 0.14);
+  background:
+    radial-gradient(circle at top left, rgba(107, 230, 107, 0.24), transparent 34%),
+    linear-gradient(145deg, rgba(107, 230, 107, 0.14), rgba(255, 255, 255, 0.03));
+}
+
+.app-detail__media--placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--text-soft);
+}
+
+.app-detail__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  object-fit: cover;
+}
+
 .app-capture__resume strong,
 .app-guidance__status strong,
 .app-review__summary strong,

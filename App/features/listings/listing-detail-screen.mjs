@@ -44,6 +44,27 @@ function buildActionMarkup(action, detail) {
   }
 }
 
+function renderDetailMedia(detail) {
+  if (detail.primaryImageUrl) {
+    return `
+      <div class="app-detail__media">
+        <img
+          class="app-detail__image"
+          src="${escapeAttribute(detail.primaryImageUrl)}"
+          alt="${escapeAttribute(detail.title)}"
+          loading="eager"
+        />
+      </div>
+    `;
+  }
+
+  return `
+    <div class="app-detail__media app-detail__media--placeholder" aria-hidden="true">
+      <span>Photo à venir</span>
+    </div>
+  `;
+}
+
 export function renderListingDetailScreen({
   detail = null,
   errorMessage = '',
@@ -108,6 +129,8 @@ export function renderListingDetailScreen({
         <span>${escapeHtml(detail.categoryLabel)}</span>
         <em>${escapeHtml(formatCdf(detail.priceCdf))}</em>
       </div>
+
+      ${renderDetailMedia(detail)}
 
       <div class="app-auth__card">
         <strong>Résumé</strong>
