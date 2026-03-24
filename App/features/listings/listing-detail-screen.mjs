@@ -4,7 +4,10 @@ import {
   escapeHtml,
   formatCdf,
 } from '../../utils/rendering.mjs';
-import { buildImageFallbackHandler } from '../../utils/image-fallbacks.mjs';
+import {
+  buildImageFallbackHandler,
+  sanitizeListingImageUrl,
+} from '../../utils/image-fallbacks.mjs';
 
 function buildBuyerMessage(detail) {
   return `Bonjour, je suis intéressé par ${detail.title} sur Zwibba.`;
@@ -35,6 +38,17 @@ function buildActionMarkup(action, detail) {
         </a>
       `;
     case 'call':
+      if (detail.contactPhoneNumber) {
+        return `
+          <a
+            class="app-flow__button app-flow__button--secondary"
+            href="${escapeAttribute(`tel:${detail.contactPhoneNumber}`)}"
+          >
+            Appeler
+          </a>
+        `;
+      }
+
       return `
         <button class="app-flow__button app-flow__button--secondary" type="button" disabled>
           Appeler
@@ -46,7 +60,12 @@ function buildActionMarkup(action, detail) {
 }
 
 function renderDetailMedia(detail) {
-  if (detail.primaryImageUrl) {
+  const imageUrl = sanitizeListingImageUrl(detail.primaryImageUrl, {
+    categoryId: detail.categoryId,
+    categoryLabel: detail.categoryLabel,
+  });
+
+  if (imageUrl) {
     const imageFallback = buildImageFallbackHandler({
       categoryId: detail.categoryId,
       categoryLabel: detail.categoryLabel,
@@ -56,7 +75,7 @@ function renderDetailMedia(detail) {
       <div class="app-detail__media">
         <img
           class="app-detail__image"
-          src="${escapeAttribute(detail.primaryImageUrl)}"
+          src="${escapeAttribute(imageUrl)}"
           alt="${escapeAttribute(detail.title)}"
           loading="eager"
           onerror="${escapeAttribute(imageFallback)}"

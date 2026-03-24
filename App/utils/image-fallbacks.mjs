@@ -33,3 +33,17 @@ export function buildImageFallbackHandler(image = {}) {
 
   return `this.onerror=null;this.src='${fallbackUrl}';`;
 }
+
+export function sanitizeListingImageUrl(imageUrl = '', image = {}) {
+  const normalizedUrl = String(imageUrl || '').trim();
+
+  if (!normalizedUrl) {
+    return '';
+  }
+
+  if (/^https:\/\/cdn\.zwibba\.example\//i.test(normalizedUrl)) {
+    return resolveCategoryPreviewUrl(image);
+  }
+
+  return normalizedUrl;
+}

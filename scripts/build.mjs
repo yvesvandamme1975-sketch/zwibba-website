@@ -233,7 +233,7 @@ function renderAppPage() {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Zwibba App</title>
-    <meta name="description" content="Prototype browser-first de l'application Zwibba pour le parcours vendeur." />
+    <meta name="description" content="Bêta web Zwibba pour publier, découvrir et partager des annonces en direct." />
     <meta name="theme-color" content="#1E1E20" />
     <meta name="color-scheme" content="dark" />
     <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml" />
@@ -251,7 +251,7 @@ function renderAppPage() {
           <img src="/assets/brand/logo-zwibba.svg" alt="" width="42" height="42" />
           <span class="app-standalone__brand-copy">
             <strong>Zwibba App</strong>
-            <span>Prototype vendeur</span>
+            <span>Bêta privée</span>
           </span>
         </a>
         <a class="button button--ghost" href="/">Retour au site</a>
@@ -259,14 +259,14 @@ function renderAppPage() {
 
       <section class="app-standalone__entry">
         <div class="app-standalone__note">
-          <p class="eyebrow">App mobile, version navigateur</p>
-          <h1>Le parcours vendeur Zwibba commence ici.</h1>
+          <p class="eyebrow">Zwibba web bêta</p>
+          <h1>Vendez et explorez les annonces Zwibba en direct.</h1>
           <p>
-            Cette entrée /App/ devient l'espace de travail du flux vendeur: brouillon,
-            publication, OTP, modération et partage.
+            Accédez à la version web de Zwibba pour publier, rechercher, ouvrir une annonce
+            et partager votre lien sans quitter l'app.
           </p>
           <div class="store-row">
-            <a class="button button--primary" href="#capture">Ouvrir le prototype</a>
+            <a class="button button--primary" href="#capture">Ouvrir l'app</a>
           </div>
         </div>
 

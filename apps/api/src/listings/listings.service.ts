@@ -91,6 +91,7 @@ function toListingSummary(
   primaryImageUrl: string | null,
 ) {
   return {
+    categoryId: listing.categoryId,
     categoryLabel: getCategoryLabel(listing.categoryId),
     id: listing.id,
     locationLabel: listing.area,
@@ -106,8 +107,10 @@ function toListingDetail(
   primaryImageUrl: string | null,
 ) {
   return {
+    categoryId: listing.categoryId,
     categoryLabel: getCategoryLabel(listing.categoryId),
     contactActions: ['whatsapp', 'sms', 'call'],
+    contactPhoneNumber: listing.ownerPhoneNumber,
     id: listing.id,
     locationLabel: listing.area,
     priceCdf: listing.priceCdf,

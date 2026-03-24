@@ -74,11 +74,37 @@ test('buyer listing cards render the primary image when the live feed provides o
     recentListings: [],
   });
 
-  assert.match(html, /<img[^>]+src="https:\/\/cdn\.zwibba\.example\/listings\/samsung-a54\.jpg"/);
+  assert.match(html, /<img[^>]+src="\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.svg"/);
   assert.match(
     html,
     /onerror="this\.onerror=null;this\.src=&#39;\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.svg&#39;;"/,
   );
+});
+
+test('buyer listing cards replace legacy dead CDN image URLs with the local category preview immediately', () => {
+  const html = renderHomeScreen({
+    categories,
+    draft: null,
+    featuredListings: [
+      {
+        categoryId: 'phones_tablets',
+        categoryLabel: 'Téléphones & Tablettes',
+        locationLabel: 'Golf',
+        priceCdf: 450000,
+        primaryImageUrl: 'https://cdn.zwibba.example/draft-photos/face-avant/photo_face-avant_legacy.jpg',
+        slug: 'samsung-galaxy-a54',
+        title: 'Samsung Galaxy A54',
+      },
+    ],
+    feedStatus: 'ready',
+    recentListings: [],
+  });
+
+  assert.match(
+    html,
+    /<img[^>]+src="\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.svg"/,
+  );
+  assert.doesNotMatch(html, /cdn\.zwibba\.example/);
 });
 
 test('home screen marks itself as the compact first-viewport screen', () => {

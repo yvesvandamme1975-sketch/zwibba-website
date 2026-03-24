@@ -423,6 +423,7 @@ test('listings feed returns newly approved database-backed listings only', async
   assert.deepEqual(response.body.items.map((item: { slug: string }) => item.slug), [
     'samsung-galaxy-a54-128-go',
   ]);
+  assert.equal(response.body.items[0].categoryId, 'phones_tablets');
   assert.equal(response.body.items[0].categoryLabel, 'Téléphones & Tablettes');
   assert.equal(response.body.items[0].priceCdf, 4256000);
   assert.equal(response.body.items[0].locationLabel, 'Lubumbashi Centre');
@@ -463,6 +464,7 @@ test('listing detail returns a database-backed published listing with seller met
     'sms',
     'call',
   ]);
+  assert.equal(response.body.contactPhoneNumber, '+243990000001');
   assert.ok(Array.isArray(response.body.safetyTips));
   assert.match(response.body.seller.name, /\S+/);
   assert.match(response.body.seller.responseTime, /\S+/);

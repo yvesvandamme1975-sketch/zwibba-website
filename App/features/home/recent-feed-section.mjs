@@ -3,7 +3,10 @@ import {
   escapeHtml,
   formatCdf,
 } from '../../utils/rendering.mjs';
-import { buildImageFallbackHandler } from '../../utils/image-fallbacks.mjs';
+import {
+  buildImageFallbackHandler,
+  sanitizeListingImageUrl,
+} from '../../utils/image-fallbacks.mjs';
 
 function renderListingCard(listing) {
   const priceLabel = listing.priceLabel ?? formatCdf(listing.priceCdf);
@@ -14,12 +17,16 @@ function renderListingCard(listing) {
     categoryId: listing.categoryId,
     categoryLabel: listing.categoryLabel,
   });
-  const mediaMarkup = listing.primaryImageUrl
+  const imageUrl = sanitizeListingImageUrl(listing.primaryImageUrl, {
+    categoryId: listing.categoryId,
+    categoryLabel: listing.categoryLabel,
+  });
+  const mediaMarkup = imageUrl
     ? `
         <div class="app-home__listing-media">
           <img
             class="app-home__listing-image"
-            src="${escapeAttribute(listing.primaryImageUrl)}"
+            src="${escapeAttribute(imageUrl)}"
             alt="${escapeAttribute(listing.title)}"
             loading="lazy"
             onerror="${escapeAttribute(imageFallback)}"
