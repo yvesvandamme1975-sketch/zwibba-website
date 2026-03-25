@@ -1,8 +1,6 @@
 import {
   areaOptions,
   conditionOptions,
-  demoCaptureOptions,
-  resolveDemoPreviewUrl,
   sellerCategories,
 } from './demo-content.mjs';
 import { renderAuthWelcomeScreen } from './features/auth/welcome-screen.mjs';
@@ -31,6 +29,7 @@ import { createAuthService } from './services/auth-service.mjs';
 import { createDraftStorageService } from './services/draft-storage.mjs';
 import { createImageCompressionService } from './services/image-compression.mjs';
 import { createListingsService } from './services/listings-service.mjs';
+import { createMediaService } from './services/media-service.mjs';
 import {
   createPostFlowController,
   decidePublishGate,
@@ -52,10 +51,16 @@ if (appRoot) {
     fetchFn: window.fetch.bind(window),
     storage: window.localStorage,
   });
+  const mediaService = createMediaService({
+    apiBaseUrl: apiConfig.apiBaseUrl,
+    fetchFn: window.fetch.bind(window),
+  });
   const postFlowController = createPostFlowController({
     draftStorage,
     imageCompressionService: createImageCompressionService(),
     aiDraftService: createAiDraftService(),
+    mediaService,
+    createPreviewUrl: (file) => window.URL.createObjectURL(file),
   });
   const buyerBrowseController = createBuyerBrowseController({
     listingsService: createListingsService({
@@ -93,14 +98,6 @@ if (appRoot) {
     const nextPrice = Number(rawValue);
 
     return Number.isFinite(nextPrice) && nextPrice > 0 ? nextPrice : null;
-  }
-
-  function buildGuidedPhoto(promptId, categoryId = '') {
-    return {
-      id: `guided-${promptId}-${Date.now()}`,
-      previewUrl: resolveDemoPreviewUrl(promptId, categoryId),
-      sizeBytes: 900_000,
-    };
   }
 
   function slugifyTitle(value) {
@@ -223,7 +220,6 @@ if (appRoot) {
       case 'capture':
         return renderCaptureScreen({
           busyLabel: state.busyLabel,
-          captureOptions: demoCaptureOptions,
           draft: state.draft,
         });
       case 'guidance':
@@ -298,37 +294,44 @@ if (appRoot) {
     appRoot.dataset.screen = route.type;
   }
 
-  async function handleCapture(photoId) {
-    const photo = demoCaptureOptions.find((option) => option.id === photoId);
-
-    if (!photo) {
-      return;
-    }
-
+  async function handleCapture(file) {
     state.busyLabel = 'Compression et analyse IA en cours...';
     renderApp();
 
-    const nextDraft = await postFlowController.captureFirstPhoto(photo);
+    try {
+      const nextDraft = await postFlowController.captureFirstPhoto(file);
 
-    state.busyLabel = '';
-    state.draft = nextDraft;
-    state.publishError = '';
-    state.publishOutcome = null;
-    state.publishedListingRoute = '';
-    state.publishedListingUrl = '';
-    state.reviewErrors = [];
-    window.location.hash =
-      getMissingRequiredPhotoPrompts(nextDraft).length > 0 ? '#guidance' : '#review';
+      state.busyLabel = '';
+      state.draft = nextDraft;
+      state.publishError = '';
+      state.publishOutcome = null;
+      state.publishedListingRoute = '';
+      state.publishedListingUrl = '';
+      state.reviewErrors = [];
+      window.location.hash =
+        getMissingRequiredPhotoPrompts(nextDraft).length > 0 ? '#guidance' : '#review';
+    } catch (error) {
+      state.busyLabel = '';
+      state.draft = error?.draft ?? state.draft;
+      renderApp();
+    }
   }
 
-  function handleGuidedCapture(promptId, categoryId = '') {
-    state.draft = postFlowController.addGuidedPhoto(
-      promptId,
-      buildGuidedPhoto(promptId, categoryId),
-    );
-    state.publishError = '';
-    state.reviewErrors = [];
+  async function handleGuidedCapture(promptId, file) {
+    state.busyLabel = 'Téléversement de la photo guidée...';
     renderApp();
+
+    try {
+      state.draft = await postFlowController.addGuidedPhoto(promptId, file);
+      state.publishError = '';
+      state.reviewErrors = [];
+      state.busyLabel = '';
+      renderApp();
+    } catch (error) {
+      state.busyLabel = '';
+      state.draft = error?.draft ?? state.draft;
+      renderApp();
+    }
   }
 
   function handleReviewSubmit(form) {
@@ -475,16 +478,6 @@ if (appRoot) {
 
     event.preventDefault();
 
-    if (trigger.dataset.action === 'capture-demo-photo') {
-      await handleCapture(trigger.dataset.photoId);
-      return;
-    }
-
-    if (trigger.dataset.action === 'capture-guided-photo') {
-      handleGuidedCapture(trigger.dataset.promptId, state.draft?.details.categoryId || '');
-      return;
-    }
-
     if (trigger.dataset.action === 'filter-category') {
       const categoryId = trigger.dataset.categoryId || '';
       const nextCategoryId =
@@ -529,6 +522,31 @@ if (appRoot) {
     if (target.name === 'buyerSearch') {
       buyerBrowseController.setSearchQuery(target.value);
       renderApp();
+    }
+  });
+
+  appRoot.addEventListener('change', async (event) => {
+    const target = event.target;
+
+    if (!(target instanceof HTMLInputElement) || target.type !== 'file') {
+      return;
+    }
+
+    const [file] = Array.from(target.files ?? []);
+
+    target.value = '';
+
+    if (!file) {
+      return;
+    }
+
+    if (target.dataset.input === 'capture-first-photo') {
+      await handleCapture(file);
+      return;
+    }
+
+    if (target.dataset.input === 'guided-photo') {
+      await handleGuidedCapture(target.dataset.promptId || '', file);
     }
   });
 

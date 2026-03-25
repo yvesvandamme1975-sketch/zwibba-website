@@ -6,20 +6,59 @@ import { renderInAppBrand } from '../../components/in-app-brand.mjs';
 import { escapeAttribute, escapeHtml } from '../../utils/rendering.mjs';
 
 function renderPrompt(prompt) {
+  const actionLabel =
+    prompt.uploadStatus === 'failed'
+      ? 'Réessayer'
+      : prompt.completed
+        ? 'Remplacer'
+        : 'Ajouter';
+  const statusCopy =
+    prompt.uploadStatus === 'failed'
+      ? prompt.uploadError || 'Le téléversement a échoué.'
+      : prompt.uploadStatus === 'uploading'
+        ? 'Téléversement en cours'
+        : prompt.completed
+          ? 'Photo téléversée'
+          : prompt.required
+            ? 'Photo requise'
+            : 'Photo recommandée';
+
   return `
-    <li class="app-guidance__item${prompt.completed ? ' is-complete' : ''}">
-      <div>
+    <li class="app-guidance__item${prompt.completed ? ' is-complete' : ''}${
+      prompt.uploadStatus === 'failed' ? ' is-error' : ''
+    }${prompt.uploadStatus === 'uploading' ? ' is-uploading' : ''}">
+      <div class="app-guidance__copy">
         <strong>${escapeHtml(prompt.label)}</strong>
-        <span>${prompt.required ? 'Photo requise' : 'Photo recommandée'}</span>
+        <span>${escapeHtml(statusCopy)}</span>
+        ${
+          prompt.previewUrl
+            ? `
+              <div class="app-guidance__preview">
+                <img
+                  class="app-guidance__preview-image"
+                  src="${escapeAttribute(prompt.previewUrl)}"
+                  alt="${escapeAttribute(prompt.label)}"
+                />
+              </div>
+            `
+            : ''
+        }
       </div>
-      <button
+      <label
         class="app-guidance__action"
-        type="button"
-        data-action="capture-guided-photo"
-        data-prompt-id="${escapeAttribute(prompt.id)}"
+        for="app-guidance-${escapeAttribute(prompt.id)}-input"
       >
-        ${prompt.completed ? 'Remplacer' : 'Ajouter'}
-      </button>
+        ${escapeHtml(actionLabel)}
+      </label>
+      <input
+        class="app-flow__file-input"
+        id="app-guidance-${escapeAttribute(prompt.id)}-input"
+        type="file"
+        accept="image/*"
+        capture="environment"
+        data-input="guided-photo"
+        data-prompt-id="${escapeAttribute(prompt.id)}"
+      />
     </li>
   `;
 }

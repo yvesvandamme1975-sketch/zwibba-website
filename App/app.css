@@ -601,40 +601,91 @@
   gap: 14px;
 }
 
-.app-photo-preset {
+.app-capture__picker-card,
+.app-capture__selected {
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
   gap: 14px;
-  align-items: center;
   padding: 14px;
   border-radius: 24px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
-  color: var(--text);
-  text-align: left;
 }
 
-.app-photo-preset__media {
-  min-height: 96px;
-  border-radius: 18px;
-  background:
-    radial-gradient(circle at top left, var(--preset-glow), transparent 38%),
-    linear-gradient(145deg, color-mix(in srgb, var(--preset-accent) 48%, #15171a), rgba(255, 255, 255, 0.04));
-  border: 1px solid color-mix(in srgb, var(--preset-accent) 60%, rgba(255, 255, 255, 0.06));
-}
-
-.app-photo-preset__copy {
-  display: grid;
-  gap: 6px;
-}
-
-.app-photo-preset__copy strong {
+.app-capture__picker-card strong,
+.app-capture__selected-copy strong {
   font-size: 0.96rem;
 }
 
-.app-photo-preset__copy small {
+.app-capture__picker-card span,
+.app-capture__selected-copy span {
   color: var(--text-muted);
   line-height: 1.5;
+}
+
+.app-capture__picker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  width: fit-content;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--green), #9aff8f);
+  color: #0f160f;
+  font-weight: 800;
+  box-shadow: var(--shadow-green);
+}
+
+.app-capture__selected {
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: center;
+}
+
+.app-capture__selected.is-failed {
+  border-color: rgba(239, 83, 80, 0.34);
+  background: rgba(239, 83, 80, 0.08);
+}
+
+.app-capture__selected.is-ready {
+  border-color: rgba(107, 230, 107, 0.24);
+  background: rgba(107, 230, 107, 0.08);
+}
+
+.app-capture__selected-media,
+.app-guidance__preview {
+  overflow: hidden;
+  min-height: 96px;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top left, rgba(107, 230, 107, 0.24), transparent 38%),
+    linear-gradient(145deg, rgba(107, 230, 107, 0.18), rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(107, 230, 107, 0.18);
+}
+
+.app-capture__selected-image,
+.app-guidance__preview-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 96px;
+  object-fit: cover;
+}
+
+.app-guidance__copy {
+  display: grid;
+  gap: 8px;
+}
+
+.app-flow__file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .app-guidance__list {
@@ -659,6 +710,11 @@
 .app-guidance__item.is-complete {
   border-color: rgba(107, 230, 107, 0.26);
   background: rgba(107, 230, 107, 0.08);
+}
+
+.app-guidance__item.is-error {
+  border-color: rgba(239, 83, 80, 0.34);
+  background: rgba(239, 83, 80, 0.08);
 }
 
 .app-guidance__item strong {

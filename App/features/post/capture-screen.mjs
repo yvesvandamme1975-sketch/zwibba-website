@@ -19,29 +19,72 @@ function renderDraftResume(draft) {
   `;
 }
 
-function renderCaptureCard(option) {
+function resolvePrimaryPhoto(draft) {
+  return draft?.photos?.find((photo) => photo.kind === 'primary') ?? draft?.photos?.[0] ?? null;
+}
+
+function renderPrimaryPhotoState(draft) {
+  const photo = resolvePrimaryPhoto(draft);
+
+  if (!photo) {
+    return '';
+  }
+
+  const imageUrl = photo.publicUrl || photo.previewUrl || photo.url || '';
+  const status =
+    photo.uploadStatus === 'failed'
+      ? 'Échec du téléversement'
+      : photo.uploadStatus === 'uploading'
+        ? 'Téléversement en cours'
+        : 'Photo principale prête';
+  const detail =
+    photo.uploadStatus === 'failed'
+      ? photo.uploadError || 'Réessayez avec une autre photo.'
+      : photo.uploadStatus === 'uploading'
+        ? 'La photo principale est en cours d’envoi vers Zwibba.'
+        : 'La photo principale est enregistrée dans votre brouillon.';
+
   return `
-    <button
-      class="app-photo-preset"
-      type="button"
-      data-action="capture-demo-photo"
-      data-photo-id="${escapeAttribute(option.id)}"
-      style="--preset-accent:${escapeAttribute(option.accent)}; --preset-glow:${escapeAttribute(option.glow)};"
-    >
-      <span class="app-photo-preset__media" aria-hidden="true"></span>
-      <span class="app-photo-preset__copy">
-        <strong>${escapeHtml(option.label)}</strong>
-        <small>${escapeHtml(option.description)}</small>
-      </span>
-    </button>
+    <article class="app-capture__selected${
+      photo.uploadStatus === 'failed'
+        ? ' is-failed'
+        : photo.uploadStatus === 'uploading'
+          ? ' is-uploading'
+          : ' is-ready'
+    }">
+      ${
+        imageUrl
+          ? `
+            <div class="app-capture__selected-media">
+              <img
+                class="app-capture__selected-image"
+                src="${escapeAttribute(imageUrl)}"
+                alt="${escapeAttribute('Photo principale Zwibba')}"
+              />
+            </div>
+          `
+          : ''
+      }
+      <div class="app-capture__selected-copy">
+        <strong>${escapeHtml(status)}</strong>
+        <span>${escapeHtml(detail)}</span>
+      </div>
+    </article>
   `;
 }
 
 export function renderCaptureScreen({
   busyLabel = '',
-  captureOptions,
   draft,
 }) {
+  const primaryPhoto = resolvePrimaryPhoto(draft);
+  const pickerLabel =
+    primaryPhoto?.uploadStatus === 'failed'
+      ? 'Réessayer avec une photo'
+      : primaryPhoto
+        ? 'Remplacer la photo'
+        : 'Choisir ou prendre une photo';
+
   return `
     <section class="app-flow app-flow--capture">
       <header class="app-flow__header">
@@ -67,8 +110,24 @@ export function renderCaptureScreen({
           : ''
       }
 
+      ${renderPrimaryPhotoState(draft)}
+
       <div class="app-capture__grid">
-        ${captureOptions.map(renderCaptureCard).join('')}
+        <div class="app-capture__picker-card">
+          <strong>Photo principale</strong>
+          <span>Utilisez une vraie photo depuis votre appareil. Sur mobile, l’appareil photo peut s’ouvrir directement.</span>
+          <label class="app-capture__picker" for="app-capture-primary-input">${escapeHtml(
+            pickerLabel,
+          )}</label>
+          <input
+            class="app-flow__file-input"
+            id="app-capture-primary-input"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            data-input="capture-first-photo"
+          />
+        </div>
       </div>
     </section>
   `;

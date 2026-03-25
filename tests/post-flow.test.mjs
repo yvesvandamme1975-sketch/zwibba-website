@@ -29,18 +29,69 @@ function createImageCompressionServiceMock() {
     compressImage(photo) {
       return {
         ...photo,
-        originalSizeBytes: photo.sizeBytes,
-        sizeBytes: Math.min(photo.sizeBytes, 1_500_000),
-        wasCompressed: photo.sizeBytes > 1_500_000,
+        originalSizeBytes: photo.sizeBytes ?? photo.size ?? 0,
+        sizeBytes: Math.min(photo.sizeBytes ?? photo.size ?? 0, 1_500_000),
+        wasCompressed: (photo.sizeBytes ?? photo.size ?? 0) > 1_500_000,
       };
     },
   };
 }
 
-test('first photo starts a draft', async () => {
+function createMediaServiceMock({
+  onUpload = async () => {},
+  slot = {},
+} = {}) {
+  const requests = [];
+
+  return {
+    requests,
+    async requestUploadSlot(payload) {
+      requests.push({
+        type: 'slot',
+        payload,
+      });
+
+      return {
+        objectKey: 'draft-photos/capture/photo_1-phone.jpg',
+        photoId: 'photo_capture_1',
+        publicUrl: 'https://pub.example.test/draft-photos/capture/photo_1-phone.jpg',
+        sourcePresetId: 'capture',
+        uploadUrl: 'https://uploads.example.test/signed-put',
+        ...slot,
+      };
+    },
+    async uploadBytes(payload) {
+      requests.push({
+        type: 'upload',
+        payload,
+      });
+
+      return onUpload(payload);
+    },
+  };
+}
+
+function createBrowserFile({
+  bytes = [1, 2, 3, 4],
+  name = 'phone-front.jpg',
+  size = 3_400_000,
+  type = 'image/jpeg',
+} = {}) {
+  return {
+    name,
+    size,
+    type,
+    async arrayBuffer() {
+      return Uint8Array.from(bytes).buffer;
+    },
+  };
+}
+
+test('first real photo starts a draft and uploads immediately', async () => {
   const draftStorage = createDraftStorageService({
     storage: createMemoryStorage(),
   });
+  const mediaService = createMediaServiceMock();
   const controller = createPostFlowController({
     draftStorage,
     imageCompressionService: createImageCompressionServiceMock(),
@@ -55,21 +106,27 @@ test('first photo starts a draft', async () => {
         suggestedPriceMaxCdf: 360_000,
       },
     }),
+    createPreviewUrl: (file) => `blob:${file.name}`,
+    mediaService,
   });
 
-  const draft = await controller.captureFirstPhoto({
-    id: 'phone-front',
-    previewUrl: '/assets/demo/phone-front.jpg',
-    sizeBytes: 3_400_000,
-  });
+  const draft = await controller.captureFirstPhoto(createBrowserFile());
 
   assert.equal(draft.photos.length, 1);
-  assert.equal(draft.photos[0].url, '/assets/demo/phone-front.jpg');
+  assert.equal(draft.photos[0].previewUrl, 'blob:phone-front.jpg');
+  assert.equal(
+    draft.photos[0].url,
+    'https://pub.example.test/draft-photos/capture/photo_1-phone.jpg',
+  );
+  assert.equal(draft.photos[0].uploadStatus, 'uploaded');
+  assert.equal(draft.photos[0].objectKey, 'draft-photos/capture/photo_1-phone.jpg');
   assert.equal(draft.details.categoryId, 'phones_tablets');
   assert.equal(draftStorage.loadDraft().id, draft.id);
+  assert.deepEqual(mediaService.requests.map((request) => request.type), ['slot', 'upload']);
 });
 
 test('AI category suggestion drives guided-photo prompts', async () => {
+  const mediaService = createMediaServiceMock();
   const controller = createPostFlowController({
     draftStorage: createDraftStorageService({
       storage: createMemoryStorage(),
@@ -86,13 +143,16 @@ test('AI category suggestion drives guided-photo prompts', async () => {
         suggestedPriceMaxCdf: 360_000,
       },
     }),
+    createPreviewUrl: (file) => `blob:${file.name}`,
+    mediaService,
   });
 
-  const draft = await controller.captureFirstPhoto({
-    id: 'phone-front',
-    previewUrl: '/assets/demo/phone-front.jpg',
-    sizeBytes: 2_200_000,
-  });
+  const draft = await controller.captureFirstPhoto(
+    createBrowserFile({
+      name: 'phone-front.jpg',
+      size: 2_200_000,
+    }),
+  );
 
   const html = renderPhotoGuidanceScreen({ draft });
 
@@ -101,23 +161,109 @@ test('AI category suggestion drives guided-photo prompts', async () => {
   assert.match(html, /Écran allumé/);
 });
 
-test('capture screen keeps the Zwibba brand visible inside the app shell', () => {
+test('capture screen renders a real image picker instead of demo preset cards', () => {
   const html = renderCaptureScreen({
     busyLabel: '',
-    captureOptions: [
-      {
-        id: 'phone-front',
-        label: 'Téléphone premium',
-        description: 'Démo smartphone.',
-        accent: '#6BE66B',
-        glow: 'rgba(107, 230, 107, 0.32)',
-      },
-    ],
     draft: null,
   });
 
   assert.match(html, /\/assets\/brand\/favicon\.svg/);
   assert.match(html, /Zwibba/);
+  assert.match(html, /type="file"/);
+  assert.match(html, /accept="image\/\*"/);
+  assert.match(html, /capture="environment"/);
+  assert.doesNotMatch(html, /capture-demo-photo/);
+  assert.doesNotMatch(html, /Téléphone premium/);
+});
+
+test('guided upload marks a required prompt complete only after upload succeeds', async () => {
+  const draftStorage = createDraftStorageService({
+    storage: createMemoryStorage(),
+  });
+  const mediaService = createMediaServiceMock({
+    slot: {
+      objectKey: 'draft-photos/face/photo_face.jpg',
+      photoId: 'photo_face_1',
+      publicUrl: 'https://pub.example.test/draft-photos/face/photo_face.jpg',
+      sourcePresetId: 'face',
+    },
+  });
+  const controller = createPostFlowController({
+    draftStorage,
+    imageCompressionService: createImageCompressionServiceMock(),
+    aiDraftService: createAiDraftServiceMock({
+      status: 'ready',
+      draftPatch: {
+        categoryId: 'phones_tablets',
+      },
+    }),
+    createPreviewUrl: (file) => `blob:${file.name}`,
+    mediaService,
+  });
+
+  const draft = await controller.captureFirstPhoto(createBrowserFile());
+  const updatedDraft = await controller.addGuidedPhoto(
+    'face',
+    createBrowserFile({
+      name: 'face.jpg',
+      size: 850_000,
+    }),
+  );
+  const missingPromptIds = getMissingRequiredPhotoPrompts(updatedDraft).map((prompt) => prompt.id);
+
+  assert.ok(!missingPromptIds.includes('face'));
+  assert.equal(updatedDraft.photos.find((photo) => photo.promptId === 'face')?.uploadStatus, 'uploaded');
+});
+
+test('failed guided upload stays retryable and does not satisfy the required prompt', async () => {
+  const draftStorage = createDraftStorageService({
+    storage: createMemoryStorage(),
+  });
+  let uploadCount = 0;
+  const mediaService = createMediaServiceMock({
+    onUpload: async () => {
+      uploadCount += 1;
+
+      if (uploadCount === 1) {
+        return;
+      }
+
+      throw new Error('Impossible de téléverser la photo.');
+    },
+  });
+  const controller = createPostFlowController({
+    draftStorage,
+    imageCompressionService: createImageCompressionServiceMock(),
+    aiDraftService: createAiDraftServiceMock({
+      status: 'ready',
+      draftPatch: {
+        categoryId: 'phones_tablets',
+      },
+    }),
+    createPreviewUrl: (file) => `blob:${file.name}`,
+    mediaService,
+  });
+
+  await controller.captureFirstPhoto(createBrowserFile());
+
+  await assert.rejects(
+    () =>
+      controller.addGuidedPhoto(
+        'face',
+        createBrowserFile({
+          name: 'face.jpg',
+          size: 850_000,
+        }),
+      ),
+    /Impossible de téléverser la photo\./,
+  );
+
+  const failedDraft = draftStorage.loadDraft();
+  const failedPhoto = failedDraft.photos.find((photo) => photo.promptId === 'face');
+
+  assert.equal(failedPhoto?.uploadStatus, 'failed');
+  assert.equal(failedPhoto?.uploadError, 'Impossible de téléverser la photo.');
+  assert.ok(getMissingRequiredPhotoPrompts(failedDraft).some((prompt) => prompt.id === 'face'));
 });
 
 test('required categories block publish until all required photos are present', () => {

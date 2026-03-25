@@ -1,5 +1,4 @@
 import { getCategoryGuidance } from '../../models/category-guidance.mjs';
-import { resolveDemoPreviewUrl } from '../../demo-preview-assets.mjs';
 import {
   createListingDraftFromFirstPhoto,
   updateListingDraft,
@@ -35,20 +34,149 @@ const conditionRequiredCategories = new Set([
 ]);
 
 function hasPromptPhoto(draft, promptId) {
-  return draft.photos.some((photo) => photo.promptId === promptId);
+  return draft.photos.some(
+    (photo) => photo.promptId === promptId && isPhotoReadyForDraft(photo),
+  );
 }
 
 function buildPrompt(promptId, required, draft) {
+  const photo = draft.photos.find((entry) => entry.promptId === promptId);
+
   return {
     id: promptId,
     label: promptLabels[promptId] ?? promptId,
     required,
     completed: hasPromptPhoto(draft, promptId),
+    previewUrl: resolvePhotoRenderUrl(photo),
+    uploadError: photo?.uploadError ?? '',
+    uploadStatus: photo?.uploadStatus ?? '',
   };
 }
 
 function resolveGuidance(categoryId) {
   return getCategoryGuidance(categoryId);
+}
+
+function createPhotoId(prefix) {
+  return globalThis.crypto?.randomUUID?.()
+    ? `${prefix}-${globalThis.crypto.randomUUID()}`
+    : `${prefix}-${Date.now()}`;
+}
+
+function resolveSourcePresetId(kind, promptId) {
+  if (kind === 'guided') {
+    return promptId || 'guided';
+  }
+
+  return 'capture';
+}
+
+function resolvePhotoRenderUrl(photo) {
+  return photo?.publicUrl || photo?.url || photo?.previewUrl || '';
+}
+
+function isPhotoReadyForDraft(photo) {
+  if (!photo) {
+    return false;
+  }
+
+  if (photo.uploadStatus === 'uploaded') {
+    return true;
+  }
+
+  if (photo.uploadStatus === 'uploading' || photo.uploadStatus === 'failed') {
+    return false;
+  }
+
+  return Boolean(resolvePhotoRenderUrl(photo));
+}
+
+function resolvePrimaryPhoto(draft) {
+  return draft.photos.find((photo) => photo.kind === 'primary') ?? draft.photos[0] ?? null;
+}
+
+function createSelectedPhotoRecord(
+  file,
+  {
+    createPreviewUrl,
+    kind,
+    promptId = '',
+  },
+) {
+  const sourcePresetId = resolveSourcePresetId(kind, promptId);
+  const fileName = file.name || `${sourcePresetId}-${Date.now()}.jpg`;
+  const contentType = file.type || 'image/jpeg';
+  const previewUrl =
+    typeof createPreviewUrl === 'function'
+      ? createPreviewUrl(file)
+      : file.previewUrl || file.url || '';
+
+  return {
+    id: createPhotoId(sourcePresetId),
+    kind,
+    promptId,
+    sourcePresetId,
+    uploadStatus: 'uploading',
+    uploadError: '',
+    previewUrl,
+    url: previewUrl,
+    fileName,
+    contentType,
+    sizeBytes: file.size ?? file.sizeBytes ?? null,
+  };
+}
+
+async function readSelectedPhotoBytes(file) {
+  if (typeof file.arrayBuffer === 'function') {
+    return new Uint8Array(await file.arrayBuffer());
+  }
+
+  if (file.bytes instanceof Uint8Array) {
+    return file.bytes;
+  }
+
+  if (Array.isArray(file.bytes)) {
+    return Uint8Array.from(file.bytes);
+  }
+
+  throw new Error('Photo introuvable.');
+}
+
+async function uploadDraftPhoto({
+  mediaService,
+  file,
+  photo,
+}) {
+  const bytes = await readSelectedPhotoBytes(file);
+  const slot = await mediaService.requestUploadSlot({
+    contentType: photo.contentType || 'image/jpeg',
+    fileName: photo.fileName || `${photo.sourcePresetId || photo.id}.jpg`,
+    sourcePresetId: photo.sourcePresetId || resolveSourcePresetId(photo.kind, photo.promptId),
+  });
+
+  await mediaService.uploadBytes({
+    bytes,
+    contentType: photo.contentType || 'image/jpeg',
+    uploadUrl: slot.uploadUrl,
+  });
+
+  return {
+    ...photo,
+    objectKey: slot.objectKey,
+    photoId: slot.photoId,
+    publicUrl: slot.publicUrl,
+    sourcePresetId: slot.sourcePresetId,
+    uploadStatus: 'uploaded',
+    uploadError: '',
+    url: slot.publicUrl,
+  };
+}
+
+function attachDraftToError(error, draft) {
+  const nextError = error instanceof Error ? error : new Error(String(error || 'Erreur upload.'));
+
+  nextError.draft = draft;
+  return nextError;
 }
 
 export function getGuidedPhotoPrompts(draft) {
@@ -143,11 +271,17 @@ export function applyAiResultToDraft(
 
 export function validateDraftForPublish(draft) {
   const errors = [];
+  const primaryPhoto = resolvePrimaryPhoto(draft);
 
-  if (!draft.photos.length) {
+  if (!isPhotoReadyForDraft(primaryPhoto)) {
     errors.push({
       field: 'photo',
-      message: 'Ajoutez au moins une photo.',
+      message:
+        primaryPhoto?.uploadStatus === 'uploading'
+          ? 'Attendez la fin du téléversement de la photo principale.'
+          : primaryPhoto?.uploadStatus === 'failed'
+            ? 'Réessayez la photo principale avant de publier.'
+            : 'Ajoutez au moins une photo.',
     });
   }
 
@@ -226,8 +360,7 @@ export function createReadyDraft(overrides = {}) {
   const condition =
     Object.prototype.hasOwnProperty.call(overrides, 'condition') ? overrides.condition : '';
   const categoryId = overrides.categoryId ?? 'electronics';
-  const defaultPreviewUrl =
-    overrides.photoUrl ?? resolveDemoPreviewUrl('phone-front', categoryId);
+  const defaultPreviewUrl = overrides.photoUrl ?? '/uploads/phone-front.jpg';
   const photos =
     Object.prototype.hasOwnProperty.call(overrides, 'photos')
       ? overrides.photos
@@ -237,6 +370,7 @@ export function createReadyDraft(overrides = {}) {
             kind: 'primary',
             url: defaultPreviewUrl,
             previewUrl: defaultPreviewUrl,
+            uploadStatus: 'uploaded',
           },
         ];
   const draft = createListingDraftFromFirstPhoto({
@@ -278,38 +412,84 @@ export function createPostFlowController({
   draftStorage,
   imageCompressionService,
   aiDraftService,
+  mediaService,
+  createPreviewUrl = (file) => file.previewUrl || file.url || '',
   now = () => new Date().toISOString(),
 } = {}) {
-  if (!draftStorage || !imageCompressionService || !aiDraftService) {
+  if (!draftStorage || !imageCompressionService || !aiDraftService || !mediaService) {
     throw new Error('Post flow dependencies are required.');
   }
 
   return {
-    async captureFirstPhoto(photo) {
-      const compressedPhoto = imageCompressionService.compressImage(photo);
+    async captureFirstPhoto(file) {
+      const preparedPhoto = imageCompressionService.compressImage(
+        createSelectedPhotoRecord(file, {
+          createPreviewUrl,
+          kind: 'primary',
+        }),
+      );
       let draft = createListingDraftFromFirstPhoto({
-        photoUrl: compressedPhoto.previewUrl ?? compressedPhoto.url,
-        photo: compressedPhoto,
-        now: now(),
-      });
-      const aiResult = await aiDraftService.generateDraft(compressedPhoto);
-
-      draft = applyAiResultToDraft(draft, aiResult, {
+        photoUrl: preparedPhoto.previewUrl ?? preparedPhoto.url,
+        photo: preparedPhoto,
         now: now(),
       });
       draftStorage.saveDraft(draft);
 
-      return draft;
+      try {
+        const uploadedPhoto = await uploadDraftPhoto({
+          file,
+          mediaService,
+          photo: draft.photos[0],
+        });
+        draft = updateListingDraft(
+          draft,
+          {
+            photos: [uploadedPhoto],
+          },
+          { now: now() },
+        );
+        const aiResult = await aiDraftService.generateDraft(uploadedPhoto);
+
+        draft = applyAiResultToDraft(draft, aiResult, {
+          now: now(),
+        });
+        draftStorage.saveDraft(draft);
+
+        return draft;
+      } catch (error) {
+        const failedDraft = updateListingDraft(
+          draft,
+          {
+            photos: [
+              {
+                ...draft.photos[0],
+                uploadStatus: 'failed',
+                uploadError:
+                  error instanceof Error ? error.message : 'Impossible de téléverser la photo.',
+              },
+            ],
+          },
+          { now: now() },
+        );
+        draftStorage.saveDraft(failedDraft);
+        throw attachDraftToError(error, failedDraft);
+      }
     },
-    addGuidedPhoto(promptId, photo) {
+    async addGuidedPhoto(promptId, file) {
       const draft = draftStorage.loadDraft();
 
       if (!draft) {
         throw new Error('No draft available.');
       }
 
-      const compressedPhoto = imageCompressionService.compressImage(photo);
-      const updatedDraft = addGuidedPhotoToDraft(draft, {
+      const compressedPhoto = imageCompressionService.compressImage(
+        createSelectedPhotoRecord(file, {
+          createPreviewUrl,
+          kind: 'guided',
+          promptId,
+        }),
+      );
+      let updatedDraft = addGuidedPhotoToDraft(draft, {
         promptId,
         photo: compressedPhoto,
         now: now(),
@@ -317,7 +497,36 @@ export function createPostFlowController({
 
       draftStorage.saveDraft(updatedDraft);
 
-      return updatedDraft;
+      const insertedPhoto = updatedDraft.photos.find((photo) => photo.promptId === promptId);
+
+      try {
+        const uploadedPhoto = await uploadDraftPhoto({
+          file,
+          mediaService,
+          photo: insertedPhoto,
+        });
+        updatedDraft = addGuidedPhotoToDraft(updatedDraft, {
+          promptId,
+          photo: uploadedPhoto,
+          now: now(),
+        });
+        draftStorage.saveDraft(updatedDraft);
+
+        return updatedDraft;
+      } catch (error) {
+        const failedDraft = addGuidedPhotoToDraft(updatedDraft, {
+          promptId,
+          photo: {
+            ...insertedPhoto,
+            uploadStatus: 'failed',
+            uploadError:
+              error instanceof Error ? error.message : 'Impossible de téléverser la photo.',
+          },
+          now: now(),
+        });
+        draftStorage.saveDraft(failedDraft);
+        throw attachDraftToError(error, failedDraft);
+      }
     },
     saveDraft(draft) {
       return draftStorage.saveDraft(draft);

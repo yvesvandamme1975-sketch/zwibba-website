@@ -259,3 +259,84 @@ test('live publish stores missing preview fallbacks as svg uploads instead of br
   assert.equal(requests[0].url, 'https://api.example.test/media/upload-url');
   assert.equal(requests[1].url, 'https://uploads.example.test/signed-put');
 });
+
+test('live publish reuses already uploaded photos without fetching or uploading them again', async () => {
+  const requests = [];
+  const result = await submitLivePublish({
+    apiBaseUrl: 'https://api.example.test',
+    draft: updateListingDraft(
+      markDraftOtpVerified(
+        createListingDraftFromFirstPhoto({
+          photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-phone.jpg',
+          photo: {
+            objectKey: 'draft-photos/capture/photo_1-phone.jpg',
+            photoId: 'photo_capture_1',
+            publicUrl: 'https://pub.example.test/draft-photos/capture/photo_1-phone.jpg',
+            sourcePresetId: 'capture',
+            uploadStatus: 'uploaded',
+          },
+        }),
+        { phoneNumber: '+243990000001' },
+      ),
+      {
+        details: {
+          area: 'Golf',
+          categoryId: 'phones_tablets',
+          condition: 'like_new',
+          description: 'Téléphone déjà envoyé dans le brouillon.',
+          priceCdf: 450000,
+          title: 'Samsung Galaxy A54',
+        },
+      },
+    ),
+    fetchFn: async (url, options = {}) => {
+      requests.push({
+        url,
+        ...options,
+      });
+
+      if (url === 'https://api.example.test/drafts/sync') {
+        return createJsonResponse(200, {
+          area: 'Golf',
+          categoryId: 'phones_tablets',
+          condition: 'like_new',
+          description: 'Téléphone déjà envoyé dans le brouillon.',
+          draftId: 'draft_live_3',
+          ownerPhoneNumber: '+243990000001',
+          photos: [
+            {
+              objectKey: 'draft-photos/capture/photo_1-phone.jpg',
+              photoId: 'photo_capture_1',
+              publicUrl: 'https://pub.example.test/draft-photos/capture/photo_1-phone.jpg',
+              sourcePresetId: 'capture',
+              uploadStatus: 'uploaded',
+            },
+          ],
+          priceCdf: 450000,
+          syncStatus: 'synced',
+          title: 'Samsung Galaxy A54',
+        });
+      }
+
+      return createJsonResponse(200, {
+        id: 'listing_live_3',
+        listingSlug: 'samsung-galaxy-a54',
+        reasonSummary: 'Annonce approuvée et prête à partager.',
+        shareUrl: 'https://zwibba.com/annonces/samsung-galaxy-a54',
+        status: 'approved',
+        statusLabel: 'Annonce approuvée et prête à partager',
+      });
+    },
+    session: {
+      canSyncDrafts: true,
+      phoneNumber: '+243990000001',
+      sessionToken: 'zwibba_session_live_123',
+    },
+  });
+
+  assert.equal(result.draft.remoteDraftId, 'draft_live_3');
+  assert.deepEqual(
+    requests.map((request) => request.url),
+    ['https://api.example.test/drafts/sync', 'https://api.example.test/moderation/publish'],
+  );
+});

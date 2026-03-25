@@ -42,6 +42,7 @@ function createEmptyUploadState() {
 function normalizePhoto(photo = {}, index = 0) {
   const fallbackId = index === 0 ? 'photo-1' : `photo-${index + 1}`;
   const url = photo.url ?? photo.previewUrl ?? '';
+  const sizeBytes = photo.sizeBytes ?? photo.size ?? null;
 
   return {
     id: photo.id ?? fallbackId,
@@ -50,12 +51,15 @@ function normalizePhoto(photo = {}, index = 0) {
     photoId: photo.photoId ?? '',
     promptId: photo.promptId ?? '',
     publicUrl: photo.publicUrl ?? '',
+    uploadError: photo.uploadError ?? '',
     sourcePresetId: photo.sourcePresetId ?? '',
     uploadStatus: photo.uploadStatus ?? '',
+    fileName: photo.fileName ?? photo.name ?? '',
+    contentType: photo.contentType ?? photo.type ?? '',
     url,
     previewUrl: photo.previewUrl ?? url,
-    sizeBytes: photo.sizeBytes ?? null,
-    originalSizeBytes: photo.originalSizeBytes ?? photo.sizeBytes ?? null,
+    sizeBytes,
+    originalSizeBytes: photo.originalSizeBytes ?? sizeBytes,
     wasCompressed: Boolean(photo.wasCompressed),
   };
 }

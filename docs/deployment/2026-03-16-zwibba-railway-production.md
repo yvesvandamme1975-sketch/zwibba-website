@@ -171,6 +171,8 @@ curl \
 - the public browser beta at `/App/#home` shows real listing pictures when approved listings have uploaded photos
 - the public browser beta buyer detail route at `/App/#listing/<slug>` shows the hero image for listings with uploaded photos
 - the public browser beta desktop shell keeps the phone frame capped to the viewport and scrolls content inside the phone instead of stretching the device
+- the public browser beta seller flow at `/App/#capture` accepts a real image file or mobile camera capture instead of demo photo presets
+- the seller flow uploads the first photo immediately to R2 before leaving capture and shows retryable status if a guided upload fails
 - the seller flow can request OTP through the configured provider
 - the seller flow can create a draft with R2-backed photo metadata
 - the seller review and seller success screens show the first draft image when a photo exists
