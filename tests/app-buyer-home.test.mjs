@@ -74,10 +74,10 @@ test('buyer listing cards render the primary image when the live feed provides o
     recentListings: [],
   });
 
-  assert.match(html, /<img[^>]+src="\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.svg"/);
+  assert.match(html, /<img[^>]+src="\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.jpg"/);
   assert.match(
     html,
-    /onerror="this\.onerror=null;this\.src=&#39;\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.svg&#39;;"/,
+    /onerror="this\.onerror=null;this\.src=&#39;\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.jpg&#39;;"/,
   );
 });
 
@@ -102,7 +102,7 @@ test('buyer listing cards replace legacy dead CDN image URLs with the local cate
 
   assert.match(
     html,
-    /<img[^>]+src="\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.svg"/,
+    /<img[^>]+src="\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.jpg"/,
   );
   assert.doesNotMatch(html, /cdn\.zwibba\.example/);
 });

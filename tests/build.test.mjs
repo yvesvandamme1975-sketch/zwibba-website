@@ -154,6 +154,24 @@ test('listing detail pages include social metadata, contact actions, and safety 
   assert.match(detail, /[ÉE]vitez de payer [àa] l(?:'|&#39;)avance/i);
 });
 
+test('seeded listing pages and browse cards use bundled raster images instead of generated svg placeholders', () => {
+  buildSite();
+
+  const browse = readFileSync(path.join(distDir, 'annonces/index.html'), 'utf8');
+  const detail = readFileSync(
+    path.join(distDir, 'annonce', 'samsung-galaxy-a54-neuf-lubumbashi', 'index.html'),
+    'utf8',
+  );
+
+  assert.equal(
+    existsSync(path.join(distDir, 'assets/listings/samsung-galaxy-a54-neuf-lubumbashi.jpg')),
+    true,
+    'expected bundled seeded listing image to be copied to dist',
+  );
+  assert.match(browse, /\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.jpg/);
+  assert.match(detail, /\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.jpg/);
+});
+
 test('runtime serves referral short links through the dedicated referral page', async () => {
   await withServer(async (baseUrl) => {
     const response = await fetch(`${baseUrl}/r/ZWIB-A3K9`, { signal: AbortSignal.timeout(3000) });

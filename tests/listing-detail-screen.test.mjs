@@ -40,10 +40,10 @@ test('listing detail screen renders the buyer detail state inside /App', () => {
   assert.match(html, /Appeler/);
   assert.match(html, /href="tel:\+243990000001"/);
   assert.match(html, /href="#buy"/);
-  assert.match(html, /<img[^>]+class="app-detail__image"[^>]+src="\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.svg"/);
+  assert.match(html, /<img[^>]+class="app-detail__image"[^>]+src="\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.jpg"/);
   assert.match(
     html,
-    /onerror="this\.onerror=null;this\.src=&#39;\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.svg&#39;;"/,
+    /onerror="this\.onerror=null;this\.src=&#39;\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.jpg&#39;;"/,
   );
 });
 
@@ -72,7 +72,7 @@ test('listing detail screen swaps legacy dead CDN image URLs for a local preview
 
   assert.match(
     html,
-    /<img[^>]+class="app-detail__image"[^>]+src="\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.svg"/,
+    /<img[^>]+class="app-detail__image"[^>]+src="\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.jpg"/,
   );
   assert.doesNotMatch(html, /cdn\.zwibba\.example/);
 });

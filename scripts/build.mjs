@@ -22,6 +22,7 @@ import {
   supportTopics,
   testimonials,
 } from '../src/site/content.mjs';
+import { resolveSeededListingImage } from '../shared/listing-images.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
@@ -161,6 +162,10 @@ function buildListingImage(listing) {
     listing.icon.slice(0, 1),
   )}</text>
 </svg>`;
+}
+
+function resolveListingImageAsset(listing) {
+  return resolveSeededListingImage(listing.slug)?.src || `/assets/listings/${listing.slug}.svg`;
 }
 
 function renderStoreButtons(extraClass = '') {
@@ -459,6 +464,7 @@ function renderFaqs(items) {
 function renderListingCard(listing, options = {}) {
   const featuredBadge = listing.isFeatured ? '<span class="listing-card__badge">Booste</span>' : '';
   const highlight = options.highlightLabel ? `<span class="listing-card__meta-tag">${escapeHtml(options.highlightLabel)}</span>` : '';
+  const listingImageAsset = resolveListingImageAsset(listing);
   return `
     <article class="listing-card" data-listing-card data-category="${listing.category}" data-condition="${escapeHtml(
       listing.condition.toLowerCase(),
@@ -466,7 +472,7 @@ function renderListingCard(listing, options = {}) {
       listing.publishedAt,
     )}">
       <a class="listing-card__media" href="/annonce/${listing.slug}/">
-        <img src="/assets/listings/${listing.slug}.svg" alt="${escapeHtml(listing.title)}" loading="lazy" width="600" height="400" />
+        <img src="${escapeHtml(listingImageAsset)}" alt="${escapeHtml(listing.title)}" loading="lazy" width="600" height="400" />
         ${featuredBadge}
       </a>
       <div class="listing-card__content">
@@ -726,6 +732,7 @@ function renderBrowsePage() {
 }
 
 function renderListingPage(listing) {
+  const listingImageAsset = resolveListingImageAsset(listing);
   const similar = listings
     .filter((item) => item.slug !== listing.slug && item.category === listing.category)
     .slice(0, 2)
@@ -737,7 +744,7 @@ function renderListingPage(listing) {
     '@type': listing.listingType === 'Service' ? 'Service' : 'Product',
     name: listing.title,
     description: listing.summary,
-    image: resolveUrl(`/assets/listings/${listing.slug}.svg`),
+    image: resolveUrl(listingImageAsset),
     offers: {
       '@type': 'Offer',
       priceCurrency: 'CDF',
@@ -755,7 +762,7 @@ function renderListingPage(listing) {
     <main id="main-content">
       <section class="page-hero listing-hero">
         <div class="listing-hero__media">
-          <img src="/assets/listings/${listing.slug}.svg" alt="${escapeHtml(listing.title)}" width="1200" height="800" />
+          <img src="${escapeHtml(listingImageAsset)}" alt="${escapeHtml(listing.title)}" width="1200" height="800" />
         </div>
         <div class="listing-hero__content">
           <div class="meta-pill-row">
@@ -843,7 +850,7 @@ function renderListingPage(listing) {
     canonicalPath: `/annonce/${listing.slug}/`,
     title: `${listing.title} | Zwibba`,
     description: listing.summary,
-    ogImage: `/assets/listings/${listing.slug}.svg`,
+    ogImage: listingImageAsset,
     body: detailBody,
     schema,
     bodyClass: 'page-listing',
@@ -1166,11 +1173,16 @@ function build() {
   rmSync(distDir, { recursive: true, force: true });
   ensureDir(assetsDir);
 
+  if (existsSync(path.join(repoRoot, 'public'))) {
+    cpSync(path.join(repoRoot, 'public'), distDir, { recursive: true });
+  }
+
   cpSync(path.join(repoRoot, 'Logo_zwibba.svg'), path.join(assetsDir, 'brand', 'logo-zwibba.svg'), { recursive: false });
   writeText(path.join(assetsDir, 'brand', 'favicon.svg'), renderFavicon());
   writeText(path.join(assetsDir, 'styles.css'), readFileSync(path.join(repoRoot, 'src/site/styles.css'), 'utf8'));
   writeText(path.join(assetsDir, 'app.js'), readFileSync(path.join(repoRoot, 'src/site/app.js'), 'utf8'));
   cpSync(path.join(repoRoot, 'App'), path.join(assetsDir, 'app'), { recursive: true });
+  cpSync(path.join(repoRoot, 'shared'), path.join(assetsDir, 'shared'), { recursive: true });
 
   for (const listing of listings) {
     writeText(path.join(assetsDir, 'listings', `${listing.slug}.svg`), buildListingImage(listing));
