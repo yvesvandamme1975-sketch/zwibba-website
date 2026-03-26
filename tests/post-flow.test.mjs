@@ -244,6 +244,27 @@ test('guidance screen disables continue while any guided photo upload is still r
   assert.match(html, /disabled/);
 });
 
+test('queued uploads also keep guidance locked until the queue is empty', () => {
+  const html = renderPhotoGuidanceScreen({
+    draft: createReadyDraft({
+      categoryId: 'phones_tablets',
+      photos: [
+        {
+          id: 'photo-1',
+          kind: 'primary',
+          previewUrl: 'blob:primary.jpg',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/capture/photo_1-phone.jpg',
+        },
+      ],
+    }),
+    uploadsBusy: true,
+  });
+
+  assert.doesNotMatch(html, /href="#review"/);
+  assert.match(html, /disabled/);
+});
+
 test('failed guided upload stays retryable and does not satisfy the required prompt', async () => {
   const draftStorage = createDraftStorageService({
     storage: createMemoryStorage(),
@@ -349,6 +370,15 @@ test('publish validation requires photo, category, condition when relevant, pric
   const categoryErrors = validateDraftForPublish(categoryDraft);
 
   assert.ok(categoryErrors.some((error) => error.field === 'condition'));
+});
+
+test('publish validation blocks while queued uploads are still pending', () => {
+  const validationErrors = validateDraftForPublish(createReadyDraft(), {
+    uploadsBusy: true,
+  });
+
+  assert.equal(validationErrors[0]?.field, 'uploads_pending');
+  assert.match(validationErrors[0]?.message || '', /Attendez la fin des téléversements/i);
 });
 
 test('review form highlights publish blockers next to the submit action', () => {

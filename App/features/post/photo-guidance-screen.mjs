@@ -63,10 +63,14 @@ function renderPrompt(prompt) {
   `;
 }
 
-export function renderPhotoGuidanceScreen({ draft }) {
+export function renderPhotoGuidanceScreen({
+  draft,
+  uploadsBusy = false,
+}) {
   const prompts = getGuidedPhotoPrompts(draft);
   const missingPrompts = getMissingRequiredPhotoPrompts(draft);
-  const uploadsBusy = prompts.some((prompt) => prompt.uploadStatus === 'uploading');
+  const hasUploadingPrompt = prompts.some((prompt) => prompt.uploadStatus === 'uploading');
+  const isLocked = uploadsBusy || hasUploadingPrompt;
 
   return `
     <section class="app-flow app-flow--guidance">
@@ -100,7 +104,7 @@ export function renderPhotoGuidanceScreen({ draft }) {
 
       <div class="app-flow__actions">
         ${
-          uploadsBusy
+          isLocked
             ? '<button class="app-flow__button app-flow__button--secondary" type="button" disabled>Continuer vers le brouillon</button>'
             : '<a class="app-flow__button app-flow__button--secondary" href="#review">Continuer vers le brouillon</a>'
         }

@@ -496,6 +496,7 @@ if (appRoot) {
       case 'guidance':
         return renderPhotoGuidanceScreen({
           draft: state.draft,
+          uploadsBusy: photoUploadQueue.isBusy(),
         });
       case 'review':
         return renderReviewFormScreen({
@@ -684,7 +685,9 @@ if (appRoot) {
     state.publishOutcome = null;
     state.publishedListingRoute = '';
     state.publishedListingUrl = '';
-    state.reviewErrors = validateDraftForPublish(nextDraft);
+    state.reviewErrors = validateDraftForPublish(nextDraft, {
+      uploadsBusy: photoUploadQueue.isBusy(),
+    });
 
     if (state.reviewErrors.length) {
       renderApp();
@@ -694,6 +697,7 @@ if (appRoot) {
     const publishGate = decidePublishGate({
       draft: nextDraft,
       session: state.session,
+      uploadsBusy: photoUploadQueue.isBusy(),
     });
 
     if (publishGate.nextRoute !== '#publish') {
@@ -1034,12 +1038,16 @@ if (appRoot) {
     }
 
     if (target.dataset.input === 'capture-first-photo') {
-      await photoUploadQueue.run(() => handleCapture(file));
+      const task = photoUploadQueue.run(() => handleCapture(file));
+      renderApp();
+      await task;
       return;
     }
 
     if (target.dataset.input === 'guided-photo') {
-      await photoUploadQueue.run(() => handleGuidedCapture(target.dataset.promptId || '', file));
+      const task = photoUploadQueue.run(() => handleGuidedCapture(target.dataset.promptId || '', file));
+      renderApp();
+      await task;
     }
   });
 

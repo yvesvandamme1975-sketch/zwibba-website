@@ -269,9 +269,21 @@ export function applyAiResultToDraft(
   );
 }
 
-export function validateDraftForPublish(draft) {
+export function validateDraftForPublish(
+  draft,
+  {
+    uploadsBusy = false,
+  } = {},
+) {
   const errors = [];
   const primaryPhoto = resolvePrimaryPhoto(draft);
+
+  if (uploadsBusy) {
+    errors.push({
+      field: 'uploads_pending',
+      message: 'Attendez la fin des téléversements avant de publier.',
+    });
+  }
 
   if (!isPhotoReadyForDraft(primaryPhoto)) {
     errors.push({
@@ -331,8 +343,14 @@ export function validateDraftForPublish(draft) {
   return errors;
 }
 
-export function decidePublishGate({ draft, session }) {
-  const validationErrors = validateDraftForPublish(draft);
+export function decidePublishGate({
+  draft,
+  session,
+  uploadsBusy = false,
+}) {
+  const validationErrors = validateDraftForPublish(draft, {
+    uploadsBusy,
+  });
 
   if (validationErrors.length) {
     return {
