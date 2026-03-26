@@ -66,6 +66,7 @@ function renderPrompt(prompt) {
 export function renderPhotoGuidanceScreen({ draft }) {
   const prompts = getGuidedPhotoPrompts(draft);
   const missingPrompts = getMissingRequiredPhotoPrompts(draft);
+  const uploadsBusy = prompts.some((prompt) => prompt.uploadStatus === 'uploading');
 
   return `
     <section class="app-flow app-flow--guidance">
@@ -98,7 +99,11 @@ export function renderPhotoGuidanceScreen({ draft }) {
       </ul>
 
       <div class="app-flow__actions">
-        <a class="app-flow__button app-flow__button--secondary" href="#review">Continuer vers le brouillon</a>
+        ${
+          uploadsBusy
+            ? '<button class="app-flow__button app-flow__button--secondary" type="button" disabled>Continuer vers le brouillon</button>'
+            : '<a class="app-flow__button app-flow__button--secondary" href="#review">Continuer vers le brouillon</a>'
+        }
       </div>
     </section>
   `;

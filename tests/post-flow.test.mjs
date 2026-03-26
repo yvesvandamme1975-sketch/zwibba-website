@@ -215,6 +215,35 @@ test('guided upload marks a required prompt complete only after upload succeeds'
   assert.equal(updatedDraft.photos.find((photo) => photo.promptId === 'face')?.uploadStatus, 'uploaded');
 });
 
+test('guidance screen disables continue while any guided photo upload is still running', () => {
+  const html = renderPhotoGuidanceScreen({
+    draft: createReadyDraft({
+      categoryId: 'phones_tablets',
+      photos: [
+        {
+          id: 'photo-1',
+          kind: 'primary',
+          previewUrl: 'blob:primary.jpg',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/capture/photo_1-phone.jpg',
+        },
+        {
+          id: 'photo-2',
+          kind: 'guided',
+          promptId: 'face',
+          previewUrl: 'blob:face.jpg',
+          uploadStatus: 'uploading',
+        },
+      ],
+    }),
+  });
+
+  assert.match(html, /Téléversement en cours/i);
+  assert.doesNotMatch(html, /href="#review"/);
+  assert.match(html, /Continuer vers le brouillon/);
+  assert.match(html, /disabled/);
+});
+
 test('failed guided upload stays retryable and does not satisfy the required prompt', async () => {
   const draftStorage = createDraftStorageService({
     storage: createMemoryStorage(),

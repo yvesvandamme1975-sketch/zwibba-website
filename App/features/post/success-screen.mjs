@@ -151,15 +151,15 @@ export function renderSuccessScreen({
               >
                 Copier le lien
               </button>
-              <button
+              <a
                 class="app-flow__button app-flow__button--secondary"
-                type="button"
+                href="${escapeAttribute(listingRoute || '#buy')}"
                 data-action="view-listing-link"
                 data-listing-route="${escapeAttribute(listingRoute)}"
                 data-listing-url="${escapeAttribute(listingUrl)}"
               >
                 Voir mon annonce
-              </button>
+              </a>
               ${
                 outcome?.id
                   ? `

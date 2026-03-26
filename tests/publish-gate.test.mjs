@@ -108,7 +108,7 @@ test('success screen exposes the post-publish sharing actions', () => {
   assert.match(html, /Partager sur WhatsApp/);
   assert.match(html, /Copier le lien/);
   assert.match(html, /Voir mon annonce/);
-  assert.match(html, /data-listing-route="#listing\/samsung-galaxy-a54-128-go"/);
+  assert.match(html, /href="#listing\/samsung-galaxy-a54-128-go"/);
   assert.match(
     html,
     /<img[^>]+class="app-success__hero-image"[^>]+src="https:\/\/cdn\.zwibba\.example\/draft-photos\/phone-front\.jpg"/,

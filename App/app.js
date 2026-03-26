@@ -21,6 +21,7 @@ import { renderPhotoGuidanceScreen } from './features/post/photo-guidance-screen
 import { renderPublishGateScreen } from './features/post/publish-gate-screen.mjs';
 import { renderReviewFormScreen } from './features/post/review-form-screen.mjs';
 import { renderSuccessScreen } from './features/post/success-screen.mjs';
+import { createUploadTaskQueue } from './features/post/upload-task-queue.mjs';
 import { renderProfileScreen } from './features/profile/profile-screen.mjs';
 import { renderWalletScreen } from './features/wallet/wallet-screen.mjs';
 import { submitLivePublish } from './features/post/live-publish-flow.mjs';
@@ -80,6 +81,7 @@ if (appRoot) {
     apiBaseUrl: apiConfig.apiBaseUrl,
     fetchFn: window.fetch.bind(window),
   });
+  const photoUploadQueue = createUploadTaskQueue();
   const postFlowController = createPostFlowController({
     draftStorage,
     imageCompressionService: createImageCompressionService(),
@@ -1032,12 +1034,12 @@ if (appRoot) {
     }
 
     if (target.dataset.input === 'capture-first-photo') {
-      await handleCapture(file);
+      await photoUploadQueue.run(() => handleCapture(file));
       return;
     }
 
     if (target.dataset.input === 'guided-photo') {
-      await handleGuidedCapture(target.dataset.promptId || '', file);
+      await photoUploadQueue.run(() => handleGuidedCapture(target.dataset.promptId || '', file));
     }
   });
 
