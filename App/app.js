@@ -8,6 +8,7 @@ import { renderAuthWelcomeScreen } from './features/auth/welcome-screen.mjs';
 import { renderPhoneInputScreen } from './features/auth/phone-input-screen.mjs';
 import { renderOtpScreen } from './features/auth/otp-screen.mjs';
 import { renderInboxScreen } from './features/chat/inbox-screen.mjs';
+import { createChatLiveRefreshController } from './features/chat/chat-live-refresh-controller.mjs';
 import { renderThreadScreen } from './features/chat/thread-screen.mjs';
 import { renderBuyScreen } from './features/home/buy-screen.mjs';
 import {
@@ -86,6 +87,7 @@ if (appRoot) {
       renderApp();
     },
   });
+  const chatLiveRefreshController = createChatLiveRefreshController();
   const postFlowController = createPostFlowController({
     draftStorage,
     imageCompressionService: createImageCompressionService(),
@@ -626,6 +628,12 @@ if (appRoot) {
     const route = resolveRenderableRoute();
 
     primeBuyerRouteState(route);
+    chatLiveRefreshController.sync({
+      refreshInbox: loadInbox,
+      refreshThread: loadThread,
+      route,
+      session: state.session,
+    });
     appRoot.innerHTML = renderAppTabShell({
       activeTab: getActiveTab(route),
       content: renderRoute(route),

@@ -124,6 +124,7 @@ async function ensureUploadedPhoto({
   await mediaService.uploadBytes({
     bytes,
     contentType,
+    publicUrl: slot.publicUrl,
     uploadUrl: slot.uploadUrl,
   });
 

@@ -152,6 +152,7 @@ test('media service requests a signed upload URL and uploads bytes with PUT', as
   await mediaService.uploadBytes({
     bytes: new Uint8Array([1, 2, 3, 4]),
     contentType: 'image/jpeg',
+    publicUrl: slot.publicUrl,
     uploadUrl: slot.uploadUrl,
   });
 
@@ -177,7 +178,42 @@ test('media service requests a signed upload URL and uploads bytes with PUT', as
       },
       body: new Uint8Array([1, 2, 3, 4]),
     },
+    {
+      url: 'https://pub.example.test/draft-photos/capture/photo_1-phone.jpg',
+      method: 'HEAD',
+      cache: 'no-store',
+    },
   ]);
+});
+
+test('media service fails when the public upload cannot be verified', async () => {
+  const mediaService = createMediaService({
+    apiBaseUrl: 'https://api.example.test',
+    fetchFn: async (url) => {
+      if (url === 'https://uploads.example.test/signed-put') {
+        return {
+          ok: true,
+          status: 200,
+        };
+      }
+
+      return {
+        ok: false,
+        status: 404,
+      };
+    },
+  });
+
+  await assert.rejects(
+    () =>
+      mediaService.uploadBytes({
+        bytes: new Uint8Array([1, 2, 3, 4]),
+        contentType: 'image/jpeg',
+        publicUrl: 'https://pub.example.test/missing.jpg',
+        uploadUrl: 'https://uploads.example.test/signed-put',
+      }),
+    /Impossible de vérifier la photo téléversée\./,
+  );
 });
 
 test('live draft service syncs and publishes with the seller bearer token', async () => {

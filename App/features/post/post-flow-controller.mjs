@@ -157,6 +157,7 @@ async function uploadDraftPhoto({
   await mediaService.uploadBytes({
     bytes,
     contentType: photo.contentType || 'image/jpeg',
+    publicUrl: slot.publicUrl,
     uploadUrl: slot.uploadUrl,
   });
 

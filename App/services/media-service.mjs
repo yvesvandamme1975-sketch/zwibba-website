@@ -30,6 +30,21 @@ export function createMediaService({
     throw new Error('A fetch implementation is required.');
   }
 
+  async function verifyUploadedMedia(publicUrl) {
+    if (!publicUrl) {
+      return;
+    }
+
+    const response = await fetchFn(publicUrl, {
+      method: 'HEAD',
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw createHttpError('Impossible de vérifier la photo téléversée.', response.status);
+    }
+  }
+
   return {
     async requestUploadSlot({
       contentType,
@@ -58,6 +73,7 @@ export function createMediaService({
     async uploadBytes({
       bytes,
       contentType,
+      publicUrl,
       uploadUrl,
     }) {
       const response = await fetchFn(uploadUrl, {
@@ -71,6 +87,8 @@ export function createMediaService({
       if (!response.ok) {
         throw createHttpError('Impossible de téléverser la photo.', response.status);
       }
+
+      await verifyUploadedMedia(publicUrl);
     },
   };
 }
