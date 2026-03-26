@@ -76,7 +76,16 @@ export function renderWalletScreen({
           <span>Historique beta</span>
         </div>
         <div class="app-wallet__transactions">
-          ${wallet.transactions.map(renderWalletTransaction).join('')}
+          ${
+            wallet.transactions.length
+              ? wallet.transactions.map(renderWalletTransaction).join('')
+              : `
+                <article class="app-empty-state">
+                  <strong>Aucune transaction pour le moment</strong>
+                  <span>Votre crédit bêta et les prochains boosts apparaîtront ici.</span>
+                </article>
+              `
+          }
         </div>
       </section>
     </section>

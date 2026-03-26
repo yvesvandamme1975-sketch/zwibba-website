@@ -62,3 +62,18 @@ test('profile screen shows a verification prompt when no session exists', () => 
   assert.match(html, /Connectez votre session vendeur/i);
   assert.match(html, /href="#auth-welcome"/);
 });
+
+test('profile screen shows an explicit seller empty state when no listing exists yet', () => {
+  const html = renderProfileScreen({
+    listings: [],
+    session: {
+      canSyncDrafts: true,
+      phoneNumber: '+243990000001',
+      sessionToken: 'zwibba_session_123',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /Aucune annonce pour le moment/i);
+  assert.match(html, /href="#sell"/);
+});

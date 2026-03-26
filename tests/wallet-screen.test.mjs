@@ -41,3 +41,16 @@ test('wallet screen shows a verification prompt without a session', () => {
   assert.match(html, /Vérifiez votre numéro/i);
   assert.match(html, /href="#auth-welcome"/);
 });
+
+test('wallet screen shows an explicit empty state when no transactions exist yet', () => {
+  const html = renderWalletScreen({
+    state: 'ready',
+    wallet: {
+      balanceCdf: 0,
+      transactions: [],
+    },
+  });
+
+  assert.match(html, /Aucune transaction pour le moment/i);
+  assert.match(html, /Crédit bêta|boost/i);
+});

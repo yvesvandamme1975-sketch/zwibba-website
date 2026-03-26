@@ -54,7 +54,7 @@ export function renderThreadScreen({
       </div>
 
       <form class="app-thread__composer" data-form="send-thread-message" data-thread-id="${escapeAttribute(thread.id)}">
-        <label class="app-home__search" aria-label="Votre message">
+        <label class="app-thread__input" aria-label="Votre message">
           <input
             name="threadMessage"
             type="text"

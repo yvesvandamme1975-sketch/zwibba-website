@@ -273,11 +273,10 @@ function renderAppPage() {
 
       <section class="app-standalone__entry">
         <div class="app-standalone__note">
-          <p class="eyebrow">Zwibba web bêta</p>
-          <h1>Vendez et explorez les annonces Zwibba en direct.</h1>
+          <p class="eyebrow">Version web privée</p>
+          <h1>Testez Zwibba directement dans votre navigateur.</h1>
           <p>
-            Accédez à la version web de Zwibba pour publier, rechercher, ouvrir une annonce
-            et partager votre lien sans quitter l'app.
+            Publiez, parcourez, partagez et ouvrez vos annonces sans quitter l'app web.
           </p>
           <div class="store-row">
             <a class="button button--primary" href="#capture">Ouvrir l'app</a>

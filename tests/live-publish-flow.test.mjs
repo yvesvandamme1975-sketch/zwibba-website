@@ -99,6 +99,18 @@ test('live publish uploads preview photos, syncs the draft, and returns the mode
         };
       }
 
+      if (url === 'https://pub.example.test/draft-photos/capture/photo_1-phone.jpg') {
+        return {
+          ok: true,
+          status: 200,
+          headers: {
+            get() {
+              return 'image/jpeg';
+            },
+          },
+        };
+      }
+
       if (url === 'https://api.example.test/drafts/sync') {
         return createJsonResponse(200, {
           area: 'Golf',
@@ -141,8 +153,10 @@ test('live publish uploads preview photos, syncs the draft, and returns the mode
   assert.equal(requests[0].url, '/uploads/phone-front.jpg');
   assert.equal(requests[1].url, 'https://api.example.test/media/upload-url');
   assert.equal(requests[2].url, 'https://uploads.example.test/signed-put');
-  assert.equal(requests[3].url, 'https://api.example.test/drafts/sync');
-  assert.equal(requests[4].url, 'https://api.example.test/moderation/publish');
+  assert.equal(requests[3].url, 'https://pub.example.test/draft-photos/capture/photo_1-phone.jpg');
+  assert.equal(requests[3].method, 'HEAD');
+  assert.equal(requests[4].url, 'https://api.example.test/drafts/sync');
+  assert.equal(requests[5].url, 'https://api.example.test/moderation/publish');
 });
 
 test('live publish stores missing preview fallbacks as svg uploads instead of broken jpg objects', async () => {

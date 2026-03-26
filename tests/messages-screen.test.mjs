@@ -67,5 +67,7 @@ test('thread screen renders buyer and seller messages with a send form', () => {
   assert.match(html, /Toujours disponible \?/);
   assert.match(html, /Oui, toujours disponible\./);
   assert.match(html, /name="threadMessage"/);
+  assert.match(html, /class="app-thread__input"/);
+  assert.doesNotMatch(html, /class="app-home__search"/);
   assert.match(html, /Envoyer/);
 });

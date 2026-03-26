@@ -122,7 +122,17 @@ export function renderProfileScreen({
           <span>Gestion vendeur</span>
         </div>
         <div class="app-profile__listing-grid">
-          ${listings.map(renderListingCard).join('')}
+          ${
+            listings.length
+              ? listings.map(renderListingCard).join('')
+              : `
+                <article class="app-empty-state">
+                  <strong>Aucune annonce pour le moment</strong>
+                  <span>Commencez votre première annonce vendeur pour remplir votre profil.</span>
+                  <a class="app-flow__button app-flow__button--secondary" href="#sell">Créer ma première annonce</a>
+                </article>
+              `
+          }
         </div>
       </section>
     </section>

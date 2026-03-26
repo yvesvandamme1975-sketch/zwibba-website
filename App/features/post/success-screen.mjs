@@ -113,7 +113,7 @@ export function renderSuccessScreen({
         content.showListingLink
           ? `
             <div class="app-success__link">
-              <span>Lien public simulé</span>
+              <span>Lien public de l'annonce</span>
               <strong>${escapeHtml(listingUrl)}</strong>
             </div>
           `
