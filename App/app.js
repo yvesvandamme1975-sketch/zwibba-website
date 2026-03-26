@@ -81,7 +81,11 @@ if (appRoot) {
     apiBaseUrl: apiConfig.apiBaseUrl,
     fetchFn: window.fetch.bind(window),
   });
-  const photoUploadQueue = createUploadTaskQueue();
+  const photoUploadQueue = createUploadTaskQueue({
+    onStateChange: () => {
+      renderApp();
+    },
+  });
   const postFlowController = createPostFlowController({
     draftStorage,
     imageCompressionService: createImageCompressionService(),
@@ -248,7 +252,19 @@ if (appRoot) {
 
     if (
       !state.draft &&
-      !['buy', 'capture', 'listing', 'messages', 'profile', 'sell', 'thread', 'wallet'].includes(
+      ![
+        'auth-welcome',
+        'buy',
+        'capture',
+        'listing',
+        'messages',
+        'otp',
+        'phone',
+        'profile',
+        'sell',
+        'thread',
+        'wallet',
+      ].includes(
         route.type,
       )
     ) {
@@ -1041,6 +1057,7 @@ if (appRoot) {
       const task = photoUploadQueue.run(() => handleCapture(file));
       renderApp();
       await task;
+      renderApp();
       return;
     }
 
@@ -1048,6 +1065,7 @@ if (appRoot) {
       const task = photoUploadQueue.run(() => handleGuidedCapture(target.dataset.promptId || '', file));
       renderApp();
       await task;
+      renderApp();
     }
   });
 

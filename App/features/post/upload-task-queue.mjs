@@ -1,6 +1,14 @@
-export function createUploadTaskQueue() {
+export function createUploadTaskQueue({
+  onStateChange = () => {},
+} = {}) {
   let pendingCount = 0;
   let tail = Promise.resolve();
+
+  function notifyStateChange() {
+    onStateChange({
+      pendingCount,
+    });
+  }
 
   return {
     get pendingCount() {
@@ -17,6 +25,7 @@ export function createUploadTaskQueue() {
       }
 
       pendingCount += 1;
+      notifyStateChange();
 
       const nextTask = tail
         .catch(() => {})
@@ -25,6 +34,7 @@ export function createUploadTaskQueue() {
             return await task();
           } finally {
             pendingCount -= 1;
+            notifyStateChange();
           }
         });
 

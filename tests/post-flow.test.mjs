@@ -265,6 +265,51 @@ test('queued uploads also keep guidance locked until the queue is empty', () => 
   assert.match(html, /disabled/);
 });
 
+test('guidance unlocks once all required uploads are complete and the queue is idle', () => {
+  const html = renderPhotoGuidanceScreen({
+    draft: createReadyDraft({
+      categoryId: 'phones_tablets',
+      photos: [
+        {
+          id: 'photo-1',
+          kind: 'primary',
+          previewUrl: 'blob:primary.jpg',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/capture/photo_1-phone.jpg',
+        },
+        {
+          id: 'photo-2',
+          kind: 'guided',
+          promptId: 'face',
+          previewUrl: 'blob:face.jpg',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/face/photo_face.jpg',
+        },
+        {
+          id: 'photo-3',
+          kind: 'guided',
+          promptId: 'back',
+          previewUrl: 'blob:back.jpg',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/back/photo_back.jpg',
+        },
+        {
+          id: 'photo-4',
+          kind: 'guided',
+          promptId: 'screen_on',
+          previewUrl: 'blob:screen.jpg',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/screen_on/photo_screen_on.jpg',
+        },
+      ],
+    }),
+    uploadsBusy: false,
+  });
+
+  assert.match(html, /href="#review"/);
+  assert.doesNotMatch(html, /button[^>]+disabled/);
+});
+
 test('failed guided upload stays retryable and does not satisfy the required prompt', async () => {
   const draftStorage = createDraftStorageService({
     storage: createMemoryStorage(),

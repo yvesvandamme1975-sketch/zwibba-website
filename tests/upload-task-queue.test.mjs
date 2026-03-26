@@ -37,3 +37,18 @@ test('upload task queue runs photo uploads one at a time in submission order', a
   assert.equal(queue.pendingCount, 0);
   assert.equal(queue.isBusy(), false);
 });
+
+test('upload task queue notifies when pending work starts and finishes', async () => {
+  const notifications = [];
+  const queue = createUploadTaskQueue({
+    onStateChange({ pendingCount }) {
+      notifications.push(pendingCount);
+    },
+  });
+
+  await queue.run(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  });
+
+  assert.deepEqual(notifications, [1, 0]);
+});
