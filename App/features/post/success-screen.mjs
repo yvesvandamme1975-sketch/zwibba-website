@@ -58,6 +58,8 @@ function resolveOutcomeContent(outcome = {}, { listingUrl = '' } = {}) {
 }
 
 export function renderSuccessScreen({
+  boostBusy = false,
+  boostMessage = '',
   draft,
   listingRoute = '',
   listingUrl,
@@ -118,6 +120,17 @@ export function renderSuccessScreen({
           : ''
       }
 
+      ${
+        boostMessage
+          ? `
+            <div class="app-publish__status is-verified">
+              <strong>Boost</strong>
+              <span>${escapeHtml(boostMessage)}</span>
+            </div>
+          `
+          : ''
+      }
+
       <div class="app-flow__actions">
         ${
           content.showShareActions
@@ -147,6 +160,21 @@ export function renderSuccessScreen({
               >
                 Voir mon annonce
               </button>
+              ${
+                outcome?.id
+                  ? `
+                    <button
+                      class="app-flow__button app-flow__button--secondary"
+                      type="button"
+                      data-action="activate-boost"
+                      data-listing-id="${escapeAttribute(outcome.id)}"
+                      ${boostBusy ? ' disabled' : ''}
+                    >
+                      ${boostBusy ? 'Activation...' : 'Booster cette annonce'}
+                    </button>
+                  `
+                  : ''
+              }
             `
             : ''
         }

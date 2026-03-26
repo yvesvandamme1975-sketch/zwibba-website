@@ -1,4 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../database/prisma.service';
 import { DraftsService } from '../drafts/drafts.service';
@@ -205,7 +206,7 @@ export class ModerationService {
       validationError,
     });
 
-    const listing = await this.prismaService.$transaction(async (transaction) => {
+    const listing = await this.prismaService.$transaction(async (transaction: Prisma.TransactionClient) => {
       const persistedListing = await transaction.listing.upsert({
         where: {
           draftId: syncedDraft.draftId,
@@ -275,7 +276,15 @@ export class ModerationService {
       include: {
         listing: true,
       },
-    });
+    }) as Array<{
+      listing: {
+        ownerPhoneNumber: string;
+        title: string;
+      } | null;
+      listingId: string;
+      reasonSummary: string;
+      status: string;
+    }>;
 
     return {
       items: decisions
@@ -287,6 +296,101 @@ export class ModerationService {
           sellerPhoneNumber: decision.listing!.ownerPhoneNumber,
           status: decision.status as ModerationStatus,
         })),
+    };
+  }
+
+  async approve(listingId: string) {
+    const listing = await this.prismaService.listing.findUnique({
+      where: {
+        id: listingId,
+      },
+    });
+
+    if (!listing) {
+      throw new NotFoundException('Annonce introuvable.');
+    }
+
+    await this.prismaService.listing.update({
+      where: {
+        id: listingId,
+      },
+      data: {
+        moderationStatus: 'approved',
+        publishedAt: new Date(),
+      },
+    });
+
+    await this.prismaService.moderationDecision.upsert({
+      where: {
+        listingId,
+      },
+      create: {
+        actorLabel: 'admin',
+        listingId,
+        reasonSummary: 'Annonce approuvée',
+        status: 'approved',
+      },
+      update: {
+        actorLabel: 'admin',
+        reasonSummary: 'Annonce approuvée',
+        status: 'approved',
+      },
+    });
+
+    return {
+      id: listingId,
+      reasonSummary: 'Annonce approuvée',
+      status: 'approved' as const,
+      statusLabel: buildStatusLabel('approved'),
+    };
+  }
+
+  async block(listingId: string, rawReasonSummary: string) {
+    const listing = await this.prismaService.listing.findUnique({
+      where: {
+        id: listingId,
+      },
+    });
+
+    if (!listing) {
+      throw new NotFoundException('Annonce introuvable.');
+    }
+
+    const reasonSummary =
+      rawReasonSummary.trim() || 'Annonce bloquée par la modération Zwibba.';
+
+    await this.prismaService.listing.update({
+      where: {
+        id: listingId,
+      },
+      data: {
+        moderationStatus: 'blocked_needs_fix',
+        publishedAt: null,
+      },
+    });
+
+    await this.prismaService.moderationDecision.upsert({
+      where: {
+        listingId,
+      },
+      create: {
+        actorLabel: 'admin',
+        listingId,
+        reasonSummary,
+        status: 'blocked_needs_fix',
+      },
+      update: {
+        actorLabel: 'admin',
+        reasonSummary,
+        status: 'blocked_needs_fix',
+      },
+    });
+
+    return {
+      id: listingId,
+      reasonSummary,
+      status: 'blocked_needs_fix' as const,
+      statusLabel: buildStatusLabel('blocked_needs_fix'),
     };
   }
 }

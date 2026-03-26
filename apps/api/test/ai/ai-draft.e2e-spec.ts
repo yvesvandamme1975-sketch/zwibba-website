@@ -7,11 +7,15 @@ import test from 'node:test';
 import request from 'supertest';
 
 import { AppModule } from '../../src/app.module';
+import { PrismaService } from '../../src/database/prisma.service';
 
 async function createTestApp(): Promise<INestApplication> {
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
-  }).compile();
+  })
+    .overrideProvider(PrismaService)
+    .useValue({})
+    .compile();
 
   const app = moduleRef.createNestApplication();
   await app.init();

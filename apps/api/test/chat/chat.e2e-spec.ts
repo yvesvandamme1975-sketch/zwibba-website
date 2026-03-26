@@ -168,6 +168,50 @@ class _FakePrismaService {
   };
 
   readonly chatThread = {
+    create: async ({
+      data,
+    }: {
+      data: {
+        buyerUserId: string;
+        listingId: string;
+        sellerPhoneNumber: string;
+      };
+    }) => {
+      const thread = {
+        ...data,
+        id: `thread_${this.chatThreads.size + 1}`,
+      };
+      this.chatThreads.set(thread.id, thread);
+      return thread;
+    },
+    findFirst: async ({
+      where,
+    }: {
+      where: {
+        buyerUserId?: string;
+        listingId?: string;
+        sellerPhoneNumber?: string;
+      };
+    }) => {
+      return Array.from(this.chatThreads.values()).find((thread) => {
+        if (where.buyerUserId && thread.buyerUserId !== where.buyerUserId) {
+          return false;
+        }
+
+        if (where.listingId && thread.listingId !== where.listingId) {
+          return false;
+        }
+
+        if (
+          where.sellerPhoneNumber &&
+          thread.sellerPhoneNumber !== where.sellerPhoneNumber
+        ) {
+          return false;
+        }
+
+        return true;
+      }) ?? null;
+    },
     findMany: async ({
       include,
       where,
@@ -177,11 +221,16 @@ class _FakePrismaService {
         messages?: boolean;
       };
       where?: {
+        buyerUserId?: string;
         sellerPhoneNumber?: string;
       };
     } = {}) => {
       return Array.from(this.chatThreads.values())
         .filter((thread) => {
+          if (where?.buyerUserId && thread.buyerUserId !== where.buyerUserId) {
+            return false;
+          }
+
           if (!where?.sellerPhoneNumber) {
             return true;
           }
@@ -388,4 +437,47 @@ test('chat send persists a seller reply on the authenticated thread', async (t) 
     prisma.chatMessagesByThreadId.get('thread_listing_1')?.length,
     2,
   );
+});
+
+test('chat thread creation reuses the buyer thread for a listing and exposes it in inbox', async (t) => {
+  const prisma = new _FakePrismaService();
+  prisma.seedListing({
+    id: 'listing_1',
+    ownerPhoneNumber: '+243990000001',
+    slug: 'samsung-galaxy-a54-128-go',
+    title: 'Samsung Galaxy A54 128 Go',
+  });
+
+  const app = await createTestApp(prisma);
+  t.after(async () => {
+    await app.close();
+  });
+
+  const buyerSessionToken = await createSellerSession(app, '+243990000111');
+  const firstResponse = await request(app.getHttpServer())
+    .post('/chat/threads')
+    .set('authorization', `Bearer ${buyerSessionToken}`)
+    .send({
+      listingId: 'listing_1',
+    })
+    .expect(201);
+
+  const secondResponse = await request(app.getHttpServer())
+    .post('/chat/threads')
+    .set('authorization', `Bearer ${buyerSessionToken}`)
+    .send({
+      listingId: 'listing_1',
+    })
+    .expect(201);
+
+  assert.equal(firstResponse.body.id, secondResponse.body.id);
+  assert.equal(prisma.chatThreads.size, 1);
+
+  const inboxResponse = await request(app.getHttpServer())
+    .get('/chat/threads')
+    .set('authorization', `Bearer ${buyerSessionToken}`)
+    .expect(200);
+
+  assert.equal(inboxResponse.body.items.length, 1);
+  assert.equal(inboxResponse.body.items[0].listingSlug, 'samsung-galaxy-a54-128-go');
 });

@@ -31,6 +31,16 @@ function renderQueueItem(item: ModerationQueueItem) {
       <span>Seller: ${escapeHtml(item.sellerPhoneNumber)}</span>
       <span>Status: ${escapeHtml(formatStatus(item.status))}</span>
       <span>Reason: ${escapeHtml(item.reasonSummary)}</span>
+      <form method="post" action="/moderation/${escapeHtml(item.id)}/approve">
+        <button type="submit">Approuver</button>
+      </form>
+      <form method="post" action="/moderation/${escapeHtml(item.id)}/block">
+        <label>
+          <span>Raison</span>
+          <input type="text" name="reasonSummary" value="${escapeHtml(item.reasonSummary)}" />
+        </label>
+        <button type="submit">Bloquer</button>
+      </form>
     </li>
   `;
 }

@@ -19,9 +19,11 @@ test('loadEnv returns the validated production env contract', () => {
     TWILIO_ACCOUNT_SID: 'AC123456789',
     TWILIO_AUTH_TOKEN: 'twilio-auth-token',
     TWILIO_VERIFY_SERVICE_SID: 'VA123456789',
+    ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
   });
 
   assert.equal(env.appBaseUrl, 'https://zwibba.example');
+  assert.equal(env.admin.sharedSecret, 'zwibba-admin-secret');
   assert.equal(env.databaseUrl, 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba');
   assert.equal(env.otp.provider, 'twilio');
   assert.equal(env.port, 3200);
@@ -45,6 +47,7 @@ test('loadEnv returns the demo otp contract in production without Twilio vars', 
     R2_PUBLIC_BASE_URL: 'https://cdn.zwibba.example',
     R2_S3_ENDPOINT: 'https://r2.example.com',
     R2_SECRET_ACCESS_KEY: 'r2-secret',
+    ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
   });
 
   assert.equal(env.otp.provider, 'demo');
@@ -69,6 +72,7 @@ test('loadEnv rejects missing demo otp config in production', () => {
         R2_PUBLIC_BASE_URL: 'https://cdn.zwibba.example',
         R2_S3_ENDPOINT: 'https://r2.example.com',
         R2_SECRET_ACCESS_KEY: 'r2-secret',
+        ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
       }),
     /Missing required env value: DEMO_OTP_CODE/,
   );
@@ -89,6 +93,7 @@ test('loadEnv rejects missing Twilio config in production when twilio provider i
         R2_PUBLIC_BASE_URL: 'https://cdn.zwibba.example',
         R2_S3_ENDPOINT: 'https://r2.example.com',
         R2_SECRET_ACCESS_KEY: 'r2-secret',
+        ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
       }),
     /Missing required env value: TWILIO_ACCOUNT_SID/,
   );

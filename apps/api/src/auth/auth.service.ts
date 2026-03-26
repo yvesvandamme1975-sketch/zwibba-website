@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 
+import { loadEnv } from '../config/env';
 import { PrismaService } from '../database/prisma.service';
 import { TwilioVerifyService } from './twilio-verify.service';
 
@@ -17,6 +18,8 @@ export type SessionRecord = {
 
 @Injectable()
 export class AuthService {
+  private readonly env = loadEnv();
+
   constructor(
     @Inject(PrismaService) private readonly prismaService: PrismaService,
     @Inject(TwilioVerifyService)
@@ -74,6 +77,8 @@ export class AuthService {
         phoneNumber: normalizedPhone,
       },
     });
+
+    await this.seedDemoWalletIfNeeded(user.id);
     const sessionToken = `zwibba_session_${randomUUID().replaceAll('-', '')}`;
 
     await this.prismaService.session.create({
@@ -100,6 +105,32 @@ export class AuthService {
     };
 
     return session;
+  }
+
+  private async seedDemoWalletIfNeeded(userId: string) {
+    if (this.env.otp.provider !== 'demo') {
+      return;
+    }
+
+    const existingTransactionCount = await this.prismaService.walletTransaction.count({
+      where: {
+        userId,
+      },
+    });
+
+    if (existingTransactionCount > 0) {
+      return;
+    }
+
+    await this.prismaService.walletTransaction.create({
+      data: {
+        amountCdf: 30000,
+        createdAtLabel: 'Aujourd’hui',
+        kind: 'credit',
+        label: 'Crédit bêta Zwibba',
+        userId,
+      },
+    });
   }
 
   async requireSessionToken(sessionToken: string | undefined) {

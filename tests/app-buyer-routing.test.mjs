@@ -15,11 +15,24 @@ test('parseAppRoute recognizes the in-app listing detail route', () => {
   });
 });
 
+test('parseAppRoute maps the browser beta shell tabs and thread routes', () => {
+  assert.deepEqual(parseAppRoute('#home'), { type: 'sell' });
+  assert.deepEqual(parseAppRoute('#sell'), { type: 'sell' });
+  assert.deepEqual(parseAppRoute('#buy'), { type: 'buy' });
+  assert.deepEqual(parseAppRoute('#messages'), { type: 'messages' });
+  assert.deepEqual(parseAppRoute('#wallet'), { type: 'wallet' });
+  assert.deepEqual(parseAppRoute('#profile'), { type: 'profile' });
+  assert.deepEqual(parseAppRoute('#thread/thread_1'), {
+    threadId: 'thread_1',
+    type: 'thread',
+  });
+});
+
 test('parseAppRoute falls back to home for unknown hashes', () => {
   const route = parseAppRoute('#unknown');
 
   assert.deepEqual(route, {
-    type: 'home',
+    type: 'sell',
   });
 });
 

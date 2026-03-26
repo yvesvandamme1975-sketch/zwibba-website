@@ -58,7 +58,7 @@ export function renderPublishGateScreen({
             ? `<button class="app-flow__button" type="button" data-action="submit-publish"${isBusy ? ' disabled' : ''}>${escapeHtml(
                 isBusy ? busyLabel : 'Publier maintenant',
               )}</button>`
-            : '<a class="app-flow__button" href="#auth-welcome">Vérifier mon numéro</a>'
+            : '<a class="app-flow__button" href="#auth-welcome" data-action="begin-auth" data-intent="publish" data-return-route="#review">Vérifier mon numéro</a>'
         }
         <a class="app-flow__button app-flow__button--secondary" href="#review">Modifier le brouillon</a>
       </div>

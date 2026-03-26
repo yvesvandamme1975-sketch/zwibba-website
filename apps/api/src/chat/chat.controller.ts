@@ -17,6 +17,17 @@ export class ChatController {
     return this.chatService.fetchInbox(session);
   }
 
+  @Post()
+  createThread(
+    @CurrentSession() session: SessionRecord,
+    @Body() body: { listingId?: string },
+  ) {
+    return this.chatService.createThread({
+      listingId: body.listingId ?? '',
+      session,
+    });
+  }
+
   @Get(':threadId')
   fetchThread(
     @CurrentSession() session: SessionRecord,

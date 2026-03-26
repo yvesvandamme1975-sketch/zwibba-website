@@ -1,13 +1,18 @@
 const staticRoutes = new Set([
   '#auth-welcome',
+  '#buy',
   '#capture',
   '#guidance',
   '#home',
+  '#messages',
   '#otp',
   '#phone',
+  '#profile',
   '#publish',
   '#review',
+  '#sell',
   '#success',
+  '#wallet',
 ]);
 
 function normalizeSearchValue(value) {
@@ -39,7 +44,7 @@ function matchesCategory(listing, selectedCategoryId) {
 }
 
 export function parseAppRoute(hash = '') {
-  const normalizedHash = String(hash || '#home').trim().toLowerCase();
+  const normalizedHash = String(hash || '#sell').trim().toLowerCase();
 
   if (normalizedHash.startsWith('#listing/')) {
     const slug = normalizedHash.slice('#listing/'.length).trim();
@@ -52,14 +57,31 @@ export function parseAppRoute(hash = '') {
     }
   }
 
+  if (normalizedHash.startsWith('#thread/')) {
+    const threadId = normalizedHash.slice('#thread/'.length).trim();
+
+    if (threadId) {
+      return {
+        threadId,
+        type: 'thread',
+      };
+    }
+  }
+
   if (staticRoutes.has(normalizedHash)) {
+    if (normalizedHash === '#home') {
+      return {
+        type: 'sell',
+      };
+    }
+
     return {
-      type: normalizedHash.replace(/^#/, '') || 'home',
+      type: normalizedHash.replace(/^#/, '') || 'sell',
     };
   }
 
   return {
-    type: 'home',
+    type: 'sell',
   };
 }
 

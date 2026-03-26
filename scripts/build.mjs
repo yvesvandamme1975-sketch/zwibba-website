@@ -1,5 +1,13 @@
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 
 import {
@@ -17,6 +25,7 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
+const buildLockDir = path.join(repoRoot, '.build-lock');
 const distDir = path.join(repoRoot, 'dist');
 const assetsDir = path.join(distDir, 'assets');
 const appApiBaseUrl =
@@ -1189,4 +1198,32 @@ function build() {
   writeText(path.join(distDir, 'robots.txt'), buildRobots());
 }
 
-build();
+async function acquireBuildLock() {
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    try {
+      mkdirSync(buildLockDir);
+      return;
+    } catch (error) {
+      if (error && typeof error === 'object' && error.code === 'EEXIST') {
+        await delay(50);
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  throw new Error('Timed out while waiting for the build lock.');
+}
+
+async function buildWithLock() {
+  await acquireBuildLock();
+
+  try {
+    build();
+  } finally {
+    rmSync(buildLockDir, { force: true, recursive: true });
+  }
+}
+
+await buildWithLock();

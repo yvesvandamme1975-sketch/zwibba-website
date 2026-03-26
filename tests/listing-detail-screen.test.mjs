@@ -34,11 +34,12 @@ test('listing detail screen renders the buyer detail state inside /App', () => {
   assert.match(html, /450\u202f000 CDF|450 000 CDF/);
   assert.match(html, /Vendeur 0001/);
   assert.match(html, /Conseils de sécurité/);
-  assert.match(html, /WhatsApp/);
-  assert.match(html, /SMS/);
+  assert.match(html, /Envoyer un message/);
+  assert.match(html, /data-action="start-thread"/);
+  assert.match(html, /data-listing-id="listing_1"/);
   assert.match(html, /Appeler/);
   assert.match(html, /href="tel:\+243990000001"/);
-  assert.match(html, /href="#home"/);
+  assert.match(html, /href="#buy"/);
   assert.match(html, /<img[^>]+class="app-detail__image"[^>]+src="\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.svg"/);
   assert.match(
     html,
@@ -80,7 +81,7 @@ test('listing detail screen keeps a hero placeholder when no image is available'
   const html = renderListingDetailScreen({
     detail: {
       categoryLabel: 'Électronique',
-      contactActions: ['whatsapp'],
+      contactActions: ['message'],
       id: 'listing_2',
       locationLabel: 'Kenya',
       priceCdf: 980000,
@@ -117,5 +118,6 @@ test('listing detail screen renders an in-app error state', () => {
   });
 
   assert.match(html, /Annonce introuvable/i);
-  assert.match(html, /Retour aux annonces/);
+  assert.match(html, /Retour aux annonces/i);
+  assert.match(html, /href="#buy"/);
 });

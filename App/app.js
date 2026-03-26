@@ -1,3 +1,4 @@
+import { renderAppTabShell } from './components/app-tab-shell.mjs';
 import {
   areaOptions,
   conditionOptions,
@@ -6,6 +7,9 @@ import {
 import { renderAuthWelcomeScreen } from './features/auth/welcome-screen.mjs';
 import { renderPhoneInputScreen } from './features/auth/phone-input-screen.mjs';
 import { renderOtpScreen } from './features/auth/otp-screen.mjs';
+import { renderInboxScreen } from './features/chat/inbox-screen.mjs';
+import { renderThreadScreen } from './features/chat/thread-screen.mjs';
+import { renderBuyScreen } from './features/home/buy-screen.mjs';
 import {
   createBuyerBrowseController,
   parseAppRoute,
@@ -17,6 +21,8 @@ import { renderPhotoGuidanceScreen } from './features/post/photo-guidance-screen
 import { renderPublishGateScreen } from './features/post/publish-gate-screen.mjs';
 import { renderReviewFormScreen } from './features/post/review-form-screen.mjs';
 import { renderSuccessScreen } from './features/post/success-screen.mjs';
+import { renderProfileScreen } from './features/profile/profile-screen.mjs';
+import { renderWalletScreen } from './features/wallet/wallet-screen.mjs';
 import { submitLivePublish } from './features/post/live-publish-flow.mjs';
 import { getCategoryGuidance } from './models/category-guidance.mjs';
 import {
@@ -26,10 +32,13 @@ import {
 import { createAiDraftService } from './services/ai-draft.mjs';
 import { createApiConfig } from './services/api-config.mjs';
 import { createAuthService } from './services/auth-service.mjs';
+import { createChatService } from './services/chat-service.mjs';
 import { createDraftStorageService } from './services/draft-storage.mjs';
 import { createImageCompressionService } from './services/image-compression.mjs';
 import { createListingsService } from './services/listings-service.mjs';
 import { createMediaService } from './services/media-service.mjs';
+import { createSellerListingsService } from './services/seller-listings-service.mjs';
+import { createWalletService } from './services/wallet-service.mjs';
 import {
   createPostFlowController,
   decidePublishGate,
@@ -51,6 +60,22 @@ if (appRoot) {
     fetchFn: window.fetch.bind(window),
     storage: window.localStorage,
   });
+  const listingsService = createListingsService({
+    apiBaseUrl: apiConfig.apiBaseUrl,
+    fetchFn: window.fetch.bind(window),
+  });
+  const chatService = createChatService({
+    apiBaseUrl: apiConfig.apiBaseUrl,
+    fetchFn: window.fetch.bind(window),
+  });
+  const walletService = createWalletService({
+    apiBaseUrl: apiConfig.apiBaseUrl,
+    fetchFn: window.fetch.bind(window),
+  });
+  const sellerListingsService = createSellerListingsService({
+    apiBaseUrl: apiConfig.apiBaseUrl,
+    fetchFn: window.fetch.bind(window),
+  });
   const mediaService = createMediaService({
     apiBaseUrl: apiConfig.apiBaseUrl,
     fetchFn: window.fetch.bind(window),
@@ -63,35 +88,56 @@ if (appRoot) {
     createPreviewUrl: (file) => window.URL.createObjectURL(file),
   });
   const buyerBrowseController = createBuyerBrowseController({
-    listingsService: createListingsService({
-      apiBaseUrl: apiConfig.apiBaseUrl,
-      fetchFn: window.fetch.bind(window),
-    }),
+    listingsService,
   });
   const state = {
+    authIntent: null,
+    boostBusyListingId: '',
+    boostMessage: '',
     busyLabel: '',
     buyerFeedPromise: null,
     buyerListingPromise: null,
     currentListingSlug: '',
+    currentThreadId: '',
     draft: draftStorage.loadDraft(),
+    inboxError: '',
+    inboxItems: [],
+    inboxPromise: null,
+    inboxStatus: 'idle',
     otpError: '',
     pendingChallenge: authService.getPendingChallenge(),
     phoneError: '',
     phoneNumber: authService.getPendingChallenge()?.phoneNumber ?? '+243',
+    profileError: '',
     publishError: '',
     publishOutcome: null,
     publishedListingRoute: '',
     publishedListingUrl: '',
     reviewErrors: [],
+    sellerListings: [],
+    sellerListingsPromise: null,
+    sellerListingsStatus: 'idle',
     session: authService.loadSession(),
+    thread: null,
+    threadDraftMessage: '',
+    threadError: '',
+    threadPromise: null,
+    threadStatus: 'idle',
+    wallet: {
+      balanceCdf: 0,
+      transactions: [],
+    },
+    walletError: '',
+    walletPromise: null,
+    walletStatus: 'idle',
   };
 
   if (!window.location.hash) {
-    window.location.hash = '#home';
+    window.location.hash = '#sell';
   }
 
   function getRoute() {
-    return parseAppRoute(window.location.hash || '#home');
+    return parseAppRoute(window.location.hash || '#sell');
   }
 
   function parsePrice(rawValue) {
@@ -142,6 +188,49 @@ if (appRoot) {
     return state.draft;
   }
 
+  function beginAuthIntent(intent) {
+    state.authIntent = intent;
+    state.phoneError = '';
+    state.otpError = '';
+    window.location.hash = '#auth-welcome';
+  }
+
+  function resolveAuthContext() {
+    switch (state.authIntent?.type) {
+      case 'message':
+      case 'messages':
+        return 'messages';
+      case 'wallet':
+        return 'wallet';
+      case 'profile':
+        return 'profile';
+      case 'publish':
+      default:
+        return 'publish';
+    }
+  }
+
+  function resolveAuthBackHref() {
+    return state.authIntent?.returnRoute || '#sell';
+  }
+
+  function getActiveTab(route) {
+    switch (route.type) {
+      case 'buy':
+      case 'listing':
+        return 'buy';
+      case 'messages':
+      case 'thread':
+        return 'messages';
+      case 'wallet':
+        return 'wallet';
+      case 'profile':
+        return 'profile';
+      default:
+        return 'sell';
+    }
+  }
+
   function resolveRenderableRoute() {
     const route = getRoute();
 
@@ -149,7 +238,18 @@ if (appRoot) {
       return route;
     }
 
-    if (!state.draft && route.type !== 'home' && route.type !== 'capture') {
+    if (route.type === 'thread' && !state.session) {
+      return {
+        type: 'messages',
+      };
+    }
+
+    if (
+      !state.draft &&
+      !['buy', 'capture', 'listing', 'messages', 'profile', 'sell', 'thread', 'wallet'].includes(
+        route.type,
+      )
+    ) {
       return {
         type: 'capture',
       };
@@ -200,8 +300,153 @@ if (appRoot) {
     return state.buyerListingPromise;
   }
 
+  async function loadInbox() {
+    if (!state.session) {
+      return null;
+    }
+
+    if (state.inboxPromise) {
+      return state.inboxPromise;
+    }
+
+    state.inboxStatus = 'loading';
+    state.inboxError = '';
+    state.inboxPromise = chatService
+      .fetchInbox({
+        session: state.session,
+      })
+      .then((payload) => {
+        state.inboxItems = payload.items ?? [];
+        state.inboxStatus = 'ready';
+        return state.inboxItems;
+      })
+      .catch((error) => {
+        state.inboxItems = [];
+        state.inboxStatus = 'error';
+        state.inboxError =
+          error instanceof Error ? error.message : 'Impossible de charger vos messages.';
+        return [];
+      })
+      .finally(() => {
+        state.inboxPromise = null;
+        renderApp();
+      });
+
+    return state.inboxPromise;
+  }
+
+  async function loadThread(threadId) {
+    if (!state.session || !threadId) {
+      return null;
+    }
+
+    if (state.threadPromise && state.currentThreadId === threadId) {
+      return state.threadPromise;
+    }
+
+    state.currentThreadId = threadId;
+    state.threadStatus = 'loading';
+    state.threadError = '';
+    state.threadPromise = chatService
+      .fetchThread({
+        session: state.session,
+        threadId,
+      })
+      .then((thread) => {
+        state.thread = thread;
+        state.threadStatus = 'ready';
+        return thread;
+      })
+      .catch((error) => {
+        state.thread = null;
+        state.threadStatus = 'error';
+        state.threadError =
+          error instanceof Error ? error.message : 'Impossible de charger cette conversation.';
+        return null;
+      })
+      .finally(() => {
+        state.threadPromise = null;
+        renderApp();
+      });
+
+    return state.threadPromise;
+  }
+
+  async function loadWallet() {
+    if (!state.session) {
+      return null;
+    }
+
+    if (state.walletPromise) {
+      return state.walletPromise;
+    }
+
+    state.walletStatus = 'loading';
+    state.walletError = '';
+    state.walletPromise = walletService
+      .fetchWallet({
+        session: state.session,
+      })
+      .then((wallet) => {
+        state.wallet = wallet;
+        state.walletStatus = 'ready';
+        return wallet;
+      })
+      .catch((error) => {
+        state.wallet = {
+          balanceCdf: 0,
+          transactions: [],
+        };
+        state.walletStatus = 'error';
+        state.walletError =
+          error instanceof Error ? error.message : 'Impossible de charger le portefeuille.';
+        return state.wallet;
+      })
+      .finally(() => {
+        state.walletPromise = null;
+        renderApp();
+      });
+
+    return state.walletPromise;
+  }
+
+  async function loadSellerListings() {
+    if (!state.session) {
+      return null;
+    }
+
+    if (state.sellerListingsPromise) {
+      return state.sellerListingsPromise;
+    }
+
+    state.sellerListingsStatus = 'loading';
+    state.profileError = '';
+    state.sellerListingsPromise = sellerListingsService
+      .listMine({
+        session: state.session,
+      })
+      .then((payload) => {
+        state.sellerListings = payload.items ?? [];
+        state.sellerListingsStatus = 'ready';
+        return state.sellerListings;
+      })
+      .catch((error) => {
+        state.sellerListings = [];
+        state.sellerListingsStatus = 'error';
+        state.profileError =
+          error instanceof Error ? error.message : 'Impossible de charger vos annonces.';
+        return [];
+      })
+      .finally(() => {
+        state.sellerListingsPromise = null;
+        renderApp();
+      });
+
+    return state.sellerListingsPromise;
+  }
+
   function primeBuyerRouteState(route) {
-    if (route.type === 'home' && buyerBrowseController.state.feedStatus === 'idle') {
+    if ((route.type === 'buy' || route.type === 'sell') && buyerBrowseController.state.feedStatus === 'idle') {
       void loadBuyerFeed();
     }
 
@@ -213,9 +458,33 @@ if (appRoot) {
     ) {
       void loadBuyerListing(route.slug);
     }
+
+    if (route.type === 'messages' && state.session && state.inboxStatus === 'idle') {
+      void loadInbox();
+    }
+
+    if (route.type === 'thread' && state.session) {
+      if (!state.thread || state.currentThreadId !== route.threadId || state.threadStatus === 'idle') {
+        void loadThread(route.threadId);
+      }
+    }
+
+    if (route.type === 'wallet' && state.session && state.walletStatus === 'idle') {
+      void loadWallet();
+    }
+
+    if (route.type === 'profile' && state.session && state.sellerListingsStatus === 'idle') {
+      void loadSellerListings();
+    }
   }
 
   function renderRoute(route) {
+    const homeSections = buyerBrowseController.getHomeSections();
+    const homeFeedStatus =
+      buyerBrowseController.state.feedStatus === 'idle'
+        ? 'loading'
+        : buyerBrowseController.state.feedStatus;
+
     switch (route.type) {
       case 'capture':
         return renderCaptureScreen({
@@ -235,7 +504,10 @@ if (appRoot) {
           validationErrors: state.reviewErrors,
         });
       case 'auth-welcome':
-        return renderAuthWelcomeScreen();
+        return renderAuthWelcomeScreen({
+          backHref: resolveAuthBackHref(),
+          context: resolveAuthContext(),
+        });
       case 'phone':
         return renderPhoneInputScreen({
           errorMessage: state.phoneError,
@@ -255,6 +527,8 @@ if (appRoot) {
         });
       case 'success':
         return renderSuccessScreen({
+          boostBusy: state.boostBusyListingId === state.publishOutcome?.id,
+          boostMessage: state.boostMessage,
           draft: state.draft,
           listingRoute: state.publishedListingRoute,
           listingUrl: state.publishedListingUrl || buildListingUrl(state.draft),
@@ -266,18 +540,62 @@ if (appRoot) {
           errorMessage: buyerBrowseController.state.detailError,
           state: buyerBrowseController.state.detailStatus,
         });
-      case 'home':
+      case 'messages':
+        return renderInboxScreen({
+          items: state.inboxItems,
+          state: state.session
+            ? state.inboxStatus === 'idle'
+              ? 'loading'
+              : state.inboxStatus === 'error'
+                ? 'ready'
+                : state.inboxStatus
+            : 'locked',
+        });
+      case 'thread':
+        return state.session
+          ? renderThreadScreen({
+              draftMessage: state.threadDraftMessage,
+              isSending: state.threadStatus === 'sending',
+              thread: state.threadStatus === 'error' ? null : state.thread,
+            })
+          : renderInboxScreen({
+              state: 'locked',
+            });
+      case 'wallet':
+        return renderWalletScreen({
+          state: state.session
+            ? state.walletStatus === 'idle'
+              ? 'loading'
+              : state.walletStatus
+            : 'locked',
+          wallet: state.wallet,
+        });
+      case 'profile':
+        return renderProfileScreen({
+          listings: state.sellerListings,
+          session: state.session,
+          state: state.session
+            ? state.sellerListingsStatus === 'idle'
+              ? 'loading'
+              : state.sellerListingsStatus
+            : 'locked',
+        });
+      case 'buy':
+        return renderBuyScreen({
+          categories: sellerCategories,
+          featuredListings: homeSections.featuredListings,
+          feedStatus: homeFeedStatus,
+          recentListings: homeSections.recentListings,
+          searchQuery: buyerBrowseController.state.searchQuery,
+          selectedCategoryId: buyerBrowseController.state.selectedCategoryId,
+        });
+      case 'sell':
       default:
-        const homeSections = buyerBrowseController.getHomeSections();
-
         return renderHomeScreen({
           draft: state.draft,
           categories: sellerCategories,
           featuredListings: homeSections.featuredListings,
-          feedStatus:
-            buyerBrowseController.state.feedStatus === 'idle'
-              ? 'loading'
-              : buyerBrowseController.state.feedStatus,
+          feedStatus: homeFeedStatus,
           recentListings: homeSections.recentListings,
           searchQuery: buyerBrowseController.state.searchQuery,
           selectedCategoryId: buyerBrowseController.state.selectedCategoryId,
@@ -289,7 +607,10 @@ if (appRoot) {
     const route = resolveRenderableRoute();
 
     primeBuyerRouteState(route);
-    appRoot.innerHTML = renderRoute(route);
+    appRoot.innerHTML = renderAppTabShell({
+      activeTab: getActiveTab(route),
+      content: renderRoute(route),
+    });
     appRoot.dataset.appReady = 'true';
     appRoot.dataset.screen = route.type;
   }
@@ -373,6 +694,15 @@ if (appRoot) {
       session: state.session,
     });
 
+    if (publishGate.nextRoute !== '#publish') {
+      state.authIntent = {
+        returnRoute: '#review',
+        type: 'publish',
+      };
+    } else {
+      state.authIntent = null;
+    }
+
     window.location.hash = publishGate.nextRoute;
   }
 
@@ -395,6 +725,32 @@ if (appRoot) {
     }
   }
 
+  async function openThreadFromListing({
+    listingId,
+    listingSlug = '',
+  }) {
+    if (!state.session) {
+      return;
+    }
+
+    const thread = await chatService.createThread({
+      listingId,
+      session: state.session,
+    });
+
+    state.thread = thread;
+    state.threadStatus = 'ready';
+    state.currentThreadId = thread.id;
+    state.threadDraftMessage = '';
+    state.inboxStatus = 'idle';
+    state.authIntent = null;
+    window.location.hash = `#thread/${encodeURIComponent(thread.id)}`;
+    void loadInbox();
+    if (listingSlug) {
+      state.currentListingSlug = listingSlug;
+    }
+  }
+
   async function handleOtpSubmit(form) {
     const formData = new FormData(form);
 
@@ -407,6 +763,9 @@ if (appRoot) {
       state.session = session;
       state.pendingChallenge = authService.getPendingChallenge();
       state.otpError = '';
+      state.inboxStatus = 'idle';
+      state.walletStatus = 'idle';
+      state.sellerListingsStatus = 'idle';
 
       if (state.draft) {
         state.draft = markDraftOtpVerified(state.draft, {
@@ -415,6 +774,22 @@ if (appRoot) {
         draftStorage.saveDraft(state.draft);
       }
 
+      if (state.authIntent?.type === 'message' && state.authIntent.listingId) {
+        await openThreadFromListing({
+          listingId: state.authIntent.listingId,
+          listingSlug: state.authIntent.listingSlug,
+        });
+        return;
+      }
+
+      if (state.authIntent?.type === 'messages' || state.authIntent?.type === 'wallet' || state.authIntent?.type === 'profile') {
+        const returnRoute = state.authIntent.returnRoute || '#profile';
+        state.authIntent = null;
+        window.location.hash = returnRoute;
+        return;
+      }
+
+      state.authIntent = null;
       window.location.hash = '#publish';
     } catch (error) {
       state.otpError = error instanceof Error ? error.message : 'Code OTP invalide.';
@@ -446,6 +821,7 @@ if (appRoot) {
       state.publishedListingRoute = listingRoute;
       state.publishedListingUrl =
         listingRoute ? `/App/${listingRoute}` : result.listingUrl || buildListingUrl(result.draft);
+      state.sellerListingsStatus = 'idle';
       if (result.outcome?.status === 'approved') {
         buyerBrowseController.state.feedStatus = 'idle';
       }
@@ -454,6 +830,74 @@ if (appRoot) {
       state.busyLabel = '';
       state.publishError =
         error instanceof Error ? error.message : "Impossible d'envoyer l'annonce.";
+      renderApp();
+    }
+  }
+
+  async function handleBoost(listingId) {
+    if (!state.session || !listingId) {
+      return;
+    }
+
+    state.boostBusyListingId = listingId;
+    state.boostMessage = '';
+    renderApp();
+
+    try {
+      const result = await walletService.activateBoost({
+        listingId,
+        session: state.session,
+      });
+
+      state.boostBusyListingId = '';
+      state.boostMessage = result.statusLabel;
+      state.walletStatus = 'idle';
+      state.sellerListingsStatus = 'idle';
+      void loadWallet();
+      void loadSellerListings();
+      renderApp();
+    } catch (error) {
+      state.boostBusyListingId = '';
+      state.boostMessage =
+        error instanceof Error ? error.message : 'Impossible d’activer le boost.';
+      renderApp();
+    }
+  }
+
+  async function handleSendThreadMessage(form) {
+    if (!state.session) {
+      return;
+    }
+
+    const formData = new FormData(form);
+    const body = String(formData.get('threadMessage') ?? '').trim();
+    const threadId = form.dataset.threadId || state.currentThreadId;
+
+    if (!body || !threadId) {
+      return;
+    }
+
+    state.threadStatus = 'sending';
+    state.threadDraftMessage = body;
+    renderApp();
+
+    try {
+      const thread = await chatService.sendMessage({
+        body,
+        session: state.session,
+        threadId,
+      });
+
+      state.thread = thread;
+      state.threadStatus = 'ready';
+      state.threadDraftMessage = '';
+      state.inboxStatus = 'idle';
+      void loadInbox();
+      renderApp();
+    } catch (error) {
+      state.threadStatus = 'ready';
+      state.threadError =
+        error instanceof Error ? error.message : 'Impossible d’envoyer ce message.';
       renderApp();
     }
   }
@@ -509,6 +953,48 @@ if (appRoot) {
       const listingUrl = trigger.dataset.listingUrl || buildListingUrl(state.draft);
 
       window.open(new URL(listingUrl, window.location.origin).toString(), '_blank', 'noopener');
+      return;
+    }
+
+    if (trigger.dataset.action === 'begin-auth') {
+      beginAuthIntent({
+        returnRoute: trigger.dataset.returnRoute || '#sell',
+        type: trigger.dataset.intent || 'profile',
+      });
+      return;
+    }
+
+    if (trigger.dataset.action === 'start-thread') {
+      const listingId = trigger.dataset.listingId || '';
+      const listingSlug = trigger.dataset.listingSlug || '';
+
+      if (!state.session) {
+        beginAuthIntent({
+          listingId,
+          listingSlug,
+          returnRoute: `#listing/${encodeURIComponent(listingSlug)}`,
+          type: 'message',
+        });
+        return;
+      }
+
+      await openThreadFromListing({
+        listingId,
+        listingSlug,
+      });
+      return;
+    }
+
+    if (trigger.dataset.action === 'activate-boost') {
+      if (!state.session) {
+        beginAuthIntent({
+          returnRoute: '#profile',
+          type: 'profile',
+        });
+        return;
+      }
+
+      await handleBoost(trigger.dataset.listingId || '');
     }
   });
 
@@ -522,6 +1008,11 @@ if (appRoot) {
     if (target.name === 'buyerSearch') {
       buyerBrowseController.setSearchQuery(target.value);
       renderApp();
+      return;
+    }
+
+    if (target.name === 'threadMessage') {
+      state.threadDraftMessage = target.value;
     }
   });
 
@@ -571,6 +1062,11 @@ if (appRoot) {
 
     if (form.dataset.form === 'verify-otp') {
       await handleOtpSubmit(form);
+      return;
+    }
+
+    if (form.dataset.form === 'send-thread-message') {
+      await handleSendThreadMessage(form);
     }
   });
 

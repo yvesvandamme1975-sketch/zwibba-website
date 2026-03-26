@@ -2,6 +2,9 @@ type EnvSource = NodeJS.ProcessEnv | Record<string, string | undefined>;
 type OtpProvider = 'demo' | 'twilio';
 
 export type ZwibbaEnv = {
+  admin: {
+    sharedSecret: string;
+  };
   appBaseUrl: string;
   databaseUrl: string;
   nodeEnv: string;
@@ -43,6 +46,7 @@ const defaultEnvValues = {
   TWILIO_ACCOUNT_SID: 'AC00000000000000000000000000000000',
   TWILIO_AUTH_TOKEN: 'twilio-auth-token',
   TWILIO_VERIFY_SERVICE_SID: 'VA00000000000000000000000000000000',
+  ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
 } as const;
 
 function isProductionEnv(source: EnvSource) {
@@ -100,6 +104,9 @@ export function loadEnv(source: EnvSource = process.env): ZwibbaEnv {
   const otpProvider = readOtpProvider(source);
 
   return {
+    admin: {
+      sharedSecret: readRequiredString(source, 'ZWIBBA_ADMIN_SHARED_SECRET'),
+    },
     appBaseUrl: readRequiredString(source, 'APP_BASE_URL'),
     databaseUrl: readRequiredString(source, 'DATABASE_URL'),
     nodeEnv: readRequiredString(source, 'NODE_ENV'),

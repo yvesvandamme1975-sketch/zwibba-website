@@ -105,6 +105,17 @@
 
 .app-shell__viewport {
   height: 100%;
+  overflow: hidden;
+}
+
+.app-tab-shell {
+  min-height: 100%;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.app-tab-shell__content {
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
@@ -113,18 +124,53 @@
   scrollbar-color: rgba(107, 230, 107, 0.8) rgba(255, 255, 255, 0.08);
 }
 
-.app-shell__viewport::-webkit-scrollbar {
+.app-tab-shell__content::-webkit-scrollbar {
   width: 10px;
 }
 
-.app-shell__viewport::-webkit-scrollbar-track {
+.app-tab-shell__content::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.06);
 }
 
-.app-shell__viewport::-webkit-scrollbar-thumb {
+.app-tab-shell__content::-webkit-scrollbar-thumb {
   border-radius: 999px;
   background: linear-gradient(180deg, rgba(107, 230, 107, 0.92), rgba(107, 230, 107, 0.56));
   border: 2px solid rgba(21, 23, 26, 0.95);
+}
+
+.app-tab-shell__nav {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px 14px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(17, 18, 20, 0.94);
+  backdrop-filter: blur(12px);
+}
+
+.app-tab-shell__nav-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 8px;
+  border-radius: 14px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.app-tab-shell__nav-item:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.app-tab-shell__nav-item.is-active {
+  color: #071607;
+  background: linear-gradient(135deg, rgba(107, 230, 107, 0.96), rgba(140, 245, 126, 0.88));
+  box-shadow: 0 10px 20px rgba(107, 230, 107, 0.18);
 }
 
 .app-screen {
@@ -885,6 +931,154 @@
   word-break: break-word;
 }
 
+.app-thread-list,
+.app-wallet__transactions,
+.app-profile__listing-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.app-thread-card,
+.app-wallet__transaction,
+.app-profile__listing-card,
+.app-profile__stats article {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.app-thread-card span,
+.app-wallet__transaction span,
+.app-profile__listing-copy span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.app-thread-card p,
+.app-thread__bubble p {
+  margin: 0;
+}
+
+.app-thread-card small,
+.app-thread__bubble small {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+.app-thread {
+  display: grid;
+  gap: 16px;
+}
+
+.app-thread__messages {
+  display: grid;
+  gap: 10px;
+}
+
+.app-thread__bubble {
+  display: grid;
+  gap: 6px;
+  max-width: 88%;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.app-thread__bubble--buyer {
+  justify-self: end;
+  background: rgba(107, 230, 107, 0.12);
+  border-color: rgba(107, 230, 107, 0.24);
+}
+
+.app-thread__bubble--seller {
+  justify-self: start;
+}
+
+.app-thread__composer {
+  display: grid;
+  gap: 12px;
+}
+
+.app-wallet__balance {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(107, 230, 107, 0.1);
+  border: 1px solid rgba(107, 230, 107, 0.24);
+}
+
+.app-wallet__balance strong {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.app-wallet__balance span {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.app-wallet__transaction {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.app-wallet__transaction--credit em {
+  color: var(--green);
+}
+
+.app-profile__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.app-profile__stats article span {
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.app-profile__listing-card {
+  grid-template-columns: 88px minmax(0, 1fr);
+  align-items: start;
+}
+
+.app-profile__listing-image {
+  width: 88px;
+  height: 88px;
+  border-radius: 16px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.app-profile__listing-image--placeholder {
+  background:
+    linear-gradient(135deg, rgba(107, 230, 107, 0.2), rgba(255, 255, 255, 0.04)),
+    rgba(255, 255, 255, 0.04);
+}
+
+.app-profile__listing-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.app-profile__listing-copy em,
+.app-wallet__transaction em {
+  font-style: normal;
+  font-weight: 800;
+}
+
+.app-profile__listing-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 @media (min-width: 920px) {
   .app-standalone__entry {
     grid-template-columns: minmax(0, 1fr) 410px;
@@ -931,7 +1125,12 @@
 
   .app-shell__viewport {
     height: auto;
-    overflow: visible;
+    overflow: hidden;
+    scrollbar-gutter: auto;
+  }
+
+  .app-tab-shell__content {
+    overflow-y: auto;
     scrollbar-gutter: auto;
   }
 
@@ -963,5 +1162,21 @@
   .app-review__top,
   .app-review__grid {
     grid-template-columns: 1fr;
+  }
+
+  .app-tab-shell__nav {
+    position: sticky;
+    bottom: 0;
+  }
+
+  .app-profile__stats,
+  .app-profile__listing-card,
+  .app-wallet__transaction {
+    grid-template-columns: 1fr;
+  }
+
+  .app-profile__listing-image {
+    width: 100%;
+    height: 160px;
   }
 }

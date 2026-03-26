@@ -14,28 +14,18 @@ function buildBuyerMessage(detail) {
 }
 
 function buildActionMarkup(action, detail) {
-  const message = buildBuyerMessage(detail);
-
   switch (action) {
-    case 'whatsapp':
+    case 'message':
       return `
-        <a
+        <button
           class="app-flow__button"
-          href="${escapeAttribute(`https://wa.me/?text=${encodeURIComponent(message)}`)}"
-          rel="noreferrer"
-          target="_blank"
+          type="button"
+          data-action="start-thread"
+          data-listing-id="${escapeAttribute(detail.id)}"
+          data-listing-slug="${escapeAttribute(detail.slug)}"
         >
-          WhatsApp
-        </a>
-      `;
-    case 'sms':
-      return `
-        <a
-          class="app-flow__button app-flow__button--secondary"
-          href="${escapeAttribute(`sms:?body=${encodeURIComponent(message)}`)}"
-        >
-          SMS
-        </a>
+          Envoyer un message
+        </button>
       `;
     case 'call':
       if (detail.contactPhoneNumber) {
@@ -101,7 +91,7 @@ export function renderListingDetailScreen({
       <section class="app-flow app-flow--detail">
         <header class="app-flow__header">
           <div class="app-flow__meta">
-            <a class="app-flow__back" href="#home">Retour aux annonces</a>
+            <a class="app-flow__back" href="#buy">Retour aux annonces</a>
             ${renderInAppBrand({ compact: true })}
           </div>
           <div>
@@ -118,7 +108,7 @@ export function renderListingDetailScreen({
       <section class="app-flow app-flow--detail">
         <header class="app-flow__header">
           <div class="app-flow__meta">
-            <a class="app-flow__back" href="#home">Retour aux annonces</a>
+            <a class="app-flow__back" href="#buy">Retour aux annonces</a>
             ${renderInAppBrand({ compact: true })}
           </div>
           <div>
@@ -141,7 +131,7 @@ export function renderListingDetailScreen({
     <section class="app-flow app-flow--detail">
       <header class="app-flow__header">
         <div class="app-flow__meta">
-          <a class="app-flow__back" href="#home">Retour aux annonces</a>
+          <a class="app-flow__back" href="#buy">Retour aux annonces</a>
           ${renderInAppBrand({ compact: true })}
         </div>
         <div>
@@ -189,7 +179,10 @@ export function renderListingDetailScreen({
       </section>
 
       <div class="app-flow__actions" data-contact-actions="${escapeAttribute(detail.contactActions.join(','))}">
-        ${detail.contactActions.map((action) => buildActionMarkup(action, detail)).join('')}
+        ${['message', 'call']
+          .filter((action) => detail.contactActions.includes(action) || (action === 'message' && detail.id))
+          .map((action) => buildActionMarkup(action, detail))
+          .join('')}
       </div>
     </section>
   `;

@@ -27,8 +27,14 @@ export class WalletService {
       where: {
         userId: user.id,
       },
-    });
-    const balanceCdf = transactions.reduce((total, transaction) => {
+    }) as Array<{
+      amountCdf: number;
+      createdAtLabel: string;
+      id: string;
+      kind: string;
+      label: string;
+    }>;
+    const balanceCdf = transactions.reduce((total: number, transaction) => {
       return total + transaction.amountCdf;
     }, 0);
 

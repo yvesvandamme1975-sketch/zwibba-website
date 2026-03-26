@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-const repoRoot = '/Users/pc/zwibba-website';
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const apiPackagePath = path.join(repoRoot, 'apps', 'api', 'package.json');
 const adminPackagePath = path.join(repoRoot, 'apps', 'admin', 'package.json');
 const apiNixpacksPath = path.join(repoRoot, 'apps', 'api', 'nixpacks.toml');

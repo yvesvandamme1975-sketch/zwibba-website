@@ -1,5 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
+import type { SessionRecord } from '../auth/auth.service';
 import { PrismaService } from '../database/prisma.service';
 
 type PersistedListingRecord = {
@@ -109,7 +110,7 @@ function toListingDetail(
   return {
     categoryId: listing.categoryId,
     categoryLabel: getCategoryLabel(listing.categoryId),
-    contactActions: ['whatsapp', 'sms', 'call'],
+    contactActions: ['message', 'call'],
     contactPhoneNumber: listing.ownerPhoneNumber,
     id: listing.id,
     locationLabel: listing.area,
@@ -124,6 +125,19 @@ function toListingDetail(
     summary: listing.description,
     title: listing.title,
   };
+}
+
+function buildListingStatusLabel(status: string) {
+  switch (status) {
+    case 'approved':
+      return 'Publiée';
+    case 'pending_manual_review':
+      return 'En revue';
+    case 'blocked_needs_fix':
+      return 'À corriger';
+    default:
+      return 'Brouillon';
+  }
 }
 
 @Injectable()
@@ -196,5 +210,54 @@ export class ListingsService {
     const primaryImageUrl = await this.resolvePrimaryImageUrl(persistedListing);
 
     return toListingDetail(persistedListing, primaryImageUrl);
+  }
+
+  async listSellerListings(session: SessionRecord) {
+    const listings = await this.prismaService.listing.findMany({
+      where: {
+        ownerPhoneNumber: session.phoneNumber,
+      },
+    });
+    const sortedListings = [...listings].sort((left, right) => {
+      const leftTime = left.updatedAt instanceof Date
+        ? left.updatedAt.getTime()
+        : 0;
+      const rightTime = right.updatedAt instanceof Date
+        ? right.updatedAt.getTime()
+        : 0;
+
+      return rightTime - leftTime;
+    });
+
+    const items = await Promise.all(
+      sortedListings.map(async (listing) => {
+        const persistedListing = listing as PersistedListingRecord;
+        const [primaryImageUrl, moderationDecision] = await Promise.all([
+          this.resolvePrimaryImageUrl(persistedListing),
+          this.prismaService.moderationDecision.findUnique({
+            where: {
+              listingId: persistedListing.id,
+            },
+          }),
+        ]);
+
+        return {
+          id: persistedListing.id,
+          moderationStatus: persistedListing.moderationStatus,
+          priceCdf: persistedListing.priceCdf,
+          primaryImageUrl,
+          reasonSummary:
+            moderationDecision?.reasonSummary ??
+            buildListingStatusLabel(persistedListing.moderationStatus),
+          slug: persistedListing.slug,
+          statusLabel: buildListingStatusLabel(persistedListing.moderationStatus),
+          title: persistedListing.title,
+        };
+      }),
+    );
+
+    return {
+      items,
+    };
   }
 }

@@ -1,11 +1,18 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import type { SessionRecord } from '../auth/auth.service';
 import { PrismaService } from '../database/prisma.service';
 
 type PersistedChatThread = {
+  buyerUserId: string;
   id: string;
   listing?: {
+    ownerPhoneNumber?: string;
     slug: string;
     title: string;
   } | null;
@@ -18,7 +25,25 @@ type PersistedChatThread = {
   sellerPhoneNumber: string;
 };
 
-function toThreadPayload(thread: PersistedChatThread) {
+function buildParticipantName({
+  thread,
+  viewerRole,
+}: {
+  thread: PersistedChatThread;
+  viewerRole: 'buyer' | 'seller';
+}) {
+  if (viewerRole === 'seller') {
+    return 'Acheteur Zwibba';
+  }
+
+  const lastDigits = thread.sellerPhoneNumber.slice(-4);
+  return `Vendeur ${lastDigits}`;
+}
+
+function toThreadPayload(
+  thread: PersistedChatThread,
+  viewerRole: 'buyer' | 'seller',
+) {
   return {
     id: thread.id,
     listingTitle: thread.listing?.title ?? 'Annonce Zwibba',
@@ -28,7 +53,10 @@ function toThreadPayload(thread: PersistedChatThread) {
       senderRole: message.senderRole,
       sentAtLabel: message.sentAtLabel,
     })),
-    participantName: 'Acheteur Zwibba',
+    participantName: buildParticipantName({
+      thread,
+      viewerRole,
+    }),
   };
 }
 
@@ -38,15 +66,70 @@ export class ChatService {
     @Inject(PrismaService) private readonly prismaService: PrismaService,
   ) {}
 
-  async fetchInbox(session: SessionRecord) {
-    const threads = await this.prismaService.chatThread.findMany({
+  private async resolveViewerContext(session: SessionRecord) {
+    const user = await this.prismaService.user.findUnique({
       where: {
-        sellerPhoneNumber: session.phoneNumber,
+        phoneNumber: session.phoneNumber,
       },
-      include: {
-        listing: true,
-        messages: true,
-      },
+    });
+
+    return {
+      user,
+    };
+  }
+
+  private resolveViewerRole({
+    session,
+    thread,
+    userId = '',
+  }: {
+    session: SessionRecord;
+    thread: PersistedChatThread;
+    userId?: string;
+  }): 'buyer' | 'seller' {
+    if (thread.sellerPhoneNumber === session.phoneNumber) {
+      return 'seller';
+    }
+
+    if (userId && thread.buyerUserId === userId) {
+      return 'buyer';
+    }
+
+    throw new NotFoundException('Conversation introuvable.');
+  }
+
+  async fetchInbox(session: SessionRecord) {
+    const { user } = await this.resolveViewerContext(session);
+    const [sellerThreads, buyerThreads] = await Promise.all([
+      this.prismaService.chatThread.findMany({
+        where: {
+          sellerPhoneNumber: session.phoneNumber,
+        },
+        include: {
+          listing: true,
+          messages: true,
+        },
+      }),
+      user
+        ? this.prismaService.chatThread.findMany({
+            where: {
+              buyerUserId: user.id,
+            },
+            include: {
+              listing: true,
+              messages: true,
+            },
+          })
+        : Promise.resolve([]),
+    ]);
+    const seenThreadIds = new Set<string>();
+    const threads = [...sellerThreads, ...buyerThreads].filter((thread) => {
+      if (seenThreadIds.has(thread.id)) {
+        return false;
+      }
+
+      seenThreadIds.add(thread.id);
+      return true;
     });
 
     return {
@@ -55,10 +138,75 @@ export class ChatService {
         lastMessagePreview: thread.messages.at(-1)?.body ?? '',
         listingSlug: thread.listing?.slug ?? '',
         listingTitle: thread.listing?.title ?? 'Annonce Zwibba',
-        participantName: 'Acheteur Zwibba',
+        participantName: buildParticipantName({
+          thread: thread as PersistedChatThread,
+          viewerRole: thread.sellerPhoneNumber === session.phoneNumber ? 'seller' : 'buyer',
+        }),
         unreadCount: 0,
       })),
     };
+  }
+
+  async createThread({
+    listingId,
+    session,
+  }: {
+    listingId: string;
+    session: SessionRecord;
+  }) {
+    const normalizedListingId = listingId.trim();
+
+    if (!normalizedListingId) {
+      throw new BadRequestException('Annonce introuvable.');
+    }
+
+    const { user } = await this.resolveViewerContext(session);
+
+    if (!user) {
+      throw new NotFoundException('Utilisateur introuvable.');
+    }
+
+    const listing = await this.prismaService.listing.findUnique({
+      where: {
+        id: normalizedListingId,
+      },
+    });
+
+    if (!listing) {
+      throw new NotFoundException('Annonce introuvable.');
+    }
+
+    const existingThread = await this.prismaService.chatThread.findFirst({
+      where: {
+        buyerUserId: user.id,
+        listingId: normalizedListingId,
+      },
+    });
+
+    const thread = existingThread ??
+      await this.prismaService.chatThread.create({
+        data: {
+          buyerUserId: user.id,
+          listingId: normalizedListingId,
+          sellerPhoneNumber: listing.ownerPhoneNumber,
+        },
+      });
+
+    const persistedThread = await this.prismaService.chatThread.findUnique({
+      where: {
+        id: thread.id,
+      },
+      include: {
+        listing: true,
+        messages: true,
+      },
+    });
+
+    if (!persistedThread) {
+      throw new NotFoundException('Conversation introuvable.');
+    }
+
+    return toThreadPayload(persistedThread as PersistedChatThread, 'buyer');
   }
 
   async fetchThread({
@@ -68,6 +216,7 @@ export class ChatService {
     session: SessionRecord;
     threadId: string;
   }) {
+    const { user } = await this.resolveViewerContext(session);
     const thread = await this.prismaService.chatThread.findUnique({
       where: {
         id: threadId,
@@ -78,11 +227,17 @@ export class ChatService {
       },
     });
 
-    if (!thread || thread.sellerPhoneNumber !== session.phoneNumber) {
+    if (!thread) {
       throw new NotFoundException('Conversation introuvable.');
     }
 
-    return toThreadPayload(thread as PersistedChatThread);
+    const viewerRole = this.resolveViewerRole({
+      session,
+      thread: thread as PersistedChatThread,
+      userId: user?.id,
+    });
+
+    return toThreadPayload(thread as PersistedChatThread, viewerRole);
   }
 
   async sendMessage({
@@ -94,6 +249,7 @@ export class ChatService {
     session: SessionRecord;
     threadId: string;
   }) {
+    const { user } = await this.resolveViewerContext(session);
     const trimmedBody = body.trim();
 
     if (trimmedBody.length === 0) {
@@ -110,14 +266,20 @@ export class ChatService {
       },
     });
 
-    if (!thread || thread.sellerPhoneNumber !== session.phoneNumber) {
+    if (!thread) {
       throw new NotFoundException('Conversation introuvable.');
     }
+
+    const viewerRole = this.resolveViewerRole({
+      session,
+      thread: thread as PersistedChatThread,
+      userId: user?.id,
+    });
 
     await this.prismaService.chatMessage.create({
       data: {
         body: trimmedBody,
-        senderRole: 'seller',
+        senderRole: viewerRole,
         sentAtLabel: 'Maintenant',
         threadId,
       },
@@ -137,6 +299,6 @@ export class ChatService {
       throw new NotFoundException('Conversation introuvable.');
     }
 
-    return toThreadPayload(updatedThread as PersistedChatThread);
+    return toThreadPayload(updatedThread as PersistedChatThread, viewerRole);
   }
 }

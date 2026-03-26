@@ -1,4 +1,5 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import type { SessionRecord } from '../auth/auth.service';
 import { PrismaService } from '../database/prisma.service';
@@ -31,7 +32,7 @@ export class BoostService {
       throw new NotFoundException('Annonce introuvable pour ce boost.');
     }
 
-    await this.prismaService.$transaction(async (transaction) => {
+    await this.prismaService.$transaction(async (transaction: Prisma.TransactionClient) => {
       const walletTransaction = await transaction.walletTransaction.create({
         data: {
           amountCdf: -15000,

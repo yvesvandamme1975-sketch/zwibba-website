@@ -153,7 +153,13 @@ export class DraftsService {
       description: draft.description,
       draftId: draft.id,
       ownerPhoneNumber: draft.ownerPhoneNumber,
-      photos: draft.photos.map((photo) => ({
+      photos: draft.photos.map((photo: {
+        id: string;
+        objectKey: string;
+        publicUrl: string;
+        sourcePresetId: string;
+        uploadStatus: string;
+      }) => ({
         objectKey: photo.objectKey,
         photoId: photo.id,
         publicUrl: photo.publicUrl,

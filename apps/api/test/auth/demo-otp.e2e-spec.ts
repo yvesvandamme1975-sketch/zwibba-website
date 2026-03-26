@@ -23,6 +23,13 @@ class _FakePrismaService {
       phoneNumber: string;
     };
   }>();
+  readonly walletTransactions: Array<{
+    amountCdf: number;
+    createdAtLabel: string;
+    kind: string;
+    label: string;
+    userId: string;
+  }> = [];
 
   readonly session = {
     create: async ({
@@ -100,6 +107,34 @@ class _FakePrismaService {
       return { count };
     },
   };
+
+  readonly walletTransaction = {
+    count: async ({
+      where,
+    }: {
+      where: {
+        userId: string;
+      };
+    }) => {
+      return this.walletTransactions.filter((transaction) => {
+        return transaction.userId === where.userId;
+      }).length;
+    },
+    create: async ({
+      data,
+    }: {
+      data: {
+        amountCdf: number;
+        createdAtLabel: string;
+        kind: string;
+        label: string;
+        userId: string;
+      };
+    }) => {
+      this.walletTransactions.push(data);
+      return data;
+    },
+  };
 }
 
 function setDemoEnv() {
@@ -116,6 +151,7 @@ function setDemoEnv() {
   process.env.R2_PUBLIC_BASE_URL = 'https://cdn.zwibba.example';
   process.env.R2_S3_ENDPOINT = 'https://r2.example.com';
   process.env.R2_SECRET_ACCESS_KEY = 'r2-secret';
+  process.env.ZWIBBA_ADMIN_SHARED_SECRET = 'zwibba-admin-secret';
   delete process.env.TWILIO_ACCOUNT_SID;
   delete process.env.TWILIO_AUTH_TOKEN;
   delete process.env.TWILIO_VERIFY_SERVICE_SID;
@@ -209,6 +245,49 @@ test('demo otp verify returns a real seller session for the configured code', as
   assert.equal(response.body.phoneNumber, '+243990000001');
   assert.equal(response.body.canSyncDrafts, true);
   assert.match(response.body.sessionToken, /^zwibba_session_/);
+});
+
+test('demo otp verify seeds the beta wallet credit exactly once', async (t) => {
+  const snapshot = { ...process.env };
+  setDemoEnv();
+  t.after(async () => {
+    restoreEnv(snapshot);
+  });
+
+  const harness = await createTestApp();
+  t.after(async () => {
+    await harness.app.close();
+  });
+
+  await request(harness.app.getHttpServer())
+    .post('/auth/request-otp')
+    .send({ phoneNumber: '+243990000001' })
+    .expect(201);
+
+  await request(harness.app.getHttpServer())
+    .post('/auth/verify-otp')
+    .send({
+      code: '123456',
+      phoneNumber: '+243990000001',
+    })
+    .expect(201);
+
+  await request(harness.app.getHttpServer())
+    .post('/auth/request-otp')
+    .send({ phoneNumber: '+243990000001' })
+    .expect(201);
+
+  await request(harness.app.getHttpServer())
+    .post('/auth/verify-otp')
+    .send({
+      code: '123456',
+      phoneNumber: '+243990000001',
+    })
+    .expect(201);
+
+  assert.equal(harness.prisma.walletTransactions.length, 1);
+  assert.equal(harness.prisma.walletTransactions[0].amountCdf, 30000);
+  assert.equal(harness.prisma.walletTransactions[0].label, 'Crédit bêta Zwibba');
 });
 
 test('demo otp request rejects numbers outside the allowlist', async (t) => {

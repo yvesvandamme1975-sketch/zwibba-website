@@ -1,11 +1,12 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setTimeout as delay } from 'node:timers/promises';
 
-const repoRoot = '/Users/pc/zwibba-website';
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const distDir = path.join(repoRoot, 'dist');
 
 function buildSite(env = {}) {
@@ -92,7 +93,7 @@ test('app entry page opens the interactive flow instead of linking to the curren
   buildSite();
 
   const appEntry = readFileSync(path.join(distDir, 'App/index.html'), 'utf8');
-  assert.match(appEntry, /Ouvrir le prototype/);
+  assert.match(appEntry, /Ouvrir l'app/);
   assert.match(appEntry, /href="#capture"/i);
 });
 
