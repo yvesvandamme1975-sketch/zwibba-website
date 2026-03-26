@@ -19,5 +19,7 @@ Current priority docs:
 - `2026-03-22-zwibba-browser-phone-shell-refresh-implementation.md`
 - `2026-03-25-zwibba-browser-real-seller-upload-design.md`
 - `2026-03-25-zwibba-browser-real-seller-upload-implementation.md`
+- `2026-03-26-zwibba-seeded-real-listing-images-design.md`
+- `2026-03-26-zwibba-seeded-real-listing-images-implementation.md`
 
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
