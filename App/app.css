@@ -649,6 +649,28 @@
   object-fit: cover;
 }
 
+.app-review__hero-media--fallback,
+.app-success__hero-media--fallback {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  padding: 24px;
+  text-align: center;
+}
+
+.app-review__hero-media--fallback strong,
+.app-success__hero-media--fallback strong {
+  font-size: 0.94rem;
+}
+
+.app-review__hero-media--fallback span,
+.app-success__hero-media--fallback span {
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
 .app-capture__resume strong,
 .app-guidance__status strong,
 .app-review__summary strong,

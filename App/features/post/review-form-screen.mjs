@@ -6,7 +6,6 @@ import { renderInAppBrand } from '../../components/in-app-brand.mjs';
 import {
   escapeAttribute,
   escapeHtml,
-  formatCdf,
 } from '../../utils/rendering.mjs';
 
 function renderError(error) {
@@ -22,10 +21,19 @@ function renderOption(option, currentValue) {
 }
 
 function renderPhoto(photo) {
+  const photoStatus =
+    photo.uploadStatus === 'uploading'
+      ? 'Téléversement en cours'
+      : photo.uploadStatus === 'failed'
+        ? 'Téléversement à relancer'
+        : photo.publicUrl || photo.previewUrl || photo.url
+          ? 'Aperçu prêt pour la publication'
+          : 'Aperçu indisponible';
+
   return `
     <div class="app-review__photo${photo.kind !== 'primary' ? ' is-guided' : ''}">
       <strong>${escapeHtml(photo.promptId || 'Photo principale')}</strong>
-      <span>${escapeHtml(photo.url || photo.previewUrl || 'Photo locale')}</span>
+      <span>${escapeHtml(photoStatus)}</span>
     </div>
   `;
 }
@@ -81,12 +89,6 @@ export function renderReviewFormScreen({
   validationErrors = [],
 }) {
   const missingPrompts = getMissingRequiredPhotoPrompts(draft);
-  const priceRange =
-    draft.details.suggestedPriceMinCdf && draft.details.suggestedPriceMaxCdf
-      ? `${formatCdf(draft.details.suggestedPriceMinCdf)} - ${formatCdf(
-          draft.details.suggestedPriceMaxCdf,
-        )}`
-      : 'Ajoutez votre prix librement';
   const primaryImageUrl = resolveDraftPrimaryImage(draft);
 
   return `
@@ -107,10 +109,6 @@ export function renderReviewFormScreen({
           <strong>Pré-remplissage IA</strong>
           <span>${escapeHtml(draft.ai.message || "L'IA prépare les bases du brouillon.")}</span>
         </div>
-        <div class="app-review__price-range">
-          <span>Fourchette IA</span>
-          <strong>${escapeHtml(priceRange)}</strong>
-        </div>
       </div>
 
       ${
@@ -125,7 +123,12 @@ export function renderReviewFormScreen({
               />
             </div>
           `
-          : ''
+          : `
+            <div class="app-review__hero-media app-review__hero-media--fallback">
+              <strong>Aperçu indisponible</strong>
+              <span>Ajoutez ou relancez votre photo principale avant de publier.</span>
+            </div>
+          `
       }
 
       <div class="app-review__photos">

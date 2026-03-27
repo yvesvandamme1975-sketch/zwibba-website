@@ -446,6 +446,26 @@ test('review form highlights publish blockers next to the submit action', () => 
   assert.match(html, /app-review__field app-review__field--invalid/);
 });
 
+test('review form keeps pricing fully manual and hides AI price guidance', () => {
+  const draft = createReadyDraft({
+    suggestedPriceMinCdf: 400_000,
+    suggestedPriceMaxCdf: 520_000,
+  });
+  const html = renderReviewFormScreen({
+    areaOptions: ['Golf', 'Bel Air'],
+    categories: [{ id: 'electronics', label: 'Électronique' }],
+    conditionOptions: [{ value: 'like_new', label: 'Comme neuf' }],
+    draft,
+    validationErrors: [],
+  });
+
+  assert.match(html, /Prix final \(CDF\)/);
+  assert.doesNotMatch(html, /Fourchette IA/i);
+  assert.doesNotMatch(html, /Ajoutez votre prix librement/i);
+  assert.doesNotMatch(html, /400 000 CDF/);
+  assert.doesNotMatch(html, /520 000 CDF/);
+});
+
 test('review form renders the first draft image as the seller preview', () => {
   const draft = createReadyDraft({
     photos: [
@@ -470,4 +490,30 @@ test('review form renders the first draft image as the seller preview', () => {
     html,
     /<img[^>]+class="app-review__hero-image"[^>]+src="https:\/\/cdn\.zwibba\.example\/draft-photos\/phone-front\.jpg"/,
   );
+  assert.doesNotMatch(
+    html,
+    /<span>https:\/\/cdn\.zwibba\.example\/draft-photos\/phone-front\.jpg<\/span>/,
+  );
+});
+
+test('review form shows a visual fallback when the primary photo source is unavailable', () => {
+  const draft = createReadyDraft({
+    photos: [
+      {
+        id: 'photo-1',
+        kind: 'primary',
+        uploadStatus: 'uploaded',
+      },
+    ],
+  });
+  const html = renderReviewFormScreen({
+    areaOptions: ['Golf', 'Bel Air'],
+    categories: [{ id: 'electronics', label: 'Électronique' }],
+    conditionOptions: [{ value: 'like_new', label: 'Comme neuf' }],
+    draft,
+    validationErrors: [],
+  });
+
+  assert.match(html, /app-review__hero-media--fallback/);
+  assert.match(html, /Aperçu indisponible/i);
 });
