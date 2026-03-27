@@ -93,6 +93,8 @@
 }
 
 .app-shell {
+  display: flex;
+  flex-direction: column;
   height: min(920px, calc(100vh - 132px));
   min-height: 740px;
   border-radius: 28px;
@@ -104,11 +106,16 @@
 }
 
 .app-shell__viewport {
+  display: flex;
+  flex: 1 1 auto;
   height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 
 .app-tab-shell {
+  flex: 1 1 auto;
+  height: 100%;
   min-height: 100%;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
@@ -1199,21 +1206,32 @@
 
   .app-shell {
     height: auto;
-    min-height: calc(100vh - 84px);
+    min-height: 0;
     border-radius: 0;
     border-left: 0;
     border-right: 0;
+    overflow: visible;
   }
 
   .app-shell__viewport {
     height: auto;
-    overflow: hidden;
+    min-height: 0;
+    overflow: visible;
     scrollbar-gutter: auto;
   }
 
+  .app-tab-shell {
+    height: auto;
+    min-height: 0;
+  }
+
   .app-tab-shell__content {
-    overflow-y: auto;
+    overflow: visible;
     scrollbar-gutter: auto;
+  }
+
+  .app-screen {
+    min-height: auto;
   }
 
   .app-home {

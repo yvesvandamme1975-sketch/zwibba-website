@@ -25,3 +25,37 @@ test('buyer chips and bottom navigation have explicit active-state styling', () 
   assert.match(appStyles, /\.app-home__chip\.is-active\s*\{/);
   assert.match(appStyles, /\.app-tab-shell__nav-item\s*\{[\s\S]*?font-size:\s*0\.82rem;/);
 });
+
+test('desktop shell constrains the phone viewport and uses the tab content as the inner scroll area', () => {
+  assert.match(
+    appStyles,
+    /\.app-shell__viewport\s*\{[\s\S]*?height:\s*100%;[\s\S]*?min-height:\s*0;[\s\S]*?(display:\s*(grid|flex);)?/i,
+  );
+  assert.match(
+    appStyles,
+    /\.app-tab-shell\s*\{[\s\S]*?height:\s*100%;[\s\S]*?min-height:\s*0;/i,
+  );
+  assert.match(
+    appStyles,
+    /\.app-tab-shell__content\s*\{[\s\S]*?overflow-y:\s*auto;/i,
+  );
+});
+
+test('mobile shell releases the phone viewport so the page owns scrolling', () => {
+  assert.match(
+    appStyles,
+    /@media \(max-width: 640px\) \{[\s\S]*?\.app-shell\s*\{[\s\S]*?height:\s*auto;[\s\S]*?min-height:\s*0;[\s\S]*?overflow:\s*visible;[\s\S]*?\}/i,
+  );
+  assert.match(
+    appStyles,
+    /@media \(max-width: 640px\) \{[\s\S]*?\.app-shell__viewport\s*\{[\s\S]*?height:\s*auto;[\s\S]*?overflow:\s*visible;[\s\S]*?\}/i,
+  );
+  assert.match(
+    appStyles,
+    /@media \(max-width: 640px\) \{[\s\S]*?\.app-tab-shell\s*\{[\s\S]*?height:\s*auto;[\s\S]*?min-height:\s*0;[\s\S]*?\}/i,
+  );
+  assert.match(
+    appStyles,
+    /@media \(max-width: 640px\) \{[\s\S]*?\.app-tab-shell__content\s*\{[\s\S]*?overflow:\s*visible;[\s\S]*?\}/i,
+  );
+});
