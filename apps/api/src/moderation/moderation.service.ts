@@ -1,6 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { assertSupportedPriceCdf } from '../common/price-validation';
 import { PrismaService } from '../database/prisma.service';
 import { DraftsService } from '../drafts/drafts.service';
 
@@ -170,6 +171,7 @@ export class ModerationService {
     priceCdf: number;
     title: string;
   }): Promise<PublishOutcome> {
+    const supportedPriceCdf = assertSupportedPriceCdf(priceCdf);
     const syncedDraft = await this.draftsService.getSyncedDraft(draftId);
 
     if (!syncedDraft || syncedDraft.ownerPhoneNumber !== ownerPhoneNumber) {
@@ -194,7 +196,7 @@ export class ModerationService {
     const validationError = detectValidationError({
       description: normalizedDescription,
       photos: syncedDraft.photos,
-      priceCdf,
+      priceCdf: supportedPriceCdf,
       title: normalizedTitle,
     });
     const status = resolveModerationStatus({
@@ -218,7 +220,7 @@ export class ModerationService {
           draftId: syncedDraft.draftId,
           moderationStatus: status,
           ownerPhoneNumber,
-          priceCdf,
+          priceCdf: supportedPriceCdf,
           publishedAt: status === 'approved' ? new Date() : null,
           slug: listingSlug,
           title: normalizedTitle,
@@ -229,7 +231,7 @@ export class ModerationService {
           description: normalizedDescription,
           moderationStatus: status,
           ownerPhoneNumber,
-          priceCdf,
+          priceCdf: supportedPriceCdf,
           publishedAt: status === 'approved' ? new Date() : null,
           slug: listingSlug,
           title: normalizedTitle,

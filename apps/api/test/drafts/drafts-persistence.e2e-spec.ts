@@ -244,3 +244,45 @@ test('draft sync persists metadata and photo records', async (t) => {
   assert.equal(harness.prisma.drafts.size, 1);
   assert.equal(harness.prisma.draftPhotosByDraftId.size, 1);
 });
+
+test('draft sync rejects prices above the 32-bit beta limit with a clear seller error', async (t) => {
+  const harness = await createTestApp();
+  t.after(async () => {
+    await harness.app.close();
+  });
+
+  await request(harness.app.getHttpServer())
+    .post('/auth/request-otp')
+    .send({ phoneNumber: '+243990000001' })
+    .expect(201);
+
+  const verifyResponse = await request(harness.app.getHttpServer())
+    .post('/auth/verify-otp')
+    .send({
+      phoneNumber: '+243990000001',
+      code: '123456',
+    })
+    .expect(201);
+
+  const syncResponse = await request(harness.app.getHttpServer())
+    .post('/drafts/sync')
+    .set('authorization', `Bearer ${verifyResponse.body.sessionToken}`)
+    .send({
+      area: 'Bel Air',
+      categoryId: 'home_garden',
+      description: 'Gâteau sur commande.',
+      priceCdf: 247891510000,
+      title: 'Melo cake',
+      photos: [
+        {
+          objectKey: 'draft-photos/cake-front.jpg',
+          publicUrl: 'https://cdn.zwibba.example/draft-photos/cake-front.jpg',
+          sourcePresetId: 'cake-front',
+          uploadStatus: 'uploaded',
+        },
+      ],
+    })
+    .expect(400);
+
+  assert.match(syncResponse.body.message, /2.?147.?483.?647 CDF/i);
+});

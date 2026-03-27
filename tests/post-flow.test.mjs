@@ -5,6 +5,7 @@ import { renderCaptureScreen } from '../App/features/post/capture-screen.mjs';
 import { renderPhotoGuidanceScreen } from '../App/features/post/photo-guidance-screen.mjs';
 import { renderReviewFormScreen } from '../App/features/post/review-form-screen.mjs';
 import {
+  MAX_PRICE_CDF,
   addGuidedPhotoToDraft,
   createPostFlowController,
   createReadyDraft,
@@ -426,6 +427,20 @@ test('publish validation blocks while queued uploads are still pending', () => {
   assert.match(validationErrors[0]?.message || '', /Attendez la fin des téléversements/i);
 });
 
+test('publish validation rejects prices above the supported beta limit', () => {
+  const validationErrors = validateDraftForPublish(
+    createReadyDraft({
+      priceCdf: MAX_PRICE_CDF + 1,
+    }),
+  );
+
+  assert.ok(validationErrors.some((error) => error.field === 'price'));
+  assert.match(
+    validationErrors.find((error) => error.field === 'price')?.message || '',
+    /2.?147.?483.?647 CDF/i,
+  );
+});
+
 test('review form highlights publish blockers next to the submit action', () => {
   const draft = createReadyDraft({
     priceCdf: null,
@@ -460,6 +475,7 @@ test('review form keeps pricing fully manual and hides AI price guidance', () =>
   });
 
   assert.match(html, /Prix final \(CDF\)/);
+  assert.match(html, /max="2147483647"/);
   assert.doesNotMatch(html, /Fourchette IA/i);
   assert.doesNotMatch(html, /Ajoutez votre prix librement/i);
   assert.doesNotMatch(html, /400 000 CDF/);

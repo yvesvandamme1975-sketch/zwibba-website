@@ -570,3 +570,40 @@ test('publishing a synced draft with missing metadata persists a blocked moderat
   );
   assert.equal(persistedDecision.status, 'blocked_needs_fix');
 });
+
+test('publishing rejects prices above the 32-bit beta limit with a clear seller error', async (t) => {
+  const prisma = new _FakePrismaService();
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule],
+  })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .overrideProvider(TwilioVerifyService)
+      .useValue(new _FakeTwilioVerifyService())
+      .compile();
+
+  const app = moduleRef.createNestApplication();
+  await app.init();
+  t.after(async () => {
+    await app.close();
+  });
+
+  const sessionToken = await createSellerSession(app, '+243990000003');
+  const syncedDraft = await syncDraft(app, sessionToken, {
+    title: 'Melo cake',
+    categoryId: 'home_garden',
+    area: 'Bel Air',
+    priceCdf: 4256000,
+  });
+
+  const publishResponse = await request(app.getHttpServer())
+    .post('/moderation/publish')
+    .set('authorization', `Bearer ${sessionToken}`)
+    .send({
+      ...syncedDraft,
+      priceCdf: 247891510000,
+    })
+    .expect(400);
+
+  assert.match(publishResponse.body.message, /2.?147.?483.?647 CDF/i);
+});

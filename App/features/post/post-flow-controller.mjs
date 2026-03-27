@@ -3,6 +3,9 @@ import {
   createListingDraftFromFirstPhoto,
   updateListingDraft,
 } from '../../models/listing-draft.mjs';
+import { formatCdf } from '../../utils/rendering.mjs';
+
+export const MAX_PRICE_CDF = 2_147_483_647;
 
 const promptLabels = {
   accessoires: 'Accessoires',
@@ -324,6 +327,11 @@ export function validateDraftForPublish(
     errors.push({
       field: 'price',
       message: 'Choisissez un prix final.',
+    });
+  } else if (draft.details.priceCdf > MAX_PRICE_CDF) {
+    errors.push({
+      field: 'price',
+      message: `Le prix final doit rester inférieur à ${formatCdf(MAX_PRICE_CDF)}.`,
     });
   }
 

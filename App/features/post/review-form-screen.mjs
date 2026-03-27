@@ -1,4 +1,5 @@
 import {
+  MAX_PRICE_CDF,
   getMissingRequiredPhotoPrompts,
   isConditionRequired,
 } from './post-flow-controller.mjs';
@@ -173,7 +174,7 @@ export function renderReviewFormScreen({
             <span>Prix final (CDF)</span>
             <input name="priceCdf" type="number" min="0" step="1000" value="${escapeAttribute(
               draft.details.priceCdf ?? '',
-            )}" />
+            )}" max="${escapeAttribute(MAX_PRICE_CDF)}" />
           </label>
 
           <label class="${renderFieldClass({ isFull: true, validationErrors, field: 'description' })}">

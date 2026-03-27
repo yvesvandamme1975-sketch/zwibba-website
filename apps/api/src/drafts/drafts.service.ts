@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 
+import { assertSupportedPriceCdf } from '../common/price-validation';
 import { PrismaService } from '../database/prisma.service';
 
 export type SyncedDraftPhotoRecord = {
@@ -49,6 +50,7 @@ export class DraftsService {
     priceCdf: number;
     title: string;
   }): Promise<SyncedDraftRecord> {
+    const supportedPriceCdf = assertSupportedPriceCdf(priceCdf);
     const existingDraft = draftId
       ? await this.prismaService.draft.findFirst({
           where: {
@@ -87,7 +89,7 @@ export class DraftsService {
             categoryId,
             description,
             ownerPhoneNumber: phoneNumber,
-            priceCdf,
+            priceCdf: supportedPriceCdf,
             title,
           },
         })
@@ -98,7 +100,7 @@ export class DraftsService {
             description,
             id: generatedDraftId,
             ownerPhoneNumber: phoneNumber,
-            priceCdf,
+            priceCdf: supportedPriceCdf,
             title,
           },
         });
@@ -126,7 +128,7 @@ export class DraftsService {
       draftId: persistedDraft.id,
       ownerPhoneNumber: phoneNumber,
       photos: normalizedPhotos,
-      priceCdf,
+      priceCdf: supportedPriceCdf,
       syncStatus: 'synced' as const,
       title,
     };
