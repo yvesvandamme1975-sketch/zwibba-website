@@ -8,14 +8,39 @@ datasource db {
 }
 
 model User {
+  authIdentities      AuthIdentity[]
   boostPurchases     BoostPurchase[]
+  birthDate          String?
   chatThreadsAsBuyer ChatThread[]       @relation("BuyerThreads")
+  countryCode        String?
   id                 String             @id @default(cuid())
+  email              String?            @unique
+  firstName          String?
+  lastName           String?
+  locality           String?
   phoneNumber        String             @unique
+  postNom            String?
   createdAt          DateTime           @default(now())
+  profileCompletedAt DateTime?
   sessions           Session[]
   updatedAt          DateTime           @updatedAt
   walletTransactions WalletTransaction[]
+}
+
+model AuthIdentity {
+  id              String    @id @default(cuid())
+  createdAt       DateTime  @default(now())
+  phoneNumber     String?
+  provider        String
+  providerEmail   String?
+  providerSubject String
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  verifiedAt      DateTime?
+
+  @@index([userId])
+  @@unique([provider, providerSubject])
 }
 
 model Draft {

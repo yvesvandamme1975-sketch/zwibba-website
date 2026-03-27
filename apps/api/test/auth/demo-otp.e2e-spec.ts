@@ -7,6 +7,7 @@ import test from 'node:test';
 import request from 'supertest';
 
 import { AppModule } from '../../src/app.module';
+import { AuthService } from '../../src/auth/auth.service';
 import { PrismaService } from '../../src/database/prisma.service';
 
 type VerificationAttemptRecord = {
@@ -28,6 +29,14 @@ type UserRecord = {
 };
 
 class _FakePrismaService {
+  readonly authIdentities = new Map<string, {
+    phoneNumber: string | null;
+    provider: string;
+    providerEmail: string | null;
+    providerSubject: string;
+    userId: string;
+    verifiedAt: Date | null;
+  }>();
   readonly verificationAttempts: VerificationAttemptRecord[] = [];
   readonly users = new Map<string, UserRecord>();
   readonly sessions = new Map<string, {
@@ -117,6 +126,51 @@ class _FakePrismaService {
 
       this.users.set(phoneNumber, user);
       return user;
+    },
+  };
+
+  readonly authIdentity = {
+    upsert: async ({
+      create,
+      update,
+      where,
+    }: {
+      create: {
+        phoneNumber: string | null;
+        provider: string;
+        providerEmail: string | null;
+        providerSubject: string;
+        userId: string;
+        verifiedAt: Date;
+      };
+      update: {
+        phoneNumber: string;
+        userId: string;
+        verifiedAt: Date;
+      };
+      where: {
+        provider_providerSubject: {
+          provider: string;
+          providerSubject: string;
+        };
+      };
+    }) => {
+      const key = `${where.provider_providerSubject.provider}:${where.provider_providerSubject.providerSubject}`;
+      const existingIdentity = this.authIdentities.get(key);
+
+      if (existingIdentity) {
+        const nextIdentity = {
+          ...existingIdentity,
+          phoneNumber: update.phoneNumber,
+          userId: update.userId,
+          verifiedAt: update.verifiedAt,
+        };
+        this.authIdentities.set(key, nextIdentity);
+        return nextIdentity;
+      }
+
+      this.authIdentities.set(key, create);
+      return create;
     },
   };
 
@@ -226,6 +280,7 @@ function restoreEnv(snapshot: NodeJS.ProcessEnv) {
 
 async function createTestApp(): Promise<{
   app: INestApplication;
+  authService: AuthService;
   prisma: _FakePrismaService;
 }> {
   const prisma = new _FakePrismaService();
@@ -240,6 +295,7 @@ async function createTestApp(): Promise<{
   await app.init();
   return {
     app,
+    authService: moduleRef.get(AuthService),
     prisma,
   };
 }
@@ -302,6 +358,17 @@ test('demo otp verify returns an incomplete account session payload for the conf
   assert.equal(response.body.user.countryCode, null);
   assert.equal(response.body.user.locality, null);
   assert.deepEqual(response.body.requiredActions, ['complete_profile']);
+
+  const persistedSession =
+    await harness.authService.requireSessionToken(response.body.sessionToken) as unknown as {
+      requiredActions: string[];
+      user: {
+        phoneNumber: string | null;
+      };
+    };
+
+  assert.equal(persistedSession.user.phoneNumber, '+243990000001');
+  assert.deepEqual(persistedSession.requiredActions, ['complete_profile']);
 });
 
 test('demo otp verify seeds the beta wallet credit exactly once', async (t) => {

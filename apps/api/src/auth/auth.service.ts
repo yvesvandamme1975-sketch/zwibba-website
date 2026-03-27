@@ -10,11 +10,79 @@ import { loadEnv } from '../config/env';
 import { PrismaService } from '../database/prisma.service';
 import { TwilioVerifyService } from './twilio-verify.service';
 
+type PersistedUserRecord = {
+  birthDate?: Date | string | null;
+  countryCode?: string | null;
+  email?: string | null;
+  firstName?: string | null;
+  id: string;
+  lastName?: string | null;
+  locality?: string | null;
+  phoneNumber?: string | null;
+  postNom?: string | null;
+  profileCompletedAt?: Date | null;
+};
+
+export type SessionUserRecord = {
+  birthDate: string | null;
+  countryCode: string | null;
+  email: string | null;
+  firstName: string | null;
+  id: string;
+  isProfileComplete: boolean;
+  lastName: string | null;
+  locality: string | null;
+  phoneNumber: string | null;
+  postNom: string | null;
+};
+
 export type SessionRecord = {
   canSyncDrafts: true;
   phoneNumber: string;
+  requiredActions: string[];
   sessionToken: string;
+  user: SessionUserRecord;
 };
+
+function normalizeBirthDate(value: Date | string | null | undefined) {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  return null;
+}
+
+function isProfileComplete(user: PersistedUserRecord) {
+  return Boolean(
+    user.profileCompletedAt &&
+    user.email &&
+    user.firstName &&
+    user.lastName &&
+    user.postNom &&
+    normalizeBirthDate(user.birthDate) &&
+    user.countryCode &&
+    user.locality,
+  );
+}
+
+function toSessionUserRecord(user: PersistedUserRecord): SessionUserRecord {
+  return {
+    birthDate: normalizeBirthDate(user.birthDate),
+    countryCode: user.countryCode ?? null,
+    email: user.email ?? null,
+    firstName: user.firstName ?? null,
+    id: user.id,
+    isProfileComplete: isProfileComplete(user),
+    lastName: user.lastName ?? null,
+    locality: user.locality ?? null,
+    phoneNumber: user.phoneNumber ?? null,
+    postNom: user.postNom ?? null,
+  };
+}
 
 @Injectable()
 export class AuthService {
@@ -77,6 +145,27 @@ export class AuthService {
         phoneNumber: normalizedPhone,
       },
     });
+    await this.prismaService.authIdentity.upsert({
+      where: {
+        provider_providerSubject: {
+          provider: 'phone',
+          providerSubject: normalizedPhone,
+        },
+      },
+      update: {
+        phoneNumber: normalizedPhone,
+        userId: user.id,
+        verifiedAt: new Date(),
+      },
+      create: {
+        phoneNumber: normalizedPhone,
+        provider: 'phone',
+        providerEmail: null,
+        providerSubject: normalizedPhone,
+        userId: user.id,
+        verifiedAt: new Date(),
+      },
+    });
 
     await this.seedDemoWalletIfNeeded(user.id);
     const sessionToken = `zwibba_session_${randomUUID().replaceAll('-', '')}`;
@@ -98,13 +187,10 @@ export class AuthService {
       },
     });
 
-    const session = {
-      canSyncDrafts: true as const,
-      phoneNumber: normalizedPhone,
+    return this.buildSessionRecord({
       sessionToken,
-    };
-
-    return session;
+      user,
+    });
   }
 
   private async seedDemoWalletIfNeeded(userId: string) {
@@ -151,10 +237,27 @@ export class AuthService {
       throw new UnauthorizedException('Session inconnue.');
     }
 
+    return this.buildSessionRecord({
+      sessionToken: session.token,
+      user: session.user as PersistedUserRecord,
+    });
+  }
+
+  private buildSessionRecord({
+    sessionToken,
+    user,
+  }: {
+    sessionToken: string;
+    user: PersistedUserRecord;
+  }): SessionRecord {
+    const sessionUser = toSessionUserRecord(user);
+
     return {
       canSyncDrafts: true as const,
-      phoneNumber: session.user.phoneNumber,
-      sessionToken: session.token,
+      phoneNumber: sessionUser.phoneNumber ?? '',
+      requiredActions: sessionUser.isProfileComplete ? [] : ['complete_profile'],
+      sessionToken,
+      user: sessionUser,
     };
   }
 }
