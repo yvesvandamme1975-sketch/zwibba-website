@@ -258,10 +258,6 @@ export function applyAiResultToDraft(
         categoryId: patch.categoryId ?? draft.details.categoryId,
         condition: patch.condition ?? draft.details.condition,
         description: patch.description ?? draft.details.description,
-        suggestedPriceMinCdf:
-          patch.suggestedPriceMinCdf ?? draft.details.suggestedPriceMinCdf,
-        suggestedPriceMaxCdf:
-          patch.suggestedPriceMaxCdf ?? draft.details.suggestedPriceMaxCdf,
       },
       ai: {
         status: 'ready',
@@ -422,8 +418,6 @@ export function createReadyDraft(overrides = {}) {
           Object.prototype.hasOwnProperty.call(overrides, 'priceCdf') ? overrides.priceCdf : 450_000,
         description: overrides.description ?? 'Article prêt, propre et disponible immédiatement.',
         area: overrides.area ?? 'Golf',
-        suggestedPriceMinCdf: overrides.suggestedPriceMinCdf ?? 400_000,
-        suggestedPriceMaxCdf: overrides.suggestedPriceMaxCdf ?? 520_000,
       },
       ai: {
         status: 'ready',

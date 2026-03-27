@@ -9,10 +9,6 @@ function mapPhotoToDraft(photo) {
       category_id: 'vehicles',
       condition: 'used_good',
       description: 'SUV propre avec carnet et climatisation.',
-      price_range_cdf: {
-        min: 18_000_000,
-        max: 21_000_000,
-      },
     };
   }
 
@@ -22,10 +18,6 @@ function mapPhotoToDraft(photo) {
       category_id: 'home_garden',
       condition: 'used_good',
       description: 'Canapé confortable, tissu propre, parfait pour salon.',
-      price_range_cdf: {
-        min: 650_000,
-        max: 900_000,
-      },
     };
   }
 
@@ -34,10 +26,6 @@ function mapPhotoToDraft(photo) {
     category_id: 'phones_tablets',
     condition: 'like_new',
     description: 'Téléphone propre avec boîte et chargeur.',
-    price_range_cdf: {
-      min: 300_000,
-      max: 360_000,
-    },
   };
 }
 
@@ -47,10 +35,6 @@ export function mapAiDraftResponse(response) {
     categoryId: response.category_id ?? response.categoryId ?? '',
     condition: response.condition ?? '',
     description: response.description ?? '',
-    suggestedPriceMinCdf:
-      response.price_range_cdf?.min ?? response.suggestedPriceMinCdf ?? null,
-    suggestedPriceMaxCdf:
-      response.price_range_cdf?.max ?? response.suggestedPriceMaxCdf ?? null,
   };
 }
 

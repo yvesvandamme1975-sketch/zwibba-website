@@ -40,6 +40,6 @@ test('ai draft endpoint returns the structured seller draft response', async (t)
   assert.equal(response.body.draftPatch.categoryId, 'phones_tablets');
   assert.equal(response.body.draftPatch.condition, 'like_new');
   assert.match(response.body.draftPatch.description, /propre/i);
-  assert.equal(response.body.draftPatch.suggestedPriceMinCdf, 3900000);
-  assert.equal(response.body.draftPatch.suggestedPriceMaxCdf, 4500000);
+  assert.equal('suggestedPriceMinCdf' in response.body.draftPatch, false);
+  assert.equal('suggestedPriceMaxCdf' in response.body.draftPatch, false);
 });

@@ -122,6 +122,8 @@ test('first real photo starts a draft and uploads immediately', async () => {
   assert.equal(draft.photos[0].uploadStatus, 'uploaded');
   assert.equal(draft.photos[0].objectKey, 'draft-photos/capture/photo_1-phone.jpg');
   assert.equal(draft.details.categoryId, 'phones_tablets');
+  assert.equal('suggestedPriceMinCdf' in draft.details, false);
+  assert.equal('suggestedPriceMaxCdf' in draft.details, false);
   assert.equal(draftStorage.loadDraft().id, draft.id);
   assert.deepEqual(mediaService.requests.map((request) => request.type), ['slot', 'upload']);
 });
@@ -462,10 +464,7 @@ test('review form highlights publish blockers next to the submit action', () => 
 });
 
 test('review form keeps pricing fully manual and hides AI price guidance', () => {
-  const draft = createReadyDraft({
-    suggestedPriceMinCdf: 400_000,
-    suggestedPriceMaxCdf: 520_000,
-  });
+  const draft = createReadyDraft();
   const html = renderReviewFormScreen({
     areaOptions: ['Golf', 'Bel Air'],
     categories: [{ id: 'electronics', label: 'Électronique' }],

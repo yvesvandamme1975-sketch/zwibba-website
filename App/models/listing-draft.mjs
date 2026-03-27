@@ -11,9 +11,48 @@ function createEmptyDetails() {
     priceCdf: null,
     description: '',
     area: '',
-    suggestedPriceMinCdf: null,
-    suggestedPriceMaxCdf: null,
   };
+}
+
+function normalizeDetails(details = {}) {
+  return {
+    title: details.title ?? '',
+    categoryId: details.categoryId ?? '',
+    condition: details.condition ?? '',
+    priceCdf: details.priceCdf ?? null,
+    description: details.description ?? '',
+    area: details.area ?? '',
+  };
+}
+
+function normalizeDetailUpdates(details = {}) {
+  const nextDetails = {};
+
+  if (Object.prototype.hasOwnProperty.call(details, 'title')) {
+    nextDetails.title = details.title ?? '';
+  }
+
+  if (Object.prototype.hasOwnProperty.call(details, 'categoryId')) {
+    nextDetails.categoryId = details.categoryId ?? '';
+  }
+
+  if (Object.prototype.hasOwnProperty.call(details, 'condition')) {
+    nextDetails.condition = details.condition ?? '';
+  }
+
+  if (Object.prototype.hasOwnProperty.call(details, 'priceCdf')) {
+    nextDetails.priceCdf = details.priceCdf ?? null;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(details, 'description')) {
+    nextDetails.description = details.description ?? '';
+  }
+
+  if (Object.prototype.hasOwnProperty.call(details, 'area')) {
+    nextDetails.area = details.area ?? '';
+  }
+
+  return nextDetails;
 }
 
 function createEmptyAiState() {
@@ -76,10 +115,7 @@ function buildDraftShape(draft) {
       phoneNumber: draft.auth?.phoneNumber ?? '',
       otpVerified: Boolean(draft.auth?.otpVerified),
     },
-    details: {
-      ...createEmptyDetails(),
-      ...draft.details,
-    },
+    details: normalizeDetails(draft.details),
     ai: {
       ...createEmptyAiState(),
       ...draft.ai,
@@ -162,8 +198,8 @@ export function updateListingDraft(draft, updates, { now = new Date().toISOStrin
       ...updates.auth,
     },
     details: {
-      ...draft.details,
-      ...updates.details,
+      ...normalizeDetails(draft.details),
+      ...normalizeDetailUpdates(updates.details),
     },
     ai: {
       ...draft.ai,

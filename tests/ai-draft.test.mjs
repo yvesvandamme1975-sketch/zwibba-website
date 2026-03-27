@@ -22,7 +22,7 @@ test('large images are compressed before upload', () => {
   assert.equal(result.sizeBytes, 1_500_000);
 });
 
-test('AI draft response maps into title, category, condition, description, and price range', async () => {
+test('AI draft response maps into title, category, condition, and description only', async () => {
   const aiDraftService = createAiDraftService({
     responder: async () => ({
       title: 'Samsung Galaxy A54 128 Go',
@@ -45,8 +45,8 @@ test('AI draft response maps into title, category, condition, description, and p
   assert.equal(result.draftPatch.categoryId, 'phones_tablets');
   assert.equal(result.draftPatch.condition, 'like_new');
   assert.equal(result.draftPatch.description, 'Téléphone propre avec boîte et chargeur.');
-  assert.equal(result.draftPatch.suggestedPriceMinCdf, 300_000);
-  assert.equal(result.draftPatch.suggestedPriceMaxCdf, 360_000);
+  assert.equal('suggestedPriceMinCdf' in result.draftPatch, false);
+  assert.equal('suggestedPriceMaxCdf' in result.draftPatch, false);
 });
 
 test('AI failure returns a manual-entry fallback state', async () => {
