@@ -16,6 +16,18 @@ type VerificationAttemptRecord = {
   status: string;
 };
 
+type UserRecord = {
+  birthDate: null;
+  countryCode: null;
+  email: null;
+  firstName: null;
+  id: string;
+  lastName: null;
+  locality: null;
+  phoneNumber: string;
+  postNom: null;
+};
+
 class _FakeTwilioVerifyService {
   finalizationCalls = 0;
   requestCalls = 0;
@@ -43,18 +55,55 @@ class _FakePrismaService {
   readonly verificationAttempts: VerificationAttemptRecord[] = [];
 
   readonly session = {
-    create: async () => {
+    create: async ({
+      data,
+    }: {
+      data: {
+        token: string;
+        userId: string;
+      };
+    }) => {
       return {
-        token: 'ignored',
+        token: data.token,
+        user: {
+          birthDate: null,
+          countryCode: null,
+          email: null,
+          firstName: null,
+          id: data.userId,
+          lastName: null,
+          locality: null,
+          phoneNumber: '+243990000001',
+          postNom: null,
+        } satisfies UserRecord,
       };
     },
     findUnique: async () => null,
   };
 
   readonly user = {
-    upsert: async () => {
+    upsert: async ({
+      create,
+      where,
+    }: {
+      create?: {
+        phoneNumber?: string;
+      };
+      where?: {
+        phoneNumber?: string;
+      };
+    }) => {
+      const phoneNumber = where?.phoneNumber ?? create?.phoneNumber ?? '+243990000001';
       return {
-        id: 'user_243990000001',
+        birthDate: null,
+        countryCode: null,
+        email: null,
+        firstName: null,
+        id: `user_${phoneNumber.replaceAll('+', '')}`,
+        lastName: null,
+        locality: null,
+        phoneNumber,
+        postNom: null,
       };
     },
   };
@@ -117,4 +166,36 @@ test('request otp stores a verification attempt and calls twilio verify', async 
     harness.fakePrisma.verificationAttempts[0].status,
     'pending',
   );
+});
+
+test('verify otp returns an incomplete account session payload', async (t) => {
+  const harness = await createTestApp();
+  t.after(async () => {
+    await harness.app.close();
+  });
+
+  await request(harness.app.getHttpServer())
+    .post('/auth/request-otp')
+    .send({ phoneNumber: '+243990000001' })
+    .expect(201);
+
+  const response = await request(harness.app.getHttpServer())
+    .post('/auth/verify-otp')
+    .send({
+      code: '123456',
+      phoneNumber: '+243990000001',
+    })
+    .expect(201);
+
+  assert.match(response.body.sessionToken, /^zwibba_session_/);
+  assert.equal(response.body.user.phoneNumber, '+243990000001');
+  assert.equal(response.body.user.email, null);
+  assert.equal(response.body.user.firstName, null);
+  assert.equal(response.body.user.lastName, null);
+  assert.equal(response.body.user.postNom, null);
+  assert.equal(response.body.user.birthDate, null);
+  assert.equal(response.body.user.countryCode, null);
+  assert.equal(response.body.user.locality, null);
+  assert.deepEqual(response.body.requiredActions, ['complete_profile']);
+  assert.equal(harness.fakeTwilio.finalizationCalls, 1);
 });

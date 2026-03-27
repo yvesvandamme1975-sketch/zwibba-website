@@ -15,13 +15,25 @@ type VerificationAttemptRecord = {
   status: string;
 };
 
+type UserRecord = {
+  birthDate: null;
+  countryCode: null;
+  email: null;
+  firstName: null;
+  id: string;
+  lastName: null;
+  locality: null;
+  phoneNumber: string;
+  postNom: null;
+};
+
 class _FakePrismaService {
   readonly verificationAttempts: VerificationAttemptRecord[] = [];
+  readonly users = new Map<string, UserRecord>();
   readonly sessions = new Map<string, {
     token: string;
-    user: {
-      phoneNumber: string;
-    };
+    user: UserRecord;
+    userId: string;
   }>();
   readonly walletTransactions: Array<{
     amountCdf: number;
@@ -40,11 +52,22 @@ class _FakePrismaService {
         userId: string;
       };
     }) => {
+      const user = Array.from(this.users.values()).find((record) => {
+        return record.id === data.userId;
+      }) ?? {
+        birthDate: null,
+        countryCode: null,
+        email: null,
+        firstName: null,
+        id: data.userId,
+        lastName: null,
+        locality: null,
+        phoneNumber: '+243990000001',
+        postNom: null,
+      };
       const session = {
         token: data.token,
-        user: {
-          phoneNumber: '+243990000001',
-        },
+        user,
         userId: data.userId,
       };
       this.sessions.set(session.token, session);
@@ -62,11 +85,38 @@ class _FakePrismaService {
   };
 
   readonly user = {
-    upsert: async () => {
-      return {
-        id: 'user_243990000001',
-        phoneNumber: '+243990000001',
+    upsert: async ({
+      create,
+      where,
+    }: {
+      create?: {
+        phoneNumber?: string;
       };
+      where?: {
+        phoneNumber?: string;
+      };
+    }) => {
+      const phoneNumber = where?.phoneNumber ?? create?.phoneNumber ?? '+243990000001';
+      const existingUser = this.users.get(phoneNumber);
+
+      if (existingUser) {
+        return existingUser;
+      }
+
+      const user = {
+        birthDate: null,
+        countryCode: null,
+        email: null,
+        firstName: null,
+        id: `user_${phoneNumber.replaceAll('+', '')}`,
+        lastName: null,
+        locality: null,
+        phoneNumber,
+        postNom: null,
+      } satisfies UserRecord;
+
+      this.users.set(phoneNumber, user);
+      return user;
     },
   };
 
@@ -217,7 +267,7 @@ test('demo otp request stores an allowlisted verification attempt without Twilio
   assert.equal(harness.prisma.verificationAttempts[0].status, 'pending');
 });
 
-test('demo otp verify returns a real seller session for the configured code', async (t) => {
+test('demo otp verify returns an incomplete account session payload for the configured code', async (t) => {
   const snapshot = { ...process.env };
   setDemoEnv();
   t.after(async () => {
@@ -242,9 +292,16 @@ test('demo otp verify returns a real seller session for the configured code', as
     })
     .expect(201);
 
-  assert.equal(response.body.phoneNumber, '+243990000001');
-  assert.equal(response.body.canSyncDrafts, true);
   assert.match(response.body.sessionToken, /^zwibba_session_/);
+  assert.equal(response.body.user.phoneNumber, '+243990000001');
+  assert.equal(response.body.user.email, null);
+  assert.equal(response.body.user.firstName, null);
+  assert.equal(response.body.user.lastName, null);
+  assert.equal(response.body.user.postNom, null);
+  assert.equal(response.body.user.birthDate, null);
+  assert.equal(response.body.user.countryCode, null);
+  assert.equal(response.body.user.locality, null);
+  assert.deepEqual(response.body.requiredActions, ['complete_profile']);
 });
 
 test('demo otp verify seeds the beta wallet credit exactly once', async (t) => {
