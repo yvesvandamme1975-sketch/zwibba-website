@@ -21,5 +21,9 @@ Current priority docs:
 - `2026-03-25-zwibba-browser-real-seller-upload-implementation.md`
 - `2026-03-26-zwibba-seeded-real-listing-images-design.md`
 - `2026-03-26-zwibba-seeded-real-listing-images-implementation.md`
+- `2026-03-27-zwibba-browser-shell-scroll-fix-design.md`
+- `2026-03-27-zwibba-browser-shell-scroll-fix-implementation.md`
+- `2026-03-27-zwibba-internal-beta-readiness-design.md`
+- `2026-03-27-zwibba-internal-beta-readiness-implementation.md`
 
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
