@@ -216,6 +216,45 @@ test('media service fails when the public upload cannot be verified', async () =
   );
 });
 
+test('media service can discard uploaded draft objects by object key', async () => {
+  const requests = [];
+  const mediaService = createMediaService({
+    apiBaseUrl: 'https://api.example.test',
+    fetchFn: async (url, options = {}) => {
+      requests.push({
+        url,
+        ...options,
+      });
+
+      return createJsonResponse(200, {
+        deletedCount: 2,
+        status: 'deleted',
+      });
+    },
+  });
+
+  const result = await mediaService.deleteUploadedObjects({
+    objectKeys: ['draft-photos/capture/photo_1.jpg', 'draft-photos/face/photo_2.jpg'],
+  });
+
+  assert.deepEqual(result, {
+    deletedCount: 2,
+    status: 'deleted',
+  });
+  assert.deepEqual(requests, [
+    {
+      url: 'https://api.example.test/media/discard-uploaded',
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        objectKeys: ['draft-photos/capture/photo_1.jpg', 'draft-photos/face/photo_2.jpg'],
+      }),
+    },
+  ]);
+});
+
 test('live draft service syncs and publishes with the seller bearer token', async () => {
   const requests = [];
   const draftService = createLiveDraftService({

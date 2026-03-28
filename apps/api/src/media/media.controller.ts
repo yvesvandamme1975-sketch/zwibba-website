@@ -21,4 +21,14 @@ export class MediaController {
       sourcePresetId: body.sourcePresetId ?? 'capture',
     });
   }
+
+  @Post('discard-uploaded')
+  async discardUploaded(
+    @Body()
+    body: {
+      objectKeys?: string[];
+    },
+  ) {
+    return this.mediaService.discardUploadedObjects(body.objectKeys ?? []);
+  }
 }

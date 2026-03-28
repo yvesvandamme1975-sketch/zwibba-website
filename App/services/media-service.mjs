@@ -90,5 +90,25 @@ export function createMediaService({
 
       await verifyUploadedMedia(publicUrl);
     },
+
+    async deleteUploadedObjects({
+      objectKeys,
+    }) {
+      const response = await fetchFn(`${apiBaseUrl}/media/discard-uploaded`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          objectKeys,
+        }),
+      });
+
+      if (!response.ok) {
+        throw await parseError(response, 'Impossible de supprimer les photos du brouillon.');
+      }
+
+      return response.json();
+    },
   };
 }

@@ -767,6 +767,16 @@ if (appRoot) {
           draftId: draftToDiscard.remoteDraftId,
           session: state.session,
         });
+      } else {
+        const uploadedObjectKeys = draftToDiscard.photos
+          .map((photo) => photo.objectKey || '')
+          .filter(Boolean);
+
+        if (uploadedObjectKeys.length) {
+          await mediaService.deleteUploadedObjects({
+            objectKeys: uploadedObjectKeys,
+          });
+        }
       }
 
       draftStorage.clearDraft();

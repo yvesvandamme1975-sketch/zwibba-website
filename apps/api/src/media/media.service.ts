@@ -42,4 +42,24 @@ export class MediaService {
       uploadUrl: upload.uploadUrl,
     };
   }
+
+  async discardUploadedObjects(objectKeys: string[]) {
+    const uniqueObjectKeys = Array.from(
+      new Set(
+        objectKeys
+          .filter((objectKey) => typeof objectKey === 'string')
+          .map((objectKey) => objectKey.trim())
+          .filter((objectKey) => objectKey.startsWith('draft-photos/')),
+      ),
+    );
+
+    for (const objectKey of uniqueObjectKeys) {
+      await this.r2StorageService.deleteObject(objectKey);
+    }
+
+    return {
+      deletedCount: uniqueObjectKeys.length,
+      status: 'deleted' as const,
+    };
+  }
 }
