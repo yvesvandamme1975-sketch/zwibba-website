@@ -25,5 +25,7 @@ Current priority docs:
 - `2026-03-27-zwibba-browser-shell-scroll-fix-implementation.md`
 - `2026-03-27-zwibba-internal-beta-readiness-design.md`
 - `2026-03-27-zwibba-internal-beta-readiness-implementation.md`
+- `2026-03-28-zwibba-real-image-draft-autofill-design.md`
+- `2026-03-28-zwibba-real-image-draft-autofill-implementation.md`
 
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
