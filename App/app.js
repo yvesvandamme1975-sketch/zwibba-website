@@ -46,6 +46,7 @@ import {
   captureBuyerSearchRenderState,
   restoreBuyerSearchRenderState,
 } from './utils/buyer-search-render-state.mjs';
+import { resolveDiscardDraftRoute } from './utils/draft-discard-navigation.mjs';
 import {
   createPostFlowController,
   decidePublishGate,
@@ -787,7 +788,13 @@ if (appRoot) {
       state.publishedListingRoute = '';
       state.publishedListingUrl = '';
       state.reviewErrors = [];
-      window.location.hash = '#sell';
+      const nextDiscardRoute = resolveDiscardDraftRoute(window.location.hash || '#sell');
+
+      if (nextDiscardRoute) {
+        window.location.hash = nextDiscardRoute;
+      } else {
+        renderApp();
+      }
     } catch (error) {
       state.busyLabel = '';
       renderApp();
