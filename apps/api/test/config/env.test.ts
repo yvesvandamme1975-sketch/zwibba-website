@@ -103,6 +103,34 @@ test('loadEnv supports a mistral-only ai provider mode', () => {
   assert.equal(env.ai.anthropic, undefined);
 });
 
+test('loadEnv supports a gemini-only multi provider mode', () => {
+  const env = loadEnv({
+    AI_PROVIDER: 'multi',
+    APP_BASE_URL: 'https://zwibba.example',
+    DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
+    GEMINI_API_KEY: 'gemini-test',
+    GEMINI_MODEL: 'gemini-2.5-flash-lite',
+    NODE_ENV: 'production',
+    OTP_PROVIDER: 'demo',
+    DEMO_OTP_ALLOWLIST: '+243990000001',
+    DEMO_OTP_CODE: '123456',
+    PORT: '3200',
+    R2_ACCESS_KEY_ID: 'r2-access-key',
+    R2_ACCOUNT_ID: 'r2-account',
+    R2_BUCKET: 'zwibba-media',
+    R2_PUBLIC_BASE_URL: 'https://cdn.zwibba.example',
+    R2_S3_ENDPOINT: 'https://r2.example.com',
+    R2_SECRET_ACCESS_KEY: 'r2-secret',
+    ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
+  });
+
+  assert.equal(env.ai.provider, 'multi');
+  assert.ok(env.ai.gemini);
+  assert.equal(env.ai.gemini.model, 'gemini-2.5-flash-lite');
+  assert.equal(env.ai.anthropic, undefined);
+  assert.equal(env.ai.mistral, undefined);
+});
+
 test('loadEnv requires Gemini config in production when multi provider is selected', () => {
   assert.throws(
     () =>
