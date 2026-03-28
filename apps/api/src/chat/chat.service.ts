@@ -9,6 +9,7 @@ import type { SessionRecord } from '../auth/auth.service';
 import { PrismaService } from '../database/prisma.service';
 
 type PersistedChatThread = {
+  buyerLastReadAt?: Date | null;
   buyerUserId: string;
   id: string;
   listing?: {
@@ -18,10 +19,12 @@ type PersistedChatThread = {
   } | null;
   messages?: Array<{
     body: string;
+    createdAt?: Date;
     id: string;
     senderRole: string;
     sentAtLabel: string;
   }>;
+  sellerLastReadAt?: Date | null;
   sellerPhoneNumber: string;
 };
 
@@ -58,6 +61,27 @@ function toThreadPayload(
       viewerRole,
     }),
   };
+}
+
+function countUnreadMessages(
+  thread: PersistedChatThread,
+  viewerRole: 'buyer' | 'seller',
+) {
+  const lastReadAt =
+    viewerRole === 'seller' ? thread.sellerLastReadAt ?? null : thread.buyerLastReadAt ?? null;
+  const oppositeSenderRole = viewerRole === 'seller' ? 'buyer' : 'seller';
+
+  return (thread.messages ?? []).filter((message) => {
+    if (message.senderRole !== oppositeSenderRole) {
+      return false;
+    }
+
+    if (!lastReadAt || !message.createdAt) {
+      return true;
+    }
+
+    return message.createdAt > lastReadAt;
+  }).length;
 }
 
 @Injectable()
@@ -142,7 +166,10 @@ export class ChatService {
           thread: thread as PersistedChatThread,
           viewerRole: thread.sellerPhoneNumber === session.phoneNumber ? 'seller' : 'buyer',
         }),
-        unreadCount: 0,
+        unreadCount: countUnreadMessages(
+          thread as PersistedChatThread,
+          thread.sellerPhoneNumber === session.phoneNumber ? 'seller' : 'buyer',
+        ),
       })),
     };
   }
@@ -186,6 +213,7 @@ export class ChatService {
     const thread = existingThread ??
       await this.prismaService.chatThread.create({
         data: {
+          buyerLastReadAt: new Date(),
           buyerUserId: user.id,
           listingId: normalizedListingId,
           sellerPhoneNumber: listing.ownerPhoneNumber,
@@ -237,6 +265,16 @@ export class ChatService {
       userId: user?.id,
     });
 
+    await this.prismaService.chatThread.update({
+      where: {
+        id: threadId,
+      },
+      data:
+        viewerRole === 'seller'
+          ? { sellerLastReadAt: new Date() }
+          : { buyerLastReadAt: new Date() },
+    });
+
     return toThreadPayload(thread as PersistedChatThread, viewerRole);
   }
 
@@ -283,6 +321,16 @@ export class ChatService {
         sentAtLabel: 'Maintenant',
         threadId,
       },
+    });
+
+    await this.prismaService.chatThread.update({
+      where: {
+        id: threadId,
+      },
+      data:
+        viewerRole === 'seller'
+          ? { sellerLastReadAt: new Date() }
+          : { buyerLastReadAt: new Date() },
     });
 
     const updatedThread = await this.prismaService.chatThread.findUnique({

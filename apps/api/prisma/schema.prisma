@@ -86,11 +86,13 @@ model Listing {
 model ChatThread {
   id               String        @id @default(cuid())
   buyer            User          @relation("BuyerThreads", fields: [buyerUserId], references: [id], onDelete: Cascade)
+  buyerLastReadAt  DateTime?
   buyerUserId      String
   createdAt        DateTime      @default(now())
   listing          Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
   listingId        String
   messages         ChatMessage[]
+  sellerLastReadAt DateTime?
   sellerPhoneNumber String
   updatedAt        DateTime      @updatedAt
 

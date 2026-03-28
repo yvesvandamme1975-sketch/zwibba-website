@@ -160,6 +160,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   min-height: 46px;
   padding: 10px 10px;
   border-radius: 14px;
@@ -168,6 +169,18 @@
   font-weight: 800;
   text-align: center;
   transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.app-tab-shell__nav-badge {
+  min-width: 20px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #ff6b6b;
+  color: #1d1010;
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .app-tab-shell__nav-item:hover {
@@ -1028,6 +1041,12 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.app-thread-card.is-unread {
+  background: rgba(107, 230, 107, 0.08);
+  border-color: rgba(107, 230, 107, 0.28);
+  box-shadow: 0 0 0 1px rgba(107, 230, 107, 0.08);
+}
+
 .app-thread-card span,
 .app-wallet__transaction span,
 .app-profile__listing-copy span {
@@ -1044,6 +1063,17 @@
 .app-thread__bubble small {
   color: var(--text-muted);
   font-size: 0.74rem;
+}
+
+.app-thread-card__unread-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(107, 230, 107, 0.18);
+  color: var(--accent);
+  font-weight: 800;
 }
 
 .app-thread {

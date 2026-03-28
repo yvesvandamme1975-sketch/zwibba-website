@@ -253,6 +253,13 @@ if (appRoot) {
     }
   }
 
+  function getTotalUnreadMessages() {
+    return state.inboxItems.reduce((total, item) => {
+      const unreadCount = Number(item?.unreadCount ?? 0);
+      return total + (Number.isFinite(unreadCount) ? Math.max(0, unreadCount) : 0);
+    }, 0);
+  }
+
   function resolveRenderableRoute() {
     const route = getRoute();
 
@@ -389,6 +396,15 @@ if (appRoot) {
       .then((thread) => {
         state.thread = thread;
         state.threadStatus = 'ready';
+        state.inboxItems = state.inboxItems.map((item) =>
+          item.id === thread.id
+            ? {
+                ...item,
+                lastMessagePreview: thread.messages?.at(-1)?.body ?? item.lastMessagePreview,
+                unreadCount: 0,
+              }
+            : item,
+        );
         return thread;
       })
       .catch((error) => {
@@ -652,6 +668,7 @@ if (appRoot) {
     appRoot.innerHTML = renderAppTabShell({
       activeTab: getActiveTab(route),
       content: renderRoute(route),
+      unreadMessagesCount: getTotalUnreadMessages(),
     });
     if (route.type === 'buy') {
       restoreBuyerSearchRenderState(appRoot, buyerSearchRenderState);

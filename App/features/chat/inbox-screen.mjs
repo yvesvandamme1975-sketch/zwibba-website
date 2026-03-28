@@ -3,11 +3,15 @@ import { escapeAttribute, escapeHtml } from '../../utils/rendering.mjs';
 
 function renderInboxItem(item) {
   return `
-    <a class="app-thread-card" href="#thread/${escapeAttribute(item.id)}">
+    <a class="app-thread-card${item.unreadCount > 0 ? ' is-unread' : ''}" href="#thread/${escapeAttribute(item.id)}">
       <strong>${escapeHtml(item.listingTitle)}</strong>
       <span>${escapeHtml(item.participantName)}</span>
       <p>${escapeHtml(item.lastMessagePreview || 'Conversation prête à démarrer.')}</p>
-      <small>${item.unreadCount > 0 ? `${escapeHtml(String(item.unreadCount))} non lu(s)` : 'Conversation active'}</small>
+      <small>${
+        item.unreadCount > 0
+          ? `<span class="app-thread-card__unread-badge">Nouveau</span> ${escapeHtml(String(item.unreadCount))} non lu(s)`
+          : 'Conversation active'
+      }</small>
     </a>
   `;
 }

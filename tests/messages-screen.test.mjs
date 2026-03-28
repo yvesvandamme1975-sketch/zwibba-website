@@ -24,6 +24,9 @@ test('messages inbox screen renders live thread summaries inside the beta shell'
   assert.match(html, /Acheteur Zwibba/);
   assert.match(html, /Toujours disponible \?/);
   assert.match(html, /href="#thread\/thread_1"/);
+  assert.match(html, /app-thread-card is-unread/);
+  assert.match(html, /Nouveau/);
+  assert.match(html, /1 non lu\(s\)/);
 });
 
 test('messages inbox screen shows a verification prompt without a session', () => {

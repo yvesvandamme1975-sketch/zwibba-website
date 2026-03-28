@@ -7,6 +7,7 @@ test('app tab shell renders the five persistent beta routes', () => {
   const html = renderAppTabShell({
     activeTab: 'messages',
     content: '<section>Screen</section>',
+    unreadMessagesCount: 3,
   });
 
   assert.match(html, /href="#sell"/);
@@ -15,5 +16,7 @@ test('app tab shell renders the five persistent beta routes', () => {
   assert.match(html, /href="#wallet"/);
   assert.match(html, /href="#profile"/);
   assert.match(html, /Messages/);
+  assert.match(html, /app-tab-shell__nav-badge/);
+  assert.match(html, />3</);
   assert.match(html, /app-tab-shell__nav-item is-active/);
 });

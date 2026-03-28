@@ -32,6 +32,7 @@ class _FakeTwilioVerifyService {
 }
 
 class _FakePrismaService {
+  #messageSequence = 0;
   readonly chatMessagesByThreadId = new Map<string, Array<Record<string, unknown>>>();
   readonly chatThreads = new Map<string, Record<string, unknown>>();
   readonly listings = new Map<string, Record<string, unknown>>();
@@ -54,7 +55,12 @@ class _FakePrismaService {
     listingId: string;
     sellerPhoneNumber: string;
   }) {
-    this.chatThreads.set(thread.id, thread);
+    this.chatThreads.set(thread.id, {
+      ...thread,
+      buyerLastReadAt: null,
+      buyerUserId: `user_${thread.buyerPhoneNumber.replaceAll('+', '')}`,
+      sellerLastReadAt: null,
+    });
   }
 
   seedListing(listing: {
@@ -73,7 +79,11 @@ class _FakePrismaService {
     sentAtLabel: string;
   }) {
     const current = this.chatMessagesByThreadId.get(threadId) ?? [];
-    current.push(message);
+    this.#messageSequence += 1;
+    current.push({
+      ...message,
+      createdAt: new Date(this.#messageSequence * 60_000),
+    });
     this.chatMessagesByThreadId.set(threadId, current);
   }
 
@@ -172,6 +182,7 @@ class _FakePrismaService {
       data,
     }: {
       data: {
+        buyerLastReadAt?: Date;
         buyerUserId: string;
         listingId: string;
         sellerPhoneNumber: string;
@@ -180,6 +191,7 @@ class _FakePrismaService {
       const thread = {
         ...data,
         id: `thread_${this.chatThreads.size + 1}`,
+        sellerLastReadAt: null,
       };
       this.chatThreads.set(thread.id, thread);
       return thread;
@@ -275,6 +287,31 @@ class _FakePrismaService {
           : undefined,
       };
     },
+    update: async ({
+      data,
+      where,
+    }: {
+      data: {
+        buyerLastReadAt?: Date;
+        sellerLastReadAt?: Date;
+      };
+      where: {
+        id: string;
+      };
+    }) => {
+      const thread = this.chatThreads.get(where.id);
+
+      if (!thread) {
+        return null;
+      }
+
+      const updatedThread = {
+        ...thread,
+        ...data,
+      };
+      this.chatThreads.set(where.id, updatedThread);
+      return updatedThread;
+    },
   };
 
   readonly chatMessage = {
@@ -291,6 +328,7 @@ class _FakePrismaService {
       const currentMessages = this.chatMessagesByThreadId.get(data.threadId) ?? [];
       const nextMessage = {
         ...data,
+        createdAt: new Date((currentMessages.length + 1) * 60_000 + 1_000_000),
         id: `message_${currentMessages.length + 1}`,
       };
       currentMessages.push(nextMessage);
@@ -393,6 +431,19 @@ test('chat inbox requires a real session and only returns persisted seller threa
   assert.equal(response.body.items[0].id, 'thread_listing_1');
   assert.equal(response.body.items[0].listingSlug, 'samsung-galaxy-a54-128-go');
   assert.equal(response.body.items[0].listingTitle, 'Samsung Galaxy A54 128 Go');
+  assert.equal(response.body.items[0].unreadCount, 1);
+
+  await request(app.getHttpServer())
+    .get('/chat/threads/thread_listing_1')
+    .set('authorization', `Bearer ${sessionToken}`)
+    .expect(200);
+
+  const readResponse = await request(app.getHttpServer())
+    .get('/chat/threads')
+    .set('authorization', `Bearer ${sessionToken}`)
+    .expect(200);
+
+  assert.equal(readResponse.body.items[0].unreadCount, 0);
 });
 
 test('chat send persists a seller reply on the authenticated thread', async (t) => {
@@ -437,6 +488,14 @@ test('chat send persists a seller reply on the authenticated thread', async (t) 
     prisma.chatMessagesByThreadId.get('thread_listing_1')?.length,
     2,
   );
+
+  const buyerSessionToken = await createSellerSession(app, '+243990000111');
+  const buyerInboxResponse = await request(app.getHttpServer())
+    .get('/chat/threads')
+    .set('authorization', `Bearer ${buyerSessionToken}`)
+    .expect(200);
+
+  assert.equal(buyerInboxResponse.body.items[0].unreadCount, 1);
 });
 
 test('chat thread creation reuses the buyer thread for a listing and exposes it in inbox', async (t) => {

@@ -36,11 +36,7 @@ export function createChatLiveRefreshController({
       return `thread:${route.threadId}`;
     }
 
-    if (route?.type === 'messages') {
-      return 'messages';
-    }
-
-    return '';
+    return 'inbox';
   }
 
   function scheduleNextRefresh(expectedGeneration) {
@@ -57,11 +53,8 @@ export function createChatLiveRefreshController({
       try {
         if (activeConfig.route.type === 'thread' && activeConfig.route.threadId) {
           await activeConfig.refreshThread(activeConfig.route.threadId);
-        } else if (activeConfig.route.type === 'messages') {
-          await activeConfig.refreshInbox();
         } else {
-          stop();
-          return;
+          await activeConfig.refreshInbox();
         }
       } finally {
         refreshInFlight = false;
