@@ -304,3 +304,45 @@ test('live draft service syncs and publishes with the seller bearer token', asyn
   assert.equal(requests[0].headers.authorization, 'Bearer zwibba_session_live_123');
   assert.equal(requests[1].headers.authorization, 'Bearer zwibba_session_live_123');
 });
+
+test('live draft service deletes a seller draft with the bearer token', async () => {
+  const requests = [];
+  const draftService = createLiveDraftService({
+    apiBaseUrl: 'https://api.example.test',
+    fetchFn: async (url, options = {}) => {
+      requests.push({
+        url,
+        ...options,
+      });
+
+      return createJsonResponse(200, {
+        draftId: 'draft_live_1',
+        status: 'deleted',
+      });
+    },
+  });
+  const session = {
+    canSyncDrafts: true,
+    phoneNumber: '+243990000001',
+    sessionToken: 'zwibba_session_live_123',
+  };
+
+  const result = await draftService.deleteDraft({
+    draftId: 'draft_live_1',
+    session,
+  });
+
+  assert.deepEqual(result, {
+    draftId: 'draft_live_1',
+    status: 'deleted',
+  });
+  assert.deepEqual(requests, [
+    {
+      url: 'https://api.example.test/drafts/draft_live_1',
+      method: 'DELETE',
+      headers: {
+        authorization: 'Bearer zwibba_session_live_123',
+      },
+    },
+  ]);
+});

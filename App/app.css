@@ -591,6 +591,13 @@
   box-shadow: none;
 }
 
+.app-flow__button--danger {
+  background: rgba(239, 83, 80, 0.08);
+  color: #ffd9d7;
+  border: 1px solid rgba(239, 83, 80, 0.24);
+  box-shadow: none;
+}
+
 .app-capture__resume,
 .app-capture__busy,
 .app-guidance__status,
@@ -616,6 +623,12 @@
 .app-capture__resume {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
+}
+
+.app-capture__resume-actions,
+.app-home__post-entry-actions {
+  display: grid;
+  gap: 8px;
 }
 
 .app-detail__media {

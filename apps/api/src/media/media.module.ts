@@ -6,6 +6,7 @@ import { R2StorageService } from './r2-storage.service';
 
 @Module({
   controllers: [MediaController],
+  exports: [R2StorageService],
   providers: [MediaService, R2StorageService],
 })
 export class MediaModule {}

@@ -1,4 +1,4 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable } from '@nestjs/common';
 
@@ -40,5 +40,18 @@ export class R2StorageService {
       publicUrl: `${this.env.r2.publicBaseUrl.replace(/\/$/, '')}/${objectKey}`,
       uploadUrl,
     };
+  }
+
+  async deleteObject(objectKey: string) {
+    if (!objectKey) {
+      return;
+    }
+
+    await this.s3Client.send(
+      new DeleteObjectCommand({
+        Bucket: this.env.r2.bucket,
+        Key: objectKey,
+      }),
+    );
   }
 }

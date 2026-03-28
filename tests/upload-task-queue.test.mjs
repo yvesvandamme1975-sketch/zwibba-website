@@ -52,3 +52,33 @@ test('upload task queue notifies when pending work starts and finishes', async (
 
   assert.deepEqual(notifications, [1, 0]);
 });
+
+test('upload task queue can cancel all queued work before it starts', async () => {
+  const events = [];
+  let releaseFirstTask;
+  const firstTaskDone = new Promise((resolve) => {
+    releaseFirstTask = resolve;
+  });
+  const queue = createUploadTaskQueue();
+
+  const firstTask = queue.run(async () => {
+    events.push('first:start');
+    await firstTaskDone;
+    events.push('first:end');
+    return 'first';
+  });
+
+  const secondTask = queue.run(async () => {
+    events.push('second:start');
+    return 'second';
+  });
+
+  queue.cancelAll();
+  releaseFirstTask();
+
+  const results = await Promise.all([firstTask, secondTask]);
+
+  assert.deepEqual(results, ['first', undefined]);
+  assert.deepEqual(events, ['first:start', 'first:end']);
+  assert.equal(queue.pendingCount, 0);
+});

@@ -14,7 +14,10 @@ function renderDraftResume(draft) {
           draft.canSyncToAccount ? 'Synchronisable' : 'Local uniquement'
         }</span>
       </div>
-      <a class="app-flow__button app-flow__button--secondary" href="#review">Reprendre</a>
+      <div class="app-capture__resume-actions">
+        <a class="app-flow__button app-flow__button--secondary" href="#review">Reprendre</a>
+        <button class="app-flow__button app-flow__button--danger" type="button" data-action="discard-draft">Abandonner mon brouillon</button>
+      </div>
     </div>
   `;
 }

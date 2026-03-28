@@ -1,4 +1,4 @@
-import { Body, Controller, Inject, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Inject, Param, Post, UseGuards } from '@nestjs/common';
 
 import type { SessionRecord } from '../auth/auth.service';
 import { CurrentSession } from '../auth/current-session.decorator';
@@ -45,6 +45,18 @@ export class DraftsController {
       })),
       priceCdf: body.priceCdf ?? 0,
       title: body.title ?? '',
+    });
+  }
+
+  @Delete(':draftId')
+  @UseGuards(SessionAuthGuard)
+  deleteDraft(
+    @CurrentSession() session: SessionRecord,
+    @Param('draftId') draftId: string,
+  ) {
+    return this.draftsService.deleteDraft({
+      draftId,
+      phoneNumber: session.phoneNumber,
     });
   }
 }

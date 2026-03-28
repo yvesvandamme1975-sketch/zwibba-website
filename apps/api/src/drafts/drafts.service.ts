@@ -1,8 +1,15 @@
-import { Inject, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 
 import { assertSupportedPriceCdf } from '../common/price-validation';
 import { PrismaService } from '../database/prisma.service';
+import { R2StorageService } from '../media/r2-storage.service';
 
 export type SyncedDraftPhotoRecord = {
   objectKey: string;
@@ -27,8 +34,11 @@ export type SyncedDraftRecord = {
 
 @Injectable()
 export class DraftsService {
+  private readonly logger = new Logger(DraftsService.name);
+
   constructor(
     @Inject(PrismaService) private readonly prismaService: PrismaService,
+    @Inject(R2StorageService) private readonly r2StorageService: R2StorageService,
   ) {}
 
   async syncDraft({
@@ -171,6 +181,56 @@ export class DraftsService {
       priceCdf: draft.priceCdf,
       syncStatus: 'synced' as const,
       title: draft.title,
+    };
+  }
+
+  async deleteDraft({
+    draftId,
+    phoneNumber,
+  }: {
+    draftId: string;
+    phoneNumber: string;
+  }) {
+    const draft = await this.prismaService.draft.findFirst({
+      where: {
+        id: draftId,
+        ownerPhoneNumber: phoneNumber,
+      },
+      include: {
+        listing: true,
+        photos: true,
+      },
+    });
+
+    if (!draft) {
+      throw new NotFoundException('Brouillon introuvable.');
+    }
+
+    if (draft.listing) {
+      throw new ConflictException("Impossible d'abandonner une annonce déjà publiée.");
+    }
+
+    for (const photo of draft.photos) {
+      try {
+        await this.r2StorageService.deleteObject(photo.objectKey);
+      } catch (error) {
+        this.logger.warn(
+          `Unable to delete draft photo object ${photo.objectKey}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+
+    await this.prismaService.draft.delete({
+      where: {
+        id: draft.id,
+      },
+    });
+
+    return {
+      draftId: draft.id,
+      status: 'deleted' as const,
     };
   }
 }

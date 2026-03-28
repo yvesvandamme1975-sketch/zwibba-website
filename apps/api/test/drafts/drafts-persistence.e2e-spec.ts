@@ -9,6 +9,7 @@ import request from 'supertest';
 import { TwilioVerifyService } from '../../src/auth/twilio-verify.service';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/database/prisma.service';
+import { R2StorageService } from '../../src/media/r2-storage.service';
 
 class _FakeTwilioVerifyService {
   async checkVerification() {
@@ -29,6 +30,7 @@ class _FakeTwilioVerifyService {
 class _FakePrismaService {
   draftPhotosByDraftId = new Map<string, Array<Record<string, unknown>>>();
   drafts = new Map<string, Record<string, unknown>>();
+  listingsByDraftId = new Map<string, Record<string, unknown>>();
   sessions = new Map<string, {
     token: string;
     user: {
@@ -92,8 +94,13 @@ class _FakePrismaService {
       return data;
     },
     findFirst: async ({
+      include,
       where,
     }: {
+      include?: {
+        listing?: boolean;
+        photos?: boolean;
+      };
       where: {
         id: string;
         ownerPhoneNumber: string;
@@ -105,7 +112,11 @@ class _FakePrismaService {
         return null;
       }
 
-      return draft;
+      return {
+        ...draft,
+        listing: include?.listing ? this.listingsByDraftId.get(where.id) ?? null : undefined,
+        photos: include?.photos ? this.draftPhotosByDraftId.get(where.id) ?? [] : undefined,
+      };
     },
     findUnique: async ({
       where,
@@ -148,6 +159,18 @@ class _FakePrismaService {
       this.drafts.set(where.id, nextDraft);
       return nextDraft;
     },
+    delete: async ({
+      where,
+    }: {
+      where: {
+        id: string;
+      };
+    }) => {
+      const draft = this.drafts.get(where.id) ?? null;
+      this.drafts.delete(where.id);
+      this.draftPhotosByDraftId.delete(where.id);
+      return draft;
+    },
   };
 
   readonly draftPhoto = {
@@ -175,16 +198,28 @@ class _FakePrismaService {
   };
 }
 
+class _FakeR2StorageService {
+  deletedObjectKeys: string[] = [];
+
+  async deleteObject(objectKey: string) {
+    this.deletedObjectKeys.push(objectKey);
+  }
+}
+
 async function createTestApp(): Promise<{
   app: INestApplication;
   prisma: _FakePrismaService;
+  r2StorageService: _FakeR2StorageService;
 }> {
   const prisma = new _FakePrismaService();
+  const r2StorageService = new _FakeR2StorageService();
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
   })
     .overrideProvider(PrismaService)
     .useValue(prisma)
+    .overrideProvider(R2StorageService)
+    .useValue(r2StorageService)
     .overrideProvider(TwilioVerifyService)
     .useValue(new _FakeTwilioVerifyService())
     .compile();
@@ -194,6 +229,7 @@ async function createTestApp(): Promise<{
   return {
     app,
     prisma,
+    r2StorageService,
   };
 }
 
@@ -285,4 +321,110 @@ test('draft sync rejects prices above the 32-bit beta limit with a clear seller 
     .expect(400);
 
   assert.match(syncResponse.body.message, /2.?147.?483.?647 CDF/i);
+});
+
+test('draft delete removes the seller draft and uploaded photo objects', async (t) => {
+  const harness = await createTestApp();
+  t.after(async () => {
+    await harness.app.close();
+  });
+
+  await request(harness.app.getHttpServer())
+    .post('/auth/request-otp')
+    .send({ phoneNumber: '+243990000001' })
+    .expect(201);
+
+  const verifyResponse = await request(harness.app.getHttpServer())
+    .post('/auth/verify-otp')
+    .send({
+      phoneNumber: '+243990000001',
+      code: '123456',
+    })
+    .expect(201);
+
+  const syncResponse = await request(harness.app.getHttpServer())
+    .post('/drafts/sync')
+    .set('authorization', `Bearer ${verifyResponse.body.sessionToken}`)
+    .send({
+      area: 'Lubumbashi Centre',
+      categoryId: 'phones_tablets',
+      description: 'Téléphone propre, batterie stable, vendu avec chargeur.',
+      priceCdf: 4256000,
+      title: 'Samsung Galaxy A54 128 Go',
+      photos: [
+        {
+          objectKey: 'draft-photos/phone-front.jpg',
+          publicUrl: 'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
+          sourcePresetId: 'phone-front',
+          uploadStatus: 'uploaded',
+        },
+        {
+          objectKey: 'draft-photos/phone-back.jpg',
+          publicUrl: 'https://cdn.zwibba.example/draft-photos/phone-back.jpg',
+          sourcePresetId: 'phone-back',
+          uploadStatus: 'uploaded',
+        },
+      ],
+    })
+    .expect(201);
+
+  const deleteResponse = await request(harness.app.getHttpServer())
+    .delete(`/drafts/${syncResponse.body.draftId}`)
+    .set('authorization', `Bearer ${verifyResponse.body.sessionToken}`)
+    .expect(200);
+
+  assert.deepEqual(deleteResponse.body, {
+    draftId: syncResponse.body.draftId,
+    status: 'deleted',
+  });
+  assert.equal(harness.prisma.drafts.size, 0);
+  assert.equal(harness.prisma.draftPhotosByDraftId.has(syncResponse.body.draftId), false);
+  assert.deepEqual(harness.r2StorageService.deletedObjectKeys, [
+    'draft-photos/phone-front.jpg',
+    'draft-photos/phone-back.jpg',
+  ]);
+});
+
+test('draft delete refuses to remove a draft that already has a published listing', async (t) => {
+  const harness = await createTestApp();
+  t.after(async () => {
+    await harness.app.close();
+  });
+
+  await request(harness.app.getHttpServer())
+    .post('/auth/request-otp')
+    .send({ phoneNumber: '+243990000001' })
+    .expect(201);
+
+  const verifyResponse = await request(harness.app.getHttpServer())
+    .post('/auth/verify-otp')
+    .send({
+      phoneNumber: '+243990000001',
+      code: '123456',
+    })
+    .expect(201);
+
+  harness.prisma.drafts.set('draft_published_1', {
+    area: 'Bel Air',
+    categoryId: 'phones_tablets',
+    condition: 'used_good',
+    description: 'Téléphone déjà publié.',
+    id: 'draft_published_1',
+    ownerPhoneNumber: '+243990000001',
+    priceCdf: 4256000,
+    title: 'Samsung Galaxy A54',
+  });
+  harness.prisma.listingsByDraftId.set('draft_published_1', {
+    id: 'listing_1',
+    draftId: 'draft_published_1',
+    slug: 'samsung-galaxy-a54',
+  });
+
+  const deleteResponse = await request(harness.app.getHttpServer())
+    .delete('/drafts/draft_published_1')
+    .set('authorization', `Bearer ${verifyResponse.body.sessionToken}`)
+    .expect(409);
+
+  assert.match(deleteResponse.body.message, /déjà publiée/i);
+  assert.equal(harness.prisma.drafts.has('draft_published_1'), true);
 });

@@ -41,6 +41,7 @@ import { createListingsService } from './services/listings-service.mjs';
 import { createMediaService } from './services/media-service.mjs';
 import { createSellerListingsService } from './services/seller-listings-service.mjs';
 import { createWalletService } from './services/wallet-service.mjs';
+import { createLiveDraftService } from './services/live-draft-service.mjs';
 import {
   captureBuyerSearchRenderState,
   restoreBuyerSearchRenderState,
@@ -86,6 +87,10 @@ if (appRoot) {
     apiBaseUrl: apiConfig.apiBaseUrl,
     fetchFn: window.fetch.bind(window),
   });
+  const liveDraftService = createLiveDraftService({
+    apiBaseUrl: apiConfig.apiBaseUrl,
+    fetchFn: window.fetch.bind(window),
+  });
   const photoUploadQueue = createUploadTaskQueue({
     onStateChange: () => {
       renderApp();
@@ -114,6 +119,7 @@ if (appRoot) {
     buyerListingPromise: null,
     currentListingSlug: '',
     currentThreadId: '',
+    draftResetSerial: 0,
     draft: draftStorage.loadDraft(),
     inboxError: '',
     inboxItems: [],
@@ -653,12 +659,21 @@ if (appRoot) {
     appRoot.dataset.screen = route.type;
   }
 
-  async function handleCapture(file) {
+  async function handleCapture(file, draftResetSerial = state.draftResetSerial) {
     state.busyLabel = 'Compression et analyse IA en cours...';
     renderApp();
 
     try {
       const nextDraft = await postFlowController.captureFirstPhoto(file);
+
+      if (draftResetSerial !== state.draftResetSerial) {
+        if (!state.draft) {
+          draftStorage.clearDraft();
+        }
+        state.busyLabel = '';
+        renderApp();
+        return;
+      }
 
       state.busyLabel = '';
       state.draft = nextDraft;
@@ -670,26 +685,105 @@ if (appRoot) {
       window.location.hash =
         getMissingRequiredPhotoPrompts(nextDraft).length > 0 ? '#guidance' : '#review';
     } catch (error) {
+      if (draftResetSerial !== state.draftResetSerial) {
+        if (!state.draft) {
+          draftStorage.clearDraft();
+        }
+        state.busyLabel = '';
+        renderApp();
+        return;
+      }
+
       state.busyLabel = '';
       state.draft = error?.draft ?? state.draft;
       renderApp();
     }
   }
 
-  async function handleGuidedCapture(promptId, file) {
+  async function handleGuidedCapture(promptId, file, draftResetSerial = state.draftResetSerial) {
     state.busyLabel = 'Téléversement de la photo guidée...';
     renderApp();
 
     try {
-      state.draft = await postFlowController.addGuidedPhoto(promptId, file);
+      const nextDraft = await postFlowController.addGuidedPhoto(promptId, file);
+
+      if (draftResetSerial !== state.draftResetSerial) {
+        if (!state.draft) {
+          draftStorage.clearDraft();
+        }
+        state.busyLabel = '';
+        renderApp();
+        return;
+      }
+
+      state.draft = nextDraft;
       state.publishError = '';
       state.reviewErrors = [];
       state.busyLabel = '';
       renderApp();
     } catch (error) {
+      if (draftResetSerial !== state.draftResetSerial) {
+        if (!state.draft) {
+          draftStorage.clearDraft();
+        }
+        state.busyLabel = '';
+        renderApp();
+        return;
+      }
+
       state.busyLabel = '';
       state.draft = error?.draft ?? state.draft;
       renderApp();
+    }
+  }
+
+  async function handleDiscardDraft() {
+    if (!state.draft) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'Supprimer ce brouillon ?\n\nLes photos déjà téléversées et les informations saisies seront supprimées.',
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const draftToDiscard = state.draft;
+
+    state.busyLabel = 'Suppression du brouillon...';
+    state.draftResetSerial += 1;
+    photoUploadQueue.cancelAll();
+    renderApp();
+
+    try {
+      if (draftToDiscard.remoteDraftId) {
+        if (!state.session) {
+          throw new Error('Connectez-vous avec le numéro du brouillon pour le supprimer.');
+        }
+
+        await liveDraftService.deleteDraft({
+          draftId: draftToDiscard.remoteDraftId,
+          session: state.session,
+        });
+      }
+
+      draftStorage.clearDraft();
+      state.busyLabel = '';
+      state.draft = null;
+      state.publishError = '';
+      state.publishOutcome = null;
+      state.publishedListingRoute = '';
+      state.publishedListingUrl = '';
+      state.reviewErrors = [];
+      window.location.hash = '#sell';
+    } catch (error) {
+      state.busyLabel = '';
+      renderApp();
+      window.alert(
+        error instanceof Error ? error.message : 'Impossible de supprimer le brouillon.',
+      );
     }
   }
 
@@ -973,6 +1067,11 @@ if (appRoot) {
       return;
     }
 
+    if (trigger.dataset.action === 'discard-draft') {
+      await handleDiscardDraft();
+      return;
+    }
+
     if (trigger.dataset.action === 'submit-publish') {
       await handlePublishSubmit();
       return;
@@ -1073,7 +1172,8 @@ if (appRoot) {
     }
 
     if (target.dataset.input === 'capture-first-photo') {
-      const task = photoUploadQueue.run(() => handleCapture(file));
+      const draftResetSerial = state.draftResetSerial;
+      const task = photoUploadQueue.run(() => handleCapture(file, draftResetSerial));
       renderApp();
       await task;
       renderApp();
@@ -1081,7 +1181,10 @@ if (appRoot) {
     }
 
     if (target.dataset.input === 'guided-photo') {
-      const task = photoUploadQueue.run(() => handleGuidedCapture(target.dataset.promptId || '', file));
+      const draftResetSerial = state.draftResetSerial;
+      const task = photoUploadQueue.run(() =>
+        handleGuidedCapture(target.dataset.promptId || '', file, draftResetSerial),
+      );
       renderApp();
       await task;
       renderApp();

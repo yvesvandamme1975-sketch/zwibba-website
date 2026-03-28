@@ -129,5 +129,23 @@ export function createLiveDraftService({
 
       return response.json();
     },
+
+    async deleteDraft({
+      draftId,
+      session,
+    }) {
+      const response = await fetchFn(`${apiBaseUrl}/drafts/${encodeURIComponent(draftId)}`, {
+        method: 'DELETE',
+        headers: {
+          authorization: `Bearer ${session.sessionToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw await parseError(response, 'Impossible de supprimer le brouillon.');
+      }
+
+      return response.json();
+    },
   };
 }

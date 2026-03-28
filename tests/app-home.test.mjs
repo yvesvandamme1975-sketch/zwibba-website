@@ -43,6 +43,8 @@ test('Continuer mon brouillon appears when a draft exists', () => {
   });
 
   assert.match(html, /Continuer mon brouillon/);
+  assert.match(html, /Abandonner mon brouillon/);
+  assert.match(html, /data-action="discard-draft"/);
 });
 
 test('Prendre une photo appears when no draft exists', () => {

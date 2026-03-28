@@ -189,6 +189,16 @@ test('capture screen renders a real image picker instead of demo preset cards', 
   assert.doesNotMatch(html, /Téléphone premium/);
 });
 
+test('capture screen shows an abandon button when a draft already exists', () => {
+  const html = renderCaptureScreen({
+    busyLabel: '',
+    draft: createReadyDraft(),
+  });
+
+  assert.match(html, /Abandonner mon brouillon/);
+  assert.match(html, /data-action="discard-draft"/);
+});
+
 test('guided upload marks a required prompt complete only after upload succeeds', async () => {
   const draftStorage = createDraftStorageService({
     storage: createMemoryStorage(),

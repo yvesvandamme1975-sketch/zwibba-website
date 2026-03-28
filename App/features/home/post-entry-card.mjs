@@ -11,7 +11,14 @@ export function renderPostEntryCard({ draft }) {
       <strong>Vendeur d’abord</strong>
       <h2>${title}</h2>
       <p>${description}</p>
-      <a href="${href}">${title}</a>
+      <div class="app-home__post-entry-actions">
+        <a href="${href}">${title}</a>
+        ${
+          hasDraft
+            ? '<button class="app-flow__button app-flow__button--danger" type="button" data-action="discard-draft">Abandonner mon brouillon</button>'
+            : ''
+        }
+      </div>
     </section>
   `;
 }
