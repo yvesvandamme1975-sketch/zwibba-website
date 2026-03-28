@@ -579,6 +579,20 @@ test('publish validation blocks while queued uploads are still pending', () => {
   assert.match(validationErrors[0]?.message || '', /Attendez la fin des téléversements/i);
 });
 
+test('seller can publish with only the primary uploaded photo during beta', () => {
+  const validationErrors = validateDraftForPublish(
+    createReadyDraft({
+      categoryId: 'home_garden',
+      condition: 'used_good',
+      description: 'Canapé propre et disponible.',
+      area: 'Golf',
+      priceCdf: 350_000,
+    }),
+  );
+
+  assert.equal(validationErrors.some((error) => error.field === 'guided_photos'), false);
+});
+
 test('publish validation rejects prices above the supported beta limit', () => {
   const validationErrors = validateDraftForPublish(
     createReadyDraft({
@@ -719,4 +733,71 @@ test('review form shows a visual fallback when the primary photo source is unava
 
   assert.match(html, /app-review__hero-media--fallback/);
   assert.match(html, /Aperçu indisponible/i);
+});
+
+test('guidance screen makes extra guided photos optional and keeps upload actions explicit', () => {
+  const html = renderPhotoGuidanceScreen({
+    draft: createReadyDraft({
+      categoryId: 'home_garden',
+      photos: [
+        {
+          id: 'photo-1',
+          kind: 'primary',
+          previewUrl: 'blob:primary.jpg',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/capture/photo_1-sofa.jpg',
+        },
+      ],
+    }),
+  });
+
+  assert.match(html, /Vous pouvez publier avec la photo principale/i);
+  assert.match(html, /Ajouter cette photo/i);
+  assert.match(html, /Vue latérale/i);
+  assert.match(html, /Vue d(?:&#39;|')ensemble/i);
+  assert.match(html, /href="#review"/);
+});
+
+test('capture screen renders staged progress for the first photo upload', () => {
+  const html = renderCaptureScreen({
+    busyLabel: '',
+    draft: null,
+    uploadProgress: {
+      activeStage: 'uploading',
+      stages: [
+        { id: 'compressing', label: 'Compression', state: 'complete' },
+        { id: 'uploading', label: 'Téléversement', state: 'active' },
+        { id: 'analyzing', label: 'Analyse IA', state: 'pending' },
+      ],
+      title: 'Préparation de la photo',
+    },
+  });
+
+  assert.match(html, /Préparation de la photo/i);
+  assert.match(html, /Compression/i);
+  assert.match(html, /Téléversement/i);
+  assert.match(html, /Analyse IA/i);
+  assert.match(html, /is-active/);
+});
+
+test('guidance screen renders staged progress for guided uploads', () => {
+  const html = renderPhotoGuidanceScreen({
+    draft: createReadyDraft({
+      categoryId: 'home_garden',
+    }),
+    uploadProgress: {
+      activeStage: 'uploading',
+      stages: [
+        { id: 'compressing', label: 'Compression', state: 'complete' },
+        { id: 'uploading', label: 'Téléversement', state: 'active' },
+        { id: 'complete', label: 'Terminé', state: 'pending' },
+      ],
+      title: 'Ajout de la photo guidée',
+    },
+    uploadsBusy: true,
+  });
+
+  assert.match(html, /Ajout de la photo guidée/i);
+  assert.match(html, /Terminé/i);
+  assert.match(html, /Téléversement/i);
 });

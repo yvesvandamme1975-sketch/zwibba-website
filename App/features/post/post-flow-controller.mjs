@@ -322,14 +322,6 @@ export function validateDraftForPublish(
     });
   }
 
-  const missingRequiredPrompts = getMissingRequiredPhotoPrompts(draft);
-  if (missingRequiredPrompts.length) {
-    errors.push({
-      field: 'guided_photos',
-      message: `Ajoutez aussi: ${missingRequiredPrompts.map((prompt) => prompt.label).join(', ')}.`,
-    });
-  }
-
   if (isConditionRequired(draft) && !draft.details.condition) {
     errors.push({
       field: 'condition',
@@ -455,6 +447,7 @@ export function createPostFlowController({
   mediaService,
   createPreviewUrl = (file) => file.previewUrl || file.url || '',
   now = () => new Date().toISOString(),
+  onUploadStageChange = () => {},
 } = {}) {
   if (!draftStorage || !imageCompressionService || !aiDraftService || !mediaService) {
     throw new Error('Post flow dependencies are required.');
@@ -462,6 +455,10 @@ export function createPostFlowController({
 
   return {
     async captureFirstPhoto(file) {
+      await onUploadStageChange({
+        flow: 'primary',
+        stage: 'compressing',
+      });
       const compressionResult = await imageCompressionService.compressImage(
         file,
         createSelectedPhotoRecord(file, {
@@ -479,6 +476,10 @@ export function createPostFlowController({
       draftStorage.saveDraft(draft);
 
       try {
+        await onUploadStageChange({
+          flow: 'primary',
+          stage: 'uploading',
+        });
         const uploadedPhoto = await uploadDraftPhoto({
           file,
           mediaService,
@@ -492,6 +493,10 @@ export function createPostFlowController({
           },
           { now: now() },
         );
+        await onUploadStageChange({
+          flow: 'primary',
+          stage: 'analyzing',
+        });
         const aiResult = await aiDraftService.generateDraft(uploadedPhoto);
 
         draft = applyAiResultToDraft(draft, aiResult, {
@@ -517,6 +522,8 @@ export function createPostFlowController({
         );
         draftStorage.saveDraft(failedDraft);
         throw attachDraftToError(error, failedDraft);
+      } finally {
+        await onUploadStageChange(null);
       }
     },
     async addGuidedPhoto(promptId, file) {
@@ -526,6 +533,10 @@ export function createPostFlowController({
         throw new Error('No draft available.');
       }
 
+      await onUploadStageChange({
+        flow: 'guided',
+        stage: 'compressing',
+      });
       const compressionResult = await imageCompressionService.compressImage(
         file,
         createSelectedPhotoRecord(file, {
@@ -547,6 +558,10 @@ export function createPostFlowController({
       const insertedPhoto = updatedDraft.photos.find((photo) => photo.promptId === promptId);
 
       try {
+        await onUploadStageChange({
+          flow: 'guided',
+          stage: 'uploading',
+        });
         const uploadedPhoto = await uploadDraftPhoto({
           file,
           mediaService,
@@ -574,6 +589,8 @@ export function createPostFlowController({
         });
         draftStorage.saveDraft(failedDraft);
         throw attachDraftToError(error, failedDraft);
+      } finally {
+        await onUploadStageChange(null);
       }
     },
     saveDraft(draft) {

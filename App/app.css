@@ -613,6 +613,7 @@
 
 .app-capture__resume,
 .app-capture__busy,
+.app-upload-progress,
 .app-guidance__status,
 .app-review__summary,
 .app-review__price-range,
@@ -711,6 +712,7 @@
 }
 
 .app-capture__resume strong,
+.app-upload-progress strong,
 .app-guidance__status strong,
 .app-review__summary strong,
 .app-review__price-range strong,
@@ -722,6 +724,7 @@
 }
 
 .app-capture__resume span,
+.app-upload-progress span,
 .app-guidance__status span,
 .app-review__summary span,
 .app-auth__card p,
@@ -868,13 +871,53 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
-  padding: 0 14px;
+  min-height: 44px;
+  padding: 0 16px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(107, 230, 107, 0.2);
+  background: rgba(107, 230, 107, 0.08);
   color: var(--text);
-  font-weight: 700;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.app-upload-progress {
+  gap: 12px;
+}
+
+.app-upload-progress__stages {
+  display: grid;
+  gap: 10px;
+}
+
+.app-upload-progress__stage {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.app-upload-progress__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.app-upload-progress__stage.is-complete .app-upload-progress__dot {
+  background: rgba(107, 230, 107, 0.9);
+  border-color: rgba(107, 230, 107, 0.9);
+}
+
+.app-upload-progress__stage.is-active .app-upload-progress__dot {
+  background: #fff3a5;
+  border-color: #fff3a5;
+  box-shadow: 0 0 0 6px rgba(255, 243, 165, 0.1);
+}
+
+.app-upload-progress__stage.is-pending span {
+  color: var(--text-soft);
 }
 
 .app-review__top {

@@ -98,6 +98,52 @@ if (appRoot) {
     },
   });
   const chatLiveRefreshController = createChatLiveRefreshController();
+  function buildUploadProgress(flow, stage) {
+    if (!flow || !stage) {
+      return null;
+    }
+
+    const flowConfig =
+      flow === 'guided'
+        ? {
+            title: 'Ajout de la photo guidée',
+            stages: ['compressing', 'uploading', 'complete'],
+          }
+        : {
+            title: 'Préparation de la photo',
+            stages: ['compressing', 'uploading', 'analyzing'],
+          };
+    const labels = {
+      analyzing: 'Analyse IA',
+      complete: 'Terminé',
+      compressing: 'Compression',
+      uploading: 'Téléversement',
+    };
+    const activeIndex = Math.max(flowConfig.stages.indexOf(stage), 0);
+
+    return {
+      activeStage: stage,
+      stages: flowConfig.stages.map((stageId, index) => ({
+        id: stageId,
+        label: labels[stageId] ?? stageId,
+        state:
+          index < activeIndex ? 'complete' : index === activeIndex ? 'active' : 'pending',
+      })),
+      title: flowConfig.title,
+    };
+  }
+
+  function syncUploadProgress(progressState) {
+    if (!progressState) {
+      state.uploadProgress = null;
+      renderApp();
+      return;
+    }
+
+    state.uploadProgress = buildUploadProgress(progressState.flow, progressState.stage);
+    renderApp();
+  }
+
   const postFlowController = createPostFlowController({
     draftStorage,
     imageCompressionService: createImageCompressionService(),
@@ -106,6 +152,7 @@ if (appRoot) {
       fetchFn: window.fetch.bind(window),
     }),
     mediaService,
+    onUploadStageChange: syncUploadProgress,
     createPreviewUrl: (file) => window.URL.createObjectURL(file),
   });
   const buyerBrowseController = createBuyerBrowseController({
@@ -145,6 +192,7 @@ if (appRoot) {
     threadError: '',
     threadPromise: null,
     threadStatus: 'idle',
+    uploadProgress: null,
     wallet: {
       balanceCdf: 0,
       transactions: [],
@@ -540,10 +588,12 @@ if (appRoot) {
         return renderCaptureScreen({
           busyLabel: state.busyLabel,
           draft: state.draft,
+          uploadProgress: state.uploadProgress,
         });
       case 'guidance':
         return renderPhotoGuidanceScreen({
           draft: state.draft,
+          uploadProgress: state.uploadProgress,
           uploadsBusy: photoUploadQueue.isBusy(),
         });
       case 'review':
@@ -694,6 +744,7 @@ if (appRoot) {
       }
 
       state.busyLabel = '';
+      state.uploadProgress = null;
       state.draft = nextDraft;
       state.publishError = '';
       state.publishOutcome = null;
@@ -713,6 +764,7 @@ if (appRoot) {
       }
 
       state.busyLabel = '';
+      state.uploadProgress = null;
       state.draft = error?.draft ?? state.draft;
       renderApp();
     }
@@ -738,6 +790,7 @@ if (appRoot) {
       state.publishError = '';
       state.reviewErrors = [];
       state.busyLabel = '';
+      state.uploadProgress = null;
       renderApp();
     } catch (error) {
       if (draftResetSerial !== state.draftResetSerial) {
@@ -750,6 +803,7 @@ if (appRoot) {
       }
 
       state.busyLabel = '';
+      state.uploadProgress = null;
       state.draft = error?.draft ?? state.draft;
       renderApp();
     }

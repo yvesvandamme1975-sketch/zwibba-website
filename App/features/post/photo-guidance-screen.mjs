@@ -2,8 +2,18 @@ import {
   getGuidedPhotoPrompts,
   getMissingRequiredPhotoPrompts,
 } from './post-flow-controller.mjs';
+import { sellerCategories } from '../../demo-content.mjs';
 import { renderInAppBrand } from '../../components/in-app-brand.mjs';
+import { renderUploadProgress } from '../../components/upload-progress.mjs';
 import { escapeAttribute, escapeHtml } from '../../utils/rendering.mjs';
+
+const categoryLabels = new Map(
+  sellerCategories.map((category) => [category.id, category.label]),
+);
+
+function formatCategoryLabel(categoryId) {
+  return categoryLabels.get(categoryId) ?? categoryId ?? 'à confirmer';
+}
 
 function renderPrompt(prompt) {
   const actionLabel =
@@ -11,7 +21,7 @@ function renderPrompt(prompt) {
       ? 'Réessayer'
       : prompt.completed
         ? 'Remplacer'
-        : 'Ajouter';
+        : 'Ajouter cette photo';
   const statusCopy =
     prompt.uploadStatus === 'failed'
       ? prompt.uploadError || 'Le téléversement a échoué.'
@@ -20,7 +30,7 @@ function renderPrompt(prompt) {
         : prompt.completed
           ? 'Photo téléversée'
           : prompt.required
-            ? 'Photo requise'
+            ? 'Photo conseillée pour rassurer les acheteurs'
             : 'Photo recommandée';
 
   return `
@@ -65,6 +75,7 @@ function renderPrompt(prompt) {
 
 export function renderPhotoGuidanceScreen({
   draft,
+  uploadProgress = null,
   uploadsBusy = false,
 }) {
   const prompts = getGuidedPhotoPrompts(draft);
@@ -86,17 +97,23 @@ export function renderPhotoGuidanceScreen({
       </header>
 
       <p class="app-flow__text">
-        L'IA a suggéré la catégorie <strong>${escapeHtml(
-          draft.details.categoryId || 'à confirmer',
-        )}</strong>. Ajoutez les vues qui améliorent la confiance et la modération.
+        Zwibba a suggéré la catégorie <strong>${escapeHtml(
+          formatCategoryLabel(draft.details.categoryId),
+        )}</strong>. Vous pouvez publier avec la photo principale. Ajoutez d'autres vues pour améliorer la confiance et la modération.
       </p>
 
       <div class="app-guidance__status">
-        <strong>${missingPrompts.length ? 'Encore des vues requises' : 'Toutes les vues requises sont prêtes'}</strong>
+        <strong>${missingPrompts.length ? 'Photos complémentaires recommandées' : 'Photos complémentaires prêtes'}</strong>
         <span>
-          ${missingPrompts.length ? `${missingPrompts.length} photo(s) guidée(s) manquent.` : 'Vous pouvez continuer vers le brouillon.'}
+          ${
+            missingPrompts.length
+              ? `${missingPrompts.length} vue(s) recommandée(s) manquent encore, mais la publication reste possible pendant la bêta.`
+              : 'Vous pouvez continuer vers le brouillon ou ajouter encore quelques vues.'
+          }
         </span>
       </div>
+
+      ${renderUploadProgress(uploadProgress)}
 
       <ul class="app-guidance__list">
         ${prompts.map(renderPrompt).join('')}

@@ -1,4 +1,5 @@
 import { renderInAppBrand } from '../../components/in-app-brand.mjs';
+import { renderUploadProgress } from '../../components/upload-progress.mjs';
 import { escapeAttribute, escapeHtml } from '../../utils/rendering.mjs';
 
 function renderDraftResume(draft) {
@@ -79,6 +80,7 @@ function renderPrimaryPhotoState(draft) {
 export function renderCaptureScreen({
   busyLabel = '',
   draft,
+  uploadProgress = null,
 }) {
   const primaryPhoto = resolvePrimaryPhoto(draft);
   const pickerLabel =
@@ -112,6 +114,8 @@ export function renderCaptureScreen({
           ? `<div class="app-capture__busy">${escapeHtml(busyLabel)}</div>`
           : ''
       }
+
+      ${renderUploadProgress(uploadProgress)}
 
       ${renderPrimaryPhotoState(draft)}
 
