@@ -56,7 +56,7 @@ const defaultEnvValues = {
   GEMINI_API_KEY: 'gemini-api-key',
   GEMINI_MODEL: 'gemini-2.5-flash-lite',
   MISTRAL_API_KEY: 'mistral-api-key',
-  MISTRAL_MODEL: 'ministral-3b-2512',
+  MISTRAL_MODEL: 'pixtral-12b-2409',
   NODE_ENV: 'development',
   OTP_PROVIDER: 'twilio',
   PORT: '3200',

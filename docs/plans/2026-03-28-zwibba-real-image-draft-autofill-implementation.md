@@ -4,7 +4,7 @@
 
 **Goal:** Replace Zwibba’s stubbed first-photo AI draft helper with real image-based server-side auto-fill that suggests title, category, condition, and description from the first uploaded product photo.
 
-**Architecture:** Keep the existing browser upload-to-R2 flow intact, then call a new API-backed vision adapter with the uploaded photo URL. Use Gemini 2.5 Flash-Lite as the primary provider, then Claude 3.5 Haiku and Ministral 3B as ordered fallbacks. Normalize provider output on the server, return a stable draft patch to the browser, and fall back cleanly to manual editing when every provider fails or returns unusable JSON.
+**Architecture:** Keep the existing browser upload-to-R2 flow intact, then call a new API-backed vision adapter with the uploaded photo URL. Use Gemini 2.5 Flash-Lite as the primary provider, then Claude 3.5 Haiku and Pixtral 12B as ordered fallbacks. Normalize provider output on the server, return a stable draft patch to the browser, and fall back cleanly to manual editing when every provider fails or returns unusable JSON.
 
 **Tech Stack:** Vanilla JS browser app, NestJS API, Node test runner, Railway, Cloudflare R2, Gemini API, Anthropic API, Mistral API via server-side `fetch`
 

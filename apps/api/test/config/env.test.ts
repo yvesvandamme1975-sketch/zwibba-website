@@ -13,7 +13,7 @@ test('loadEnv returns the validated production env contract', () => {
     GEMINI_API_KEY: 'gemini-test',
     GEMINI_MODEL: 'gemini-2.5-flash-lite',
     MISTRAL_API_KEY: 'mistral-test',
-    MISTRAL_MODEL: 'ministral-3b-2512',
+    MISTRAL_MODEL: 'pixtral-12b-2409',
     NODE_ENV: 'test',
     OTP_PROVIDER: 'twilio',
     PORT: '3200',
@@ -41,7 +41,7 @@ test('loadEnv returns the validated production env contract', () => {
   assert.ok(env.ai.anthropic);
   assert.equal(env.ai.anthropic.model, 'claude-3-5-haiku-latest');
   assert.ok(env.ai.mistral);
-  assert.equal(env.ai.mistral.model, 'ministral-3b-2512');
+  assert.equal(env.ai.mistral.model, 'pixtral-12b-2409');
   assert.ok(env.twilio);
   assert.equal(env.twilio.verifyServiceSid, 'VA123456789');
 });

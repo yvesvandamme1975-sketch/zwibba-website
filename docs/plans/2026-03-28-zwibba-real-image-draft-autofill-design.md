@@ -72,7 +72,7 @@ So the product currently behaves like an assisted prototype, not real image reco
 - Provider order for this round:
   1. Gemini 2.5 Flash-Lite
   2. Claude 3.5 Haiku
-  3. Ministral 3B
+  3. Pixtral 12B
 - The API layer should isolate provider details behind a small service boundary so future swaps remain localized.
 - Gemini is the primary low-cost vision path. Claude and Mistral act as operational fallbacks when configured.
 
