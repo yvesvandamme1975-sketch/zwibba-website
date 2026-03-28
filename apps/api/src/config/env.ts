@@ -1,6 +1,6 @@
 type EnvSource = NodeJS.ProcessEnv | Record<string, string | undefined>;
 type OtpProvider = 'demo' | 'twilio';
-type AiProvider = 'stub' | 'multi';
+type AiProvider = 'stub' | 'multi' | 'mistral';
 
 export type ZwibbaEnv = {
   admin: {
@@ -129,11 +129,11 @@ function readAiProvider(source: EnvSource): AiProvider {
     ? source.AI_PROVIDER
     : (source.AI_PROVIDER ?? defaultEnvValues.AI_PROVIDER);
 
-  if (rawValue === 'stub' || rawValue === 'multi') {
+  if (rawValue === 'stub' || rawValue === 'multi' || rawValue === 'mistral') {
     return rawValue;
   }
 
-  throw new Error('AI_PROVIDER must be either "stub" or "multi".');
+  throw new Error('AI_PROVIDER must be either "stub", "mistral", or "multi".');
 }
 
 function readOptionalProviderConfig(
@@ -193,7 +193,12 @@ export function loadEnv(source: EnvSource = process.env): ZwibbaEnv {
             apiKey: 'MISTRAL_API_KEY',
             model: 'MISTRAL_MODEL',
           })
-        : undefined,
+        : aiProvider === 'mistral'
+          ? {
+              apiKey: readRequiredString(source, 'MISTRAL_API_KEY'),
+              model: readRequiredString(source, 'MISTRAL_MODEL'),
+            }
+          : undefined,
       provider: aiProvider,
     },
     appBaseUrl: readRequiredString(source, 'APP_BASE_URL'),

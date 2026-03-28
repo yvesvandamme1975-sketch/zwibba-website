@@ -73,6 +73,13 @@ function createStubVisionDraftProvider(): VisionDraftProvider {
       useFactory() {
         const env = loadEnv();
 
+        if (env.ai.provider === 'mistral' && env.ai.mistral) {
+          return new MistralVisionDraftProvider({
+            apiKey: env.ai.mistral.apiKey,
+            model: env.ai.mistral.model,
+          });
+        }
+
         if (env.ai.provider === 'multi' && env.ai.gemini) {
           const providers: VisionDraftProvider[] = [
             new GeminiVisionDraftProvider({

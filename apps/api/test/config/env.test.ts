@@ -75,6 +75,34 @@ test('loadEnv returns the demo otp contract in production without Twilio vars', 
   assert.equal(env.twilio, undefined);
 });
 
+test('loadEnv supports a mistral-only ai provider mode', () => {
+  const env = loadEnv({
+    AI_PROVIDER: 'mistral',
+    APP_BASE_URL: 'https://zwibba.example',
+    DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
+    MISTRAL_API_KEY: 'mistral-test',
+    MISTRAL_MODEL: 'pixtral-12b-2409',
+    NODE_ENV: 'production',
+    OTP_PROVIDER: 'demo',
+    DEMO_OTP_ALLOWLIST: '+243990000001',
+    DEMO_OTP_CODE: '123456',
+    PORT: '3200',
+    R2_ACCESS_KEY_ID: 'r2-access-key',
+    R2_ACCOUNT_ID: 'r2-account',
+    R2_BUCKET: 'zwibba-media',
+    R2_PUBLIC_BASE_URL: 'https://cdn.zwibba.example',
+    R2_S3_ENDPOINT: 'https://r2.example.com',
+    R2_SECRET_ACCESS_KEY: 'r2-secret',
+    ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
+  });
+
+  assert.equal(env.ai.provider, 'mistral');
+  assert.ok(env.ai.mistral);
+  assert.equal(env.ai.mistral.model, 'pixtral-12b-2409');
+  assert.equal(env.ai.gemini, undefined);
+  assert.equal(env.ai.anthropic, undefined);
+});
+
 test('loadEnv requires Gemini config in production when multi provider is selected', () => {
   assert.throws(
     () =>
@@ -96,6 +124,30 @@ test('loadEnv requires Gemini config in production when multi provider is select
         ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
       }),
     /Missing required env value: GEMINI_API_KEY/,
+  );
+});
+
+test('loadEnv requires mistral config when mistral provider is selected', () => {
+  assert.throws(
+    () =>
+      loadEnv({
+        AI_PROVIDER: 'mistral',
+        APP_BASE_URL: 'https://zwibba.example',
+        DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
+        NODE_ENV: 'production',
+        OTP_PROVIDER: 'demo',
+        DEMO_OTP_ALLOWLIST: '+243990000001',
+        DEMO_OTP_CODE: '123456',
+        PORT: '3200',
+        R2_ACCESS_KEY_ID: 'r2-access-key',
+        R2_ACCOUNT_ID: 'r2-account',
+        R2_BUCKET: 'zwibba-media',
+        R2_PUBLIC_BASE_URL: 'https://cdn.zwibba.example',
+        R2_S3_ENDPOINT: 'https://r2.example.com',
+        R2_SECRET_ACCESS_KEY: 'r2-secret',
+        ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
+      }),
+    /Missing required env value: MISTRAL_API_KEY/,
   );
 });
 
