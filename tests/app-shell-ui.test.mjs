@@ -59,3 +59,14 @@ test('mobile shell releases the phone viewport so the page owns scrolling', () =
     /@media \(max-width: 640px\) \{[\s\S]*?\.app-tab-shell__content\s*\{[\s\S]*?overflow:\s*visible;[\s\S]*?\}/i,
   );
 });
+
+test('mobile shell fixes the tab nav to the viewport bottom and reserves content space', () => {
+  assert.match(
+    appStyles,
+    /@media \(max-width: 640px\) \{[\s\S]*?\.app-tab-shell__nav\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?left:\s*0;[\s\S]*?right:\s*0;[\s\S]*?bottom:\s*0;[\s\S]*?\}/i,
+  );
+  assert.match(
+    appStyles,
+    /@media \(max-width: 640px\) \{[\s\S]*?\.app-tab-shell__content\s*\{[\s\S]*?padding-bottom:\s*calc\([\s\S]*?var\(--app-mobile-nav-height\)[\s\S]*?\);[\s\S]*?\}/i,
+  );
+});

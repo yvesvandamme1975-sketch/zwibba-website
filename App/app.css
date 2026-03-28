@@ -114,6 +114,7 @@
 }
 
 .app-tab-shell {
+  --app-mobile-nav-height: 88px;
   flex: 1 1 auto;
   height: 100%;
   min-height: 100%;
@@ -1233,6 +1234,7 @@
   .app-tab-shell__content {
     overflow: visible;
     scrollbar-gutter: auto;
+    padding-bottom: calc(var(--app-mobile-nav-height) + env(safe-area-inset-bottom, 0px));
   }
 
   .app-screen {
@@ -1270,8 +1272,12 @@
   }
 
   .app-tab-shell__nav {
-    position: sticky;
+    position: fixed;
+    left: 0;
+    right: 0;
     bottom: 0;
+    z-index: 40;
+    min-height: var(--app-mobile-nav-height);
     padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   }
 

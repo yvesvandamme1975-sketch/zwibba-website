@@ -42,6 +42,10 @@ import { createMediaService } from './services/media-service.mjs';
 import { createSellerListingsService } from './services/seller-listings-service.mjs';
 import { createWalletService } from './services/wallet-service.mjs';
 import {
+  captureBuyerSearchRenderState,
+  restoreBuyerSearchRenderState,
+} from './utils/buyer-search-render-state.mjs';
+import {
   createPostFlowController,
   decidePublishGate,
   getMissingRequiredPhotoPrompts,
@@ -629,6 +633,7 @@ if (appRoot) {
 
   function renderApp() {
     const route = resolveRenderableRoute();
+    const buyerSearchRenderState = captureBuyerSearchRenderState(document.activeElement);
 
     primeBuyerRouteState(route);
     chatLiveRefreshController.sync({
@@ -641,6 +646,9 @@ if (appRoot) {
       activeTab: getActiveTab(route),
       content: renderRoute(route),
     });
+    if (route.type === 'buy') {
+      restoreBuyerSearchRenderState(appRoot, buyerSearchRenderState);
+    }
     appRoot.dataset.appReady = 'true';
     appRoot.dataset.screen = route.type;
   }
