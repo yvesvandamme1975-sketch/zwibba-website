@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
 
 import { loadEnv } from '../config/env';
+import { AnthropicVisionDraftProvider } from './anthropic-vision-draft-provider';
 import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
-import { OpenAiVisionDraftProvider } from './openai-vision-draft-provider';
+import { FallbackVisionDraftProvider } from './fallback-vision-draft-provider';
+import { GeminiVisionDraftProvider } from './gemini-vision-draft-provider';
+import { MistralVisionDraftProvider } from './mistral-vision-draft-provider';
 import { VISION_DRAFT_PROVIDER, VisionDraftProvider } from './vision-draft-provider';
 
 function createStubVisionDraftProvider(): VisionDraftProvider {
@@ -70,11 +73,33 @@ function createStubVisionDraftProvider(): VisionDraftProvider {
       useFactory() {
         const env = loadEnv();
 
-        if (env.ai.provider === 'openai' && env.ai.openai) {
-          return new OpenAiVisionDraftProvider({
-            apiKey: env.ai.openai.apiKey,
-            model: env.ai.openai.model,
-          });
+        if (env.ai.provider === 'multi' && env.ai.gemini) {
+          const providers: VisionDraftProvider[] = [
+            new GeminiVisionDraftProvider({
+              apiKey: env.ai.gemini.apiKey,
+              model: env.ai.gemini.model,
+            }),
+          ];
+
+          if (env.ai.anthropic) {
+            providers.push(
+              new AnthropicVisionDraftProvider({
+                apiKey: env.ai.anthropic.apiKey,
+                model: env.ai.anthropic.model,
+              }),
+            );
+          }
+
+          if (env.ai.mistral) {
+            providers.push(
+              new MistralVisionDraftProvider({
+                apiKey: env.ai.mistral.apiKey,
+                model: env.ai.mistral.model,
+              }),
+            );
+          }
+
+          return new FallbackVisionDraftProvider(providers);
         }
 
         return createStubVisionDraftProvider();

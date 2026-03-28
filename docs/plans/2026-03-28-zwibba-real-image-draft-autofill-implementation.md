@@ -4,9 +4,9 @@
 
 **Goal:** Replace Zwibba’s stubbed first-photo AI draft helper with real image-based server-side auto-fill that suggests title, category, condition, and description from the first uploaded product photo.
 
-**Architecture:** Keep the existing browser upload-to-R2 flow intact, then call a new API-backed vision adapter with the uploaded photo URL. Normalize provider output on the server, return a stable draft patch to the browser, and fall back cleanly to manual editing when the provider fails or returns unusable JSON.
+**Architecture:** Keep the existing browser upload-to-R2 flow intact, then call a new API-backed vision adapter with the uploaded photo URL. Use Gemini 2.5 Flash-Lite as the primary provider, then Claude 3.5 Haiku and Ministral 3B as ordered fallbacks. Normalize provider output on the server, return a stable draft patch to the browser, and fall back cleanly to manual editing when every provider fails or returns unusable JSON.
 
-**Tech Stack:** Vanilla JS browser app, NestJS API, Node test runner, Railway, Cloudflare R2, OpenAI Responses API via server-side `fetch`
+**Tech Stack:** Vanilla JS browser app, NestJS API, Node test runner, Railway, Cloudflare R2, Gemini API, Anthropic API, Mistral API via server-side `fetch`
 
 ---
 
@@ -84,8 +84,12 @@ Expected: FAIL because no AI provider env contract exists yet.
 
 - Add env fields for:
   - `AI_PROVIDER`
-  - `OPENAI_API_KEY`
-  - `OPENAI_MODEL`
+  - `GEMINI_API_KEY`
+  - `GEMINI_MODEL`
+  - optional `ANTHROPIC_API_KEY`
+  - optional `ANTHROPIC_MODEL`
+  - optional `MISTRAL_API_KEY`
+  - optional `MISTRAL_MODEL`
 - Keep the provider seam small with one exported interface like `generateDraftFromImage(...)`.
 - Document production env requirements in `.env.example`.
 
@@ -112,7 +116,10 @@ git commit -m "feat: add ai provider env contract"
 - Modify: `/Users/pc/zwibba-website-worktrees/browser-live/apps/api/src/ai/ai.controller.ts`
 - Modify: `/Users/pc/zwibba-website-worktrees/browser-live/apps/api/src/ai/ai.service.ts`
 - Modify: `/Users/pc/zwibba-website-worktrees/browser-live/apps/api/src/ai/ai.module.ts`
-- Create: `/Users/pc/zwibba-website-worktrees/browser-live/apps/api/src/ai/openai-vision-draft-provider.ts`
+- Create: `/Users/pc/zwibba-website-worktrees/browser-live/apps/api/src/ai/gemini-vision-draft-provider.ts`
+- Create: `/Users/pc/zwibba-website-worktrees/browser-live/apps/api/src/ai/anthropic-vision-draft-provider.ts`
+- Create: `/Users/pc/zwibba-website-worktrees/browser-live/apps/api/src/ai/mistral-vision-draft-provider.ts`
+- Create: `/Users/pc/zwibba-website-worktrees/browser-live/apps/api/src/ai/fallback-vision-draft-provider.ts`
 - Create: `/Users/pc/zwibba-website-worktrees/browser-live/apps/api/src/ai/ai-taxonomy.ts`
 - Create: `/Users/pc/zwibba-website-worktrees/browser-live/apps/api/src/ai/ai-normalization.ts`
 
@@ -137,7 +144,7 @@ Expected: FAIL because the current service still returns canned draft patches.
 **Step 3: Write the minimal implementation**
 
 - Change the controller to accept `photoUrl` and related metadata.
-- Implement a provider adapter that calls the OpenAI Responses API with the uploaded image URL and a strict JSON prompt.
+- Implement provider adapters for Gemini, Claude, and Mistral with Gemini first in the chain.
 - Add server-side normalization that:
   - constrains categories to Zwibba values
   - constrains condition to Zwibba values
@@ -160,7 +167,7 @@ Expected: PASS
 **Step 5: Commit**
 
 ```bash
-git add apps/api/src/ai/ai.controller.ts apps/api/src/ai/ai.service.ts apps/api/src/ai/ai.module.ts apps/api/src/ai/openai-vision-draft-provider.ts apps/api/src/ai/ai-taxonomy.ts apps/api/src/ai/ai-normalization.ts apps/api/test/ai
+git add apps/api/src/ai/ai.controller.ts apps/api/src/ai/ai.service.ts apps/api/src/ai/ai.module.ts apps/api/src/ai/gemini-vision-draft-provider.ts apps/api/src/ai/anthropic-vision-draft-provider.ts apps/api/src/ai/mistral-vision-draft-provider.ts apps/api/src/ai/fallback-vision-draft-provider.ts apps/api/src/ai/ai-taxonomy.ts apps/api/src/ai/ai-normalization.ts apps/api/test/ai
 git commit -m "feat: add real image ai draft service"
 ```
 

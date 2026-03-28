@@ -5,12 +5,16 @@ import { loadEnv } from '../../src/config/env';
 
 test('loadEnv returns the validated production env contract', () => {
   const env = loadEnv({
-    AI_PROVIDER: 'openai',
+    AI_PROVIDER: 'multi',
+    ANTHROPIC_API_KEY: 'anthropic-test',
+    ANTHROPIC_MODEL: 'claude-3-5-haiku-latest',
     APP_BASE_URL: 'https://zwibba.example',
     DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
+    GEMINI_API_KEY: 'gemini-test',
+    GEMINI_MODEL: 'gemini-2.5-flash-lite',
+    MISTRAL_API_KEY: 'mistral-test',
+    MISTRAL_MODEL: 'ministral-3b-2512',
     NODE_ENV: 'test',
-    OPENAI_API_KEY: 'sk-test',
-    OPENAI_MODEL: 'gpt-4.1-mini',
     OTP_PROVIDER: 'twilio',
     PORT: '3200',
     R2_ACCESS_KEY_ID: 'r2-access-key',
@@ -31,9 +35,13 @@ test('loadEnv returns the validated production env contract', () => {
   assert.equal(env.otp.provider, 'twilio');
   assert.equal(env.port, 3200);
   assert.equal(env.r2.bucket, 'zwibba-media');
-  assert.equal(env.ai.provider, 'openai');
-  assert.ok(env.ai.openai);
-  assert.equal(env.ai.openai.model, 'gpt-4.1-mini');
+  assert.equal(env.ai.provider, 'multi');
+  assert.ok(env.ai.gemini);
+  assert.equal(env.ai.gemini.model, 'gemini-2.5-flash-lite');
+  assert.ok(env.ai.anthropic);
+  assert.equal(env.ai.anthropic.model, 'claude-3-5-haiku-latest');
+  assert.ok(env.ai.mistral);
+  assert.equal(env.ai.mistral.model, 'ministral-3b-2512');
   assert.ok(env.twilio);
   assert.equal(env.twilio.verifyServiceSid, 'VA123456789');
 });
@@ -61,15 +69,17 @@ test('loadEnv returns the demo otp contract in production without Twilio vars', 
   assert.deepEqual(env.otp.demoAllowlist, ['+243990000001', '+243990000002']);
   assert.equal(env.otp.demoCode, '123456');
   assert.equal(env.ai.provider, 'stub');
-  assert.equal(env.ai.openai, undefined);
+  assert.equal(env.ai.gemini, undefined);
+  assert.equal(env.ai.anthropic, undefined);
+  assert.equal(env.ai.mistral, undefined);
   assert.equal(env.twilio, undefined);
 });
 
-test('loadEnv rejects missing OpenAI config in production when openai provider is selected', () => {
+test('loadEnv requires Gemini config in production when multi provider is selected', () => {
   assert.throws(
     () =>
       loadEnv({
-        AI_PROVIDER: 'openai',
+        AI_PROVIDER: 'multi',
         APP_BASE_URL: 'https://zwibba.example',
         DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
         NODE_ENV: 'production',
@@ -85,7 +95,7 @@ test('loadEnv rejects missing OpenAI config in production when openai provider i
         R2_SECRET_ACCESS_KEY: 'r2-secret',
         ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
       }),
-    /Missing required env value: OPENAI_API_KEY/,
+    /Missing required env value: GEMINI_API_KEY/,
   );
 });
 

@@ -63,14 +63,18 @@ So the product currently behaves like an assisted prototype, not real image reco
   - `photoUrl`
   - optional supporting metadata such as `objectKey`, `contentType`, and existing draft title if later useful
 - The first provider for beta should be a hosted multimodal model accessed from the API. No browser-side provider calls.
-- Use an env-backed adapter so the provider can be swapped later without changing the browser contract.
+- Use an env-backed adapter so the provider chain can be swapped later without changing the browser contract.
 - The provider request should ask for strict JSON only, constrained to Zwibba’s supported taxonomy.
 
 ### Provider choice
 
-- Use a hosted multimodal API, not custom training, for beta.
-- OpenAI’s official Responses API supports image inputs, which fits Zwibba’s current “uploaded image URL in, structured JSON out” flow.
+- Use hosted multimodal APIs, not custom training, for beta.
+- Provider order for this round:
+  1. Gemini 2.5 Flash-Lite
+  2. Claude 3.5 Haiku
+  3. Ministral 3B
 - The API layer should isolate provider details behind a small service boundary so future swaps remain localized.
+- Gemini is the primary low-cost vision path. Claude and Mistral act as operational fallbacks when configured.
 
 ### Output normalization
 

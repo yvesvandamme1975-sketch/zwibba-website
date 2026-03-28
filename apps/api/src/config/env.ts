@@ -1,13 +1,21 @@
 type EnvSource = NodeJS.ProcessEnv | Record<string, string | undefined>;
 type OtpProvider = 'demo' | 'twilio';
-type AiProvider = 'stub' | 'openai';
+type AiProvider = 'stub' | 'multi';
 
 export type ZwibbaEnv = {
   admin: {
     sharedSecret: string;
   };
   ai: {
-    openai?: {
+    anthropic?: {
+      apiKey: string;
+      model: string;
+    };
+    gemini?: {
+      apiKey: string;
+      model: string;
+    };
+    mistral?: {
       apiKey: string;
       model: string;
     };
@@ -39,13 +47,17 @@ export type ZwibbaEnv = {
 
 const defaultEnvValues = {
   AI_PROVIDER: 'stub',
+  ANTHROPIC_API_KEY: 'anthropic-api-key',
+  ANTHROPIC_MODEL: 'claude-3-5-haiku-latest',
   APP_BASE_URL: 'http://127.0.0.1:3003',
   DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
   DEMO_OTP_ALLOWLIST: '+243990000001',
   DEMO_OTP_CODE: '123456',
+  GEMINI_API_KEY: 'gemini-api-key',
+  GEMINI_MODEL: 'gemini-2.5-flash-lite',
+  MISTRAL_API_KEY: 'mistral-api-key',
+  MISTRAL_MODEL: 'ministral-3b-2512',
   NODE_ENV: 'development',
-  OPENAI_API_KEY: 'openai-api-key',
-  OPENAI_MODEL: 'gpt-4.1-mini',
   OTP_PROVIDER: 'twilio',
   PORT: '3200',
   R2_ACCESS_KEY_ID: 'r2-access-key',
@@ -117,11 +129,42 @@ function readAiProvider(source: EnvSource): AiProvider {
     ? source.AI_PROVIDER
     : (source.AI_PROVIDER ?? defaultEnvValues.AI_PROVIDER);
 
-  if (rawValue === 'stub' || rawValue === 'openai') {
+  if (rawValue === 'stub' || rawValue === 'multi') {
     return rawValue;
   }
 
-  throw new Error('AI_PROVIDER must be either "stub" or "openai".');
+  throw new Error('AI_PROVIDER must be either "stub" or "multi".');
+}
+
+function readOptionalProviderConfig(
+  source: EnvSource,
+  {
+    apiKey,
+    model,
+  }: {
+    apiKey: keyof typeof defaultEnvValues;
+    model: keyof typeof defaultEnvValues;
+  },
+) {
+  const resolvedApiKey = readOptionalString(source, apiKey);
+  const resolvedModel = readOptionalString(source, model);
+
+  if (!resolvedApiKey && !resolvedModel) {
+    return undefined;
+  }
+
+  if (!resolvedApiKey) {
+    throw new Error(`Missing required env value: ${apiKey}`);
+  }
+
+  if (!resolvedModel) {
+    throw new Error(`Missing required env value: ${model}`);
+  }
+
+  return {
+    apiKey: resolvedApiKey,
+    model: resolvedModel,
+  };
 }
 
 export function loadEnv(source: EnvSource = process.env): ZwibbaEnv {
@@ -133,11 +176,23 @@ export function loadEnv(source: EnvSource = process.env): ZwibbaEnv {
       sharedSecret: readRequiredString(source, 'ZWIBBA_ADMIN_SHARED_SECRET'),
     },
     ai: {
-      openai: aiProvider === 'openai'
+      anthropic: aiProvider === 'multi'
+        ? readOptionalProviderConfig(source, {
+            apiKey: 'ANTHROPIC_API_KEY',
+            model: 'ANTHROPIC_MODEL',
+          })
+        : undefined,
+      gemini: aiProvider === 'multi'
         ? {
-            apiKey: readRequiredString(source, 'OPENAI_API_KEY'),
-            model: readRequiredString(source, 'OPENAI_MODEL'),
+            apiKey: readRequiredString(source, 'GEMINI_API_KEY'),
+            model: readRequiredString(source, 'GEMINI_MODEL'),
           }
+        : undefined,
+      mistral: aiProvider === 'multi'
+        ? readOptionalProviderConfig(source, {
+            apiKey: 'MISTRAL_API_KEY',
+            model: 'MISTRAL_MODEL',
+          })
         : undefined,
       provider: aiProvider,
     },
