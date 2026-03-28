@@ -29,6 +29,8 @@ Current priority docs:
 - `2026-03-28-zwibba-atomic-first-photo-ai-patch-implementation.md`
 - `2026-03-28-zwibba-in-app-message-notifications-design.md`
 - `2026-03-28-zwibba-in-app-message-notifications-implementation.md`
+- `2026-03-28-zwibba-optional-guided-photos-progress-design.md`
+- `2026-03-28-zwibba-optional-guided-photos-progress-implementation.md`
 - `2026-03-28-zwibba-real-image-draft-autofill-design.md`
 - `2026-03-28-zwibba-real-image-draft-autofill-implementation.md`
 
