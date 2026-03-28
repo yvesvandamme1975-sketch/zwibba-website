@@ -98,6 +98,19 @@ function resolvePrimaryPhoto(draft) {
   return draft.photos.find((photo) => photo.kind === 'primary') ?? draft.photos[0] ?? null;
 }
 
+function hasCompleteDraftPatch(patch = {}) {
+  return Boolean(
+    typeof patch.title === 'string' &&
+      patch.title.trim() &&
+      typeof patch.categoryId === 'string' &&
+      patch.categoryId.trim() &&
+      typeof patch.condition === 'string' &&
+      patch.condition.trim() &&
+      typeof patch.description === 'string' &&
+      patch.description.trim(),
+  );
+}
+
 function createSelectedPhotoRecord(
   file,
   {
@@ -235,13 +248,14 @@ export function applyAiResultToDraft(
   aiResult,
   { now = new Date().toISOString() } = {},
 ) {
-  if (aiResult.status === 'manual_fallback') {
+  if (aiResult.status === 'manual_fallback' || !hasCompleteDraftPatch(aiResult.draftPatch ?? {})) {
     return updateListingDraft(
       draft,
       {
         ai: {
+          applied: false,
           status: 'manual_fallback',
-          message: aiResult.message,
+          message: aiResult.message || "L'IA n'a pas pu préparer ce brouillon. Continuez manuellement.",
         },
       },
       { now },
@@ -260,6 +274,7 @@ export function applyAiResultToDraft(
         description: patch.description ?? draft.details.description,
       },
       ai: {
+        applied: true,
         status: 'ready',
         message: 'Brouillon préparé à partir de votre photo.',
       },
@@ -420,6 +435,7 @@ export function createReadyDraft(overrides = {}) {
         area: overrides.area ?? 'Golf',
       },
       ai: overrides.ai ?? {
+        applied: true,
         status: 'ready',
         message: 'Brouillon préparé à partir de votre photo.',
       },

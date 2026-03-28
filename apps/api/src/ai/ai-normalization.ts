@@ -28,3 +28,12 @@ export function normalizeVisionDraftPatch(candidate: Record<string, unknown>): V
     title: normalizeString(candidate.title),
   };
 }
+
+export function isCompleteVisionDraftPatch(candidate: VisionDraftPatch) {
+  return Boolean(
+    normalizeString(candidate.title) &&
+      normalizeString(candidate.categoryId) &&
+      normalizeString(candidate.condition) &&
+      normalizeString(candidate.description),
+  );
+}

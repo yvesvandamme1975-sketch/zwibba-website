@@ -90,3 +90,24 @@ test('ai service falls back to manual mode when the provider fails', async () =>
   assert.ok(result.message);
   assert.match(result.message, /manuellement/i);
 });
+
+test('ai service falls back to manual mode when the provider returns no title', async () => {
+  const service = new AiService({
+    async generateDraftFromImage() {
+      return {
+        categoryId: 'home_garden',
+        condition: 'used_good',
+        description: 'Gâteau visible sur la photo.',
+        title: '',
+      };
+    },
+  });
+
+  const result = await service.generateDraft({
+    photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-cake.jpg',
+  });
+
+  assert.equal(result.status, 'manual_fallback');
+  assert.ok(result.message);
+  assert.match(result.message, /manuellement/i);
+});

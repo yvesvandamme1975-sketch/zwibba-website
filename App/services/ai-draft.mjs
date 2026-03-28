@@ -2,6 +2,20 @@ function createFallbackMessage() {
   return "L'IA n'a pas pu préparer ce brouillon. Continuez manuellement.";
 }
 
+function hasCompleteAiDraftPatch(patch) {
+  return Boolean(
+    patch &&
+      typeof patch.title === 'string' &&
+      patch.title.trim() &&
+      typeof patch.categoryId === 'string' &&
+      patch.categoryId.trim() &&
+      typeof patch.condition === 'string' &&
+      patch.condition.trim() &&
+      typeof patch.description === 'string' &&
+      patch.description.trim(),
+  );
+}
+
 async function parseErrorMessage(response, fallbackMessage) {
   try {
     const json = await response.json();
@@ -23,8 +37,17 @@ function mapAiDraftApiResult(response) {
     };
   }
 
+  const draftPatch = mapAiDraftResponse(response?.draftPatch ?? response ?? {});
+
+  if (!hasCompleteAiDraftPatch(draftPatch)) {
+    return {
+      message: createFallbackMessage(),
+      status: 'manual_fallback',
+    };
+  }
+
   return {
-    draftPatch: mapAiDraftResponse(response?.draftPatch ?? response ?? {}),
+    draftPatch,
     status: 'ready',
   };
 }

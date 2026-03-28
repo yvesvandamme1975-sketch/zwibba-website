@@ -126,6 +126,10 @@ test('first real photo starts a draft and uploads immediately', async () => {
   assert.equal(draft.photos[0].uploadStatus, 'uploaded');
   assert.equal(draft.photos[0].objectKey, 'draft-photos/capture/photo_1-phone.jpg');
   assert.equal(draft.details.categoryId, 'phones_tablets');
+  assert.equal(draft.details.title, 'Samsung Galaxy A54');
+  assert.equal(draft.details.condition, 'like_new');
+  assert.equal(draft.details.description, 'Téléphone propre avec boîte.');
+  assert.equal(draft.ai.applied, true);
   assert.equal('suggestedPriceMinCdf' in draft.details, false);
   assert.equal('suggestedPriceMaxCdf' in draft.details, false);
   assert.equal(aiDraftService.calls.length, 1);
@@ -136,6 +140,47 @@ test('first real photo starts a draft and uploads immediately', async () => {
   assert.equal(aiDraftService.calls[0].objectKey, 'draft-photos/capture/photo_1-phone.jpg');
   assert.equal(draftStorage.loadDraft().id, draft.id);
   assert.deepEqual(mediaService.requests.map((request) => request.type), ['slot', 'upload']);
+});
+
+test('incomplete ready AI output falls back to manual mode instead of partially filling the draft', async () => {
+  const draftStorage = createDraftStorageService({
+    storage: createMemoryStorage(),
+  });
+  const controller = createPostFlowController({
+    draftStorage,
+    imageCompressionService: createImageCompressionServiceMock(),
+    aiDraftService: createAiDraftServiceMock({
+      status: 'ready',
+      draftPatch: {
+        categoryId: 'home_garden',
+        condition: 'used_good',
+        description: 'Gâteau visible sur la photo.',
+        title: '',
+      },
+    }),
+    createPreviewUrl: (file) => `blob:${file.name}`,
+    mediaService: createMediaServiceMock({
+      slot: {
+        objectKey: 'draft-photos/capture/photo_1-cake.jpg',
+        photoId: 'photo_capture_cake',
+        publicUrl: 'https://pub.example.test/draft-photos/capture/photo_1-cake.jpg',
+      },
+    }),
+  });
+
+  const draft = await controller.captureFirstPhoto(
+    createBrowserFile({
+      name: 'cake.jpg',
+      size: 1_200_000,
+    }),
+  );
+
+  assert.equal(draft.ai.status, 'manual_fallback');
+  assert.equal(draft.ai.applied, false);
+  assert.equal(draft.details.title, '');
+  assert.equal(draft.details.categoryId, '');
+  assert.equal(draft.details.condition, '');
+  assert.equal(draft.details.description, '');
 });
 
 test('AI category suggestion drives guided-photo prompts', async () => {
@@ -215,6 +260,9 @@ test('guided upload marks a required prompt complete only after upload succeeds'
     status: 'ready',
     draftPatch: {
       categoryId: 'phones_tablets',
+      title: 'Samsung Galaxy A54',
+      condition: 'like_new',
+      description: 'Téléphone propre avec boîte.',
     },
   });
   const controller = createPostFlowController({
@@ -358,6 +406,9 @@ test('failed guided upload stays retryable and does not satisfy the required pro
       status: 'ready',
       draftPatch: {
         categoryId: 'phones_tablets',
+        title: 'Samsung Galaxy A54',
+        condition: 'like_new',
+        description: 'Téléphone propre avec boîte.',
       },
     }),
     createPreviewUrl: (file) => `blob:${file.name}`,

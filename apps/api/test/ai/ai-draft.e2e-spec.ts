@@ -7,15 +7,23 @@ import test from 'node:test';
 import request from 'supertest';
 
 import { AppModule } from '../../src/app.module';
+import { VISION_DRAFT_PROVIDER } from '../../src/ai/vision-draft-provider';
 import { PrismaService } from '../../src/database/prisma.service';
 
-async function createTestApp(): Promise<INestApplication> {
-  const moduleRef = await Test.createTestingModule({
+async function createTestApp(
+  providerOverride?: { generateDraftFromImage: (input: unknown) => Promise<Record<string, unknown>> },
+): Promise<INestApplication> {
+  let builder = Test.createTestingModule({
     imports: [AppModule],
   })
     .overrideProvider(PrismaService)
-    .useValue({})
-    .compile();
+    .useValue({});
+
+  if (providerOverride) {
+    builder = builder.overrideProvider(VISION_DRAFT_PROVIDER).useValue(providerOverride);
+  }
+
+  const moduleRef = await builder.compile();
 
   const app = moduleRef.createNestApplication();
   await app.init();
@@ -58,4 +66,32 @@ test('ai draft endpoint requires an uploaded photo URL', async (t) => {
       photoPresetId: 'phone-front',
     })
     .expect(400);
+});
+
+test('ai draft endpoint falls back to manual mode when the provider omits the title', async (t) => {
+  const app = await createTestApp({
+    async generateDraftFromImage() {
+      return {
+        categoryId: 'home_garden',
+        condition: 'used_good',
+        description: 'Gâteau visible sur la photo.',
+        title: '',
+      };
+    },
+  });
+  t.after(async () => {
+    await app.close();
+  });
+
+  const response = await request(app.getHttpServer())
+    .post('/ai/draft')
+    .send({
+      contentType: 'image/jpeg',
+      objectKey: 'draft-photos/capture/photo_1-cake.jpg',
+      photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-cake.jpg',
+    })
+    .expect(201);
+
+  assert.equal(response.body.status, 'manual_fallback');
+  assert.match(response.body.message, /manuellement/i);
 });

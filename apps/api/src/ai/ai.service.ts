@@ -5,7 +5,7 @@ import {
   VisionDraftProvider,
   VisionDraftRequest,
 } from './vision-draft-provider';
-import { normalizeVisionDraftPatch } from './ai-normalization';
+import { isCompleteVisionDraftPatch, normalizeVisionDraftPatch } from './ai-normalization';
 
 @Injectable()
 export class AiService {
@@ -18,6 +18,10 @@ export class AiService {
       const draftPatch = normalizeVisionDraftPatch(
         await this.visionDraftProvider.generateDraftFromImage(input),
       );
+
+      if (!isCompleteVisionDraftPatch(draftPatch)) {
+        throw new Error('Vision draft patch was incomplete.');
+      }
 
       return {
         draftPatch,

@@ -57,6 +57,7 @@ function normalizeDetailUpdates(details = {}) {
 
 function createEmptyAiState() {
   return {
+    applied: false,
     status: 'idle',
     message: '',
     confidence: 0,

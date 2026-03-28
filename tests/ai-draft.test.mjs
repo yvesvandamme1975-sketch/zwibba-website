@@ -107,3 +107,25 @@ test('AI failure returns a manual-entry fallback state', async () => {
   assert.equal(result.status, 'manual_fallback');
   assert.match(result.message, /manuellement/i);
 });
+
+test('AI draft service falls back when a ready response is missing the title', async () => {
+  const aiDraftService = createAiDraftService({
+    responder: async () => ({
+      status: 'ready',
+      draftPatch: {
+        categoryId: 'electronics',
+        condition: 'used_good',
+        description: 'Article visible, descriptif initial généré par IA.',
+        title: '',
+      },
+    }),
+  });
+
+  const result = await aiDraftService.generateDraft({
+    objectKey: 'draft-photos/capture/photo_1-cake.jpg',
+    publicUrl: 'https://pub.example.test/draft-photos/capture/photo_1-cake.jpg',
+  });
+
+  assert.equal(result.status, 'manual_fallback');
+  assert.match(result.message, /manuellement/i);
+});
