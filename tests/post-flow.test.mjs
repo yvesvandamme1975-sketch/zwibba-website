@@ -30,12 +30,21 @@ function createAiDraftServiceMock(result) {
 
 function createImageCompressionServiceMock() {
   return {
-    compressImage(photo) {
-      return {
+    compressImage(fileOrPhoto, maybePhoto) {
+      const photo = maybePhoto ?? fileOrPhoto;
+      const normalizedPhoto = {
         ...photo,
         originalSizeBytes: photo.sizeBytes ?? photo.size ?? 0,
         sizeBytes: Math.min(photo.sizeBytes ?? photo.size ?? 0, 1_500_000),
         wasCompressed: (photo.sizeBytes ?? photo.size ?? 0) > 1_500_000,
+      };
+
+      if (!maybePhoto) {
+        return normalizedPhoto;
+      }
+
+      return {
+        photo: normalizedPhoto,
       };
     },
   };
@@ -140,6 +149,74 @@ test('first real photo starts a draft and uploads immediately', async () => {
   assert.equal(aiDraftService.calls[0].objectKey, 'draft-photos/capture/photo_1-phone.jpg');
   assert.equal(draftStorage.loadDraft().id, draft.id);
   assert.deepEqual(mediaService.requests.map((request) => request.type), ['slot', 'upload']);
+});
+
+test('first photo upload uses the compressed bytes and normalized image metadata', async () => {
+  const draftStorage = createDraftStorageService({
+    storage: createMemoryStorage(),
+  });
+  const mediaService = createMediaServiceMock();
+  const aiDraftService = createAiDraftServiceMock({
+    status: 'manual_fallback',
+    message: 'Continuez manuellement.',
+  });
+  const compressionRequests = [];
+  const controller = createPostFlowController({
+    draftStorage,
+    imageCompressionService: {
+      async compressImage(file, photo) {
+        compressionRequests.push({
+          file,
+          photo,
+        });
+
+        return {
+          photo: {
+            ...photo,
+            contentType: 'image/jpeg',
+            fileName: 'phone-front-compressed.jpg',
+            originalSizeBytes: 3_400_000,
+            sizeBytes: 820_000,
+            wasCompressed: true,
+          },
+          upload: {
+            bytes: Uint8Array.from([9, 8, 7, 6]),
+            contentType: 'image/jpeg',
+            fileName: 'phone-front-compressed.jpg',
+          },
+        };
+      },
+    },
+    aiDraftService,
+    createPreviewUrl: (file) => `blob:${file.name}`,
+    mediaService,
+  });
+
+  const draft = await controller.captureFirstPhoto(
+    createBrowserFile({
+      bytes: [1, 2, 3, 4],
+      name: 'phone-front.heic',
+      size: 3_400_000,
+      type: 'image/heic',
+    }),
+  );
+
+  assert.equal(compressionRequests.length, 1);
+  assert.equal(draft.photos[0].contentType, 'image/jpeg');
+  assert.equal(draft.photos[0].fileName, 'phone-front-compressed.jpg');
+  assert.equal(draft.photos[0].sizeBytes, 820_000);
+  assert.equal(draft.photos[0].originalSizeBytes, 3_400_000);
+  assert.equal(draft.photos[0].uploadStatus, 'uploaded');
+  assert.deepEqual(mediaService.requests[0], {
+    type: 'slot',
+    payload: {
+      contentType: 'image/jpeg',
+      fileName: 'phone-front-compressed.jpg',
+      sourcePresetId: 'capture',
+    },
+  });
+  assert.deepEqual(Array.from(mediaService.requests[1].payload.bytes), [9, 8, 7, 6]);
+  assert.equal(mediaService.requests[1].payload.contentType, 'image/jpeg');
 });
 
 test('incomplete ready AI output falls back to manual mode instead of partially filling the draft', async () => {

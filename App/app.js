@@ -678,7 +678,7 @@ if (appRoot) {
   }
 
   async function handleCapture(file, draftResetSerial = state.draftResetSerial) {
-    state.busyLabel = 'Compression et analyse IA en cours...';
+    state.busyLabel = 'Compression, téléversement et analyse IA en cours...';
     renderApp();
 
     try {
@@ -719,7 +719,7 @@ if (appRoot) {
   }
 
   async function handleGuidedCapture(promptId, file, draftResetSerial = state.draftResetSerial) {
-    state.busyLabel = 'Téléversement de la photo guidée...';
+    state.busyLabel = 'Compression et téléversement de la photo guidée...';
     renderApp();
 
     try {

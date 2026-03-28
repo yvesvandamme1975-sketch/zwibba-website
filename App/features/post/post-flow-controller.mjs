@@ -162,17 +162,20 @@ async function uploadDraftPhoto({
   mediaService,
   file,
   photo,
+  upload = null,
 }) {
-  const bytes = await readSelectedPhotoBytes(file);
+  const bytes = upload?.bytes ?? await readSelectedPhotoBytes(file);
+  const contentType = upload?.contentType ?? photo.contentType ?? 'image/jpeg';
+  const fileName = upload?.fileName ?? photo.fileName ?? `${photo.sourcePresetId || photo.id}.jpg`;
   const slot = await mediaService.requestUploadSlot({
-    contentType: photo.contentType || 'image/jpeg',
-    fileName: photo.fileName || `${photo.sourcePresetId || photo.id}.jpg`,
+    contentType,
+    fileName,
     sourcePresetId: photo.sourcePresetId || resolveSourcePresetId(photo.kind, photo.promptId),
   });
 
   await mediaService.uploadBytes({
     bytes,
-    contentType: photo.contentType || 'image/jpeg',
+    contentType,
     publicUrl: slot.publicUrl,
     uploadUrl: slot.uploadUrl,
   });
@@ -459,12 +462,15 @@ export function createPostFlowController({
 
   return {
     async captureFirstPhoto(file) {
-      const preparedPhoto = imageCompressionService.compressImage(
+      const compressionResult = await imageCompressionService.compressImage(
+        file,
         createSelectedPhotoRecord(file, {
           createPreviewUrl,
           kind: 'primary',
         }),
       );
+      const preparedPhoto = compressionResult?.photo ?? compressionResult;
+      const upload = compressionResult?.upload ?? null;
       let draft = createListingDraftFromFirstPhoto({
         photoUrl: preparedPhoto.previewUrl ?? preparedPhoto.url,
         photo: preparedPhoto,
@@ -477,6 +483,7 @@ export function createPostFlowController({
           file,
           mediaService,
           photo: draft.photos[0],
+          upload,
         });
         draft = updateListingDraft(
           draft,
@@ -519,13 +526,16 @@ export function createPostFlowController({
         throw new Error('No draft available.');
       }
 
-      const compressedPhoto = imageCompressionService.compressImage(
+      const compressionResult = await imageCompressionService.compressImage(
+        file,
         createSelectedPhotoRecord(file, {
           createPreviewUrl,
           kind: 'guided',
           promptId,
         }),
       );
+      const compressedPhoto = compressionResult?.photo ?? compressionResult;
+      const upload = compressionResult?.upload ?? null;
       let updatedDraft = addGuidedPhotoToDraft(draft, {
         promptId,
         photo: compressedPhoto,
@@ -541,6 +551,7 @@ export function createPostFlowController({
           file,
           mediaService,
           photo: insertedPhoto,
+          upload,
         });
         updatedDraft = addGuidedPhotoToDraft(updatedDraft, {
           promptId,
