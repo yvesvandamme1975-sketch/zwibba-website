@@ -60,8 +60,6 @@ class ListingDraft {
     this.ownerPhoneNumber,
     required this.photos,
     required this.priceCdf,
-    this.suggestedPriceMaxCdf,
-    this.suggestedPriceMinCdf,
     this.syncedDraftId,
     this.syncStatus,
     required this.title,
@@ -82,8 +80,6 @@ class ListingDraft {
               Map<String, dynamic>.from(photo as Map<dynamic, dynamic>)))
           .toList(),
       priceCdf: json['priceCdf'] as String? ?? '',
-      suggestedPriceMaxCdf: json['suggestedPriceMaxCdf'] as int?,
-      suggestedPriceMinCdf: json['suggestedPriceMinCdf'] as int?,
       syncedDraftId: json['syncedDraftId'] as String?,
       syncStatus: json['syncStatus'] as String?,
       title: json['title'] as String? ?? '',
@@ -116,8 +112,6 @@ class ListingDraft {
   final String? ownerPhoneNumber;
   final List<DraftPhoto> photos;
   final String priceCdf;
-  final int? suggestedPriceMaxCdf;
-  final int? suggestedPriceMinCdf;
   final String? syncedDraftId;
   final String? syncStatus;
   final String title;
@@ -135,8 +129,6 @@ class ListingDraft {
     String? ownerPhoneNumber,
     List<DraftPhoto>? photos,
     String? priceCdf,
-    int? suggestedPriceMaxCdf,
-    int? suggestedPriceMinCdf,
     String? syncedDraftId,
     String? syncStatus,
     String? title,
@@ -150,8 +142,6 @@ class ListingDraft {
       ownerPhoneNumber: ownerPhoneNumber ?? this.ownerPhoneNumber,
       photos: photos ?? this.photos,
       priceCdf: priceCdf ?? this.priceCdf,
-      suggestedPriceMaxCdf: suggestedPriceMaxCdf ?? this.suggestedPriceMaxCdf,
-      suggestedPriceMinCdf: suggestedPriceMinCdf ?? this.suggestedPriceMinCdf,
       syncedDraftId: syncedDraftId ?? this.syncedDraftId,
       syncStatus: syncStatus ?? this.syncStatus,
       title: title ?? this.title,
@@ -168,8 +158,6 @@ class ListingDraft {
       'ownerPhoneNumber': ownerPhoneNumber,
       'photos': photos.map((photo) => photo.toJson()).toList(),
       'priceCdf': priceCdf,
-      'suggestedPriceMaxCdf': suggestedPriceMaxCdf,
-      'suggestedPriceMinCdf': suggestedPriceMinCdf,
       'syncedDraftId': syncedDraftId,
       'syncStatus': syncStatus,
       'title': title,

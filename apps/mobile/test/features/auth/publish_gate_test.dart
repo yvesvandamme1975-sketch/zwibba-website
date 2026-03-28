@@ -141,8 +141,6 @@ class _FakeAiDraftApiService implements AiDraftApiService {
       condition: 'like_new',
       description:
           'Téléphone propre, version 128 Go, batterie stable et prêt à l’emploi.',
-      suggestedPriceMaxCdf: 4500000,
-      suggestedPriceMinCdf: 3900000,
       title: 'Samsung Galaxy A54 128 Go',
     );
   }

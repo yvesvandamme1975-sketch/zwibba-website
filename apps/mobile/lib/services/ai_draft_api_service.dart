@@ -32,8 +32,6 @@ class HttpAiDraftApiService implements AiDraftApiService {
       categoryId: patch['categoryId'] as String,
       condition: patch['condition'] as String,
       description: patch['description'] as String,
-      suggestedPriceMaxCdf: patch['suggestedPriceMaxCdf'] as int,
-      suggestedPriceMinCdf: patch['suggestedPriceMinCdf'] as int,
       title: patch['title'] as String,
     );
   }

@@ -41,8 +41,8 @@ void main() {
     expect(nextDraft.categoryId, 'phones_tablets');
     expect(nextDraft.condition, 'like_new');
     expect(nextDraft.description, contains('Téléphone propre'));
-    expect(nextDraft.suggestedPriceMinCdf, 3900000);
-    expect(nextDraft.suggestedPriceMaxCdf, 4500000);
+    expect(nextDraft.toJson().containsKey('suggestedPriceMinCdf'), isFalse);
+    expect(nextDraft.toJson().containsKey('suggestedPriceMaxCdf'), isFalse);
     expect(apiClient.requests.single.path, '/ai/draft');
     expect(apiClient.requests.single.body['photoPresetId'], 'phone-front');
   });
