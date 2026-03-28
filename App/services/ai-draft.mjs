@@ -2,30 +2,30 @@ function createFallbackMessage() {
   return "L'IA n'a pas pu préparer ce brouillon. Continuez manuellement.";
 }
 
-function mapPhotoToDraft(photo) {
-  if (photo.id?.includes('vehicle')) {
-    return {
-      title: 'Toyota RAV4 automatique',
-      category_id: 'vehicles',
-      condition: 'used_good',
-      description: 'SUV propre avec carnet et climatisation.',
-    };
-  }
+async function parseErrorMessage(response, fallbackMessage) {
+  try {
+    const json = await response.json();
+    const message = json?.message;
 
-  if (photo.id?.includes('sofa')) {
+    if (typeof message === 'string' && message.trim()) {
+      return message;
+    }
+  } catch {}
+
+  return fallbackMessage;
+}
+
+function mapAiDraftApiResult(response) {
+  if (response?.status === 'manual_fallback') {
     return {
-      title: 'Canapé trois places',
-      category_id: 'home_garden',
-      condition: 'used_good',
-      description: 'Canapé confortable, tissu propre, parfait pour salon.',
+      message: response.message || createFallbackMessage(),
+      status: 'manual_fallback',
     };
   }
 
   return {
-    title: 'Samsung Galaxy A54 128 Go',
-    category_id: 'phones_tablets',
-    condition: 'like_new',
-    description: 'Téléphone propre avec boîte et chargeur.',
+    draftPatch: mapAiDraftResponse(response?.draftPatch ?? response ?? {}),
+    status: 'ready',
   };
 }
 
@@ -39,17 +39,44 @@ export function mapAiDraftResponse(response) {
 }
 
 export function createAiDraftService({
-  responder = async (photo) => mapPhotoToDraft(photo),
+  apiBaseUrl = '',
+  fetchFn = null,
+  responder = null,
 } = {}) {
+  const hasLiveApi = Boolean(apiBaseUrl && typeof fetchFn === 'function');
+
   return {
     async generateDraft(photo) {
       try {
-        const response = await responder(photo);
+        let response;
 
-        return {
-          status: 'ready',
-          draftPatch: mapAiDraftResponse(response),
-        };
+        if (typeof responder === 'function') {
+          response = await responder(photo);
+        } else if (hasLiveApi) {
+          const apiResponse = await fetchFn(`${apiBaseUrl}/ai/draft`, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              contentType: photo.contentType ?? '',
+              objectKey: photo.objectKey ?? '',
+              photoUrl: photo.publicUrl ?? photo.url ?? '',
+            }),
+          });
+
+          if (!apiResponse.ok) {
+            throw new Error(
+              await parseErrorMessage(apiResponse, "L'IA n'a pas pu préparer ce brouillon."),
+            );
+          }
+
+          response = await apiResponse.json();
+        } else {
+          throw new Error("L'IA n'a pas pu préparer ce brouillon.");
+        }
+
+        return mapAiDraftApiResult(response);
       } catch {
         return {
           status: 'manual_fallback',

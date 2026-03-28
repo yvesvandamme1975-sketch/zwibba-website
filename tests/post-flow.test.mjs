@@ -18,8 +18,11 @@ import {
 } from '../App/services/draft-storage.mjs';
 
 function createAiDraftServiceMock(result) {
+  const calls = [];
   return {
-    async generateDraft() {
+    calls,
+    async generateDraft(photo) {
+      calls.push(photo);
       return result;
     },
   };
@@ -93,20 +96,21 @@ test('first real photo starts a draft and uploads immediately', async () => {
     storage: createMemoryStorage(),
   });
   const mediaService = createMediaServiceMock();
+  const aiDraftService = createAiDraftServiceMock({
+    status: 'ready',
+    draftPatch: {
+      categoryId: 'phones_tablets',
+      title: 'Samsung Galaxy A54',
+      condition: 'like_new',
+      description: 'Téléphone propre avec boîte.',
+      suggestedPriceMinCdf: 300_000,
+      suggestedPriceMaxCdf: 360_000,
+    },
+  });
   const controller = createPostFlowController({
     draftStorage,
     imageCompressionService: createImageCompressionServiceMock(),
-    aiDraftService: createAiDraftServiceMock({
-      status: 'ready',
-      draftPatch: {
-        categoryId: 'phones_tablets',
-        title: 'Samsung Galaxy A54',
-        condition: 'like_new',
-        description: 'Téléphone propre avec boîte.',
-        suggestedPriceMinCdf: 300_000,
-        suggestedPriceMaxCdf: 360_000,
-      },
-    }),
+    aiDraftService,
     createPreviewUrl: (file) => `blob:${file.name}`,
     mediaService,
   });
@@ -124,6 +128,12 @@ test('first real photo starts a draft and uploads immediately', async () => {
   assert.equal(draft.details.categoryId, 'phones_tablets');
   assert.equal('suggestedPriceMinCdf' in draft.details, false);
   assert.equal('suggestedPriceMaxCdf' in draft.details, false);
+  assert.equal(aiDraftService.calls.length, 1);
+  assert.equal(
+    aiDraftService.calls[0].publicUrl,
+    'https://pub.example.test/draft-photos/capture/photo_1-phone.jpg',
+  );
+  assert.equal(aiDraftService.calls[0].objectKey, 'draft-photos/capture/photo_1-phone.jpg');
   assert.equal(draftStorage.loadDraft().id, draft.id);
   assert.deepEqual(mediaService.requests.map((request) => request.type), ['slot', 'upload']);
 });
@@ -191,15 +201,16 @@ test('guided upload marks a required prompt complete only after upload succeeds'
       sourcePresetId: 'face',
     },
   });
+  const aiDraftService = createAiDraftServiceMock({
+    status: 'ready',
+    draftPatch: {
+      categoryId: 'phones_tablets',
+    },
+  });
   const controller = createPostFlowController({
     draftStorage,
     imageCompressionService: createImageCompressionServiceMock(),
-    aiDraftService: createAiDraftServiceMock({
-      status: 'ready',
-      draftPatch: {
-        categoryId: 'phones_tablets',
-      },
-    }),
+    aiDraftService,
     createPreviewUrl: (file) => `blob:${file.name}`,
     mediaService,
   });
@@ -216,6 +227,7 @@ test('guided upload marks a required prompt complete only after upload succeeds'
 
   assert.ok(!missingPromptIds.includes('face'));
   assert.equal(updatedDraft.photos.find((photo) => photo.promptId === 'face')?.uploadStatus, 'uploaded');
+  assert.equal(aiDraftService.calls.length, 1);
 });
 
 test('guidance screen disables continue while any guided photo upload is still running', () => {
@@ -479,6 +491,44 @@ test('review form keeps pricing fully manual and hides AI price guidance', () =>
   assert.doesNotMatch(html, /Ajoutez votre prix librement/i);
   assert.doesNotMatch(html, /400 000 CDF/);
   assert.doesNotMatch(html, /520 000 CDF/);
+});
+
+test('review form explains that the draft was prepared from the uploaded photo', () => {
+  const draft = createReadyDraft({
+    ai: {
+      status: 'ready',
+      message: 'Brouillon préparé à partir de votre photo.',
+    },
+  });
+  const html = renderReviewFormScreen({
+    areaOptions: ['Golf', 'Bel Air'],
+    categories: [{ id: 'electronics', label: 'Électronique' }],
+    conditionOptions: [{ value: 'like_new', label: 'Comme neuf' }],
+    draft,
+    validationErrors: [],
+  });
+
+  assert.match(html, /Brouillon préparé à partir de votre photo\./i);
+  assert.match(html, /Détails préparés/i);
+});
+
+test('review form keeps the seller in manual mode when AI falls back', () => {
+  const draft = createReadyDraft({
+    ai: {
+      status: 'manual_fallback',
+      message: "L'IA n'a pas pu préparer ce brouillon. Continuez manuellement.",
+    },
+  });
+  const html = renderReviewFormScreen({
+    areaOptions: ['Golf', 'Bel Air'],
+    categories: [{ id: 'electronics', label: 'Électronique' }],
+    conditionOptions: [{ value: 'like_new', label: 'Comme neuf' }],
+    draft,
+    validationErrors: [],
+  });
+
+  assert.match(html, /Préparation manuelle/i);
+  assert.match(html, /Continuez manuellement/i);
 });
 
 test('review form renders the first draft image as the seller preview', () => {

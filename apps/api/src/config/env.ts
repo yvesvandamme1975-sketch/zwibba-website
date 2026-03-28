@@ -1,9 +1,17 @@
 type EnvSource = NodeJS.ProcessEnv | Record<string, string | undefined>;
 type OtpProvider = 'demo' | 'twilio';
+type AiProvider = 'stub' | 'openai';
 
 export type ZwibbaEnv = {
   admin: {
     sharedSecret: string;
+  };
+  ai: {
+    openai?: {
+      apiKey: string;
+      model: string;
+    };
+    provider: AiProvider;
   };
   appBaseUrl: string;
   databaseUrl: string;
@@ -30,11 +38,14 @@ export type ZwibbaEnv = {
 };
 
 const defaultEnvValues = {
+  AI_PROVIDER: 'stub',
   APP_BASE_URL: 'http://127.0.0.1:3003',
   DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
   DEMO_OTP_ALLOWLIST: '+243990000001',
   DEMO_OTP_CODE: '123456',
   NODE_ENV: 'development',
+  OPENAI_API_KEY: 'openai-api-key',
+  OPENAI_MODEL: 'gpt-4.1-mini',
   OTP_PROVIDER: 'twilio',
   PORT: '3200',
   R2_ACCESS_KEY_ID: 'r2-access-key',
@@ -100,12 +111,35 @@ function readOtpProvider(source: EnvSource): OtpProvider {
   throw new Error('OTP_PROVIDER must be either "demo" or "twilio".');
 }
 
+function readAiProvider(source: EnvSource): AiProvider {
+  const isProduction = isProductionEnv(source);
+  const rawValue = isProduction
+    ? source.AI_PROVIDER
+    : (source.AI_PROVIDER ?? defaultEnvValues.AI_PROVIDER);
+
+  if (rawValue === 'stub' || rawValue === 'openai') {
+    return rawValue;
+  }
+
+  throw new Error('AI_PROVIDER must be either "stub" or "openai".');
+}
+
 export function loadEnv(source: EnvSource = process.env): ZwibbaEnv {
+  const aiProvider = readAiProvider(source);
   const otpProvider = readOtpProvider(source);
 
   return {
     admin: {
       sharedSecret: readRequiredString(source, 'ZWIBBA_ADMIN_SHARED_SECRET'),
+    },
+    ai: {
+      openai: aiProvider === 'openai'
+        ? {
+            apiKey: readRequiredString(source, 'OPENAI_API_KEY'),
+            model: readRequiredString(source, 'OPENAI_MODEL'),
+          }
+        : undefined,
+      provider: aiProvider,
     },
     appBaseUrl: readRequiredString(source, 'APP_BASE_URL'),
     databaseUrl: readRequiredString(source, 'DATABASE_URL'),

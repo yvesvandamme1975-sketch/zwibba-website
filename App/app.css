@@ -607,6 +607,11 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.app-review__summary--manual {
+  background: rgba(239, 83, 80, 0.08);
+  border-color: rgba(239, 83, 80, 0.2);
+}
+
 .app-capture__resume {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;

@@ -1,28 +1,33 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+
+import {
+  VISION_DRAFT_PROVIDER,
+  VisionDraftProvider,
+  VisionDraftRequest,
+} from './vision-draft-provider';
+import { normalizeVisionDraftPatch } from './ai-normalization';
 
 @Injectable()
 export class AiService {
-  generateDraft(photoPresetId: string) {
-    if (photoPresetId === 'phone-front') {
+  constructor(
+    @Inject(VISION_DRAFT_PROVIDER) private readonly visionDraftProvider: VisionDraftProvider,
+  ) {}
+
+  async generateDraft(input: VisionDraftRequest) {
+    try {
+      const draftPatch = normalizeVisionDraftPatch(
+        await this.visionDraftProvider.generateDraftFromImage(input),
+      );
+
       return {
-        draftPatch: {
-          categoryId: 'phones_tablets',
-          condition: 'like_new',
-          description: 'Téléphone propre, version 128 Go, batterie stable et prêt à l’emploi.',
-          title: 'Samsung Galaxy A54 128 Go',
-        },
+        draftPatch,
         status: 'ready',
       };
+    } catch {
+      return {
+        message: "L'IA n'a pas pu préparer ce brouillon. Continuez manuellement.",
+        status: 'manual_fallback',
+      };
     }
-
-    return {
-      draftPatch: {
-        categoryId: 'electronics',
-        condition: 'used_good',
-        description: 'Article visible, descriptif initial généré par IA.',
-        title: 'Annonce préparée par IA',
-      },
-      status: 'ready',
-    };
   }
 }

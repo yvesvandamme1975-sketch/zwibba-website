@@ -49,6 +49,50 @@ test('AI draft response maps into title, category, condition, and description on
   assert.equal('suggestedPriceMaxCdf' in result.draftPatch, false);
 });
 
+test('AI draft service sends the uploaded photo URL to the live API', async () => {
+  const requests = [];
+  const aiDraftService = createAiDraftService({
+    apiBaseUrl: 'https://api.example.test',
+    fetchFn: async (url, options) => {
+      requests.push({
+        body: JSON.parse(options.body),
+        options,
+        url,
+      });
+
+      return {
+        ok: true,
+        async json() {
+          return {
+            status: 'ready',
+            draftPatch: {
+              title: 'Samsung Galaxy A54 128 Go',
+              categoryId: 'phones_tablets',
+              condition: 'like_new',
+              description: 'Téléphone propre avec boîte et chargeur.',
+            },
+          };
+        },
+      };
+    },
+  });
+
+  const result = await aiDraftService.generateDraft({
+    contentType: 'image/jpeg',
+    objectKey: 'draft-photos/capture/photo_1-phone.jpg',
+    publicUrl: 'https://pub.example.test/draft-photos/capture/photo_1-phone.jpg',
+  });
+
+  assert.equal(result.status, 'ready');
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].url, 'https://api.example.test/ai/draft');
+  assert.deepEqual(requests[0].body, {
+    contentType: 'image/jpeg',
+    objectKey: 'draft-photos/capture/photo_1-phone.jpg',
+    photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-phone.jpg',
+  });
+});
+
 test('AI failure returns a manual-entry fallback state', async () => {
   const aiDraftService = createAiDraftService({
     responder: async () => {

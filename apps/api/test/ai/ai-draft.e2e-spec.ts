@@ -31,15 +31,31 @@ test('ai draft endpoint returns the structured seller draft response', async (t)
   const response = await request(app.getHttpServer())
     .post('/ai/draft')
     .send({
-      photoPresetId: 'phone-front',
+      contentType: 'image/jpeg',
+      objectKey: 'draft-photos/capture/photo_1-phone.jpg',
+      photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-phone.jpg',
     })
     .expect(201);
 
   assert.equal(response.body.status, 'ready');
-  assert.equal(response.body.draftPatch.title, 'Samsung Galaxy A54 128 Go');
-  assert.equal(response.body.draftPatch.categoryId, 'phones_tablets');
-  assert.equal(response.body.draftPatch.condition, 'like_new');
-  assert.match(response.body.draftPatch.description, /propre/i);
+  assert.equal(typeof response.body.draftPatch.title, 'string');
+  assert.equal(typeof response.body.draftPatch.categoryId, 'string');
+  assert.equal(typeof response.body.draftPatch.condition, 'string');
+  assert.equal(typeof response.body.draftPatch.description, 'string');
   assert.equal('suggestedPriceMinCdf' in response.body.draftPatch, false);
   assert.equal('suggestedPriceMaxCdf' in response.body.draftPatch, false);
+});
+
+test('ai draft endpoint requires an uploaded photo URL', async (t) => {
+  const app = await createTestApp();
+  t.after(async () => {
+    await app.close();
+  });
+
+  await request(app.getHttpServer())
+    .post('/ai/draft')
+    .send({
+      photoPresetId: 'phone-front',
+    })
+    .expect(400);
 });

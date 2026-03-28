@@ -91,7 +91,10 @@ if (appRoot) {
   const postFlowController = createPostFlowController({
     draftStorage,
     imageCompressionService: createImageCompressionService(),
-    aiDraftService: createAiDraftService(),
+    aiDraftService: createAiDraftService({
+      apiBaseUrl: apiConfig.apiBaseUrl,
+      fetchFn: window.fetch.bind(window),
+    }),
     mediaService,
     createPreviewUrl: (file) => window.URL.createObjectURL(file),
   });

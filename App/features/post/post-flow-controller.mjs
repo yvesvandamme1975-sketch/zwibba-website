@@ -261,7 +261,7 @@ export function applyAiResultToDraft(
       },
       ai: {
         status: 'ready',
-        message: 'Brouillon préparé par IA.',
+        message: 'Brouillon préparé à partir de votre photo.',
       },
       guidance: resolveGuidance(patch.categoryId ?? draft.details.categoryId),
     },
@@ -419,9 +419,9 @@ export function createReadyDraft(overrides = {}) {
         description: overrides.description ?? 'Article prêt, propre et disponible immédiatement.',
         area: overrides.area ?? 'Golf',
       },
-      ai: {
+      ai: overrides.ai ?? {
         status: 'ready',
-        message: 'Brouillon préparé par IA.',
+        message: 'Brouillon préparé à partir de votre photo.',
       },
       guidance: resolveGuidance(categoryId),
     },

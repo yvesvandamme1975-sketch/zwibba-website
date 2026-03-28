@@ -91,6 +91,12 @@ export function renderReviewFormScreen({
 }) {
   const missingPrompts = getMissingRequiredPhotoPrompts(draft);
   const primaryImageUrl = resolveDraftPrimaryImage(draft);
+  const isManualFallback = draft.ai.status === 'manual_fallback';
+  const summaryTitle = isManualFallback ? 'Préparation manuelle' : 'Détails préparés';
+  const summaryClass = isManualFallback
+    ? 'app-review__summary app-review__summary--manual'
+    : 'app-review__summary';
+  const summaryMessage = draft.ai.message || "L'IA prépare les bases du brouillon.";
 
   return `
     <section class="app-flow app-flow--review">
@@ -106,9 +112,9 @@ export function renderReviewFormScreen({
       </header>
 
       <div class="app-review__top">
-        <div class="app-review__summary">
-          <strong>Pré-remplissage IA</strong>
-          <span>${escapeHtml(draft.ai.message || "L'IA prépare les bases du brouillon.")}</span>
+        <div class="${summaryClass}">
+          <strong>${escapeHtml(summaryTitle)}</strong>
+          <span>${escapeHtml(summaryMessage)}</span>
         </div>
       </div>
 
