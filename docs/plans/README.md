@@ -33,5 +33,7 @@ Current priority docs:
 - `2026-03-28-zwibba-optional-guided-photos-progress-implementation.md`
 - `2026-03-28-zwibba-real-image-draft-autofill-design.md`
 - `2026-03-28-zwibba-real-image-draft-autofill-implementation.md`
+- `2026-03-29-zwibba-profile-zone-source-of-truth-design.md`
+- `2026-03-29-zwibba-profile-zone-source-of-truth-implementation.md`
 
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
