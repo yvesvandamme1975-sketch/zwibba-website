@@ -23,9 +23,13 @@ type PersistedDraftPhotoRecord = {
 };
 
 const categoryLabels: Record<string, string> = {
+  emploi: 'Emploi',
   electronics: 'Électronique',
+  fashion: 'Mode',
+  home_garden: 'Maison',
   phones_tablets: 'Téléphones & Tablettes',
   real_estate: 'Immobilier',
+  services: 'Services',
   vehicles: 'Véhicules',
 };
 

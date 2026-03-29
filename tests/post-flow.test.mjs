@@ -4,6 +4,7 @@ import test from 'node:test';
 import { renderCaptureScreen } from '../App/features/post/capture-screen.mjs';
 import { renderPhotoGuidanceScreen } from '../App/features/post/photo-guidance-screen.mjs';
 import { renderReviewFormScreen } from '../App/features/post/review-form-screen.mjs';
+import { sellerCategories } from '../App/demo-content.mjs';
 import {
   MAX_PRICE_CDF,
   addGuidedPhotoToDraft,
@@ -756,6 +757,134 @@ test('guidance screen makes extra guided photos optional and keeps upload action
   assert.match(html, /Vue latérale/i);
   assert.match(html, /Vue d(?:&#39;|')ensemble/i);
   assert.match(html, /href="#review"/);
+});
+
+test('review form category dropdown includes Emploi and Services', () => {
+  const html = renderReviewFormScreen({
+    areaOptions: ['Golf', 'Bel Air'],
+    categories: sellerCategories,
+    conditionOptions: [{ value: 'used_good', label: 'Bon état' }],
+    draft: createReadyDraft(),
+    validationErrors: [],
+  });
+
+  assert.match(html, />Emploi<\/option>/);
+  assert.match(html, />Services<\/option>/);
+});
+
+test('services guidance suggests a business card or company logo', () => {
+  const html = renderPhotoGuidanceScreen({
+    draft: createReadyDraft({
+      categoryId: 'services',
+      photos: [
+        {
+          id: 'photo-1',
+          kind: 'primary',
+          previewUrl: 'blob:service.jpg',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/capture/photo_1-service.jpg',
+        },
+      ],
+    }),
+  });
+
+  assert.match(html, /Carte de visite ou logo/i);
+  assert.match(html, /Ajouter cette photo/i);
+  assert.match(html, /la publication reste possible pendant la bêta/i);
+});
+
+test('emploi guidance suggests a company visual or logo', () => {
+  const html = renderPhotoGuidanceScreen({
+    draft: createReadyDraft({
+      categoryId: 'emploi',
+      photos: [
+        {
+          id: 'photo-1',
+          kind: 'primary',
+          previewUrl: 'blob:emploi.jpg',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/capture/photo_1-emploi.jpg',
+        },
+      ],
+    }),
+  });
+
+  assert.match(html, /Logo ou visuel de l(?:&#39;|')entreprise/i);
+  assert.match(html, /Ajouter cette photo/i);
+  assert.match(html, /la publication reste possible pendant la bêta/i);
+});
+
+test('vehicle guidance requires five specific photos', () => {
+  const html = renderPhotoGuidanceScreen({
+    draft: createReadyDraft({
+      categoryId: 'vehicles',
+      photos: [
+        {
+          id: 'photo-1',
+          kind: 'primary',
+          previewUrl: 'blob:vehicle.jpg',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/capture/photo_1-vehicle.jpg',
+        },
+      ],
+    }),
+  });
+
+  assert.match(html, />Avant</);
+  assert.match(html, />Arrière</);
+  assert.match(html, />Vue droite</);
+  assert.match(html, />Vue gauche</);
+  assert.match(html, />Intérieur</);
+});
+
+test('vehicle publish requires avant, arrière, droite, gauche and intérieur photos', () => {
+  const validationErrors = validateDraftForPublish(
+    createReadyDraft({
+      categoryId: 'vehicles',
+      photos: [
+        {
+          id: 'photo-primary',
+          kind: 'primary',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/capture/photo_1-vehicle.jpg',
+        },
+        {
+          id: 'photo-avant',
+          kind: 'guided',
+          promptId: 'avant',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/avant.jpg',
+        },
+        {
+          id: 'photo-arriere',
+          kind: 'guided',
+          promptId: 'arriere',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/arriere.jpg',
+        },
+        {
+          id: 'photo-droite',
+          kind: 'guided',
+          promptId: 'droite',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/droite.jpg',
+        },
+        {
+          id: 'photo-gauche',
+          kind: 'guided',
+          promptId: 'gauche',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/gauche.jpg',
+        },
+      ],
+    }),
+  );
+
+  assert.ok(validationErrors.some((error) => error.field === 'guided_photos'));
+  assert.match(
+    validationErrors.find((error) => error.field === 'guided_photos')?.message || '',
+    /intérieur/i,
+  );
 });
 
 test('capture screen renders staged progress for the first photo upload', () => {

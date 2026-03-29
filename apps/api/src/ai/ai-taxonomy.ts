@@ -1,6 +1,8 @@
 export const supportedCategoryIds = [
   'phones_tablets',
   'electronics',
+  'services',
+  'emploi',
   'vehicles',
   'real_estate',
   'fashion',

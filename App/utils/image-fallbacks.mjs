@@ -1,10 +1,12 @@
 import { resolveDemoPreviewUrl } from '../demo-preview-assets.mjs';
 
 const categoryIdByLabel = {
+  'emploi': 'emploi',
   'électronique': 'electronics',
   'immobilier': 'real_estate',
   'maison': 'home_garden',
   'mode': 'fashion',
+  'services': 'services',
   'téléphones': 'phones_tablets',
   'téléphones & tablettes': 'phones_tablets',
   'véhicules': 'vehicles',

@@ -3,9 +3,17 @@ export const categoryGuidance = {
     required: ['face', 'back', 'screen_on'],
     optional: ['accessoires'],
   },
+  services: {
+    required: [],
+    optional: ['carte_visite_logo'],
+  },
+  emploi: {
+    required: [],
+    optional: ['logo_entreprise'],
+  },
   vehicles: {
-    required: ['avant', 'profil', 'interieur', 'tableau_de_bord'],
-    optional: ['kilometrage'],
+    required: ['avant', 'arriere', 'droite', 'gauche', 'interieur'],
+    optional: ['tableau_de_bord', 'kilometrage'],
   },
   real_estate: {
     required: ['facade', 'salon', 'chambre', 'cuisine', 'salle_de_bain'],

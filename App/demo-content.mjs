@@ -3,6 +3,8 @@ import { resolveDemoPreviewUrl } from './demo-preview-assets.mjs';
 export const sellerCategories = [
   { id: 'phones_tablets', label: 'Téléphones' },
   { id: 'electronics', label: 'Électronique' },
+  { id: 'services', label: 'Services' },
+  { id: 'emploi', label: 'Emploi' },
   { id: 'vehicles', label: 'Véhicules' },
   { id: 'real_estate', label: 'Immobilier' },
   { id: 'fashion', label: 'Mode' },

@@ -75,6 +75,48 @@ test('ai service ignores any attempted price output from the provider', async ()
   assert.equal('suggestedPriceMinCdf' in result.draftPatch, false);
 });
 
+test('ai service accepts services as a supported category', async () => {
+  const service = new AiService({
+    async generateDraftFromImage() {
+      return {
+        categoryId: 'services',
+        condition: 'used_good',
+        description: 'Logo et coordonnées d’un service visible.',
+        title: 'Service de plomberie à domicile',
+      };
+    },
+  });
+
+  const result = await service.generateDraft({
+    photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-service.jpg',
+  });
+
+  assert.equal(result.status, 'ready');
+  assert.ok(result.draftPatch);
+  assert.equal(result.draftPatch.categoryId, 'services');
+});
+
+test('ai service accepts emploi as a supported category', async () => {
+  const service = new AiService({
+    async generateDraftFromImage() {
+      return {
+        categoryId: 'emploi',
+        condition: 'used_good',
+        description: 'Visuel d’entreprise pour une offre d’emploi.',
+        title: 'Recrutement commercial Lubumbashi',
+      };
+    },
+  });
+
+  const result = await service.generateDraft({
+    photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-emploi.jpg',
+  });
+
+  assert.equal(result.status, 'ready');
+  assert.ok(result.draftPatch);
+  assert.equal(result.draftPatch.categoryId, 'emploi');
+});
+
 test('ai service falls back to manual mode when the provider fails', async () => {
   const service = new AiService({
     async generateDraftFromImage() {

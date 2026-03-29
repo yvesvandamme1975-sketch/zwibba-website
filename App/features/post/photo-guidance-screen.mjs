@@ -1,6 +1,5 @@
 import {
   getGuidedPhotoPrompts,
-  getMissingRequiredPhotoPrompts,
 } from './post-flow-controller.mjs';
 import { sellerCategories } from '../../demo-content.mjs';
 import { renderInAppBrand } from '../../components/in-app-brand.mjs';
@@ -29,8 +28,10 @@ function renderPrompt(prompt) {
         ? 'Téléversement en cours'
         : prompt.completed
           ? 'Photo téléversée'
-          : prompt.required
-            ? 'Photo conseillée pour rassurer les acheteurs'
+          : prompt.publishRequired
+            ? 'Photo obligatoire pour publier'
+            : prompt.required
+              ? 'Photo conseillée pour rassurer les acheteurs'
             : 'Photo recommandée';
 
   return `
@@ -79,9 +80,20 @@ export function renderPhotoGuidanceScreen({
   uploadsBusy = false,
 }) {
   const prompts = getGuidedPhotoPrompts(draft);
-  const missingPrompts = getMissingRequiredPhotoPrompts(draft);
+  const blockingPrompts = prompts.filter((prompt) => prompt.publishRequired && !prompt.completed);
+  const incompletePrompts = prompts.filter((prompt) => !prompt.completed);
   const hasUploadingPrompt = prompts.some((prompt) => prompt.uploadStatus === 'uploading');
   const isLocked = uploadsBusy || hasUploadingPrompt;
+  const statusTitle = blockingPrompts.length
+    ? 'Photos obligatoires manquantes'
+    : incompletePrompts.length
+      ? 'Photos complémentaires recommandées'
+      : 'Photos complémentaires prêtes';
+  const statusBody = blockingPrompts.length
+    ? `${blockingPrompts.length} vue(s) sont obligatoires avant la publication.`
+    : incompletePrompts.length
+      ? `${incompletePrompts.length} vue(s) recommandée(s) manquent encore, mais la publication reste possible pendant la bêta.`
+      : 'Vous pouvez continuer vers le brouillon ou ajouter encore quelques vues.';
 
   return `
     <section class="app-flow app-flow--guidance">
@@ -103,14 +115,8 @@ export function renderPhotoGuidanceScreen({
       </p>
 
       <div class="app-guidance__status">
-        <strong>${missingPrompts.length ? 'Photos complémentaires recommandées' : 'Photos complémentaires prêtes'}</strong>
-        <span>
-          ${
-            missingPrompts.length
-              ? `${missingPrompts.length} vue(s) recommandée(s) manquent encore, mais la publication reste possible pendant la bêta.`
-              : 'Vous pouvez continuer vers le brouillon ou ajouter encore quelques vues.'
-          }
-        </span>
+        <strong>${escapeHtml(statusTitle)}</strong>
+        <span>${escapeHtml(statusBody)}</span>
       </div>
 
       ${renderUploadProgress(uploadProgress)}

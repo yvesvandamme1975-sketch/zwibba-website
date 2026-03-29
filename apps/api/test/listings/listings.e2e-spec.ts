@@ -522,3 +522,103 @@ test('listings without uploaded photos still return a null primary image', async
   assert.equal(listing.primaryImageUrl, null);
   assert.equal(detailResponse.body.primaryImageUrl, null);
 });
+
+test('listing labels support services and emploi categories', async (t) => {
+  const {
+    app,
+    prisma,
+  } = await createTestContext();
+  t.after(async () => {
+    await app.close();
+  });
+
+  prisma.drafts.set('draft_service_label', {
+    area: 'Kamalondo',
+    categoryId: 'services',
+    condition: 'used_good',
+    description: 'Service de plomberie disponible 7j/7.',
+    id: 'draft_service_label',
+    ownerPhoneNumber: '+243990000010',
+    priceCdf: 150000,
+    syncStatus: 'synced',
+    title: 'Plombier urgence 7j/7',
+  });
+  prisma.draftPhoto.create({
+    data: {
+      draftId: 'draft_service_label',
+      id: 'photo_draft_service_label',
+      kind: 'primary',
+      objectKey: 'draft-photos/services/logo.jpg',
+      previewUrl: 'https://pub.example.test/services/logo.jpg',
+      promptId: 'carte_visite_logo',
+      publicUrl: 'https://pub.example.test/services/logo.jpg',
+      uploadStatus: 'uploaded',
+    },
+  });
+  prisma.listings.set('listing_draft_service_label', {
+    area: 'Kamalondo',
+    categoryId: 'services',
+    description: 'Service de plomberie disponible 7j/7.',
+    draftId: 'draft_service_label',
+    id: 'listing_draft_service_label',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+243990000010',
+    priceCdf: 150000,
+    publishedAt: new Date('2026-03-29T10:00:00.000Z'),
+    slug: 'plombier-urgence-7j7',
+    title: 'Plombier urgence 7j/7',
+    updatedAt: new Date('2026-03-29T10:00:00.000Z'),
+  });
+
+  prisma.drafts.set('draft_job_label', {
+    area: 'Golf',
+    categoryId: 'emploi',
+    condition: 'used_good',
+    description: 'Offre d’emploi pour réceptionniste.',
+    id: 'draft_job_label',
+    ownerPhoneNumber: '+243990000011',
+    priceCdf: 100000,
+    syncStatus: 'synced',
+    title: 'Offre réceptionniste',
+  });
+  prisma.draftPhoto.create({
+    data: {
+      draftId: 'draft_job_label',
+      id: 'photo_draft_job_label',
+      kind: 'primary',
+      objectKey: 'draft-photos/emploi/logo.jpg',
+      previewUrl: 'https://pub.example.test/emploi/logo.jpg',
+      promptId: 'logo_entreprise',
+      publicUrl: 'https://pub.example.test/emploi/logo.jpg',
+      uploadStatus: 'uploaded',
+    },
+  });
+  prisma.listings.set('listing_draft_job_label', {
+    area: 'Golf',
+    categoryId: 'emploi',
+    description: 'Offre d’emploi pour réceptionniste.',
+    draftId: 'draft_job_label',
+    id: 'listing_draft_job_label',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+243990000011',
+    priceCdf: 100000,
+    publishedAt: new Date('2026-03-29T11:00:00.000Z'),
+    slug: 'offre-receptionniste',
+    title: 'Offre réceptionniste',
+    updatedAt: new Date('2026-03-29T11:00:00.000Z'),
+  });
+
+  const feedResponse = await request(app.getHttpServer())
+    .get('/listings')
+    .expect(200);
+
+  const serviceListing = feedResponse.body.items.find(
+    (item: { slug: string }) => item.slug === 'plombier-urgence-7j7',
+  );
+  const emploiListing = feedResponse.body.items.find(
+    (item: { slug: string }) => item.slug === 'offre-receptionniste',
+  );
+
+  assert.equal(serviceListing.categoryLabel, 'Services');
+  assert.equal(emploiListing.categoryLabel, 'Emploi');
+});

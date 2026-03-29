@@ -10,17 +10,22 @@ export const MAX_PRICE_CDF = 2_147_483_647;
 const promptLabels = {
   accessoires: 'Accessoires',
   avant: 'Avant',
+  arriere: 'Arrière',
   back: 'Dos',
+  carte_visite_logo: 'Carte de visite ou logo',
   chambre: 'Chambre',
   cote: 'Vue latérale',
   cuisine: 'Cuisine',
   defaut: 'Défaut visible',
   detail: 'Détail',
+  droite: 'Vue droite',
   etiquette: 'Étiquette',
   face: 'Face',
   facade: 'Façade',
+  gauche: 'Vue gauche',
   interieur: 'Intérieur',
   kilometrage: 'Kilométrage',
+  logo_entreprise: "Logo ou visuel de l'entreprise",
   salle_de_bain: 'Salle de bain',
   salon: 'Salon',
   screen_on: 'Écran allumé',
@@ -42,12 +47,17 @@ function hasPromptPhoto(draft, promptId) {
   );
 }
 
+function isVehicleCategory(draft) {
+  return draft.details.categoryId === 'vehicles';
+}
+
 function buildPrompt(promptId, required, draft) {
   const photo = draft.photos.find((entry) => entry.promptId === promptId);
 
   return {
     id: promptId,
     label: promptLabels[promptId] ?? promptId,
+    publishRequired: required && isVehicleCategory(draft),
     required,
     completed: hasPromptPhoto(draft, promptId),
     previewUrl: resolvePhotoRenderUrl(photo),
@@ -313,6 +323,19 @@ export function validateDraftForPublish(
             ? 'Réessayez la photo principale avant de publier.'
             : 'Ajoutez au moins une photo.',
     });
+  }
+
+  if (isVehicleCategory(draft)) {
+    const missingVehiclePrompts = getMissingRequiredPhotoPrompts(draft);
+
+    if (missingVehiclePrompts.length) {
+      errors.push({
+        field: 'guided_photos',
+        message: `Ajoutez ces vues avant de publier : ${missingVehiclePrompts
+          .map((prompt) => prompt.label)
+          .join(', ')}.`,
+      });
+    }
   }
 
   if (!draft.details.categoryId) {
