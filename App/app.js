@@ -48,6 +48,10 @@ import {
 } from './utils/buyer-search-render-state.mjs';
 import { resolveDiscardDraftRoute } from './utils/draft-discard-navigation.mjs';
 import {
+  captureReviewDraftRenderState,
+  restoreReviewDraftRenderState,
+} from './utils/review-draft-render-state.mjs';
+import {
   createPostFlowController,
   decidePublishGate,
   getMissingRequiredPhotoPrompts,
@@ -707,6 +711,7 @@ if (appRoot) {
   function renderApp() {
     const route = resolveRenderableRoute();
     const buyerSearchRenderState = captureBuyerSearchRenderState(document.activeElement);
+    const reviewDraftRenderState = captureReviewDraftRenderState(document.activeElement);
 
     primeBuyerRouteState(route);
     chatLiveRefreshController.sync({
@@ -722,6 +727,9 @@ if (appRoot) {
     });
     if (route.type === 'buy') {
       restoreBuyerSearchRenderState(appRoot, buyerSearchRenderState);
+    }
+    if (route.type === 'review') {
+      restoreReviewDraftRenderState(appRoot, reviewDraftRenderState);
     }
     appRoot.dataset.appReady = 'true';
     appRoot.dataset.screen = route.type;
