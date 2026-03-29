@@ -149,7 +149,7 @@ export function renderListingDetailScreen({
       ${renderDetailMedia(detail)}
 
       <div class="app-auth__card">
-        <strong>Résumé</strong>
+        <strong>Description</strong>
         <p>${escapeHtml(detail.summary)}</p>
       </div>
 
