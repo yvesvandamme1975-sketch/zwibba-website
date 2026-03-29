@@ -31,6 +31,14 @@ export const seededListingImagesBySlug = {
       pageUrl: 'https://www.pexels.com/photo/laptop-placed-on-top-of-a-wooden-work-desk-8472374/',
     },
   },
+  'offre-receptionniste-lubumbashi-centre': {
+    src: '/assets/listings/offre-receptionniste-lubumbashi-centre.jpg',
+    alt: 'Accueil professionnel avec ordinateur et cahier de rendez-vous dans un bureau lumineux.',
+    credit: {
+      provider: 'Pexels',
+      pageUrl: 'https://www.pexels.com/photo/laptop-placed-on-top-of-a-wooden-work-desk-8472374/',
+    },
+  },
   'robe-wax-africaine-taille-m': {
     src: '/assets/listings/robe-wax-africaine-taille-m.jpg',
     alt: 'Robe wax africaine portée en extérieur avec motifs colorés.',
@@ -66,11 +74,12 @@ export const seededListingImagesBySlug = {
 };
 
 const seededPreviewSlugByCategory = {
+  emploi: 'offre-receptionniste-lubumbashi-centre',
   electronics: 'ordinateur-portable-hp-elitebook',
   fashion: 'robe-wax-africaine-taille-m',
   food: 'mangues-et-avocats-frais-du-haut-katanga',
   home_garden: 'canape-3-places-style-contemporain',
-  jobs_services: 'service-plomberie-urgence-7j7',
+  services: 'service-plomberie-urgence-7j7',
   phones_tablets: 'samsung-galaxy-a54-neuf-lubumbashi',
   real_estate: 'appartement-2-chambres-quartier-industriel',
   vehicles: 'toyota-hilux-2019-4x4',

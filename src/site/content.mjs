@@ -33,7 +33,7 @@ export const site = {
   supportMailSubject: 'Support Zwibba',
   socialProof: [
     { value: '< 60s', label: 'pour publier avec photo + IA' },
-    { value: '10', label: 'catégories clés pour Lubumbashi' },
+    { value: '11', label: 'catégories clés pour Lubumbashi' },
     { value: '2G/3G', label: 'expérience pensée pour les connexions lentes' },
   ],
 };
@@ -47,7 +47,8 @@ export const categories = [
   { slug: 'electronics', label: 'Électronique', icon: 'Eclair', hint: 'TV, ordinateurs, consoles, audio.' },
   { slug: 'fashion', label: 'Mode & Beauté', icon: 'Etoile', hint: 'Vêtements, bijoux, chaussures, cosmétiques.' },
   { slug: 'home_garden', label: 'Maison & Jardin', icon: 'Canape', hint: 'Meubles, électroménager, déco, bricolage.' },
-  { slug: 'jobs_services', label: 'Emplois & Services', icon: 'Briefcase', hint: 'Cours, HORECA, mécanique, santé, services.' },
+  { slug: 'services', label: 'Services', icon: 'Briefcase', hint: 'Plomberie, ménage, mécanique, santé, coiffure, support local.' },
+  { slug: 'emploi', label: 'Emploi', icon: 'Briefcase', hint: 'Offres d’emploi, recrutement local, postes administratifs et terrain.' },
   { slug: 'sports_leisure', label: 'Sports & Loisirs', icon: 'Ballon', hint: 'Fitness, vélos, musique, livres.' },
 ];
 
@@ -277,8 +278,8 @@ export const listings = [
   {
     slug: 'service-plomberie-urgence-7j7',
     title: 'Service plomberie urgence 7j/7',
-    category: 'jobs_services',
-    categoryLabel: 'Emplois & Services',
+    category: 'services',
+    categoryLabel: 'Services',
     icon: 'Briefcase',
     priceCdf: 25000,
     condition: 'Service',
@@ -308,6 +309,41 @@ export const listings = [
       ['Expérience', '5 ans'],
     ],
     accent: ['#68C3D4', '#102C34'],
+  },
+  {
+    slug: 'offre-receptionniste-lubumbashi-centre',
+    title: 'Offre réceptionniste Lubumbashi Centre',
+    category: 'emploi',
+    categoryLabel: 'Emploi',
+    icon: 'Briefcase',
+    priceCdf: 1800000,
+    condition: 'CDD',
+    city: 'Lubumbashi',
+    neighborhood: 'Centre-ville',
+    listingType: 'Emploi',
+    transactionType: 'Recrutement',
+    isFeatured: false,
+    publishedAt: 'Il y a 1 h 24',
+    seller: {
+      name: 'Clinique Horizon',
+      role: 'Entreprise',
+      memberSince: 'Membre depuis 2024',
+      listings: '3 recrutements actifs',
+      responseTime: 'Répond en moyenne en 26 min',
+    },
+    summary:
+      'La clinique recherche une réceptionniste organisée, à l’aise à l’accueil et au téléphone, pour une prise de poste rapide.',
+    description: [
+      'Poste basé au centre de Lubumbashi avec accueil des patients, prise de rendez-vous et suivi administratif simple. Idéal pour rendre la catégorie Emploi visible dans le catalogue beta.',
+      "Le détail complet s'ouvre ensuite dans l'application pour enregistrer l'annonce et poursuivre les échanges de manière structurée.",
+    ],
+    specs: [
+      ['Contrat', 'CDD 6 mois'],
+      ['Horaires', 'Lun-Sam 7h30-16h30'],
+      ['Localisation', 'Lubumbashi Centre'],
+      ['Expérience', '1 an minimum à l’accueil'],
+    ],
+    accent: ['#7AA8FF', '#13284A'],
   },
   {
     slug: 'canape-3-places-style-contemporain',

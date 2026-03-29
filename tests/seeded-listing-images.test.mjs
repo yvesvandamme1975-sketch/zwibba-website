@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { listings } from '../src/site/content.mjs';
+import {
+  categories,
+  listings,
+} from '../src/site/content.mjs';
 import {
   resolveSeededListingImage,
   seededListingImagesBySlug,
@@ -26,4 +29,19 @@ test('seeded listing image manifest returns bundled raster assets', () => {
 
 test('seeded listing image manifest returns null for unknown slugs', () => {
   assert.equal(resolveSeededListingImage('listing-inconnue'), null);
+});
+
+test('seeded catalog splits services and emploi into separate marketplace categories and listings', () => {
+  const categorySlugs = categories.map((category) => category.slug);
+  const listingCategories = new Map(listings.map((listing) => [listing.slug, listing.category]));
+
+  assert.ok(categorySlugs.includes('services'));
+  assert.ok(categorySlugs.includes('emploi'));
+  assert.ok(!categorySlugs.includes('jobs_services'));
+  assert.equal(listingCategories.get('service-plomberie-urgence-7j7'), 'services');
+  assert.equal(listingCategories.get('offre-receptionniste-lubumbashi-centre'), 'emploi');
+  assert.ok(
+    seededListingImagesBySlug['offre-receptionniste-lubumbashi-centre'],
+    'expected a bundled seeded image for the emploi listing',
+  );
 });

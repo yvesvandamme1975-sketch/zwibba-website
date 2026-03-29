@@ -132,6 +132,8 @@ test('browse page exposes category discovery and marketplace filters', () => {
 
   const browse = readFileSync(path.join(distDir, 'annonces/index.html'), 'utf8');
   assert.match(browse, /Immobilier/i);
+  assert.match(browse, /Services/i);
+  assert.match(browse, /Emploi/i);
   assert.match(browse, /V[ée]hicules/i);
   assert.match(browse, /T[ée]l[ée]phones/i);
   assert.match(browse, /Prix/i);
