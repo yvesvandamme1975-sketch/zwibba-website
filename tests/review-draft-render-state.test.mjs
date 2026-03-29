@@ -61,8 +61,13 @@ test('captureReviewDraftRenderState captures unsaved review field values and act
     selectionStart: 6,
     selectionEnd: 6,
   };
+  const root = {
+    querySelector(selector) {
+      return selector === 'form[data-form="review-draft"]' ? form : null;
+    },
+  };
 
-  assert.deepEqual(captureReviewDraftRenderState(activeElement), {
+  assert.deepEqual(captureReviewDraftRenderState(root, activeElement), {
     activeField: {
       name: 'priceCdf',
       selectionEnd: 6,
@@ -81,8 +86,25 @@ test('captureReviewDraftRenderState captures unsaved review field values and act
 });
 
 test('captureReviewDraftRenderState ignores elements outside the review draft form', () => {
-  assert.equal(
-    captureReviewDraftRenderState({
+  const form = {
+    dataset: {
+      form: 'review-draft',
+    },
+    elements: [
+      {
+        name: 'priceCdf',
+        value: '425000',
+      },
+    ],
+  };
+  const root = {
+    querySelector(selector) {
+      return selector === 'form[data-form="review-draft"]' ? form : null;
+    },
+  };
+
+  assert.deepEqual(
+    captureReviewDraftRenderState(root, {
       form: {
         dataset: {
           form: 'thread-reply',
@@ -92,6 +114,29 @@ test('captureReviewDraftRenderState ignores elements outside the review draft fo
       name: 'threadMessage',
       value: 'Bonjour',
     }),
+    {
+      activeField: null,
+      formName: 'review-draft',
+      values: {
+        priceCdf: '425000',
+      },
+    },
+  );
+});
+
+test('captureReviewDraftRenderState returns null when the review form is absent', () => {
+  assert.equal(
+    captureReviewDraftRenderState(
+      {
+        querySelector() {
+          return null;
+        },
+      },
+      {
+        name: 'threadMessage',
+        value: 'Bonjour',
+      },
+    ),
     null,
   );
 });

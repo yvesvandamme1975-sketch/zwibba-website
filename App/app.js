@@ -711,7 +711,7 @@ if (appRoot) {
   function renderApp() {
     const route = resolveRenderableRoute();
     const buyerSearchRenderState = captureBuyerSearchRenderState(document.activeElement);
-    const reviewDraftRenderState = captureReviewDraftRenderState(document.activeElement);
+    const reviewDraftRenderState = captureReviewDraftRenderState(appRoot, document.activeElement);
 
     primeBuyerRouteState(route);
     chatLiveRefreshController.sync({

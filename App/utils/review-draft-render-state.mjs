@@ -11,8 +11,8 @@ function isRestorableField(field) {
   );
 }
 
-export function captureReviewDraftRenderState(activeElement) {
-  const form = activeElement?.form;
+export function captureReviewDraftRenderState(root, activeElement) {
+  const form = root?.querySelector?.('form[data-form="review-draft"]');
 
   if (!isReviewDraftForm(form)) {
     return null;
@@ -25,13 +25,16 @@ export function captureReviewDraftRenderState(activeElement) {
   );
 
   return {
-    activeField: {
-      name: activeElement.name,
-      selectionEnd:
-        typeof activeElement.selectionEnd === 'number' ? activeElement.selectionEnd : null,
-      selectionStart:
-        typeof activeElement.selectionStart === 'number' ? activeElement.selectionStart : null,
-    },
+    activeField:
+      activeElement?.form === form && activeElement?.name
+        ? {
+            name: activeElement.name,
+            selectionEnd:
+              typeof activeElement.selectionEnd === 'number' ? activeElement.selectionEnd : null,
+            selectionStart:
+              typeof activeElement.selectionStart === 'number' ? activeElement.selectionStart : null,
+          }
+        : null,
     formName: 'review-draft',
     values,
   };
