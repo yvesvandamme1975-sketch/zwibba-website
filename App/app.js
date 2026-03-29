@@ -51,6 +51,7 @@ import {
   captureReviewDraftRenderState,
   restoreReviewDraftRenderState,
 } from './utils/review-draft-render-state.mjs';
+import { shouldRetainDraftAfterPublish } from './utils/post-publish-draft-state.mjs';
 import {
   createPostFlowController,
   decidePublishGate,
@@ -183,6 +184,7 @@ if (appRoot) {
     phoneNumber: authService.getPendingChallenge()?.phoneNumber ?? '+243',
     profileError: '',
     publishError: '',
+    publishedDraft: null,
     publishOutcome: null,
     publishedListingRoute: '',
     publishedListingUrl: '',
@@ -634,9 +636,10 @@ if (appRoot) {
         return renderSuccessScreen({
           boostBusy: state.boostBusyListingId === state.publishOutcome?.id,
           boostMessage: state.boostMessage,
-          draft: state.draft,
+          draft: state.publishedDraft ?? state.draft,
           listingRoute: state.publishedListingRoute,
-          listingUrl: state.publishedListingUrl || buildListingUrl(state.draft),
+          listingUrl:
+            state.publishedListingUrl || buildListingUrl(state.publishedDraft ?? state.draft),
           outcome: state.publishOutcome,
         });
       case 'listing':
@@ -755,6 +758,7 @@ if (appRoot) {
       state.uploadProgress = null;
       state.draft = nextDraft;
       state.publishError = '';
+      state.publishedDraft = null;
       state.publishOutcome = null;
       state.publishedListingRoute = '';
       state.publishedListingUrl = '';
@@ -796,6 +800,7 @@ if (appRoot) {
 
       state.draft = nextDraft;
       state.publishError = '';
+      state.publishedDraft = null;
       state.reviewErrors = [];
       state.busyLabel = '';
       state.uploadProgress = null;
@@ -863,6 +868,7 @@ if (appRoot) {
       state.busyLabel = '';
       state.draft = null;
       state.publishError = '';
+      state.publishedDraft = null;
       state.publishOutcome = null;
       state.publishedListingRoute = '';
       state.publishedListingUrl = '';
@@ -907,6 +913,7 @@ if (appRoot) {
 
     persistDraft(nextDraft);
     state.publishError = '';
+    state.publishedDraft = null;
     state.publishOutcome = null;
     state.publishedListingRoute = '';
     state.publishedListingUrl = '';
@@ -1045,9 +1052,16 @@ if (appRoot) {
         session: state.session,
       });
       const listingRoute = buildBuyerListingRoute(result.outcome?.listingSlug);
+      const shouldRetainDraft = shouldRetainDraftAfterPublish(result.outcome);
 
       state.busyLabel = '';
-      state.draft = draftStorage.saveDraft(result.draft);
+      state.publishedDraft = result.draft;
+      if (shouldRetainDraft) {
+        state.draft = draftStorage.saveDraft(result.draft);
+      } else {
+        draftStorage.clearDraft();
+        state.draft = null;
+      }
       state.publishOutcome = result.outcome;
       state.publishedListingRoute = listingRoute;
       state.publishedListingUrl =
