@@ -655,6 +655,11 @@
     linear-gradient(145deg, rgba(107, 230, 107, 0.14), rgba(255, 255, 255, 0.03));
 }
 
+.app-detail__gallery {
+  display: grid;
+  gap: 12px;
+}
+
 .app-detail__media--placeholder {
   display: grid;
   place-items: center;
@@ -666,6 +671,36 @@
   width: 100%;
   height: 100%;
   min-height: 220px;
+  object-fit: cover;
+}
+
+.app-detail__thumbstrip {
+  display: grid;
+  grid-auto-columns: 88px;
+  grid-auto-flow: column;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.app-detail__thumbnail {
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+}
+
+.app-detail__thumbnail.is-active {
+  border-color: rgba(107, 230, 107, 0.7);
+  box-shadow: 0 0 0 1px rgba(107, 230, 107, 0.28);
+}
+
+.app-detail__thumbnail-image {
+  display: block;
+  width: 88px;
+  height: 88px;
   object-fit: cover;
 }
 

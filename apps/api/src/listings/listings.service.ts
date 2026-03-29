@@ -18,7 +18,9 @@ type PersistedListingRecord = {
 };
 
 type PersistedDraftPhotoRecord = {
+  createdAt?: Date;
   publicUrl: string;
+  sourcePresetId?: string;
   uploadStatus: string;
 };
 
@@ -83,12 +85,23 @@ function buildSafetyTips(categoryId: string) {
   }
 }
 
-function getPrimaryImageUrl(photos: PersistedDraftPhotoRecord[] = []) {
-  const uploadedPhoto = photos.find(
-    (photo) => photo.uploadStatus === 'uploaded' && photo.publicUrl,
-  );
+function getListingImageUrls(photos: PersistedDraftPhotoRecord[] = []) {
+  return [...photos]
+    .filter((photo) => photo.uploadStatus === 'uploaded' && photo.publicUrl)
+    .sort((left, right) => {
+      const leftRank = left.sourcePresetId === 'capture' ? 0 : 1;
+      const rightRank = right.sourcePresetId === 'capture' ? 0 : 1;
 
-  return uploadedPhoto?.publicUrl ?? null;
+      if (leftRank !== rightRank) {
+        return leftRank - rightRank;
+      }
+
+      const leftTime = left.createdAt instanceof Date ? left.createdAt.getTime() : 0;
+      const rightTime = right.createdAt instanceof Date ? right.createdAt.getTime() : 0;
+
+      return leftTime - rightTime;
+    })
+    .map((photo) => photo.publicUrl);
 }
 
 function toListingSummary(
@@ -109,6 +122,7 @@ function toListingSummary(
 
 function toListingDetail(
   listing: PersistedListingRecord,
+  images: string[],
   primaryImageUrl: string | null,
 ) {
   return {
@@ -117,6 +131,7 @@ function toListingDetail(
     contactActions: ['message', 'call'],
     contactPhoneNumber: listing.ownerPhoneNumber,
     id: listing.id,
+    images,
     locationLabel: listing.area,
     priceCdf: listing.priceCdf,
     primaryImageUrl,
@@ -150,7 +165,7 @@ export class ListingsService {
     @Inject(PrismaService) private readonly prismaService: PrismaService,
   ) {}
 
-  private async resolvePrimaryImageUrl(listing: PersistedListingRecord) {
+  private async resolveListingImages(listing: PersistedListingRecord) {
     const draft = await this.prismaService.draft.findUnique({
       include: {
         photos: true,
@@ -160,7 +175,7 @@ export class ListingsService {
       },
     });
 
-    return getPrimaryImageUrl(
+    return getListingImageUrls(
       (draft?.photos ?? []) as PersistedDraftPhotoRecord[],
     );
   }
@@ -185,16 +200,16 @@ export class ListingsService {
 
     const listingsWithImages = await Promise.all(
       sortedListings.map(async (listing) => ({
-        listing: listing as PersistedListingRecord,
-        primaryImageUrl: await this.resolvePrimaryImageUrl(
+        images: await this.resolveListingImages(
           listing as PersistedListingRecord,
         ),
+        listing: listing as PersistedListingRecord,
       })),
     );
 
     return {
-      items: listingsWithImages.map(({ listing, primaryImageUrl }) =>
-        toListingSummary(listing, primaryImageUrl),
+      items: listingsWithImages.map(({ listing, images }) =>
+        toListingSummary(listing, images[0] ?? null),
       ),
     };
   }
@@ -211,9 +226,9 @@ export class ListingsService {
     }
 
     const persistedListing = listing as PersistedListingRecord;
-    const primaryImageUrl = await this.resolvePrimaryImageUrl(persistedListing);
+    const images = await this.resolveListingImages(persistedListing);
 
-    return toListingDetail(persistedListing, primaryImageUrl);
+    return toListingDetail(persistedListing, images, images[0] ?? null);
   }
 
   async listSellerListings(session: SessionRecord) {
@@ -237,7 +252,7 @@ export class ListingsService {
       sortedListings.map(async (listing) => {
         const persistedListing = listing as PersistedListingRecord;
         const [primaryImageUrl, moderationDecision] = await Promise.all([
-          this.resolvePrimaryImageUrl(persistedListing),
+          this.resolveListingImages(persistedListing).then((images) => images[0] ?? null),
           this.prismaService.moderationDecision.findUnique({
             where: {
               listingId: persistedListing.id,

@@ -20,6 +20,16 @@ const categoryLabels = {
   vehicles: 'Véhicules',
 };
 
+function clampSelectedImageIndex(index, images) {
+  const parsedIndex = Number(index);
+
+  if (!Number.isInteger(parsedIndex) || parsedIndex < 0) {
+    return 0;
+  }
+
+  return Math.min(parsedIndex, Math.max(images.length - 1, 0));
+}
+
 function buildBuyerMessage(detail) {
   return `Bonjour, je suis intéressé par ${detail.title} sur Zwibba.`;
 }
@@ -64,11 +74,27 @@ function resolveCategoryLabel(detail) {
   return detail.categoryLabel || categoryLabels[detail.categoryId] || 'Annonce';
 }
 
-function renderDetailMedia(detail) {
-  const imageUrl = sanitizeListingImageUrl(detail.primaryImageUrl, {
-    categoryId: detail.categoryId,
-    categoryLabel: detail.categoryLabel,
-  });
+function resolveGalleryImages(detail) {
+  const rawImages = Array.isArray(detail.images) && detail.images.length
+    ? detail.images
+    : detail.primaryImageUrl
+      ? [detail.primaryImageUrl]
+      : [];
+
+  return rawImages
+    .map((imageUrl) =>
+      sanitizeListingImageUrl(imageUrl, {
+        categoryId: detail.categoryId,
+        categoryLabel: detail.categoryLabel,
+      }),
+    )
+    .filter(Boolean);
+}
+
+function renderDetailMedia(detail, selectedImageIndex = 0) {
+  const images = resolveGalleryImages(detail);
+  const activeIndex = clampSelectedImageIndex(selectedImageIndex, images);
+  const imageUrl = images[activeIndex];
 
   if (imageUrl) {
     const imageFallback = buildImageFallbackHandler({
@@ -77,14 +103,46 @@ function renderDetailMedia(detail) {
     });
 
     return `
-      <div class="app-detail__media">
-        <img
-          class="app-detail__image"
-          src="${escapeAttribute(imageUrl)}"
-          alt="${escapeAttribute(detail.title)}"
-          loading="eager"
-          onerror="${escapeAttribute(imageFallback)}"
-        />
+      <div class="app-detail__gallery">
+        <div class="app-detail__media">
+          <img
+            class="app-detail__image"
+            src="${escapeAttribute(imageUrl)}"
+            alt="${escapeAttribute(detail.title)}"
+            loading="eager"
+            onerror="${escapeAttribute(imageFallback)}"
+          />
+        </div>
+        ${
+          images.length > 1
+            ? `
+              <div class="app-detail__thumbstrip" role="list" aria-label="Autres photos">
+                ${images
+                  .map(
+                    (thumbnailUrl, index) => `
+                      <button
+                        class="app-detail__thumbnail${index === activeIndex ? ' is-active' : ''}"
+                        type="button"
+                        role="listitem"
+                        aria-pressed="${index === activeIndex ? 'true' : 'false'}"
+                        data-action="select-listing-image"
+                        data-image-index="${escapeAttribute(String(index))}"
+                      >
+                        <img
+                          class="app-detail__thumbnail-image"
+                          src="${escapeAttribute(thumbnailUrl)}"
+                          alt="${escapeAttribute(`${detail.title} photo ${index + 1}`)}"
+                          loading="lazy"
+                          onerror="${escapeAttribute(imageFallback)}"
+                        />
+                      </button>
+                    `,
+                  )
+                  .join('')}
+              </div>
+            `
+            : ''
+        }
       </div>
     `;
   }
@@ -99,6 +157,7 @@ function renderDetailMedia(detail) {
 export function renderListingDetailScreen({
   detail = null,
   errorMessage = '',
+  selectedImageIndex = 0,
   state = 'loading',
 } = {}) {
   if (state === 'loading') {
@@ -163,7 +222,7 @@ export function renderListingDetailScreen({
         <em>${escapeHtml(formatCdf(detail.priceCdf))}</em>
       </div>
 
-      ${renderDetailMedia(detail)}
+      ${renderDetailMedia(detail, selectedImageIndex)}
 
       <div class="app-auth__card">
         <strong>Description</strong>

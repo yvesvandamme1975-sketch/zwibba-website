@@ -189,6 +189,7 @@ if (appRoot) {
     publishedListingRoute: '',
     publishedListingUrl: '',
     reviewErrors: [],
+    selectedListingImageIndex: 0,
     sellerListings: [],
     sellerListingsPromise: null,
     sellerListingsStatus: 'idle',
@@ -382,6 +383,10 @@ if (appRoot) {
 
     if (state.buyerListingPromise && state.currentListingSlug === slug) {
       return state.buyerListingPromise;
+    }
+
+    if (state.currentListingSlug !== slug) {
+      state.selectedListingImageIndex = 0;
     }
 
     state.currentListingSlug = slug;
@@ -646,6 +651,7 @@ if (appRoot) {
         return renderListingDetailScreen({
           detail: buyerBrowseController.state.detail,
           errorMessage: buyerBrowseController.state.detailError,
+          selectedImageIndex: state.selectedListingImageIndex,
           state: buyerBrowseController.state.detailStatus,
         });
       case 'messages':
@@ -1232,6 +1238,12 @@ if (appRoot) {
         listingId,
         listingSlug,
       });
+      return;
+    }
+
+    if (trigger.dataset.action === 'select-listing-image') {
+      state.selectedListingImageIndex = Number.parseInt(trigger.dataset.imageIndex || '0', 10) || 0;
+      renderApp();
       return;
     }
 

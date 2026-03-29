@@ -471,6 +471,99 @@ test('listing detail returns a database-backed published listing with seller met
     response.body.primaryImageUrl,
     'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
   );
+  assert.deepEqual(response.body.images, [
+    'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
+  ]);
+});
+
+test('listing detail returns all uploaded photos with the primary photo first', async (t) => {
+  const {
+    app,
+    prisma,
+  } = await createTestContext();
+  t.after(async () => {
+    await app.close();
+  });
+
+  prisma.drafts.set('draft_gallery_listing', {
+    area: 'Bel Air',
+    categoryId: 'home_garden',
+    condition: 'used_good',
+    description: 'Chaise en cuir marron.',
+    id: 'draft_gallery_listing',
+    ownerPhoneNumber: '+243990000020',
+    priceCdf: 25000,
+    syncStatus: 'synced',
+    title: 'Chaise en cuir marron',
+  });
+  prisma.draftPhoto.create({
+    data: {
+      draftId: 'draft_gallery_listing',
+      id: 'photo_gallery_side',
+      objectKey: 'draft-photos/chair/side.jpg',
+      publicUrl: 'https://pub.example.test/draft-photos/chair/side.jpg',
+      sourcePresetId: 'vue_laterale',
+      uploadStatus: 'uploaded',
+    },
+  });
+  prisma.draftPhoto.create({
+    data: {
+      draftId: 'draft_gallery_listing',
+      id: 'photo_gallery_failed',
+      objectKey: 'draft-photos/chair/failed.jpg',
+      publicUrl: 'https://pub.example.test/draft-photos/chair/failed.jpg',
+      sourcePresetId: 'vue_ensemble',
+      uploadStatus: 'failed',
+    },
+  });
+  prisma.draftPhoto.create({
+    data: {
+      draftId: 'draft_gallery_listing',
+      id: 'photo_gallery_primary',
+      objectKey: 'draft-photos/chair/primary.jpg',
+      publicUrl: 'https://pub.example.test/draft-photos/chair/primary.jpg',
+      sourcePresetId: 'capture',
+      uploadStatus: 'uploaded',
+    },
+  });
+  prisma.draftPhoto.create({
+    data: {
+      draftId: 'draft_gallery_listing',
+      id: 'photo_gallery_room',
+      objectKey: 'draft-photos/chair/room.jpg',
+      publicUrl: 'https://pub.example.test/draft-photos/chair/room.jpg',
+      sourcePresetId: 'vue_ensemble',
+      uploadStatus: 'uploaded',
+    },
+  });
+  prisma.listings.set('listing_draft_gallery_listing', {
+    area: 'Bel Air',
+    categoryId: 'home_garden',
+    description: 'Chaise en cuir marron.',
+    draftId: 'draft_gallery_listing',
+    id: 'listing_draft_gallery_listing',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+243990000020',
+    priceCdf: 25000,
+    publishedAt: new Date('2026-03-29T12:00:00.000Z'),
+    slug: 'chaise-en-cuir-marron',
+    title: 'Chaise en cuir marron',
+    updatedAt: new Date('2026-03-29T12:00:00.000Z'),
+  });
+
+  const response = await request(app.getHttpServer())
+    .get('/listings/chaise-en-cuir-marron')
+    .expect(200);
+
+  assert.equal(
+    response.body.primaryImageUrl,
+    'https://pub.example.test/draft-photos/chair/primary.jpg',
+  );
+  assert.deepEqual(response.body.images, [
+    'https://pub.example.test/draft-photos/chair/primary.jpg',
+    'https://pub.example.test/draft-photos/chair/side.jpg',
+    'https://pub.example.test/draft-photos/chair/room.jpg',
+  ]);
 });
 
 test('listings without uploaded photos still return a null primary image', async (t) => {
