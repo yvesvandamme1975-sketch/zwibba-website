@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { AiService } from '../../src/ai/ai.service';
+import { buildVisionDraftPrompt } from '../../src/ai/vision-provider-prompt';
 
 test('ai service normalizes a valid provider draft patch', async () => {
   const service = new AiService({
@@ -152,4 +153,36 @@ test('ai service falls back to manual mode when the provider returns no title', 
   assert.equal(result.status, 'manual_fallback');
   assert.ok(result.message);
   assert.match(result.message, /manuellement/i);
+});
+
+test('ai service strips background context from a product description', async () => {
+  const service = new AiService({
+    async generateDraftFromImage() {
+      return {
+        categoryId: 'electronics',
+        condition: 'like_new',
+        description:
+          'Ordinateur portable argenté avec clavier gris clair et pavé tactile gris foncé, posé sur une table en bois.',
+        title: 'Ordinateur portable argenté',
+      };
+    },
+  });
+
+  const result = await service.generateDraft({
+    photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-laptop.jpg',
+  });
+
+  assert.equal(result.status, 'ready');
+  assert.ok(result.draftPatch);
+  assert.equal(
+    result.draftPatch.description,
+    'Ordinateur portable argenté avec clavier gris clair et pavé tactile gris foncé.',
+  );
+});
+
+test('vision prompt tells the provider to ignore background context', () => {
+  const prompt = buildVisionDraftPrompt();
+
+  assert.match(prompt, /ignore/i);
+  assert.match(prompt, /arrière-plan|décor|environnement/i);
 });

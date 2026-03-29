@@ -10,6 +10,8 @@ export function buildVisionDraftPrompt() {
     `Choisis condition uniquement parmi: ${supportedConditionValues.join(', ')}.`,
     "N'inclus jamais de prix ni de fourchette de prix.",
     'Sois conservateur: si la catégorie est incertaine, choisis electronics.',
-    'Décris brièvement le produit visible sans inventer de détails invisibles.',
+    "Décris brièvement uniquement l'objet principal à vendre.",
+    "Ignore l'arrière-plan, le décor, l'environnement, la table, le bureau, les sites web, les onglets ou tout élément autour qui ne fait pas partie du produit.",
+    'Décris le produit visible sans inventer de détails invisibles.',
   ].join(' ');
 }

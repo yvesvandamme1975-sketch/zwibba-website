@@ -9,6 +9,17 @@ import {
   sanitizeListingImageUrl,
 } from '../../utils/image-fallbacks.mjs';
 
+const categoryLabels = {
+  emploi: 'Emploi',
+  electronics: 'Électronique',
+  fashion: 'Mode',
+  home_garden: 'Maison',
+  phones_tablets: 'Téléphones & Tablettes',
+  real_estate: 'Immobilier',
+  services: 'Services',
+  vehicles: 'Véhicules',
+};
+
 function buildBuyerMessage(detail) {
   return `Bonjour, je suis intéressé par ${detail.title} sur Zwibba.`;
 }
@@ -47,6 +58,10 @@ function buildActionMarkup(action, detail) {
     default:
       return '';
   }
+}
+
+function resolveCategoryLabel(detail) {
+  return detail.categoryLabel || categoryLabels[detail.categoryId] || 'Annonce';
 }
 
 function renderDetailMedia(detail) {
@@ -127,6 +142,8 @@ export function renderListingDetailScreen({
     `;
   }
 
+  const categoryLabel = resolveCategoryLabel(detail);
+
   return `
     <section class="app-flow app-flow--detail">
       <header class="app-flow__header">
@@ -142,7 +159,7 @@ export function renderListingDetailScreen({
 
       <div class="app-publish__summary">
         <strong>${escapeHtml(detail.locationLabel)}</strong>
-        <span>${escapeHtml(detail.categoryLabel)}</span>
+        <span>${escapeHtml(categoryLabel)}</span>
         <em>${escapeHtml(formatCdf(detail.priceCdf))}</em>
       </div>
 

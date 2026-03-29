@@ -103,6 +103,32 @@ test('listing detail screen keeps a hero placeholder when no image is available'
   assert.doesNotMatch(html, /class="app-detail__image"/);
 });
 
+test('listing detail screen falls back to a human category label from categoryId', () => {
+  const html = renderListingDetailScreen({
+    detail: {
+      categoryId: 'home_garden',
+      categoryLabel: '',
+      contactActions: ['message'],
+      id: 'listing_3',
+      locationLabel: 'Bel Air',
+      priceCdf: 25000,
+      primaryImageUrl: null,
+      safetyTips: ['Évitez les paiements anticipés.'],
+      seller: {
+        name: 'Particulier 0002',
+        responseTime: 'Répond en moyenne en 9 min',
+        role: 'Particulier',
+      },
+      slug: 'chaise-en-cuir-marron',
+      summary: 'Chaise en cuir marron.',
+      title: 'Chaise en cuir marron',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /<span>Maison<\/span>/);
+});
+
 test('listing detail screen renders a loading state', () => {
   const html = renderListingDetailScreen({
     state: 'loading',
