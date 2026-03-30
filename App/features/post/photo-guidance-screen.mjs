@@ -1,7 +1,7 @@
 import {
   getGuidedPhotoPrompts,
 } from './post-flow-controller.mjs';
-import { sellerCategories } from '../../demo-content.mjs';
+import { conditionOptions, sellerCategories } from '../../demo-content.mjs';
 import { renderInAppBrand } from '../../components/in-app-brand.mjs';
 import { renderUploadProgress } from '../../components/upload-progress.mjs';
 import { escapeAttribute, escapeHtml } from '../../utils/rendering.mjs';
@@ -9,9 +9,105 @@ import { escapeAttribute, escapeHtml } from '../../utils/rendering.mjs';
 const categoryLabels = new Map(
   sellerCategories.map((category) => [category.id, category.label]),
 );
+const conditionLabels = new Map(
+  conditionOptions.map((option) => [option.value, option.label]),
+);
 
 function formatCategoryLabel(categoryId) {
-  return categoryLabels.get(categoryId) ?? categoryId ?? 'à confirmer';
+  return categoryLabels.get(categoryId) ?? (categoryId || 'à confirmer');
+}
+
+function formatConditionLabel(condition) {
+  return conditionLabels.get(condition) ?? (condition || 'à confirmer');
+}
+
+function resolveDraftPrimaryPhoto(draft) {
+  return draft.photos.find((photo) => photo.kind === 'primary') ?? draft.photos[0] ?? null;
+}
+
+function resolveDraftPrimaryImage(draft) {
+  const primaryPhoto = resolveDraftPrimaryPhoto(draft);
+
+  return primaryPhoto?.publicUrl || primaryPhoto?.url || primaryPhoto?.previewUrl || '';
+}
+
+function renderPrimaryPhotoCard(draft) {
+  const primaryImageUrl = resolveDraftPrimaryImage(draft);
+  const imageAlt = draft.details.title || 'Photo principale téléversée';
+
+  return `
+    <div class="app-guidance__hero-card">
+      <div class="app-guidance__hero-copy">
+        <strong>Photo principale téléversée</strong>
+        <span>${
+          primaryImageUrl
+            ? 'Aperçu prêt pour la publication'
+            : 'La photo est enregistrée, mais l’aperçu reste indisponible pour le moment.'
+        }</span>
+      </div>
+      ${
+        primaryImageUrl
+          ? `
+            <div class="app-guidance__hero-media">
+              <img
+                class="app-guidance__hero-image"
+                src="${escapeAttribute(primaryImageUrl)}"
+                alt="${escapeAttribute(imageAlt)}"
+                loading="eager"
+              />
+            </div>
+          `
+          : `
+            <div class="app-guidance__hero-media app-guidance__hero-media--fallback">
+              <strong>Aperçu indisponible</strong>
+              <span>Continuez vers le brouillon pour vérifier la photo avant publication.</span>
+            </div>
+          `
+      }
+    </div>
+  `;
+}
+
+function renderReadyAiSummary(draft) {
+  return `
+    <div class="app-guidance__summary-card">
+      <div class="app-guidance__summary-copy">
+        <strong>Brouillon préparé par IA</strong>
+        <span>${escapeHtml(draft.ai.message || 'Brouillon préparé à partir de votre photo.')}</span>
+      </div>
+      <div class="app-guidance__summary-fields">
+        <div class="app-guidance__summary-field">
+          <strong>Titre</strong>
+          <span>${escapeHtml(draft.details.title || 'à confirmer')}</span>
+        </div>
+        <div class="app-guidance__summary-field">
+          <strong>Catégorie</strong>
+          <span>${escapeHtml(formatCategoryLabel(draft.details.categoryId))}</span>
+        </div>
+        <div class="app-guidance__summary-field">
+          <strong>État</strong>
+          <span>${escapeHtml(formatConditionLabel(draft.details.condition))}</span>
+        </div>
+        <div class="app-guidance__summary-field">
+          <strong>Description</strong>
+          <span>${escapeHtml(draft.details.description || 'à compléter à l’étape suivante')}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderManualFallbackSummary(draft) {
+  return `
+    <div class="app-guidance__summary-card app-guidance__summary-card--manual">
+      <div class="app-guidance__summary-copy">
+        <strong>Complétion manuelle à l'étape suivante</strong>
+        <span>${escapeHtml(
+          draft.ai.message || "L'IA n'a pas pu préparer ce brouillon. Continuez manuellement.",
+        )}</span>
+      </div>
+    </div>
+  `;
 }
 
 function renderPrompt(prompt) {
@@ -113,6 +209,14 @@ export function renderPhotoGuidanceScreen({
           formatCategoryLabel(draft.details.categoryId),
         )}</strong>. Vous pouvez publier avec la photo principale. Ajoutez d'autres vues pour améliorer la confiance et la modération.
       </p>
+
+      ${renderPrimaryPhotoCard(draft)}
+
+      ${
+        draft.ai.status === 'ready'
+          ? renderReadyAiSummary(draft)
+          : renderManualFallbackSummary(draft)
+      }
 
       <div class="app-guidance__status">
         <strong>${escapeHtml(statusTitle)}</strong>

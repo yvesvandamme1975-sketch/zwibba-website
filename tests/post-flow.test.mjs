@@ -759,6 +759,82 @@ test('guidance screen makes extra guided photos optional and keeps upload action
   assert.match(html, /href="#review"/);
 });
 
+test('guidance screen shows the uploaded primary photo and AI-generated details in read-only mode', () => {
+  const html = renderPhotoGuidanceScreen({
+    draft: createReadyDraft({
+      categoryId: 'fashion',
+      condition: 'like_new',
+      description: 'Robe wax bleu marine avec coupe droite.',
+      photos: [
+        {
+          id: 'photo-1',
+          kind: 'primary',
+          previewUrl: 'blob:robe.jpg',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/capture/photo_1-dress.jpg',
+        },
+      ],
+      title: 'Robe wax bleu marine',
+      ai: {
+        status: 'ready',
+        applied: true,
+        message: 'Brouillon préparé à partir de votre photo.',
+      },
+    }),
+  });
+
+  assert.match(html, /Photo principale téléversée/i);
+  assert.match(
+    html,
+    /<img[^>]+class="app-guidance__hero-image"[^>]+src="https:\/\/pub\.example\.test\/draft-photos\/capture\/photo_1-dress\.jpg"/,
+  );
+  assert.match(html, /Brouillon préparé par IA/i);
+  assert.match(html, /Brouillon préparé à partir de votre photo\./i);
+  assert.match(html, /<strong>Titre<\/strong>/);
+  assert.match(html, /Robe wax bleu marine/);
+  assert.match(html, /<strong>Catégorie<\/strong>/);
+  assert.match(html, /Mode/);
+  assert.match(html, /<strong>État<\/strong>/);
+  assert.match(html, /Comme neuf/);
+  assert.match(html, /<strong>Description<\/strong>/);
+  assert.match(html, /Robe wax bleu marine avec coupe droite\./);
+});
+
+test('guidance screen keeps the uploaded photo visible and shows a manual fallback note when AI is unavailable', () => {
+  const html = renderPhotoGuidanceScreen({
+    draft: createReadyDraft({
+      categoryId: '',
+      condition: '',
+      description: '',
+      photos: [
+        {
+          id: 'photo-1',
+          kind: 'primary',
+          previewUrl: 'blob:service.jpg',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/capture/photo_1-service.jpg',
+        },
+      ],
+      title: '',
+      ai: {
+        status: 'manual_fallback',
+        applied: false,
+        message: "L'IA n'a pas pu préparer ce brouillon. Continuez manuellement.",
+      },
+    }),
+  });
+
+  assert.match(html, /Photo principale téléversée/i);
+  assert.match(
+    html,
+    /<img[^>]+class="app-guidance__hero-image"[^>]+src="https:\/\/pub\.example\.test\/draft-photos\/capture\/photo_1-service\.jpg"/,
+  );
+  assert.match(html, /Complétion manuelle à l'étape suivante/i);
+  assert.match(html, /Continuez manuellement/i);
+  assert.match(html, /à confirmer/i);
+  assert.doesNotMatch(html, /<strong>Titre<\/strong>/);
+});
+
 test('review form category dropdown includes Emploi and Services', () => {
   const html = renderReviewFormScreen({
     areaOptions: ['Golf', 'Bel Air'],

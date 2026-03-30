@@ -614,6 +614,8 @@
 .app-capture__resume,
 .app-capture__busy,
 .app-upload-progress,
+.app-guidance__hero-card,
+.app-guidance__summary-card,
 .app-guidance__status,
 .app-review__summary,
 .app-review__price-range,
@@ -632,6 +634,11 @@
 .app-review__summary--manual {
   background: rgba(239, 83, 80, 0.08);
   border-color: rgba(239, 83, 80, 0.2);
+}
+
+.app-guidance__summary-card--manual {
+  background: rgba(255, 166, 0, 0.08);
+  border-color: rgba(255, 166, 0, 0.22);
 }
 
 .app-capture__resume {
@@ -704,6 +711,7 @@
   object-fit: cover;
 }
 
+.app-guidance__hero-media,
 .app-review__hero-media,
 .app-success__hero-media {
   overflow: hidden;
@@ -715,6 +723,7 @@
     linear-gradient(145deg, rgba(107, 230, 107, 0.14), rgba(255, 255, 255, 0.03));
 }
 
+.app-guidance__hero-image,
 .app-review__hero-image,
 .app-success__hero-image {
   display: block;
@@ -724,6 +733,7 @@
   object-fit: cover;
 }
 
+.app-guidance__hero-media--fallback,
 .app-review__hero-media--fallback,
 .app-success__hero-media--fallback {
   display: grid;
@@ -734,11 +744,13 @@
   text-align: center;
 }
 
+.app-guidance__hero-media--fallback strong,
 .app-review__hero-media--fallback strong,
 .app-success__hero-media--fallback strong {
   font-size: 0.94rem;
 }
 
+.app-guidance__hero-media--fallback span,
 .app-review__hero-media--fallback span,
 .app-success__hero-media--fallback span {
   color: var(--text-muted);
@@ -748,6 +760,8 @@
 
 .app-capture__resume strong,
 .app-upload-progress strong,
+.app-guidance__hero-card strong,
+.app-guidance__summary-card strong,
 .app-guidance__status strong,
 .app-review__summary strong,
 .app-review__price-range strong,
@@ -760,6 +774,8 @@
 
 .app-capture__resume span,
 .app-upload-progress span,
+.app-guidance__hero-card span,
+.app-guidance__summary-card span,
 .app-guidance__status span,
 .app-review__summary span,
 .app-auth__card p,
@@ -849,6 +865,32 @@
 .app-guidance__copy {
   display: grid;
   gap: 8px;
+}
+
+.app-guidance__hero-card,
+.app-guidance__summary-card {
+  gap: 14px;
+}
+
+.app-guidance__summary-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.app-guidance__summary-field {
+  display: grid;
+  gap: 4px;
+}
+
+.app-guidance__summary-field strong {
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.app-guidance__summary-field span {
+  color: var(--text);
+  font-size: 0.92rem;
 }
 
 .app-flow__file-input {
