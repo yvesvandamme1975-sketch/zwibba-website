@@ -67,20 +67,46 @@ model Listing {
   categoryId         String
   chatThreads        ChatThread[]
   createdAt          DateTime            @default(now())
+  deletedBySellerAt  DateTime?
+  deletedReason      String?
   description        String
   draft              Draft               @relation(fields: [draftId], references: [id], onDelete: Cascade)
   draftId            String              @unique
+  lifecycleChangedAt DateTime?
+  lifecycleEvents    ListingLifecycleEvent[]
+  lifecycleStatus    String              @default("active")
   moderationDecision ModerationDecision?
   moderationStatus   String
   ownerPhoneNumber   String
+  pausedAt           DateTime?
   priceCdf           Int
+  previousLifecycleStatusBeforeDelete String?
   publishedAt        DateTime?
   slug               String              @unique
+  soldAt             DateTime?
+  soldChannel        String?
   title              String
   updatedAt          DateTime            @updatedAt
 
+  @@index([lifecycleStatus])
   @@index([moderationStatus])
   @@index([ownerPhoneNumber])
+}
+
+model ListingLifecycleEvent {
+  id               String   @id @default(cuid())
+  action           String
+  actorPhoneNumber String
+  createdAt        DateTime @default(now())
+  listing          Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId        String
+  metadataJson     Json?
+  nextStatus       String
+  previousStatus   String
+  reasonCode       String?
+  reasonLabel      String?
+
+  @@index([listingId, createdAt])
 }
 
 model ChatThread {

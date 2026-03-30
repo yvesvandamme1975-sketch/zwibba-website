@@ -1251,6 +1251,21 @@
   color: var(--text-soft);
 }
 
+.app-flow__actions--stacked {
+  grid-template-columns: 1fr;
+}
+
+.app-detail__owner-card {
+  display: grid;
+  gap: 8px;
+}
+
+.app-detail__owner-meta,
+.app-profile__listing-meta {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
 .app-wallet__balance {
   display: grid;
   gap: 8px;
@@ -1325,6 +1340,11 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.app-profile__lifecycle-message,
+.app-profile__lifecycle-section {
+  margin-top: 4px;
 }
 
 @media (min-width: 920px) {

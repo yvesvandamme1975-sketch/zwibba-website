@@ -31,6 +31,31 @@ export function createSellerListingsService({
   }
 
   return {
+    async applyLifecycleAction({
+      action,
+      listingId,
+      reasonCode = '',
+      session,
+    }) {
+      const response = await fetchFn(`${apiBaseUrl}/listings/${encodeURIComponent(listingId)}/lifecycle`, {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${session.sessionToken}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          action,
+          reasonCode,
+        }),
+      });
+
+      if (!response.ok) {
+        throw await parseError(response, 'Impossible de mettre à jour cette annonce.');
+      }
+
+      return response.json();
+    },
+
     async listMine({
       session,
     }) {

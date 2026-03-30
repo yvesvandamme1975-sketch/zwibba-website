@@ -42,11 +42,17 @@ class _FakePrismaService {
   readonly listings = new Map<string, {
     area: string;
     categoryId: string;
+    deletedBySellerAt?: Date | null;
+    deletedReason?: string | null;
     draftId: string;
     id: string;
+    lifecycleStatus?: string;
+    previousLifecycleStatusBeforeDelete?: string | null;
     moderationStatus: string;
     ownerPhoneNumber: string;
     priceCdf: number;
+    soldChannel?: string | null;
+    soldAt?: Date | null;
     slug: string;
     title: string;
   }>();
@@ -81,11 +87,17 @@ class _FakePrismaService {
   seedListing(listing: {
     area: string;
     categoryId: string;
+    deletedBySellerAt?: Date | null;
+    deletedReason?: string | null;
     draftId: string;
     id: string;
+    lifecycleStatus?: string;
+    previousLifecycleStatusBeforeDelete?: string | null;
     moderationStatus: string;
     ownerPhoneNumber: string;
     priceCdf: number;
+    soldChannel?: string | null;
+    soldAt?: Date | null;
     slug: string;
     title: string;
   }) {
@@ -254,6 +266,7 @@ test('seller listings endpoint returns the owner listing cards with moderation m
   prisma.seedListing({
     area: 'Lubumbashi Centre',
     categoryId: 'phones_tablets',
+    lifecycleStatus: 'active',
     draftId: 'draft_approved',
     id: 'listing_approved',
     moderationStatus: 'approved',
@@ -274,6 +287,10 @@ test('seller listings endpoint returns the owner listing cards with moderation m
   prisma.seedListing({
     area: 'Bel Air',
     categoryId: 'vehicles',
+    lifecycleStatus: 'deleted_by_seller',
+    deletedBySellerAt: new Date('2026-03-30T08:00:00.000Z'),
+    deletedReason: 'Je republierai plus tard',
+    previousLifecycleStatusBeforeDelete: 'active',
     draftId: 'draft_pending',
     id: 'listing_pending',
     moderationStatus: 'pending_manual_review',
@@ -306,6 +323,13 @@ test('seller listings endpoint returns the owner listing cards with moderation m
   assert.equal(response.body.items.length, 2);
   assert.equal(response.body.items[0].id, 'listing_approved');
   assert.equal(response.body.items[0].primaryImageUrl, 'https://pub.example.test/samsung-a54.jpg');
+  assert.equal(response.body.items[0].lifecycleStatus, 'active');
+  assert.equal(response.body.items[0].canDelete, true);
+  assert.equal(response.body.items[0].canRestore, false);
   assert.equal(response.body.items[1].moderationStatus, 'pending_manual_review');
+  assert.equal(response.body.items[1].lifecycleStatus, 'deleted_by_seller');
+  assert.equal(response.body.items[1].deletedReason, 'Je republierai plus tard');
+  assert.match(response.body.items[1].restoreUntil, /2026-04-29T08:00:00.000Z/);
+  assert.equal(response.body.items[1].canRestore, true);
   assert.equal(response.body.items[1].reasonSummary, 'Documents véhicule à vérifier');
 });

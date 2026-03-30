@@ -203,6 +203,16 @@ export class ChatService {
       throw new NotFoundException('Annonce introuvable.');
     }
 
+    const moderationStatus = listing.moderationStatus ?? 'approved';
+    const lifecycleStatus = listing.lifecycleStatus ?? 'active';
+
+    if (
+      moderationStatus !== 'approved' ||
+      lifecycleStatus !== 'active'
+    ) {
+      throw new NotFoundException('Annonce introuvable.');
+    }
+
     const existingThread = await this.prismaService.chatThread.findFirst({
       where: {
         buyerUserId: user.id,

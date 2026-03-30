@@ -134,8 +134,22 @@ export class AuthService {
   }
 
   async requireSessionToken(sessionToken: string | undefined) {
+    const session = await this.findSessionToken(sessionToken);
+
     if (!sessionToken) {
       throw new UnauthorizedException('Session manquante.');
+    }
+
+    if (!session) {
+      throw new UnauthorizedException('Session inconnue.');
+    }
+
+    return session;
+  }
+
+  async findSessionToken(sessionToken: string | undefined) {
+    if (!sessionToken) {
+      return null;
     }
 
     const session = await this.prismaService.session.findUnique({
@@ -148,7 +162,7 @@ export class AuthService {
     });
 
     if (!session) {
-      throw new UnauthorizedException('Session inconnue.');
+      return null;
     }
 
     return {

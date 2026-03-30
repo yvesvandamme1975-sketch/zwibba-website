@@ -65,6 +65,8 @@ class _FakePrismaService {
 
   seedListing(listing: {
     id: string;
+    lifecycleStatus?: string;
+    moderationStatus?: string;
     ownerPhoneNumber: string;
     slug: string;
     title: string;
@@ -539,4 +541,30 @@ test('chat thread creation reuses the buyer thread for a listing and exposes it 
 
   assert.equal(inboxResponse.body.items.length, 1);
   assert.equal(inboxResponse.body.items[0].listingSlug, 'samsung-galaxy-a54-128-go');
+});
+
+test('chat thread creation rejects non-public lifecycle listings', async (t) => {
+  const prisma = new _FakePrismaService();
+  prisma.seedListing({
+    id: 'listing_hidden',
+    lifecycleStatus: 'deleted_by_seller',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+243990000001',
+    slug: 'table-basse',
+    title: 'Table basse',
+  });
+
+  const app = await createTestApp(prisma);
+  t.after(async () => {
+    await app.close();
+  });
+
+  const buyerSessionToken = await createSellerSession(app, '+243990000111');
+  await request(app.getHttpServer())
+    .post('/chat/threads')
+    .set('authorization', `Bearer ${buyerSessionToken}`)
+    .send({
+      listingId: 'listing_hidden',
+    })
+    .expect(404);
 });

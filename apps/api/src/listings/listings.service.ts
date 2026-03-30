@@ -2,17 +2,34 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import type { SessionRecord } from '../auth/auth.service';
 import { PrismaService } from '../database/prisma.service';
+import {
+  applyLifecycleAction as applySellerLifecycleAction,
+  buildDeleteReasonLabel,
+  buildLifecycleStatusLabel,
+  buildSoldChannelLabel,
+  listingLifecycleStatuses,
+  resolveLifecycleCapabilities,
+  resolveLifecycleStatus,
+  resolveRestoreUntil,
+} from './listing-lifecycle';
 
 type PersistedListingRecord = {
   area: string;
   categoryId: string;
+  deletedBySellerAt?: Date | null;
+  deletedReason?: string | null;
   description: string;
   draftId: string;
   id: string;
+  lifecycleStatus?: string | null;
   moderationStatus: string;
   ownerPhoneNumber: string;
+  pausedAt?: Date | null;
+  previousLifecycleStatusBeforeDelete?: string | null;
   priceCdf: number;
   slug: string;
+  soldAt?: Date | null;
+  soldChannel?: string | null;
   title: string;
   updatedAt?: Date;
 };
@@ -104,6 +121,54 @@ function getListingImageUrls(photos: PersistedDraftPhotoRecord[] = []) {
     .map((photo) => photo.publicUrl);
 }
 
+function buildListingStatusLabel(status: string) {
+  switch (status) {
+    case 'approved':
+      return 'Publiée';
+    case 'pending_manual_review':
+      return 'En revue';
+    case 'blocked_needs_fix':
+      return 'À corriger';
+    default:
+      return 'Brouillon';
+  }
+}
+
+function buildLifecyclePayload(
+  listing: PersistedListingRecord,
+  now: Date = new Date(),
+) {
+  const lifecycleStatus = resolveLifecycleStatus(listing);
+  const restoreUntil = resolveRestoreUntil(listing.deletedBySellerAt);
+  const capabilities = resolveLifecycleCapabilities({
+    deletedBySellerAt: listing.deletedBySellerAt,
+    lifecycleStatus,
+    moderationStatus: listing.moderationStatus,
+    now,
+  });
+
+  return {
+    canDelete: capabilities.canDelete,
+    canMarkSold: capabilities.canMarkSold,
+    canPause: capabilities.canPause,
+    canRelist: capabilities.canRelist,
+    canResume: capabilities.canResume,
+    canRestore: capabilities.canRestore,
+    deletedReason: buildDeleteReasonLabel(listing.deletedReason),
+    lifecycleStatus,
+    lifecycleStatusLabel: buildLifecycleStatusLabel(lifecycleStatus),
+    restoreUntil: restoreUntil?.toISOString() ?? null,
+    soldChannel: buildSoldChannelLabel(listing.soldChannel),
+  };
+}
+
+function isPubliclyVisibleListing(listing: PersistedListingRecord) {
+  return (
+    listing.moderationStatus === 'approved' &&
+    resolveLifecycleStatus(listing) === listingLifecycleStatuses.active
+  );
+}
+
 function toListingSummary(
   listing: PersistedListingRecord,
   primaryImageUrl: string | null,
@@ -120,16 +185,23 @@ function toListingSummary(
   };
 }
 
-function toListingDetail(
-  listing: PersistedListingRecord,
-  images: string[],
-  primaryImageUrl: string | null,
-) {
+function toListingDetail({
+  images,
+  listing,
+  primaryImageUrl,
+  viewerRole,
+}: {
+  images: string[];
+  listing: PersistedListingRecord;
+  primaryImageUrl: string | null;
+  viewerRole: 'buyer' | 'owner';
+}) {
   return {
     categoryId: listing.categoryId,
     categoryLabel: getCategoryLabel(listing.categoryId),
-    contactActions: ['message', 'call'],
-    contactPhoneNumber: listing.ownerPhoneNumber,
+    contactActions: viewerRole === 'owner' ? [] : ['message', 'call'],
+    contactPhoneNumber:
+      viewerRole === 'owner' ? '' : listing.ownerPhoneNumber,
     id: listing.id,
     images,
     locationLabel: listing.area,
@@ -143,20 +215,9 @@ function toListingDetail(
     slug: listing.slug,
     summary: listing.description,
     title: listing.title,
+    viewerRole,
+    ...buildLifecyclePayload(listing),
   };
-}
-
-function buildListingStatusLabel(status: string) {
-  switch (status) {
-    case 'approved':
-      return 'Publiée';
-    case 'pending_manual_review':
-      return 'En revue';
-    case 'blocked_needs_fix':
-      return 'À corriger';
-    default:
-      return 'Brouillon';
-  }
 }
 
 @Injectable()
@@ -187,23 +248,23 @@ export class ListingsService {
       },
     });
 
-    const sortedListings = [...listings].sort((left, right) => {
-      const leftTime = left.updatedAt instanceof Date
-        ? left.updatedAt.getTime()
-        : 0;
-      const rightTime = right.updatedAt instanceof Date
-        ? right.updatedAt.getTime()
-        : 0;
+    const visibleListings = (listings as PersistedListingRecord[])
+      .filter(isPubliclyVisibleListing)
+      .sort((left, right) => {
+        const leftTime = left.updatedAt instanceof Date
+          ? left.updatedAt.getTime()
+          : 0;
+        const rightTime = right.updatedAt instanceof Date
+          ? right.updatedAt.getTime()
+          : 0;
 
-      return rightTime - leftTime;
-    });
+        return rightTime - leftTime;
+      });
 
     const listingsWithImages = await Promise.all(
-      sortedListings.map(async (listing) => ({
-        images: await this.resolveListingImages(
-          listing as PersistedListingRecord,
-        ),
-        listing: listing as PersistedListingRecord,
+      visibleListings.map(async (listing) => ({
+        images: await this.resolveListingImages(listing),
+        listing,
       })),
     );
 
@@ -214,21 +275,33 @@ export class ListingsService {
     };
   }
 
-  async getListingDetail(slug: string) {
+  async getListingDetail(slug: string, session?: SessionRecord) {
     const listing = await this.prismaService.listing.findUnique({
       where: {
         slug,
       },
     });
 
-    if (!listing || listing.moderationStatus !== 'approved') {
+    if (!listing) {
       throw new NotFoundException('Annonce introuvable.');
     }
 
     const persistedListing = listing as PersistedListingRecord;
+    const viewerRole =
+      session?.phoneNumber === persistedListing.ownerPhoneNumber ? 'owner' : 'buyer';
+
+    if (viewerRole !== 'owner' && !isPubliclyVisibleListing(persistedListing)) {
+      throw new NotFoundException('Annonce introuvable.');
+    }
+
     const images = await this.resolveListingImages(persistedListing);
 
-    return toListingDetail(persistedListing, images, images[0] ?? null);
+    return toListingDetail({
+      images,
+      listing: persistedListing,
+      primaryImageUrl: images[0] ?? null,
+      viewerRole,
+    });
   }
 
   async listSellerListings(session: SessionRecord) {
@@ -237,7 +310,8 @@ export class ListingsService {
         ownerPhoneNumber: session.phoneNumber,
       },
     });
-    const sortedListings = [...listings].sort((left, right) => {
+
+    const sortedListings = [...(listings as PersistedListingRecord[])].sort((left, right) => {
       const leftTime = left.updatedAt instanceof Date
         ? left.updatedAt.getTime()
         : 0;
@@ -250,33 +324,91 @@ export class ListingsService {
 
     const items = await Promise.all(
       sortedListings.map(async (listing) => {
-        const persistedListing = listing as PersistedListingRecord;
         const [primaryImageUrl, moderationDecision] = await Promise.all([
-          this.resolveListingImages(persistedListing).then((images) => images[0] ?? null),
+          this.resolveListingImages(listing).then((images) => images[0] ?? null),
           this.prismaService.moderationDecision.findUnique({
             where: {
-              listingId: persistedListing.id,
+              listingId: listing.id,
             },
           }),
         ]);
 
         return {
-          id: persistedListing.id,
-          moderationStatus: persistedListing.moderationStatus,
-          priceCdf: persistedListing.priceCdf,
+          id: listing.id,
+          moderationStatus: listing.moderationStatus,
+          priceCdf: listing.priceCdf,
           primaryImageUrl,
           reasonSummary:
             moderationDecision?.reasonSummary ??
-            buildListingStatusLabel(persistedListing.moderationStatus),
-          slug: persistedListing.slug,
-          statusLabel: buildListingStatusLabel(persistedListing.moderationStatus),
-          title: persistedListing.title,
+            buildListingStatusLabel(listing.moderationStatus),
+          slug: listing.slug,
+          statusLabel: buildListingStatusLabel(listing.moderationStatus),
+          title: listing.title,
+          ...buildLifecyclePayload(listing),
         };
       }),
     );
 
     return {
       items,
+    };
+  }
+
+  async applyLifecycleAction({
+    action,
+    listingId,
+    reasonCode,
+    session,
+  }: {
+    action: string;
+    listingId: string;
+    reasonCode?: string;
+    session: SessionRecord;
+  }) {
+    const listing = await this.prismaService.listing.findUnique({
+      where: {
+        id: listingId,
+      },
+    });
+
+    if (!listing || (listing as PersistedListingRecord).ownerPhoneNumber !== session.phoneNumber) {
+      throw new NotFoundException('Annonce introuvable.');
+    }
+
+    const persistedListing = listing as PersistedListingRecord;
+    const now = new Date();
+    const { event, updates } = applySellerLifecycleAction({
+      action,
+      currentListing: persistedListing,
+      now,
+      ownerPhoneNumber: session.phoneNumber,
+      reasonCode,
+    });
+
+    const updatedListing = await this.prismaService.$transaction(async (transaction) => {
+      const nextListing = await transaction.listing.update({
+        data: updates,
+        where: {
+          id: listingId,
+        },
+      });
+
+      await transaction.listingLifecycleEvent.create({
+        data: {
+          ...event,
+          listingId,
+        },
+      });
+
+      return nextListing as PersistedListingRecord;
+    });
+
+    return {
+      id: updatedListing.id,
+      moderationStatus: updatedListing.moderationStatus,
+      slug: updatedListing.slug,
+      title: updatedListing.title,
+      ...buildLifecyclePayload(updatedListing, now),
     };
   }
 }

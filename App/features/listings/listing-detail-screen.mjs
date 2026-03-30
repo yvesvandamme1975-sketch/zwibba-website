@@ -34,6 +34,31 @@ function buildBuyerMessage(detail) {
   return `Bonjour, je suis intéressé par ${detail.title} sur Zwibba.`;
 }
 
+function buildLifecycleActionButton({
+  action,
+  detail,
+  label,
+  tone = 'primary',
+} = {}) {
+  const className =
+    tone === 'secondary'
+      ? 'app-flow__button app-flow__button--secondary'
+      : 'app-flow__button';
+
+  return `
+    <button
+      class="${className}"
+      type="button"
+      data-action="listing-lifecycle"
+      data-lifecycle-action="${escapeAttribute(action)}"
+      data-listing-id="${escapeAttribute(detail.id)}"
+      data-listing-slug="${escapeAttribute(detail.slug)}"
+    >
+      ${escapeHtml(label)}
+    </button>
+  `;
+}
+
 function buildActionMarkup(action, detail) {
   switch (action) {
     case 'message':
@@ -68,6 +93,98 @@ function buildActionMarkup(action, detail) {
     default:
       return '';
   }
+}
+
+function renderOwnerLifecycleCard(detail) {
+  const actions = [];
+
+  if (detail.canPause) {
+    actions.push(
+      buildLifecycleActionButton({
+        action: 'pause',
+        detail,
+        label: 'Mettre en pause',
+      }),
+    );
+  }
+
+  if (detail.canResume) {
+    actions.push(
+      buildLifecycleActionButton({
+        action: 'resume',
+        detail,
+        label: 'Remettre en ligne',
+      }),
+    );
+  }
+
+  if (detail.canMarkSold) {
+    actions.push(
+      buildLifecycleActionButton({
+        action: 'mark_sold',
+        detail,
+        label: 'Marquer comme vendue',
+      }),
+    );
+  }
+
+  if (detail.canRelist) {
+    actions.push(
+      buildLifecycleActionButton({
+        action: 'relist',
+        detail,
+        label: 'Remettre en vente',
+      }),
+    );
+  }
+
+  if (detail.canRestore) {
+    actions.push(
+      buildLifecycleActionButton({
+        action: 'restore',
+        detail,
+        label: 'Restaurer',
+      }),
+    );
+  }
+
+  if (detail.canDelete) {
+    actions.push(
+      buildLifecycleActionButton({
+        action: 'delete',
+        detail,
+        label: 'Supprimer l’annonce',
+        tone: 'secondary',
+      }),
+    );
+  }
+
+  return `
+    <div class="app-auth__card app-detail__owner-card">
+      <strong>Gérer mon annonce</strong>
+      <p>Statut actuel: ${escapeHtml(detail.lifecycleStatusLabel || 'Active')}</p>
+      ${
+        detail.soldChannel
+          ? `<span class="app-detail__owner-meta">${escapeHtml(detail.soldChannel)}</span>`
+          : ''
+      }
+      ${
+        detail.deletedReason
+          ? `<span class="app-detail__owner-meta">${escapeHtml(detail.deletedReason)}</span>`
+          : ''
+      }
+      ${
+        detail.restoreUntil
+          ? `<span class="app-detail__owner-meta">Restaurable jusqu’au ${escapeHtml(new Date(detail.restoreUntil).toLocaleDateString('fr-FR'))}</span>`
+          : ''
+      }
+      ${
+        actions.length
+          ? `<div class="app-flow__actions app-flow__actions--stacked">${actions.join('')}</div>`
+          : ''
+      }
+    </div>
+  `;
 }
 
 function resolveCategoryLabel(detail) {
@@ -254,12 +371,22 @@ export function renderListingDetailScreen({
         </div>
       </section>
 
-      <div class="app-flow__actions" data-contact-actions="${escapeAttribute(detail.contactActions.join(','))}">
-        ${['message', 'call']
-          .filter((action) => detail.contactActions.includes(action) || (action === 'message' && detail.id))
-          .map((action) => buildActionMarkup(action, detail))
-          .join('')}
-      </div>
+      ${
+        detail.viewerRole === 'owner'
+          ? renderOwnerLifecycleCard(detail)
+          : `
+            <div class="app-flow__actions" data-contact-actions="${escapeAttribute(detail.contactActions.join(','))}">
+              ${['message', 'call']
+                .filter((action) =>
+                  action === 'message'
+                    ? Boolean(detail.id)
+                    : detail.contactActions.includes(action),
+                )
+                .map((action) => buildActionMarkup(action, detail))
+                .join('')}
+            </div>
+          `
+      }
     </section>
   `;
 }

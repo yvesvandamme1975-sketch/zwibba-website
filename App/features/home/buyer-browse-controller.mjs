@@ -124,13 +124,13 @@ export function createBuyerBrowseController({
       return state.feedItems;
     },
 
-    async loadListing(slug) {
+    async loadListing(slug, { session } = {}) {
       state.detail = null;
       state.detailError = '';
       state.detailStatus = 'loading';
 
       try {
-        state.detail = await listingsService.getListingDetail(slug);
+        state.detail = await listingsService.getListingDetail(slug, { session });
         state.detailStatus = 'ready';
       } catch (error) {
         state.detailStatus = 'error';

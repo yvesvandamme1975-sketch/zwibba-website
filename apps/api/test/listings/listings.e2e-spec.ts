@@ -715,3 +715,125 @@ test('listing labels support services and emploi categories', async (t) => {
   assert.equal(serviceListing.categoryLabel, 'Services');
   assert.equal(emploiListing.categoryLabel, 'Emploi');
 });
+
+test('public listings hide paused, sold, and seller-deleted listings while owner can still view them', async (t) => {
+  const {
+    app,
+    prisma,
+  } = await createTestContext();
+  t.after(async () => {
+    await app.close();
+  });
+
+  prisma.drafts.set('draft_active_listing', {
+    area: 'Centre Ville',
+    categoryId: 'electronics',
+    condition: 'like_new',
+    description: 'Enceinte bluetooth.',
+    id: 'draft_active_listing',
+    ownerPhoneNumber: '+243990000050',
+    priceCdf: 120000,
+    syncStatus: 'synced',
+    title: 'Enceinte bluetooth',
+  });
+  prisma.draftPhoto.create({
+    data: {
+      draftId: 'draft_active_listing',
+      id: 'photo_active_listing',
+      objectKey: 'draft-photos/active.jpg',
+      publicUrl: 'https://pub.example.test/active.jpg',
+      sourcePresetId: 'capture',
+      uploadStatus: 'uploaded',
+    },
+  });
+  prisma.listings.set('listing_active_listing', {
+    area: 'Centre Ville',
+    categoryId: 'electronics',
+    description: 'Enceinte bluetooth.',
+    draftId: 'draft_active_listing',
+    id: 'listing_active_listing',
+    lifecycleStatus: 'active',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+243990000050',
+    priceCdf: 120000,
+    publishedAt: new Date('2026-03-30T09:00:00.000Z'),
+    slug: 'enceinte-bluetooth',
+    title: 'Enceinte bluetooth',
+    updatedAt: new Date('2026-03-30T09:00:00.000Z'),
+  });
+
+  prisma.drafts.set('draft_deleted_listing', {
+    area: 'Golf',
+    categoryId: 'home_garden',
+    condition: 'used_good',
+    description: 'Table basse.',
+    id: 'draft_deleted_listing',
+    ownerPhoneNumber: '+243990000051',
+    priceCdf: 80000,
+    syncStatus: 'synced',
+    title: 'Table basse',
+  });
+  prisma.draftPhoto.create({
+    data: {
+      draftId: 'draft_deleted_listing',
+      id: 'photo_deleted_listing',
+      objectKey: 'draft-photos/deleted.jpg',
+      publicUrl: 'https://pub.example.test/deleted.jpg',
+      sourcePresetId: 'capture',
+      uploadStatus: 'uploaded',
+    },
+  });
+  prisma.listings.set('listing_deleted_listing', {
+    area: 'Golf',
+    categoryId: 'home_garden',
+    deletedBySellerAt: new Date('2026-03-30T09:30:00.000Z'),
+    deletedReason: 'republish_later',
+    description: 'Table basse.',
+    draftId: 'draft_deleted_listing',
+    id: 'listing_deleted_listing',
+    lifecycleStatus: 'deleted_by_seller',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+243990000051',
+    previousLifecycleStatusBeforeDelete: 'active',
+    priceCdf: 80000,
+    publishedAt: new Date('2026-03-30T09:15:00.000Z'),
+    slug: 'table-basse',
+    title: 'Table basse',
+    updatedAt: new Date('2026-03-30T09:30:00.000Z'),
+  });
+
+  const feedResponse = await request(app.getHttpServer())
+    .get('/listings')
+    .expect(200);
+
+  assert.deepEqual(feedResponse.body.items.map((item: { slug: string }) => item.slug), [
+    'enceinte-bluetooth',
+  ]);
+
+  await request(app.getHttpServer())
+    .get('/listings/table-basse')
+    .expect(404);
+
+  await request(app.getHttpServer())
+    .post('/auth/request-otp')
+    .send({ phoneNumber: '+243990000051' })
+    .expect(201);
+
+  const verifyResponse = await request(app.getHttpServer())
+    .post('/auth/verify-otp')
+    .send({
+      phoneNumber: '+243990000051',
+      code: '123456',
+    })
+    .expect(201);
+
+  const ownerDetailResponse = await request(app.getHttpServer())
+    .get('/listings/table-basse')
+    .set('authorization', `Bearer ${verifyResponse.body.sessionToken}`)
+    .expect(200);
+
+  assert.equal(ownerDetailResponse.body.viewerRole, 'owner');
+  assert.equal(ownerDetailResponse.body.lifecycleStatus, 'deleted_by_seller');
+  assert.equal(ownerDetailResponse.body.deletedReason, 'Je republierai plus tard');
+  assert.equal(ownerDetailResponse.body.contactActions.length, 0);
+});

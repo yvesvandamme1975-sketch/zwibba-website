@@ -182,6 +182,8 @@ if (appRoot) {
     inboxItems: [],
     inboxPromise: null,
     inboxStatus: 'idle',
+    listingLifecycleBusyId: '',
+    listingLifecycleMessage: '',
     otpError: '',
     pendingChallenge: authService.getPendingChallenge(),
     phoneError: '',
@@ -274,6 +276,65 @@ if (appRoot) {
     }
 
     return `#listing/${encodeURIComponent(listingSlug)}`;
+  }
+
+  const soldReasonChoices = [
+    { code: 'sold_on_zwibba', label: 'Vendu sur Zwibba' },
+    { code: 'sold_elsewhere', label: 'Vendu ailleurs' },
+  ];
+  const deleteReasonChoices = [
+    { code: 'not_available', label: 'Plus disponible' },
+    { code: 'duplicate_or_error', label: 'Doublon ou erreur' },
+    { code: 'republish_later', label: 'Je republierai plus tard' },
+    { code: 'other', label: 'Autre' },
+  ];
+
+  function promptForLifecycleReason({
+    choices,
+    message,
+  }) {
+    const answer = window.prompt(
+      `${message}\n\n${choices.map((choice, index) => `${index + 1}. ${choice.label}`).join('\n')}`,
+    );
+
+    if (answer === null) {
+      return null;
+    }
+
+    const normalizedAnswer = String(answer || '').trim().toLowerCase();
+    const byIndex = Number.parseInt(normalizedAnswer, 10);
+
+    if (Number.isInteger(byIndex) && byIndex >= 1 && byIndex <= choices.length) {
+      return choices[byIndex - 1].code;
+    }
+
+    const matchedChoice = choices.find((choice) => {
+      return (
+        choice.code === normalizedAnswer ||
+        choice.label.toLowerCase() === normalizedAnswer
+      );
+    });
+
+    return matchedChoice?.code ?? '';
+  }
+
+  function buildLifecycleFeedbackMessage(action, result) {
+    switch (action) {
+      case 'delete':
+        return 'Annonce archivée. Elle reste restaurable pendant 30 jours.';
+      case 'pause':
+        return 'Annonce mise en pause.';
+      case 'mark_sold':
+        return result?.soldChannel || 'Annonce marquée comme vendue.';
+      case 'restore':
+        return 'Annonce restaurée.';
+      case 'resume':
+        return 'Annonce remise en ligne.';
+      case 'relist':
+        return 'Annonce remise en vente.';
+      default:
+        return 'Annonce mise à jour.';
+    }
   }
 
   function persistDraft(nextDraft) {
@@ -407,7 +468,9 @@ if (appRoot) {
 
     state.currentListingSlug = slug;
     state.buyerListingPromise = buyerBrowseController
-      .loadListing(slug)
+      .loadListing(slug, {
+        session: state.session,
+      })
       .finally(() => {
         state.buyerListingPromise = null;
         renderApp();
@@ -702,6 +765,7 @@ if (appRoot) {
         });
       case 'profile':
         return renderProfileScreen({
+          lifecycleMessage: state.listingLifecycleMessage,
           listings: state.sellerListings,
           session: state.session,
           state: state.session
@@ -1136,6 +1200,79 @@ if (appRoot) {
     }
   }
 
+  async function handleListingLifecycleAction({
+    action,
+    listingId,
+    listingSlug,
+  }) {
+    if (!state.session || !listingId || !action) {
+      return;
+    }
+
+    let reasonCode = '';
+
+    if (action === 'mark_sold') {
+      reasonCode = promptForLifecycleReason({
+        choices: soldReasonChoices,
+        message: 'Comment cette annonce a-t-elle été vendue ?',
+      }) || '';
+
+      if (!reasonCode) {
+        return;
+      }
+    }
+
+    if (action === 'delete') {
+      reasonCode = promptForLifecycleReason({
+        choices: deleteReasonChoices,
+        message: 'Pourquoi supprimez-vous cette annonce ?',
+      }) || '';
+
+      if (!reasonCode) {
+        return;
+      }
+    }
+
+    if (
+      ['pause', 'delete', 'mark_sold', 'restore', 'resume', 'relist'].includes(action) &&
+      !window.confirm('Confirmer cette action sur votre annonce ?')
+    ) {
+      return;
+    }
+
+    state.listingLifecycleBusyId = listingId;
+    state.listingLifecycleMessage = '';
+    renderApp();
+
+    try {
+      const result = await sellerListingsService.applyLifecycleAction({
+        action,
+        listingId,
+        reasonCode,
+        session: state.session,
+      });
+
+      state.listingLifecycleBusyId = '';
+      state.listingLifecycleMessage = buildLifecycleFeedbackMessage(action, result);
+      state.sellerListingsStatus = 'idle';
+      state.profileError = '';
+      buyerBrowseController.state.feedStatus = 'idle';
+      buyerBrowseController.state.detailStatus = 'idle';
+      if (listingSlug) {
+        state.currentListingSlug = listingSlug;
+        void loadBuyerListing(listingSlug);
+      }
+      void loadSellerListings();
+      void loadBuyerFeed();
+      renderApp();
+    } catch (error) {
+      state.listingLifecycleBusyId = '';
+      state.listingLifecycleMessage =
+        error instanceof Error ? error.message : 'Impossible de mettre à jour cette annonce.';
+      renderApp();
+    }
+  }
+
   async function handleSendThreadMessage(form) {
     if (!state.session) {
       return;
@@ -1278,6 +1415,15 @@ if (appRoot) {
       }
 
       await handleBoost(trigger.dataset.listingId || '');
+      return;
+    }
+
+    if (trigger.dataset.action === 'listing-lifecycle') {
+      await handleListingLifecycleAction({
+        action: trigger.dataset.lifecycleAction || '',
+        listingId: trigger.dataset.listingId || '',
+        listingSlug: trigger.dataset.listingSlug || state.currentListingSlug,
+      });
     }
   });
 

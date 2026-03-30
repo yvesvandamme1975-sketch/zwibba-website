@@ -31,8 +31,15 @@ export function createListingsService({
   }
 
   return {
-    async getListingDetail(slug) {
+    async getListingDetail(slug, { session } = {}) {
+      const headers = {};
+
+      if (session?.sessionToken) {
+        headers.authorization = `Bearer ${session.sessionToken}`;
+      }
+
       const response = await fetchFn(`${apiBaseUrl}/listings/${encodeURIComponent(slug)}`, {
+        headers,
         method: 'GET',
       });
 

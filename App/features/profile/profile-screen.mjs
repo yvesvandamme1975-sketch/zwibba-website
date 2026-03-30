@@ -23,8 +23,124 @@ function formatListingStatus(status) {
   }
 }
 
+function groupListingsByLifecycle(listings) {
+  return {
+    active: listings.filter((listing) => (listing.lifecycleStatus || 'active') === 'active'),
+    archived: listings.filter((listing) => listing.lifecycleStatus === 'deleted_by_seller'),
+    paused: listings.filter((listing) => listing.lifecycleStatus === 'paused'),
+    sold: listings.filter((listing) => listing.lifecycleStatus === 'sold'),
+  };
+}
+
+function buildLifecycleActionButton({
+  action,
+  label,
+  listing,
+  tone = 'secondary',
+} = {}) {
+  const className =
+    tone === 'primary'
+      ? 'app-flow__button'
+      : 'app-flow__button app-flow__button--secondary';
+
+  return `
+    <button
+      class="${className}"
+      type="button"
+      data-action="listing-lifecycle"
+      data-lifecycle-action="${escapeAttribute(action)}"
+      data-listing-id="${escapeAttribute(listing.id)}"
+      data-listing-slug="${escapeAttribute(listing.slug)}"
+    >
+      ${escapeHtml(label)}
+    </button>
+  `;
+}
+
+function renderLifecycleButtons(listing) {
+  const buttons = [];
+
+  if (listing.canPause) {
+    buttons.push(
+      buildLifecycleActionButton({
+        action: 'pause',
+        label: 'Mettre en pause',
+        listing,
+      }),
+    );
+  }
+
+  if (listing.canResume) {
+    buttons.push(
+      buildLifecycleActionButton({
+        action: 'resume',
+        label: 'Remettre en ligne',
+        listing,
+      }),
+    );
+  }
+
+  if (listing.canMarkSold) {
+    buttons.push(
+      buildLifecycleActionButton({
+        action: 'mark_sold',
+        label: 'Marquer comme vendue',
+        listing,
+      }),
+    );
+  }
+
+  if (listing.canRelist) {
+    buttons.push(
+      buildLifecycleActionButton({
+        action: 'relist',
+        label: 'Remettre en vente',
+        listing,
+      }),
+    );
+  }
+
+  if (listing.canRestore) {
+    buttons.push(
+      buildLifecycleActionButton({
+        action: 'restore',
+        label: 'Restaurer',
+        listing,
+      }),
+    );
+  }
+
+  if (listing.canDelete) {
+    buttons.push(
+      buildLifecycleActionButton({
+        action: 'delete',
+        label: 'Supprimer l’annonce',
+        listing,
+      }),
+    );
+  }
+
+  return buttons.join('');
+}
+
+function formatRestoreUntil(value) {
+  if (!value) {
+    return '';
+  }
+
+  const restoreDate = new Date(value);
+
+  if (Number.isNaN(restoreDate.getTime())) {
+    return String(value);
+  }
+
+  return restoreDate.toLocaleDateString('fr-FR');
+}
+
 function renderListingCard(listing) {
   const imageUrl = sanitizeListingImageUrl(listing.primaryImageUrl, listing);
+  const lifecycleButtons = renderLifecycleButtons(listing);
+  const canBoost = (listing.lifecycleStatus || 'active') === 'active' && listing.moderationStatus === 'approved';
 
   return `
     <article class="app-profile__listing-card" data-listing-id="${escapeAttribute(listing.id)}">
@@ -35,25 +151,72 @@ function renderListingCard(listing) {
       }
       <div class="app-profile__listing-copy">
         <strong>${escapeHtml(listing.title)}</strong>
-        <span>${escapeHtml(formatListingStatus(listing.moderationStatus))}</span>
+        <span>${escapeHtml(listing.lifecycleStatusLabel || 'Active')} · ${escapeHtml(formatListingStatus(listing.moderationStatus))}</span>
         <em>${escapeHtml(formatCdf(listing.priceCdf))}</em>
+        ${
+          listing.soldChannel
+            ? `<small class="app-profile__listing-meta">${escapeHtml(listing.soldChannel)}</small>`
+            : ''
+        }
+        ${
+          listing.deletedReason
+            ? `<small class="app-profile__listing-meta">${escapeHtml(listing.deletedReason)}</small>`
+            : ''
+        }
+        ${
+          listing.restoreUntil
+            ? `<small class="app-profile__listing-meta">Restaurable jusqu’au ${escapeHtml(formatRestoreUntil(listing.restoreUntil))}</small>`
+            : ''
+        }
       </div>
       <div class="app-profile__listing-actions">
         <a class="app-flow__button app-flow__button--secondary" href="#listing/${escapeAttribute(listing.slug)}">Voir</a>
-        <button
-          class="app-flow__button"
-          type="button"
-          data-action="activate-boost"
-          data-listing-id="${escapeAttribute(listing.id)}"
-        >
-          Booster
-        </button>
+        ${
+          canBoost
+            ? `
+              <button
+                class="app-flow__button"
+                type="button"
+                data-action="activate-boost"
+                data-listing-id="${escapeAttribute(listing.id)}"
+              >
+                Booster
+              </button>
+            `
+            : ''
+        }
+        ${lifecycleButtons}
       </div>
     </article>
   `;
 }
 
+function renderLifecycleSection({
+  emptyLabel,
+  listings,
+  title,
+} = {}) {
+  return `
+    <section class="app-home__section app-profile__lifecycle-section">
+      <div class="app-home__section-head">
+        <h3>${escapeHtml(title)}</h3>
+        <span>${escapeHtml(String(listings.length))}</span>
+      </div>
+      ${
+        listings.length
+          ? `<div class="app-profile__listing-grid">${listings.map(renderListingCard).join('')}</div>`
+          : `
+            <article class="app-empty-state">
+              <strong>${escapeHtml(emptyLabel)}</strong>
+            </article>
+          `
+      }
+    </section>
+  `;
+}
+
 export function renderProfileScreen({
+  lifecycleMessage = '',
   listings = [],
   session = null,
   state = 'loading',
@@ -92,6 +255,8 @@ export function renderProfileScreen({
   }
 
   const counts = buildCounts(listings);
+  const lifecycleGroups = groupListingsByLifecycle(listings);
+  const hasListings = listings.length > 0;
 
   return `
     <section class="app-flow app-screen">
@@ -110,31 +275,63 @@ export function renderProfileScreen({
         <span>Session vérifiée</span>
       </div>
 
+      ${
+        lifecycleMessage
+          ? `
+            <div class="app-auth__card app-profile__lifecycle-message">
+              <strong>Mise à jour de l’annonce</strong>
+              <p>${escapeHtml(lifecycleMessage)}</p>
+            </div>
+          `
+          : ''
+      }
+
       <div class="app-profile__stats">
         <article><strong>Publiées</strong><span>${escapeHtml(String(counts.approved))}</span></article>
         <article><strong>En revue</strong><span>${escapeHtml(String(counts.pending))}</span></article>
         <article><strong>À corriger</strong><span>${escapeHtml(String(counts.blocked))}</span></article>
       </div>
 
-      <section class="app-home__section">
-        <div class="app-home__section-head">
-          <h3>Mes annonces</h3>
-          <span>Gestion vendeur</span>
-        </div>
-        <div class="app-profile__listing-grid">
-          ${
-            listings.length
-              ? listings.map(renderListingCard).join('')
-              : `
+      ${
+        hasListings
+          ? `
+            ${renderLifecycleSection({
+              emptyLabel: 'Aucune annonce active pour le moment.',
+              listings: lifecycleGroups.active,
+              title: 'Actives',
+            })}
+            ${renderLifecycleSection({
+              emptyLabel: 'Aucune annonce en pause.',
+              listings: lifecycleGroups.paused,
+              title: 'En pause',
+            })}
+            ${renderLifecycleSection({
+              emptyLabel: 'Aucune annonce vendue.',
+              listings: lifecycleGroups.sold,
+              title: 'Vendues',
+            })}
+            ${renderLifecycleSection({
+              emptyLabel: 'Aucune annonce archivée.',
+              listings: lifecycleGroups.archived,
+              title: 'Archivées',
+            })}
+          `
+          : `
+            <section class="app-home__section">
+              <div class="app-home__section-head">
+                <h3>Mes annonces</h3>
+                <span>Gestion vendeur</span>
+              </div>
+              <div class="app-profile__listing-grid">
                 <article class="app-empty-state">
                   <strong>Aucune annonce pour le moment</strong>
                   <span>Commencez votre première annonce vendeur pour remplir votre profil.</span>
                   <a class="app-flow__button app-flow__button--secondary" href="#sell">Créer ma première annonce</a>
                 </article>
-              `
-          }
-        </div>
-      </section>
+              </div>
+            </section>
+          `
+      }
     </section>
   `;
 }

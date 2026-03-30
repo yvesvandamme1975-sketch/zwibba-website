@@ -173,6 +173,49 @@ test('listing detail screen renders a loading state', () => {
   assert.match(html, /Chargement de l'annonce/i);
 });
 
+test('listing detail screen replaces buyer contact actions with owner lifecycle actions', () => {
+  const html = renderListingDetailScreen({
+    detail: {
+      canDelete: true,
+      canMarkSold: true,
+      canPause: true,
+      canRelist: false,
+      canRestore: false,
+      categoryId: 'electronics',
+      categoryLabel: 'Électronique',
+      contactActions: [],
+      deletedReason: null,
+      id: 'listing_owner_1',
+      lifecycleStatus: 'active',
+      lifecycleStatusLabel: 'Active',
+      locationLabel: 'Golf',
+      priceCdf: 980000,
+      primaryImageUrl: 'https://pub.example.test/laptop.jpg',
+      restoreUntil: null,
+      safetyTips: ['Évitez les paiements anticipés.'],
+      seller: {
+        name: 'Particulier 0001',
+        responseTime: 'Répond en moyenne en 9 min',
+        role: 'Particulier',
+      },
+      slug: 'ordinateur-portable-test',
+      soldChannel: null,
+      summary: 'Ordinateur portable propre.',
+      title: 'Ordinateur portable test',
+      viewerRole: 'owner',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /Gérer mon annonce/);
+  assert.match(html, /Mettre en pause/);
+  assert.match(html, /Marquer comme vendue/);
+  assert.match(html, /Supprimer l’annonce/);
+  assert.match(html, /data-action="listing-lifecycle"/);
+  assert.doesNotMatch(html, /Envoyer un message/);
+  assert.doesNotMatch(html, /href="tel:/);
+});
+
 test('listing detail screen renders an in-app error state', () => {
   const html = renderListingDetailScreen({
     errorMessage: 'Annonce introuvable.',
