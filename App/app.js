@@ -51,6 +51,10 @@ import {
   captureReviewDraftRenderState,
   restoreReviewDraftRenderState,
 } from './utils/review-draft-render-state.mjs';
+import {
+  captureScrollRenderState,
+  restoreScrollRenderState,
+} from './utils/scroll-render-state.mjs';
 import { shouldRetainDraftAfterPublish } from './utils/post-publish-draft-state.mjs';
 import {
   createPostFlowController,
@@ -208,6 +212,7 @@ if (appRoot) {
     walletPromise: null,
     walletStatus: 'idle',
   };
+  let lastRenderedRouteKey = '';
 
   if (!window.location.hash) {
     window.location.hash = '#sell';
@@ -215,6 +220,17 @@ if (appRoot) {
 
   function getRoute() {
     return parseAppRoute(window.location.hash || '#sell');
+  }
+
+  function getRenderableRouteKey(route) {
+    switch (route.type) {
+      case 'listing':
+        return `listing:${route.slug || ''}`;
+      case 'thread':
+        return `thread:${route.threadId || ''}`;
+      default:
+        return route.type;
+    }
   }
 
   function parsePrice(rawValue) {
@@ -719,6 +735,9 @@ if (appRoot) {
 
   function renderApp() {
     const route = resolveRenderableRoute();
+    const routeKey = getRenderableRouteKey(route);
+    const scrollRenderState =
+      lastRenderedRouteKey === routeKey ? captureScrollRenderState(appRoot, window) : null;
     const buyerSearchRenderState = captureBuyerSearchRenderState(document.activeElement);
     const reviewDraftRenderState = captureReviewDraftRenderState(appRoot, document.activeElement);
 
@@ -740,8 +759,10 @@ if (appRoot) {
     if (route.type === 'review') {
       restoreReviewDraftRenderState(appRoot, reviewDraftRenderState);
     }
+    restoreScrollRenderState(appRoot, scrollRenderState, window);
     appRoot.dataset.appReady = 'true';
     appRoot.dataset.screen = route.type;
+    lastRenderedRouteKey = routeKey;
   }
 
   async function handleCapture(file, draftResetSerial = state.draftResetSerial) {
