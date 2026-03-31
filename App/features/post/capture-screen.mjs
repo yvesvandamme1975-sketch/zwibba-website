@@ -123,17 +123,16 @@ export function renderCaptureScreen({
         <div class="app-capture__picker-card">
           <strong>Photo principale</strong>
           <span>Utilisez une vraie photo depuis votre appareil. Sur mobile, l’appareil photo peut s’ouvrir directement.</span>
-          <label class="app-capture__picker" for="app-capture-primary-input">${escapeHtml(
-            pickerLabel,
-          )}</label>
-          <input
-            class="app-flow__file-input"
-            id="app-capture-primary-input"
-            type="file"
-            accept="image/*"
-            capture="environment"
-            data-input="capture-first-photo"
-          />
+          <label class="app-capture__picker">
+            <span>${escapeHtml(pickerLabel)}</span>
+            <input
+              class="app-flow__file-input app-flow__file-input--overlay"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              data-input="capture-first-photo"
+            />
+          </label>
         </div>
       </div>
     </section>

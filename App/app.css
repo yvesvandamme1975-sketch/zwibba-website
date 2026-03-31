@@ -817,6 +817,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: relative;
   min-height: 46px;
   width: fit-content;
   padding: 0 18px;
@@ -825,6 +826,8 @@
   color: #0f160f;
   font-weight: 800;
   box-shadow: var(--shadow-green);
+  overflow: hidden;
+  cursor: pointer;
 }
 
 .app-capture__selected {
@@ -905,6 +908,18 @@
   border: 0;
 }
 
+.app-flow__file-input--overlay {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  cursor: pointer;
+}
+
 .app-guidance__list {
   display: grid;
   gap: 12px;
@@ -948,6 +963,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: relative;
   min-height: 44px;
   padding: 0 16px;
   border-radius: 999px;
@@ -956,6 +972,8 @@
   color: var(--text);
   font-weight: 800;
   white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
 }
 
 .app-upload-progress {

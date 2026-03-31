@@ -308,6 +308,11 @@ test('capture screen renders a real image picker instead of demo preset cards', 
   assert.match(html, /type="file"/);
   assert.match(html, /accept="image\/\*"/);
   assert.match(html, /capture="environment"/);
+  assert.match(
+    html,
+    /<label class="app-capture__picker">[\s\S]*<input[^>]+class="app-flow__file-input app-flow__file-input--overlay"[\s\S]*data-input="capture-first-photo"/,
+  );
+  assert.doesNotMatch(html, /for="app-capture-primary-input"/);
   assert.doesNotMatch(html, /capture-demo-photo/);
   assert.doesNotMatch(html, /Téléphone premium/);
 });
@@ -756,6 +761,10 @@ test('guidance screen makes extra guided photos optional and keeps upload action
   assert.match(html, /Ajouter cette photo/i);
   assert.match(html, /Vue latérale/i);
   assert.match(html, /Vue d(?:&#39;|')ensemble/i);
+  assert.match(
+    html,
+    /<label[\s\S]+class="app-guidance__action"[\s\S]*>[\s\S]*<input[^>]+class="app-flow__file-input app-flow__file-input--overlay"[\s\S]*data-input="guided-photo"/,
+  );
   assert.match(html, /href="#review"/);
 });
 

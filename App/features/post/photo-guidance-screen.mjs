@@ -151,21 +151,17 @@ function renderPrompt(prompt) {
             : ''
         }
       </div>
-      <label
-        class="app-guidance__action"
-        for="app-guidance-${escapeAttribute(prompt.id)}-input"
-      >
-        ${escapeHtml(actionLabel)}
+      <label class="app-guidance__action">
+        <span>${escapeHtml(actionLabel)}</span>
+        <input
+          class="app-flow__file-input app-flow__file-input--overlay"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          data-input="guided-photo"
+          data-prompt-id="${escapeAttribute(prompt.id)}"
+        />
       </label>
-      <input
-        class="app-flow__file-input"
-        id="app-guidance-${escapeAttribute(prompt.id)}-input"
-        type="file"
-        accept="image/*"
-        capture="environment"
-        data-input="guided-photo"
-        data-prompt-id="${escapeAttribute(prompt.id)}"
-      />
     </li>
   `;
 }
