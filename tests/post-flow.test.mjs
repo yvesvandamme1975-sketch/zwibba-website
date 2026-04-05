@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { renderCaptureScreen } from '../App/features/post/capture-screen.mjs';
+import { renderCaptureResultScreen } from '../App/features/post/capture-result-screen.mjs';
 import { renderPhotoGuidanceScreen } from '../App/features/post/photo-guidance-screen.mjs';
 import { renderReviewFormScreen } from '../App/features/post/review-form-screen.mjs';
 import { sellerCategories } from '../App/demo-content.mjs';
@@ -807,6 +808,84 @@ test('guidance screen shows the uploaded primary photo and AI-generated details 
   assert.match(html, /Comme neuf/);
   assert.match(html, /<strong>Description<\/strong>/);
   assert.match(html, /Robe wax bleu marine avec coupe droite\./);
+});
+
+test('capture result screen shows the uploaded photo and AI-generated details before review', () => {
+  const html = renderCaptureResultScreen({
+    continueHref: '#review',
+    continueLabel: 'Continuer vers le brouillon',
+    draft: createReadyDraft({
+      categoryId: 'fashion',
+      condition: 'like_new',
+      description: 'Robe wax bleu marine avec coupe droite.',
+      photos: [
+        {
+          id: 'photo-1',
+          kind: 'primary',
+          previewUrl: 'blob:robe.jpg',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/capture/photo_1-dress.jpg',
+        },
+      ],
+      title: 'Robe wax bleu marine',
+      ai: {
+        status: 'ready',
+        applied: true,
+        message: 'Brouillon préparé à partir de votre photo.',
+      },
+    }),
+  });
+
+  assert.match(html, /Photo téléversée/i);
+  assert.match(html, /Analyse IA terminée/i);
+  assert.match(
+    html,
+    /<img[^>]+class="app-capture-result__hero-image"[^>]+src="https:\/\/pub\.example\.test\/draft-photos\/capture\/photo_1-dress\.jpg"/,
+  );
+  assert.match(html, /Brouillon préparé par IA/i);
+  assert.match(html, /<strong>Titre<\/strong>/);
+  assert.match(html, /Robe wax bleu marine/);
+  assert.match(html, /<strong>Catégorie<\/strong>/);
+  assert.match(html, /Mode/);
+  assert.match(html, /<strong>État<\/strong>/);
+  assert.match(html, /Comme neuf/);
+  assert.match(html, /<strong>Description<\/strong>/);
+  assert.match(html, /href="#review"/);
+  assert.match(html, /Continuer vers le brouillon/i);
+});
+
+test('capture result screen shows a manual fallback note when AI preparation is unavailable', () => {
+  const html = renderCaptureResultScreen({
+    continueHref: '#guidance',
+    continueLabel: 'Continuer vers les photos guidées',
+    draft: createReadyDraft({
+      categoryId: 'vehicles',
+      condition: '',
+      description: '',
+      photos: [
+        {
+          id: 'photo-1',
+          kind: 'primary',
+          previewUrl: 'blob:vehicle.jpg',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/capture/photo_1-vehicle.jpg',
+        },
+      ],
+      title: '',
+      ai: {
+        status: 'manual_fallback',
+        applied: false,
+        message: "L'IA n'a pas pu préparer ce brouillon. Continuez manuellement.",
+      },
+    }),
+  });
+
+  assert.match(html, /Photo téléversée/i);
+  assert.match(html, /Analyse IA indisponible/i);
+  assert.match(html, /Continuez manuellement/i);
+  assert.match(html, /href="#guidance"/);
+  assert.match(html, /Continuer vers les photos guidées/i);
+  assert.doesNotMatch(html, /<strong>Titre<\/strong>/);
 });
 
 test('guidance screen keeps the uploaded photo visible and shows a manual fallback note when AI is unavailable', () => {

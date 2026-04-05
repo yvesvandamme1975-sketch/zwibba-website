@@ -2,6 +2,7 @@ const staticRoutes = new Set([
   '#auth-welcome',
   '#buy',
   '#capture',
+  '#capture-result',
   '#guidance',
   '#home',
   '#messages',

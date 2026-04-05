@@ -37,5 +37,7 @@ Current priority docs:
 - `2026-03-29-zwibba-profile-zone-source-of-truth-implementation.md`
 - `2026-03-30-zwibba-seller-listing-lifecycle-design.md`
 - `2026-03-30-zwibba-seller-listing-lifecycle-implementation.md`
+- `2026-04-05-zwibba-post-capture-ai-confirmation-design.md`
+- `2026-04-05-zwibba-post-capture-ai-confirmation-implementation.md`
 
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.

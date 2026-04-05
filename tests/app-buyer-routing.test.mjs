@@ -19,6 +19,7 @@ test('parseAppRoute maps the browser beta shell tabs and thread routes', () => {
   assert.deepEqual(parseAppRoute('#home'), { type: 'sell' });
   assert.deepEqual(parseAppRoute('#sell'), { type: 'sell' });
   assert.deepEqual(parseAppRoute('#buy'), { type: 'buy' });
+  assert.deepEqual(parseAppRoute('#capture-result'), { type: 'capture-result' });
   assert.deepEqual(parseAppRoute('#messages'), { type: 'messages' });
   assert.deepEqual(parseAppRoute('#wallet'), { type: 'wallet' });
   assert.deepEqual(parseAppRoute('#profile'), { type: 'profile' });

@@ -18,6 +18,7 @@ import {
 import { renderHomeScreen } from './features/home/home-screen.mjs';
 import { renderListingDetailScreen } from './features/listings/listing-detail-screen.mjs';
 import { renderCaptureScreen } from './features/post/capture-screen.mjs';
+import { renderCaptureResultScreen } from './features/post/capture-result-screen.mjs';
 import { renderPhotoGuidanceScreen } from './features/post/photo-guidance-screen.mjs';
 import { renderPublishGateScreen } from './features/post/publish-gate-screen.mjs';
 import { renderReviewFormScreen } from './features/post/review-form-screen.mjs';
@@ -392,6 +393,16 @@ if (appRoot) {
     }, 0);
   }
 
+  function resolvePostCaptureContinueRoute(draft) {
+    return getMissingRequiredPhotoPrompts(draft).length > 0 ? '#guidance' : '#review';
+  }
+
+  function resolvePostCaptureContinueLabel(draft) {
+    return resolvePostCaptureContinueRoute(draft) === '#guidance'
+      ? 'Continuer vers les photos guidées'
+      : 'Continuer vers le brouillon';
+  }
+
   function resolveRenderableRoute() {
     const route = getRoute();
 
@@ -680,6 +691,12 @@ if (appRoot) {
           draft: state.draft,
           uploadProgress: state.uploadProgress,
         });
+      case 'capture-result':
+        return renderCaptureResultScreen({
+          continueHref: resolvePostCaptureContinueRoute(state.draft),
+          continueLabel: resolvePostCaptureContinueLabel(state.draft),
+          draft: state.draft,
+        });
       case 'guidance':
         return renderPhotoGuidanceScreen({
           draft: state.draft,
@@ -854,8 +871,7 @@ if (appRoot) {
       state.publishedListingRoute = '';
       state.publishedListingUrl = '';
       state.reviewErrors = [];
-      window.location.hash =
-        getMissingRequiredPhotoPrompts(nextDraft).length > 0 ? '#guidance' : '#review';
+      window.location.hash = '#capture-result';
     } catch (error) {
       if (draftResetSerial !== state.draftResetSerial) {
         if (!state.draft) {
