@@ -17,7 +17,11 @@
     "dev:admin": "sh scripts/dev-admin.sh",
     "prestart": "node scripts/build.mjs",
     "start": "node server.mjs",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "test:e2e:seller:beta": "node scripts/e2e/internal-beta-seller-flow.mjs",
+    "test:e2e:messages:beta": "node scripts/e2e/internal-beta-messaging-flow.mjs",
+    "test:e2e:matrix:beta": "node scripts/e2e/internal-beta-device-matrix.mjs",
+    "test:e2e:beta": "npm run test:e2e:seller:beta && npm run test:e2e:messages:beta && npm run test:e2e:matrix:beta"
   },
   "engines": {
     "node": ">=18"

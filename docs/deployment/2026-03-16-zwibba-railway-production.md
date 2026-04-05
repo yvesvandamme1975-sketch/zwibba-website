@@ -178,6 +178,21 @@ curl \
 - the seller review and seller success screens show the first draft image when a photo exists
 - a synced draft can publish into a persisted listing and moderation decision
 
+### Internal beta live E2E helpers
+
+From the repo root:
+
+```bash
+npm run test:e2e:seller:beta
+npm run test:e2e:messages:beta
+npm run test:e2e:matrix:beta
+npm run test:e2e:beta
+```
+
+The device QA checklist and tester path live in:
+
+- `docs/deployment/2026-04-05-zwibba-internal-beta-device-qa.md`
+
 ## 8. Secrets and operational rules
 
 - Never store Twilio or R2 secrets in Flutter or the browser prototype.
