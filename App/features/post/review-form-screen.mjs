@@ -8,6 +8,7 @@ import {
   escapeAttribute,
   escapeHtml,
 } from '../../utils/rendering.mjs';
+import { formatPricePreview } from '../../utils/price-input.mjs';
 
 function renderError(error) {
   return `<li data-review-error-field="${escapeAttribute(error.field)}">${escapeHtml(error.message)}</li>`;
@@ -98,6 +99,11 @@ export function renderReviewFormScreen({
     : 'app-review__summary';
   const summaryMessage = draft.ai.message || "L'IA prépare les bases du brouillon.";
   const resolvedProfileArea = String(profileArea || draft.details.area || '').trim();
+  const priceInputValue =
+    draft.details.priceCdf === null || draft.details.priceCdf === undefined
+      ? ''
+      : String(draft.details.priceCdf);
+  const pricePreview = formatPricePreview(priceInputValue);
 
   return `
     <section class="app-flow app-flow--review">
@@ -179,9 +185,18 @@ export function renderReviewFormScreen({
 
           <label class="${renderFieldClass({ validationErrors, field: 'price' })}">
             <span>Prix final (CDF)</span>
-            <input name="priceCdf" type="number" min="0" step="1000" value="${escapeAttribute(
-              draft.details.priceCdf ?? '',
-            )}" max="${escapeAttribute(MAX_PRICE_CDF)}" />
+            <input
+              name="priceCdf"
+              type="text"
+              inputmode="numeric"
+              min="0"
+              step="1000"
+              value="${escapeAttribute(priceInputValue)}"
+              max="${escapeAttribute(MAX_PRICE_CDF)}"
+              placeholder="Ex: 450000"
+              autocomplete="off"
+            />
+            <small class="app-review__field-hint" data-price-preview>${escapeHtml(pricePreview)}</small>
           </label>
 
           <label class="${renderFieldClass({ isFull: true, validationErrors, field: 'description' })}">

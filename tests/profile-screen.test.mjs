@@ -177,6 +177,7 @@ test('profile screen renders a persisted seller zone form', () => {
       phoneNumber: '+243990000001',
     },
     areaOptions: ['Bel Air', 'Golf', 'Lubumbashi Centre'],
+    draftExists: true,
     session: {
       canSyncDrafts: true,
       phoneNumber: '+243990000001',
@@ -190,4 +191,6 @@ test('profile screen renders a persisted seller zone form', () => {
   assert.match(html, /name="area"/);
   assert.match(html, /value="Golf" selected/);
   assert.match(html, /Enregistrer ma zone/);
+  assert.match(html, /Revenir au brouillon/);
+  assert.match(html, /href="#review"/);
 });

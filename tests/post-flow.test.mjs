@@ -660,15 +660,19 @@ test('review form highlights publish blockers next to the submit action', () => 
 test('review form keeps pricing fully manual and hides AI price guidance', () => {
   const draft = createReadyDraft();
   const html = renderReviewFormScreen({
-    areaOptions: ['Golf', 'Bel Air'],
     categories: [{ id: 'electronics', label: 'Électronique' }],
     conditionOptions: [{ value: 'like_new', label: 'Comme neuf' }],
     draft,
+    profileArea: 'Golf',
     validationErrors: [],
   });
 
   assert.match(html, /Prix final \(CDF\)/);
   assert.match(html, /max="2147483647"/);
+  assert.match(html, /type="text"/);
+  assert.match(html, /inputmode="numeric"/);
+  assert.match(html, /placeholder="Ex: 450000"/);
+  assert.match(html, /450 000 CDF/);
   assert.doesNotMatch(html, /Fourchette IA/i);
   assert.doesNotMatch(html, /Ajoutez votre prix librement/i);
   assert.doesNotMatch(html, /400 000 CDF/);

@@ -1149,6 +1149,12 @@
   font-size: 0.82rem;
 }
 
+.app-review__field-hint {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
 .app-review__field input,
 .app-review__field select,
 .app-review__field textarea {

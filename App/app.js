@@ -58,6 +58,10 @@ import {
   restoreScrollRenderState,
 } from './utils/scroll-render-state.mjs';
 import { syncDraftAreaFromProfile } from './utils/profile-area-sync.mjs';
+import {
+  formatPricePreview,
+  parsePriceInput,
+} from './utils/price-input.mjs';
 import { shouldRetainDraftAfterPublish } from './utils/post-publish-draft-state.mjs';
 import {
   createPostFlowController,
@@ -249,9 +253,7 @@ if (appRoot) {
   }
 
   function parsePrice(rawValue) {
-    const nextPrice = Number(rawValue);
-
-    return Number.isFinite(nextPrice) && nextPrice > 0 ? nextPrice : null;
+    return parsePriceInput(rawValue);
   }
 
   function slugifyTitle(value) {
@@ -839,6 +841,7 @@ if (appRoot) {
       case 'profile':
         return renderProfileScreen({
           areaOptions,
+          draftExists: Boolean(state.draft),
           lifecycleMessage: state.listingLifecycleMessage,
           listings: state.sellerListings,
           listingsError: state.sellerListingsError,
@@ -1649,6 +1652,30 @@ if (appRoot) {
 
     if (form.dataset.form === 'send-thread-message') {
       await handleSendThreadMessage(form);
+    }
+  });
+
+  appRoot.addEventListener('input', (event) => {
+    const target = event.target;
+
+    if (!(target instanceof HTMLInputElement)) {
+      return;
+    }
+
+    if (target.name !== 'priceCdf') {
+      return;
+    }
+
+    const form = target.form;
+
+    if (!form || form.dataset.form !== 'review-draft') {
+      return;
+    }
+
+    const preview = form.querySelector('[data-price-preview]');
+
+    if (preview) {
+      preview.textContent = formatPricePreview(target.value);
     }
   });
 

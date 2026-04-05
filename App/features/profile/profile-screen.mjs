@@ -223,6 +223,7 @@ function renderLifecycleSection({
 
 export function renderProfileScreen({
   areaOptions = [],
+  draftExists = false,
   lifecycleMessage = '',
   listings = [],
   listingsError = '',
@@ -329,6 +330,11 @@ export function renderProfileScreen({
             <button class="app-flow__button" type="submit"${profileSaveBusy ? ' disabled' : ''}>${escapeHtml(
               profileSaveBusy ? 'Enregistrement...' : 'Enregistrer ma zone',
             )}</button>
+            ${
+              draftExists
+                ? '<a class="app-flow__button app-flow__button--secondary" href="#review">Revenir au brouillon</a>'
+                : ''
+            }
           </div>
         </form>
       </section>
