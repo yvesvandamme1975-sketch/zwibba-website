@@ -563,6 +563,10 @@ test('publish validation requires photo, category, condition when relevant, pric
   assert.ok(baseErrors.some((error) => error.field === 'price'));
   assert.ok(baseErrors.some((error) => error.field === 'description'));
   assert.ok(baseErrors.some((error) => error.field === 'area'));
+  assert.match(
+    baseErrors.find((error) => error.field === 'area')?.message || '',
+    /Définissez votre zone dans le profil avant de publier/i,
+  );
 
   const categoryDraft = createReadyDraft({
     categoryId: 'phones_tablets',
@@ -575,6 +579,25 @@ test('publish validation requires photo, category, condition when relevant, pric
   const categoryErrors = validateDraftForPublish(categoryDraft);
 
   assert.ok(categoryErrors.some((error) => error.field === 'condition'));
+});
+
+test('review form shows the seller profile zone in read-only mode and hides the manual zone selector', () => {
+  const draft = createReadyDraft({
+    area: 'Golf',
+  });
+  const html = renderReviewFormScreen({
+    categories: [{ id: 'electronics', label: 'Électronique' }],
+    conditionOptions: [{ value: 'like_new', label: 'Comme neuf' }],
+    draft,
+    profileArea: 'Golf',
+    validationErrors: [],
+  });
+
+  assert.match(html, /<span>Zone<\/span>/);
+  assert.match(html, /Golf/);
+  assert.match(html, /Modifier dans le profil/);
+  assert.doesNotMatch(html, /name="area"/);
+  assert.doesNotMatch(html, /Choisir une zone/);
 });
 
 test('publish validation blocks while queued uploads are still pending', () => {

@@ -168,3 +168,26 @@ test('profile screen groups seller listings by lifecycle status and exposes rest
   assert.match(html, /Remettre en vente/);
   assert.match(html, /Restaurer/);
 });
+
+test('profile screen renders a persisted seller zone form', () => {
+  const html = renderProfileScreen({
+    listings: [],
+    profile: {
+      area: 'Golf',
+      phoneNumber: '+243990000001',
+    },
+    areaOptions: ['Bel Air', 'Golf', 'Lubumbashi Centre'],
+    session: {
+      canSyncDrafts: true,
+      phoneNumber: '+243990000001',
+      sessionToken: 'zwibba_session_123',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /Ma zone/);
+  assert.match(html, /data-form="profile-zone"/);
+  assert.match(html, /name="area"/);
+  assert.match(html, /value="Golf" selected/);
+  assert.match(html, /Enregistrer ma zone/);
+});

@@ -23,6 +23,12 @@ function formatListingStatus(status) {
   }
 }
 
+function renderOption(option, currentValue) {
+  const selected = option === currentValue ? ' selected' : '';
+
+  return `<option value="${escapeAttribute(option)}"${selected}>${escapeHtml(option)}</option>`;
+}
+
 function groupListingsByLifecycle(listings) {
   return {
     active: listings.filter((listing) => (listing.lifecycleStatus || 'active') === 'active'),
@@ -216,8 +222,15 @@ function renderLifecycleSection({
 }
 
 export function renderProfileScreen({
+  areaOptions = [],
   lifecycleMessage = '',
   listings = [],
+  listingsError = '',
+  profile = null,
+  profileError = '',
+  profileMessage = '',
+  profileState = 'idle',
+  profileSaveBusy = false,
   session = null,
   state = 'loading',
 } = {}) {
@@ -257,6 +270,8 @@ export function renderProfileScreen({
   const counts = buildCounts(listings);
   const lifecycleGroups = groupListingsByLifecycle(listings);
   const hasListings = listings.length > 0;
+  const profileArea = String(profile?.area ?? '').trim();
+  const profilePhoneNumber = profile?.phoneNumber || session.phoneNumber;
 
   return `
     <section class="app-flow app-screen">
@@ -271,9 +286,58 @@ export function renderProfileScreen({
       </header>
 
       <div class="app-publish__status is-verified">
-        <strong>${escapeHtml(session.phoneNumber)}</strong>
+        <strong>${escapeHtml(profilePhoneNumber)}</strong>
         <span>Session vérifiée</span>
       </div>
+
+      <section class="app-home__section app-profile__zone-card">
+        <div class="app-home__section-head">
+          <h3>Ma zone</h3>
+          <span>${escapeHtml(profileArea || 'À définir')}</span>
+        </div>
+
+        <form class="app-profile__zone-form" data-form="profile-zone">
+          <label class="app-review__field app-review__field--full">
+            <span>Zone du profil</span>
+            <select name="area" ${profileSaveBusy ? 'disabled' : ''}>
+              <option value="">Choisir une zone</option>
+              ${areaOptions.map((option) => renderOption(option, profileArea)).join('')}
+            </select>
+          </label>
+
+          ${
+            profileState === 'loading'
+              ? '<p class="app-profile__zone-note">Chargement de votre zone...</p>'
+              : profileArea
+                ? `<p class="app-profile__zone-note">Les nouvelles annonces reprendront automatiquement ${escapeHtml(profileArea)}.</p>`
+                : '<p class="app-profile__zone-note">Choisissez votre zone une fois. Les nouvelles annonces la reprendront automatiquement.</p>'
+          }
+
+          ${
+            profileMessage
+              ? `<div class="app-publish__status is-verified"><strong>Zone enregistrée</strong><span>${escapeHtml(profileMessage)}</span></div>`
+              : ''
+          }
+
+          ${
+            profileError
+              ? `<div class="app-review__error-summary"><strong>Impossible de mettre à jour le profil</strong><ul class="app-review__errors"><li>${escapeHtml(profileError)}</li></ul></div>`
+              : ''
+          }
+
+          <div class="app-flow__actions">
+            <button class="app-flow__button" type="submit"${profileSaveBusy ? ' disabled' : ''}>${escapeHtml(
+              profileSaveBusy ? 'Enregistrement...' : 'Enregistrer ma zone',
+            )}</button>
+          </div>
+        </form>
+      </section>
+
+      ${
+        listingsError
+          ? `<div class="app-review__error-summary"><strong>Impossible de charger vos annonces</strong><ul class="app-review__errors"><li>${escapeHtml(listingsError)}</li></ul></div>`
+          : ''
+      }
 
       ${
         lifecycleMessage

@@ -61,6 +61,7 @@ export class DraftsService {
     title: string;
   }): Promise<SyncedDraftRecord> {
     const supportedPriceCdf = assertSupportedPriceCdf(priceCdf);
+    const resolvedArea = (await this.resolveProfileArea(phoneNumber, area)) ?? '';
     const existingDraft = draftId
       ? await this.prismaService.draft.findFirst({
           where: {
@@ -95,7 +96,7 @@ export class DraftsService {
             id: existingDraft.id,
           },
           data: {
-            area,
+            area: resolvedArea,
             categoryId,
             description,
             ownerPhoneNumber: phoneNumber,
@@ -105,7 +106,7 @@ export class DraftsService {
         })
       : await this.prismaService.draft.create({
           data: {
-            area,
+            area: resolvedArea,
             categoryId,
             description,
             id: generatedDraftId,
@@ -131,7 +132,7 @@ export class DraftsService {
     }
 
     return {
-      area,
+      area: resolvedArea,
       categoryId,
       condition: persistedDraft.condition,
       description,
@@ -142,6 +143,22 @@ export class DraftsService {
       syncStatus: 'synced' as const,
       title,
     };
+  }
+
+  private async resolveProfileArea(phoneNumber: string, submittedArea: string) {
+    const normalizedArea = submittedArea.trim();
+
+    if (normalizedArea) {
+      return normalizedArea;
+    }
+
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        phoneNumber,
+      },
+    });
+
+    return user?.area?.trim() ?? '';
   }
 
   async getSyncedDraft(draftId: string): Promise<SyncedDraftRecord | undefined> {

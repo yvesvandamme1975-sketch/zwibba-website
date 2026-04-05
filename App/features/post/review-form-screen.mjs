@@ -83,10 +83,10 @@ function renderValidationSummary(validationErrors) {
 }
 
 export function renderReviewFormScreen({
-  areaOptions,
   categories,
   conditionOptions,
   draft,
+  profileArea = '',
   validationErrors = [],
 }) {
   const missingPrompts = getMissingRequiredPhotoPrompts(draft);
@@ -97,6 +97,7 @@ export function renderReviewFormScreen({
     ? 'app-review__summary app-review__summary--manual'
     : 'app-review__summary';
   const summaryMessage = draft.ai.message || "L'IA prépare les bases du brouillon.";
+  const resolvedProfileArea = String(profileArea || draft.details.area || '').trim();
 
   return `
     <section class="app-flow app-flow--review">
@@ -188,13 +189,24 @@ export function renderReviewFormScreen({
             <textarea name="description" rows="4">${escapeHtml(draft.details.description)}</textarea>
           </label>
 
-          <label class="${renderFieldClass({ isFull: true, validationErrors, field: 'area' })}">
+          <div class="${renderFieldClass({ isFull: true, validationErrors, field: 'area' })}">
             <span>Zone</span>
-            <select name="area">
-              <option value="">Choisir une zone</option>
-              ${areaOptions.map((option) => renderOption({ value: option, label: option }, draft.details.area)).join('')}
-            </select>
-          </label>
+            ${
+              resolvedProfileArea
+                ? `
+                  <div class="app-review__readonly-value">
+                    <strong>${escapeHtml(resolvedProfileArea)}</strong>
+                    <a class="app-flow__link" href="#profile">Modifier dans le profil</a>
+                  </div>
+                `
+                : `
+                  <div class="app-review__missing-profile-area">
+                    <strong>Définissez votre zone dans le profil avant de publier.</strong>
+                    <a class="app-flow__link" href="#profile">Ouvrir le profil</a>
+                  </div>
+                `
+            }
+          </div>
         </div>
 
         ${renderValidationSummary(validationErrors)}

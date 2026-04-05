@@ -40,6 +40,7 @@ import { createDraftStorageService } from './services/draft-storage.mjs';
 import { createImageCompressionService } from './services/image-compression.mjs';
 import { createListingsService } from './services/listings-service.mjs';
 import { createMediaService } from './services/media-service.mjs';
+import { createProfileService } from './services/profile-service.mjs';
 import { createSellerListingsService } from './services/seller-listings-service.mjs';
 import { createWalletService } from './services/wallet-service.mjs';
 import { createLiveDraftService } from './services/live-draft-service.mjs';
@@ -56,6 +57,7 @@ import {
   captureScrollRenderState,
   restoreScrollRenderState,
 } from './utils/scroll-render-state.mjs';
+import { syncDraftAreaFromProfile } from './utils/profile-area-sync.mjs';
 import { shouldRetainDraftAfterPublish } from './utils/post-publish-draft-state.mjs';
 import {
   createPostFlowController,
@@ -91,6 +93,10 @@ if (appRoot) {
     fetchFn: window.fetch.bind(window),
   });
   const sellerListingsService = createSellerListingsService({
+    apiBaseUrl: apiConfig.apiBaseUrl,
+    fetchFn: window.fetch.bind(window),
+  });
+  const profileService = createProfileService({
     apiBaseUrl: apiConfig.apiBaseUrl,
     fetchFn: window.fetch.bind(window),
   });
@@ -189,7 +195,12 @@ if (appRoot) {
     pendingChallenge: authService.getPendingChallenge(),
     phoneError: '',
     phoneNumber: authService.getPendingChallenge()?.phoneNumber ?? '+243',
+    profile: null,
     profileError: '',
+    profileMessage: '',
+    profilePromise: null,
+    profileSaveBusy: false,
+    profileStatus: 'idle',
     publishError: '',
     publishedDraft: null,
     publishOutcome: null,
@@ -198,6 +209,7 @@ if (appRoot) {
     reviewErrors: [],
     selectedListingImageIndex: 0,
     sellerListings: [],
+    sellerListingsError: '',
     sellerListingsPromise: null,
     sellerListingsStatus: 'idle',
     session: authService.loadSession(),
@@ -619,20 +631,21 @@ if (appRoot) {
     }
 
     state.sellerListingsStatus = 'loading';
-    state.profileError = '';
+    state.sellerListingsError = '';
     state.sellerListingsPromise = sellerListingsService
       .listMine({
         session: state.session,
       })
       .then((payload) => {
         state.sellerListings = payload.items ?? [];
+        state.sellerListingsError = '';
         state.sellerListingsStatus = 'ready';
         return state.sellerListings;
       })
       .catch((error) => {
         state.sellerListings = [];
         state.sellerListingsStatus = 'error';
-        state.profileError =
+        state.sellerListingsError =
           error instanceof Error ? error.message : 'Impossible de charger vos annonces.';
         return [];
       })
@@ -644,7 +657,50 @@ if (appRoot) {
     return state.sellerListingsPromise;
   }
 
+  async function loadProfile() {
+    if (!state.session) {
+      return null;
+    }
+
+    if (state.profilePromise) {
+      return state.profilePromise;
+    }
+
+    state.profileStatus = 'loading';
+    state.profileError = '';
+    state.profilePromise = profileService
+      .fetchProfile({
+        session: state.session,
+      })
+      .then((profile) => {
+        state.profile = profile;
+        state.profileStatus = 'ready';
+        state.draft = syncDraftAreaFromProfile(state.draft, profile.area);
+        if (state.draft) {
+          draftStorage.saveDraft(state.draft);
+        }
+        return profile;
+      })
+      .catch((error) => {
+        state.profile = null;
+        state.profileStatus = 'error';
+        state.profileError =
+          error instanceof Error ? error.message : 'Impossible de charger votre profil.';
+        return null;
+      })
+      .finally(() => {
+        state.profilePromise = null;
+        renderApp();
+      });
+
+    return state.profilePromise;
+  }
+
   function primeBuyerRouteState(route) {
+    if (state.session && state.profileStatus === 'idle') {
+      void loadProfile();
+    }
+
     if ((route.type === 'buy' || route.type === 'sell') && buyerBrowseController.state.feedStatus === 'idle') {
       void loadBuyerFeed();
     }
@@ -705,10 +761,10 @@ if (appRoot) {
         });
       case 'review':
         return renderReviewFormScreen({
-          areaOptions,
           categories: sellerCategories,
           conditionOptions,
           draft: state.draft,
+          profileArea: state.profile?.area ?? state.draft?.details.area ?? '',
           validationErrors: state.reviewErrors,
         });
       case 'auth-welcome':
@@ -782,9 +838,16 @@ if (appRoot) {
         });
       case 'profile':
         return renderProfileScreen({
+          areaOptions,
           lifecycleMessage: state.listingLifecycleMessage,
           listings: state.sellerListings,
+          listingsError: state.sellerListingsError,
+          profile: state.profile,
           session: state.session,
+          profileError: state.profileError,
+          profileMessage: state.profileMessage,
+          profileSaveBusy: state.profileSaveBusy,
+          profileState: state.profileStatus,
           state: state.session
             ? state.sellerListingsStatus === 'idle'
               ? 'loading'
@@ -864,7 +927,10 @@ if (appRoot) {
 
       state.busyLabel = '';
       state.uploadProgress = null;
-      state.draft = nextDraft;
+      state.draft = syncDraftAreaFromProfile(nextDraft, state.profile?.area ?? '');
+      if (state.draft) {
+        draftStorage.saveDraft(state.draft);
+      }
       state.publishError = '';
       state.publishedDraft = null;
       state.publishOutcome = null;
@@ -884,7 +950,10 @@ if (appRoot) {
 
       state.busyLabel = '';
       state.uploadProgress = null;
-      state.draft = error?.draft ?? state.draft;
+      state.draft = syncDraftAreaFromProfile(error?.draft ?? state.draft, state.profile?.area ?? '');
+      if (state.draft) {
+        draftStorage.saveDraft(state.draft);
+      }
       renderApp();
     }
   }
@@ -905,7 +974,10 @@ if (appRoot) {
         return;
       }
 
-      state.draft = nextDraft;
+      state.draft = syncDraftAreaFromProfile(nextDraft, state.profile?.area ?? '');
+      if (state.draft) {
+        draftStorage.saveDraft(state.draft);
+      }
       state.publishError = '';
       state.publishedDraft = null;
       state.reviewErrors = [];
@@ -924,7 +996,10 @@ if (appRoot) {
 
       state.busyLabel = '';
       state.uploadProgress = null;
-      state.draft = error?.draft ?? state.draft;
+      state.draft = syncDraftAreaFromProfile(error?.draft ?? state.draft, state.profile?.area ?? '');
+      if (state.draft) {
+        draftStorage.saveDraft(state.draft);
+      }
       renderApp();
     }
   }
@@ -996,13 +1071,18 @@ if (appRoot) {
     }
   }
 
-  function handleReviewSubmit(form) {
+  async function handleReviewSubmit(form) {
     if (!state.draft) {
       return;
     }
 
+    if (state.session && (!state.profile || state.profileStatus === 'idle')) {
+      await loadProfile();
+    }
+
     const formData = new FormData(form);
     const categoryId = String(formData.get('categoryId') ?? '').trim();
+    const resolvedProfileArea = String(state.profile?.area ?? state.draft.details.area ?? '').trim();
     const nextDraft = updateListingDraft(
       state.draft,
       {
@@ -1012,7 +1092,7 @@ if (appRoot) {
           condition: String(formData.get('condition') ?? '').trim(),
           priceCdf: parsePrice(formData.get('priceCdf')),
           description: String(formData.get('description') ?? '').trim(),
-          area: String(formData.get('area') ?? '').trim(),
+          area: resolvedProfileArea,
         },
         guidance: getCategoryGuidance(categoryId),
       },
@@ -1109,6 +1189,10 @@ if (appRoot) {
       state.pendingChallenge = authService.getPendingChallenge();
       state.otpError = '';
       state.inboxStatus = 'idle';
+      state.profile = null;
+      state.profileError = '';
+      state.profileMessage = '';
+      state.profileStatus = 'idle';
       state.walletStatus = 'idle';
       state.sellerListingsStatus = 'idle';
 
@@ -1118,6 +1202,8 @@ if (appRoot) {
         });
         draftStorage.saveDraft(state.draft);
       }
+
+      void loadProfile();
 
       if (state.authIntent?.type === 'message' && state.authIntent.listingId) {
         await openThreadFromListing({
@@ -1138,6 +1224,42 @@ if (appRoot) {
       window.location.hash = '#publish';
     } catch (error) {
       state.otpError = error instanceof Error ? error.message : 'Code OTP invalide.';
+      renderApp();
+    }
+  }
+
+  async function handleProfileSubmit(form) {
+    if (!state.session) {
+      return;
+    }
+
+    const formData = new FormData(form);
+    const area = String(formData.get('area') ?? '').trim();
+
+    state.profileSaveBusy = true;
+    state.profileError = '';
+    state.profileMessage = '';
+    renderApp();
+
+    try {
+      const profile = await profileService.saveProfile({
+        area,
+        session: state.session,
+      });
+
+      state.profile = profile;
+      state.profileStatus = 'ready';
+      state.profileSaveBusy = false;
+      state.profileMessage = `Zone enregistrée : ${profile.area}.`;
+      state.draft = syncDraftAreaFromProfile(state.draft, profile.area);
+      if (state.draft) {
+        draftStorage.saveDraft(state.draft);
+      }
+      renderApp();
+    } catch (error) {
+      state.profileSaveBusy = false;
+      state.profileError =
+        error instanceof Error ? error.message : 'Impossible de sauvegarder votre zone.';
       renderApp();
     }
   }
@@ -1506,7 +1628,12 @@ if (appRoot) {
     event.preventDefault();
 
     if (form.dataset.form === 'review-draft') {
-      handleReviewSubmit(form);
+      await handleReviewSubmit(form);
+      return;
+    }
+
+    if (form.dataset.form === 'profile-zone') {
+      await handleProfileSubmit(form);
       return;
     }
 

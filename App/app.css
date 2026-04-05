@@ -1177,6 +1177,38 @@
   box-shadow: 0 0 0 1px rgba(239, 83, 80, 0.18);
 }
 
+.app-review__readonly-value,
+.app-review__missing-profile-area {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.app-review__readonly-value strong,
+.app-review__missing-profile-area strong {
+  font-size: 0.96rem;
+}
+
+.app-review__missing-profile-area {
+  border-color: rgba(239, 83, 80, 0.28);
+  background: rgba(239, 83, 80, 0.08);
+}
+
+.app-flow__link {
+  color: var(--green);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.app-flow__link:hover,
+.app-flow__link:focus-visible {
+  text-decoration: underline;
+}
+
 .app-auth__code {
   letter-spacing: 0.26em;
   text-align: center;
@@ -1371,6 +1403,18 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+}
+
+.app-profile__zone-card,
+.app-profile__zone-form {
+  display: grid;
+  gap: 14px;
+}
+
+.app-profile__zone-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
 }
 
 .app-profile__stats article span {

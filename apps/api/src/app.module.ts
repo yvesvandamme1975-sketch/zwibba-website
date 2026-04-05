@@ -10,6 +10,7 @@ import { HealthModule } from './health/health.module';
 import { ListingsModule } from './listings/listings.module';
 import { MediaModule } from './media/media.module';
 import { ModerationModule } from './moderation/moderation.module';
+import { ProfileModule } from './profile/profile.module';
 import { WalletModule } from './wallet/wallet.module';
 
 @Module({
@@ -25,6 +26,7 @@ import { WalletModule } from './wallet/wallet.module';
     ChatModule,
     WalletModule,
     BoostModule,
+    ProfileModule,
   ],
 })
 export class AppModule {}

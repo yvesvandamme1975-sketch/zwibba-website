@@ -12,6 +12,7 @@ model User {
   chatThreadsAsBuyer ChatThread[]       @relation("BuyerThreads")
   id                 String             @id @default(cuid())
   phoneNumber        String             @unique
+  area               String             @default("")
   createdAt          DateTime           @default(now())
   sessions           Session[]
   updatedAt          DateTime           @updatedAt

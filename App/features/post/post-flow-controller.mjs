@@ -374,7 +374,7 @@ export function validateDraftForPublish(
   if (!draft.details.area?.trim()) {
     errors.push({
       field: 'area',
-      message: 'Sélectionnez une zone manuellement.',
+      message: 'Définissez votre zone dans le profil avant de publier.',
     });
   }
 
