@@ -157,10 +157,10 @@
 }
 
 .app-tab-shell__nav-item {
-  display: inline-flex;
+  position: relative;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
   min-height: 46px;
   padding: 10px 10px;
   border-radius: 14px;
@@ -169,6 +169,12 @@
   font-weight: 800;
   text-align: center;
   transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.app-tab-shell__nav-label {
+  display: block;
+  min-width: 0;
+  line-height: 1.1;
 }
 
 .app-tab-shell__nav-badge {
@@ -1584,7 +1590,33 @@
     bottom: 0;
     z-index: 40;
     min-height: var(--app-mobile-nav-height);
+    gap: 4px;
+    padding-left: 8px;
+    padding-right: 8px;
     padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .app-tab-shell__nav-item {
+    min-width: 0;
+    min-height: 50px;
+    padding: 10px 2px;
+    font-size: 0.68rem;
+  }
+
+  .app-tab-shell__nav-label {
+    width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .app-tab-shell__nav-badge {
+    position: absolute;
+    top: 6px;
+    right: 1px;
+    min-width: 18px;
+    padding: 2px 5px;
+    font-size: 0.64rem;
+    line-height: 1.1;
   }
 
   .app-profile__stats,

@@ -10,6 +10,7 @@ export function createChatLiveRefreshController({
     'guidance',
     'otp',
     'phone',
+    'profile',
     'publish',
     'review',
   ]);

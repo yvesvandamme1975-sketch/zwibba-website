@@ -17,6 +17,7 @@ test('app tab shell renders the five persistent beta routes', () => {
   assert.match(html, /href="#profile"/);
   assert.match(html, /Messages/);
   assert.match(html, /app-tab-shell__nav-badge/);
+  assert.match(html, /app-tab-shell__nav-label/);
   assert.match(html, />3</);
   assert.match(html, /app-tab-shell__nav-item is-active/);
 });

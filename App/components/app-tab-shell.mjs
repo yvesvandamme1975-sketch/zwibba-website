@@ -30,7 +30,7 @@ export function renderAppTabShell({
             href="${tab.href}"
             data-tab-id="${tab.id}"
           >
-            ${tab.label}
+            <span class="app-tab-shell__nav-label">${tab.label}</span>
             ${
               tab.id === 'messages' && normalizedUnreadCount > 0
                 ? `<span class="app-tab-shell__nav-badge" aria-label="${escapeHtml(`${unreadLabel} message(s) non lus`)}">${escapeHtml(unreadLabel)}</span>`
