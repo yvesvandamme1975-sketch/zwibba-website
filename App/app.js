@@ -62,7 +62,10 @@ import {
   formatPricePreview,
   parsePriceInput,
 } from './utils/price-input.mjs';
-import { shouldRetainDraftAfterPublish } from './utils/post-publish-draft-state.mjs';
+import {
+  resolveDraftlessSellerRoute,
+  shouldRetainDraftAfterPublish,
+} from './utils/post-publish-draft-state.mjs';
 import {
   createPostFlowController,
   decidePublishGate,
@@ -430,26 +433,18 @@ if (appRoot) {
       };
     }
 
+    const draftlessRoute = resolveDraftlessSellerRoute({
+      routeType: route.type,
+      publishedDraft: state.publishedDraft,
+      publishOutcome: state.publishOutcome,
+    });
+
     if (
       !state.draft &&
-      ![
-        'auth-welcome',
-        'buy',
-        'capture',
-        'listing',
-        'messages',
-        'otp',
-        'phone',
-        'profile',
-        'sell',
-        'thread',
-        'wallet',
-      ].includes(
-        route.type,
-      )
+      draftlessRoute !== route.type
     ) {
       return {
-        type: 'capture',
+        type: draftlessRoute,
       };
     }
 
@@ -792,15 +787,26 @@ if (appRoot) {
           session: state.session,
         });
       case 'success':
+        {
+          const successDraft = state.publishedDraft ?? state.draft ?? {
+            details: {
+              area: '',
+              priceCdf: 0,
+              title: '',
+            },
+            photos: [],
+          };
+
         return renderSuccessScreen({
           boostBusy: state.boostBusyListingId === state.publishOutcome?.id,
           boostMessage: state.boostMessage,
-          draft: state.publishedDraft ?? state.draft,
+          draft: successDraft,
           listingRoute: state.publishedListingRoute,
           listingUrl:
-            state.publishedListingUrl || buildListingUrl(state.publishedDraft ?? state.draft),
+            state.publishedListingUrl || buildListingUrl(successDraft),
           outcome: state.publishOutcome,
         });
+        }
       case 'listing':
         return renderListingDetailScreen({
           detail: buyerBrowseController.state.detail,
