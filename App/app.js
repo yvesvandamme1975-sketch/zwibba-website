@@ -54,6 +54,10 @@ import {
   restoreReviewDraftRenderState,
 } from './utils/review-draft-render-state.mjs';
 import {
+  captureThreadComposerRenderState,
+  restoreThreadComposerRenderState,
+} from './utils/thread-composer-render-state.mjs';
+import {
   captureScrollRenderState,
   restoreScrollRenderState,
 } from './utils/scroll-render-state.mjs';
@@ -893,6 +897,7 @@ if (appRoot) {
       lastRenderedRouteKey === routeKey ? captureScrollRenderState(appRoot, window) : null;
     const buyerSearchRenderState = captureBuyerSearchRenderState(document.activeElement);
     const reviewDraftRenderState = captureReviewDraftRenderState(appRoot, document.activeElement);
+    const threadComposerRenderState = captureThreadComposerRenderState(document.activeElement);
 
     primeBuyerRouteState(route);
     chatLiveRefreshController.sync({
@@ -911,6 +916,9 @@ if (appRoot) {
     }
     if (route.type === 'review') {
       restoreReviewDraftRenderState(appRoot, reviewDraftRenderState);
+    }
+    if (route.type === 'thread') {
+      restoreThreadComposerRenderState(appRoot, threadComposerRenderState);
     }
     restoreScrollRenderState(appRoot, scrollRenderState, window);
     appRoot.dataset.appReady = 'true';
