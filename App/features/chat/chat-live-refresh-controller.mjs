@@ -3,6 +3,16 @@ export function createChatLiveRefreshController({
   setTimeoutFn = globalThis.setTimeout,
   clearTimeoutFn = globalThis.clearTimeout,
 } = {}) {
+  const suspendedRouteTypes = new Set([
+    'auth-welcome',
+    'capture',
+    'capture-result',
+    'guidance',
+    'otp',
+    'phone',
+    'publish',
+    'review',
+  ]);
   let activeConfig = null;
   let activeKey = '';
   let generation = 0;
@@ -29,6 +39,10 @@ export function createChatLiveRefreshController({
     session,
   }) {
     if (!session?.sessionToken) {
+      return '';
+    }
+
+    if (suspendedRouteTypes.has(route?.type || '')) {
       return '';
     }
 

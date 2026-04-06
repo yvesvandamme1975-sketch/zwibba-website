@@ -125,3 +125,49 @@ test('thread refresh controller also polls inbox on non-thread app routes', asyn
   await Promise.resolve();
   assert.deepEqual(events, ['inbox']);
 });
+
+test('thread refresh controller stops polling on capture and draft-edit routes', async () => {
+  const timers = createFakeTimers();
+  const events = [];
+  const controller = createChatLiveRefreshController({
+    clearTimeoutFn: timers.clearTimeout,
+    intervalMs: 10,
+    setTimeoutFn: timers.setTimeout,
+  });
+
+  controller.sync({
+    refreshInbox: async () => {
+      events.push('inbox');
+    },
+    refreshThread: async (threadId) => {
+      events.push(`thread:${threadId}`);
+    },
+    route: {
+      type: 'capture',
+    },
+    session: {
+      sessionToken: 'session_live',
+    },
+  });
+
+  assert.equal(timers.flushNext(), false);
+  assert.deepEqual(events, []);
+
+  controller.sync({
+    refreshInbox: async () => {
+      events.push('inbox');
+    },
+    refreshThread: async (threadId) => {
+      events.push(`thread:${threadId}`);
+    },
+    route: {
+      type: 'review',
+    },
+    session: {
+      sessionToken: 'session_live',
+    },
+  });
+
+  assert.equal(timers.flushNext(), false);
+  assert.deepEqual(events, []);
+});
