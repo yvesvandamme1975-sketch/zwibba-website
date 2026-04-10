@@ -41,5 +41,7 @@ Current priority docs:
 - `2026-04-05-zwibba-post-capture-ai-confirmation-implementation.md`
 - `2026-04-05-zwibba-profile-return-and-price-entry-design.md`
 - `2026-04-05-zwibba-profile-return-and-price-entry-implementation.md`
+- `2026-04-10-zwibba-db-seeded-feed-and-safety-card-design.md`
+- `2026-04-10-zwibba-db-seeded-feed-and-safety-card-implementation.md`
 
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
