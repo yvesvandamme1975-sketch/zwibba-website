@@ -26,7 +26,9 @@ export class DraftsController {
         sourcePresetId?: string;
         uploadStatus?: string;
       }>;
+      priceAmount?: number;
       priceCdf?: number;
+      priceCurrency?: string;
       title?: string;
     },
   ) {
@@ -43,7 +45,9 @@ export class DraftsController {
         sourcePresetId: photo.sourcePresetId ?? '',
         uploadStatus: photo.uploadStatus ?? 'pending',
       })),
-      priceCdf: body.priceCdf ?? 0,
+      priceAmount: body.priceAmount,
+      priceCdf: body.priceCdf,
+      priceCurrency: body.priceCurrency,
       title: body.title ?? '',
     });
   }

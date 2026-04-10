@@ -281,6 +281,54 @@ test('draft sync persists metadata and photo records', async (t) => {
   assert.equal(harness.prisma.draftPhotosByDraftId.size, 1);
 });
 
+test('draft sync accepts USD listing prices and persists amount plus currency', async (t) => {
+  const harness = await createTestApp();
+  t.after(async () => {
+    await harness.app.close();
+  });
+
+  await request(harness.app.getHttpServer())
+    .post('/auth/request-otp')
+    .send({ phoneNumber: '+243990000001' })
+    .expect(201);
+
+  const verifyResponse = await request(harness.app.getHttpServer())
+    .post('/auth/verify-otp')
+    .send({
+      phoneNumber: '+243990000001',
+      code: '123456',
+    })
+    .expect(201);
+
+  const syncResponse = await request(harness.app.getHttpServer())
+    .post('/drafts/sync')
+    .set('authorization', `Bearer ${verifyResponse.body.sessionToken}`)
+    .send({
+      area: 'Lubumbashi Centre',
+      categoryId: 'electronics',
+      description: 'MacBook Pro 14 pouces en très bon état.',
+      priceAmount: 350,
+      priceCurrency: 'USD',
+      title: 'MacBook Pro 14',
+      photos: [
+        {
+          objectKey: 'draft-photos/macbook-front.jpg',
+          publicUrl: 'https://cdn.zwibba.example/draft-photos/macbook-front.jpg',
+          sourcePresetId: 'capture',
+          uploadStatus: 'uploaded',
+        },
+      ],
+    })
+    .expect(201);
+
+  assert.equal(syncResponse.body.priceAmount, 350);
+  assert.equal(syncResponse.body.priceCurrency, 'USD');
+
+  const persistedDraft = Array.from(harness.prisma.drafts.values())[0] as Record<string, unknown>;
+  assert.equal(persistedDraft.priceAmount, 350);
+  assert.equal(persistedDraft.priceCurrency, 'USD');
+});
+
 test('draft sync rejects prices above the 32-bit beta limit with a clear seller error', async (t) => {
   const harness = await createTestApp();
   t.after(async () => {

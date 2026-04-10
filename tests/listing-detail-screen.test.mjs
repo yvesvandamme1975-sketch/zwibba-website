@@ -15,7 +15,8 @@ test('listing detail screen renders the buyer detail state inside /App', () => {
         'https://cdn.zwibba.example/listings/samsung-a54-back.jpg',
       ],
       locationLabel: 'Golf',
-      priceCdf: 450000,
+      priceAmount: 450000,
+      priceCurrency: 'CDF',
       primaryImageUrl: 'https://cdn.zwibba.example/listings/samsung-a54.jpg',
       safetyTips: [
         'Rencontrez le vendeur dans un lieu public.',
@@ -57,6 +58,33 @@ test('listing detail screen renders the buyer detail state inside /App', () => {
     html,
     /onerror="this\.onerror=null;this\.src=&#39;\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.jpg&#39;;"/,
   );
+});
+
+test('listing detail screen renders USD listing prices when provided', () => {
+  const html = renderListingDetailScreen({
+    detail: {
+      categoryId: 'electronics',
+      categoryLabel: 'Électronique',
+      contactActions: ['message'],
+      id: 'listing_usd_1',
+      locationLabel: 'Golf',
+      priceAmount: 350,
+      priceCurrency: 'USD',
+      primaryImageUrl: null,
+      safetyTips: ['Testez le produit si possible.'],
+      seller: {
+        name: 'Particulier 0005',
+        responseTime: 'Répond en moyenne en 9 min',
+        role: 'Particulier',
+      },
+      slug: 'macbook-pro-13',
+      summary: 'MacBook Pro 13 en bon état.',
+      title: 'MacBook Pro 13',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /350 US\$/);
 });
 
 test('listing detail screen swaps legacy dead CDN image URLs for a local preview before render', () => {

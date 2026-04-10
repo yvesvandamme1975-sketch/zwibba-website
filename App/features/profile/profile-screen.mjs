@@ -1,5 +1,5 @@
 import { renderInAppBrand } from '../../components/in-app-brand.mjs';
-import { escapeAttribute, escapeHtml, formatCdf } from '../../utils/rendering.mjs';
+import { escapeAttribute, escapeHtml, formatListingPrice } from '../../utils/rendering.mjs';
 import { sanitizeListingImageUrl } from '../../utils/image-fallbacks.mjs';
 
 function buildCounts(listings) {
@@ -158,7 +158,7 @@ function renderListingCard(listing) {
       <div class="app-profile__listing-copy">
         <strong>${escapeHtml(listing.title)}</strong>
         <span>${escapeHtml(listing.lifecycleStatusLabel || 'Active')} · ${escapeHtml(formatListingStatus(listing.moderationStatus))}</span>
-        <em>${escapeHtml(formatCdf(listing.priceCdf))}</em>
+        <em>${escapeHtml(formatListingPrice(listing))}</em>
         ${
           listing.soldChannel
             ? `<small class="app-profile__listing-meta">${escapeHtml(listing.soldChannel)}</small>`

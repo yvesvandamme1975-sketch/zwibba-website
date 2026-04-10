@@ -1,5 +1,5 @@
 import { renderInAppBrand } from '../../components/in-app-brand.mjs';
-import { escapeHtml, formatCdf } from '../../utils/rendering.mjs';
+import { escapeHtml, formatListingPrice } from '../../utils/rendering.mjs';
 
 export function renderPublishGateScreen({
   busyLabel = '',
@@ -36,7 +36,7 @@ export function renderPublishGateScreen({
       <div class="app-publish__summary">
         <strong>${escapeHtml(draft.details.title || 'Annonce en préparation')}</strong>
         <span>${escapeHtml(draft.details.area || 'Zone à confirmer')}</span>
-        <em>${escapeHtml(formatCdf(draft.details.priceCdf))}</em>
+        <em>${escapeHtml(formatListingPrice(draft.details))}</em>
       </div>
 
       ${

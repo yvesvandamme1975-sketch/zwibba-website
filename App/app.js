@@ -64,6 +64,8 @@ import {
 import { syncDraftAreaFromProfile } from './utils/profile-area-sync.mjs';
 import {
   formatPricePreview,
+  getPriceInputPlaceholder,
+  normalizePriceCurrency,
   parsePriceInput,
 } from './utils/price-input.mjs';
 import {
@@ -261,6 +263,26 @@ if (appRoot) {
 
   function parsePrice(rawValue) {
     return parsePriceInput(rawValue);
+  }
+
+  function syncReviewPriceUi(form) {
+    if (!(form instanceof HTMLFormElement) || form.dataset.form !== 'review-draft') {
+      return;
+    }
+
+    const currencyField = form.querySelector('[name="priceCurrency"]');
+    const amountField = form.querySelector('[name="priceAmount"]');
+    const preview = form.querySelector('[data-price-preview]');
+    const currency = normalizePriceCurrency(currencyField?.value);
+
+    if (amountField instanceof HTMLInputElement) {
+      amountField.disabled = !currency;
+      amountField.placeholder = getPriceInputPlaceholder(currency);
+    }
+
+    if (preview) {
+      preview.textContent = formatPricePreview(amountField?.value ?? '', currency);
+    }
   }
 
   function slugifyTitle(value) {
@@ -795,7 +817,8 @@ if (appRoot) {
           const successDraft = state.publishedDraft ?? state.draft ?? {
             details: {
               area: '',
-              priceCdf: 0,
+              priceAmount: 0,
+              priceCurrency: 'CDF',
               title: '',
             },
             photos: [],
@@ -916,6 +939,11 @@ if (appRoot) {
     }
     if (route.type === 'review') {
       restoreReviewDraftRenderState(appRoot, reviewDraftRenderState);
+      const reviewForm = appRoot.querySelector('form[data-form="review-draft"]');
+
+      if (reviewForm instanceof HTMLFormElement) {
+        syncReviewPriceUi(reviewForm);
+      }
     }
     if (route.type === 'thread') {
       restoreThreadComposerRenderState(appRoot, threadComposerRenderState);
@@ -1099,6 +1127,7 @@ if (appRoot) {
 
     const formData = new FormData(form);
     const categoryId = String(formData.get('categoryId') ?? '').trim();
+    const priceCurrency = normalizePriceCurrency(formData.get('priceCurrency'));
     const resolvedProfileArea = String(state.profile?.area ?? state.draft.details.area ?? '').trim();
     const nextDraft = updateListingDraft(
       state.draft,
@@ -1107,7 +1136,8 @@ if (appRoot) {
           title: String(formData.get('title') ?? '').trim(),
           categoryId,
           condition: String(formData.get('condition') ?? '').trim(),
-          priceCdf: parsePrice(formData.get('priceCdf')),
+          priceAmount: parsePrice(formData.get('priceAmount')),
+          priceCurrency,
           description: String(formData.get('description') ?? '').trim(),
           area: resolvedProfileArea,
         },
@@ -1672,11 +1702,11 @@ if (appRoot) {
   appRoot.addEventListener('input', (event) => {
     const target = event.target;
 
-    if (!(target instanceof HTMLInputElement)) {
+    if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement)) {
       return;
     }
 
-    if (target.name !== 'priceCdf') {
+    if (target.name !== 'priceAmount' && target.name !== 'priceCurrency') {
       return;
     }
 
@@ -1686,11 +1716,7 @@ if (appRoot) {
       return;
     }
 
-    const preview = form.querySelector('[data-price-preview]');
-
-    if (preview) {
-      preview.textContent = formatPricePreview(target.value);
-    }
+    syncReviewPriceUi(form);
   });
 
   window.addEventListener('hashchange', () => {

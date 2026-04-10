@@ -1,7 +1,10 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
-import { assertSupportedPriceCdf } from '../common/price-validation';
+import {
+  ListingPriceCurrency,
+  resolveSubmittedListingPrice,
+} from '../common/price-validation';
 import { PrismaService } from '../database/prisma.service';
 import { DraftsService } from '../drafts/drafts.service';
 
@@ -70,19 +73,19 @@ function buildReasonSummary({
 function detectValidationError({
   description,
   photos,
-  priceCdf,
+  priceAmount,
   title,
 }: {
   description: string;
   photos: Array<{ uploadStatus: string }>;
-  priceCdf: number;
+  priceAmount: number;
   title: string;
 }) {
   if (title.trim().length === 0) {
     return 'Le titre de l’annonce doit être complété avant publication.';
   }
 
-  if (priceCdf <= 0) {
+  if (priceAmount <= 0) {
     return 'Le prix final doit être confirmé avant publication.';
   }
 
@@ -161,17 +164,25 @@ export class ModerationService {
     description,
     draftId,
     ownerPhoneNumber,
+    priceAmount,
     priceCdf,
+    priceCurrency,
     title,
   }: {
     categoryId: string;
     description: string;
     draftId: string;
     ownerPhoneNumber: string;
-    priceCdf: number;
+    priceAmount?: number;
+    priceCdf?: number;
+    priceCurrency?: string;
     title: string;
   }): Promise<PublishOutcome> {
-    const supportedPriceCdf = assertSupportedPriceCdf(priceCdf);
+    const supportedPrice = resolveSubmittedListingPrice({
+      priceAmount,
+      priceCdf,
+      priceCurrency,
+    });
     const syncedDraft = await this.draftsService.getSyncedDraft(draftId);
 
     if (!syncedDraft || syncedDraft.ownerPhoneNumber !== ownerPhoneNumber) {
@@ -196,7 +207,7 @@ export class ModerationService {
     const validationError = detectValidationError({
       description: normalizedDescription,
       photos: syncedDraft.photos,
-      priceCdf: supportedPriceCdf,
+      priceAmount: supportedPrice.priceAmount,
       title: normalizedTitle,
     });
     const status = resolveModerationStatus({
@@ -220,7 +231,9 @@ export class ModerationService {
           draftId: syncedDraft.draftId,
           moderationStatus: status,
           ownerPhoneNumber,
-          priceCdf: supportedPriceCdf,
+          priceAmount: supportedPrice.priceAmount,
+          priceCdf: supportedPrice.legacyPriceCdf,
+          priceCurrency: supportedPrice.priceCurrency,
           publishedAt: status === 'approved' ? new Date() : null,
           slug: listingSlug,
           title: normalizedTitle,
@@ -231,7 +244,9 @@ export class ModerationService {
           description: normalizedDescription,
           moderationStatus: status,
           ownerPhoneNumber,
-          priceCdf: supportedPriceCdf,
+          priceAmount: supportedPrice.priceAmount,
+          priceCdf: supportedPrice.legacyPriceCdf,
+          priceCurrency: supportedPrice.priceCurrency,
           publishedAt: status === 'approved' ? new Date() : null,
           slug: listingSlug,
           title: normalizedTitle,

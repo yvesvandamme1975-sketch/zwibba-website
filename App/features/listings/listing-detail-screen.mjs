@@ -2,7 +2,7 @@ import { renderInAppBrand } from '../../components/in-app-brand.mjs';
 import {
   escapeAttribute,
   escapeHtml,
-  formatCdf,
+  formatListingPrice,
 } from '../../utils/rendering.mjs';
 import {
   buildImageFallbackHandler,
@@ -368,7 +368,7 @@ export function renderListingDetailScreen({
       <div class="app-publish__summary">
         <strong>${escapeHtml(detail.locationLabel)}</strong>
         <span>${escapeHtml(categoryLabel)}</span>
-        <em>${escapeHtml(formatCdf(detail.priceCdf))}</em>
+        <em>${escapeHtml(formatListingPrice(detail))}</em>
       </div>
 
       ${renderDetailMedia(detail, selectedImageIndex)}

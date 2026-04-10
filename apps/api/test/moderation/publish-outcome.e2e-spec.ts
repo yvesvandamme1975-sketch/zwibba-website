@@ -371,7 +371,9 @@ async function syncDraft(
   body: {
     area: string;
     categoryId: string;
-    priceCdf: number;
+    priceAmount?: number;
+    priceCdf?: number;
+    priceCurrency?: string;
     title: string;
   },
 ) {
@@ -397,7 +399,9 @@ async function syncDraft(
     categoryId: string;
     draftId: string;
     ownerPhoneNumber: string;
+    priceAmount: number;
     priceCdf: number;
+    priceCurrency: string;
     syncStatus: string;
     title: string;
   };
@@ -518,6 +522,48 @@ test('publishing a synced vehicle draft persists a pending moderation decision',
   assert.equal(queueResponse.body.items[0].id, publishResponse.body.id);
   assert.equal(queueResponse.body.items[0].listingTitle, 'Toyota Hilux 2019 4x4');
   assert.equal(queueResponse.body.items[0].status, 'pending_manual_review');
+});
+
+test('publishing a synced USD draft persists amount and currency on the listing', async (t) => {
+  const prisma = new _FakePrismaService();
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule],
+  })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .overrideProvider(TwilioVerifyService)
+      .useValue(new _FakeTwilioVerifyService())
+      .compile();
+
+  const app = moduleRef.createNestApplication();
+  await app.init();
+  t.after(async () => {
+    await app.close();
+  });
+
+  const sessionToken = await createSellerSession(app, '+243990000004');
+  const syncedDraft = await syncDraft(app, sessionToken, {
+    title: 'MacBook Pro 14',
+    categoryId: 'electronics',
+    area: 'Lubumbashi Centre',
+    priceAmount: 350,
+    priceCurrency: 'USD',
+  });
+
+  const publishResponse = await request(app.getHttpServer())
+    .post('/moderation/publish')
+    .set('authorization', `Bearer ${sessionToken}`)
+    .send({
+      ...syncedDraft,
+      description: 'MacBook Pro 14 pouces, bon état général.',
+    })
+    .expect(201);
+
+  assert.equal(publishResponse.body.status, 'approved');
+
+  const persistedListing = getPersistedListing(prisma, publishResponse.body.id);
+  assert.equal(persistedListing.priceAmount, 350);
+  assert.equal(persistedListing.priceCurrency, 'USD');
 });
 
 test('publishing a synced draft with missing metadata persists a blocked moderation decision', async (t) => {

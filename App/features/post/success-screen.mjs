@@ -2,7 +2,7 @@ import { renderInAppBrand } from '../../components/in-app-brand.mjs';
 import {
   escapeAttribute,
   escapeHtml,
-  formatCdf,
+  formatListingPrice,
 } from '../../utils/rendering.mjs';
 
 function buildWhatsAppShareUrl({ draft, listingUrl }) {
@@ -91,7 +91,7 @@ export function renderSuccessScreen({
       <div class="app-publish__summary">
         <strong>${escapeHtml(draft.details.title || 'Annonce Zwibba')}</strong>
         <span>${escapeHtml(draft.details.area || 'Zone à confirmer')}</span>
-        <em>${escapeHtml(formatCdf(draft.details.priceCdf))}</em>
+        <em>${escapeHtml(formatListingPrice(draft.details))}</em>
       </div>
 
       ${

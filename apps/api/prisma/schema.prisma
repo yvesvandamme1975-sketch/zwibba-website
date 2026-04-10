@@ -29,7 +29,9 @@ model Draft {
   listing          Listing?
   ownerPhoneNumber String
   photos           DraftPhoto[]
+  priceAmount      Int
   priceCdf         Int
+  priceCurrency    String      @default("CDF")
   syncStatus       String      @default("synced")
   title            String
   updatedAt        DateTime    @updatedAt
@@ -80,7 +82,9 @@ model Listing {
   moderationStatus   String
   ownerPhoneNumber   String
   pausedAt           DateTime?
+  priceAmount        Int
   priceCdf           Int
+  priceCurrency      String              @default("CDF")
   previousLifecycleStatusBeforeDelete String?
   publishedAt        DateTime?
   slug               String              @unique

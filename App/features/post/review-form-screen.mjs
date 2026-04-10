@@ -8,7 +8,11 @@ import {
   escapeAttribute,
   escapeHtml,
 } from '../../utils/rendering.mjs';
-import { formatPricePreview } from '../../utils/price-input.mjs';
+import {
+  formatPricePreview,
+  getPriceInputPlaceholder,
+  normalizePriceCurrency,
+} from '../../utils/price-input.mjs';
 
 function renderError(error) {
   return `<li data-review-error-field="${escapeAttribute(error.field)}">${escapeHtml(error.message)}</li>`;
@@ -99,11 +103,18 @@ export function renderReviewFormScreen({
     : 'app-review__summary';
   const summaryMessage = draft.ai.message || "L'IA prépare les bases du brouillon.";
   const resolvedProfileArea = String(profileArea || draft.details.area || '').trim();
+  const priceCurrency = normalizePriceCurrency(draft.details.priceCurrency);
+  const currencyOptions = [
+    { value: 'CDF', label: 'CDF' },
+    { value: 'USD', label: 'US$' },
+  ];
   const priceInputValue =
-    draft.details.priceCdf === null || draft.details.priceCdf === undefined
+    draft.details.priceAmount === null || draft.details.priceAmount === undefined
       ? ''
-      : String(draft.details.priceCdf);
-  const pricePreview = formatPricePreview(priceInputValue);
+      : String(draft.details.priceAmount);
+  const pricePreview = formatPricePreview(priceInputValue, priceCurrency);
+  const pricePlaceholder = getPriceInputPlaceholder(priceCurrency);
+  const isPriceDisabled = !priceCurrency;
 
   return `
     <section class="app-flow app-flow--review">
@@ -184,17 +195,26 @@ export function renderReviewFormScreen({
           </label>
 
           <label class="${renderFieldClass({ validationErrors, field: 'price' })}">
-            <span>Prix final (CDF)</span>
+            <span>Devise</span>
+            <select name="priceCurrency">
+              <option value="">Choisir</option>
+              ${currencyOptions.map((option) => renderOption(option, priceCurrency)).join('')}
+            </select>
+          </label>
+
+          <label class="${renderFieldClass({ validationErrors, field: 'price' })}">
+            <span>Prix final</span>
             <input
-              name="priceCdf"
+              name="priceAmount"
               type="text"
               inputmode="numeric"
               min="0"
               step="1000"
               value="${escapeAttribute(priceInputValue)}"
               max="${escapeAttribute(MAX_PRICE_CDF)}"
-              placeholder="Ex: 450000"
+              placeholder="${escapeAttribute(pricePlaceholder)}"
               autocomplete="off"
+              ${isPriceDisabled ? 'disabled' : ''}
             />
             <small class="app-review__field-hint" data-price-preview>${escapeHtml(pricePreview)}</small>
           </label>

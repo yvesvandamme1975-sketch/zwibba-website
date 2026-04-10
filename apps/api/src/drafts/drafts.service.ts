@@ -7,7 +7,10 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 
-import { assertSupportedPriceCdf } from '../common/price-validation';
+import {
+  ListingPriceCurrency,
+  resolveSubmittedListingPrice,
+} from '../common/price-validation';
 import { PrismaService } from '../database/prisma.service';
 import { R2StorageService } from '../media/r2-storage.service';
 
@@ -27,7 +30,9 @@ export type SyncedDraftRecord = {
   draftId: string;
   ownerPhoneNumber: string;
   photos: SyncedDraftPhotoRecord[];
+  priceAmount: number;
   priceCdf: number;
+  priceCurrency: ListingPriceCurrency;
   syncStatus: 'synced';
   title: string;
 };
@@ -48,7 +53,9 @@ export class DraftsService {
     draftId,
     phoneNumber,
     photos,
+    priceAmount,
     priceCdf,
+    priceCurrency,
     title,
   }: {
     area: string;
@@ -57,10 +64,16 @@ export class DraftsService {
     draftId?: string;
     phoneNumber: string;
     photos: SyncedDraftPhotoRecord[];
-    priceCdf: number;
+    priceAmount?: number;
+    priceCdf?: number;
+    priceCurrency?: string;
     title: string;
   }): Promise<SyncedDraftRecord> {
-    const supportedPriceCdf = assertSupportedPriceCdf(priceCdf);
+    const supportedPrice = resolveSubmittedListingPrice({
+      priceAmount,
+      priceCdf,
+      priceCurrency,
+    });
     const resolvedArea = (await this.resolveProfileArea(phoneNumber, area)) ?? '';
     const existingDraft = draftId
       ? await this.prismaService.draft.findFirst({
@@ -100,7 +113,9 @@ export class DraftsService {
             categoryId,
             description,
             ownerPhoneNumber: phoneNumber,
-            priceCdf: supportedPriceCdf,
+            priceAmount: supportedPrice.priceAmount,
+            priceCdf: supportedPrice.legacyPriceCdf,
+            priceCurrency: supportedPrice.priceCurrency,
             title,
           },
         })
@@ -111,7 +126,9 @@ export class DraftsService {
             description,
             id: generatedDraftId,
             ownerPhoneNumber: phoneNumber,
-            priceCdf: supportedPriceCdf,
+            priceAmount: supportedPrice.priceAmount,
+            priceCdf: supportedPrice.legacyPriceCdf,
+            priceCurrency: supportedPrice.priceCurrency,
             title,
           },
         });
@@ -139,7 +156,9 @@ export class DraftsService {
       draftId: persistedDraft.id,
       ownerPhoneNumber: phoneNumber,
       photos: normalizedPhotos,
-      priceCdf: supportedPriceCdf,
+      priceAmount: supportedPrice.priceAmount,
+      priceCdf: supportedPrice.legacyPriceCdf,
+      priceCurrency: supportedPrice.priceCurrency,
       syncStatus: 'synced' as const,
       title,
     };
@@ -195,7 +214,9 @@ export class DraftsService {
         sourcePresetId: photo.sourcePresetId,
         uploadStatus: photo.uploadStatus,
       })),
+      priceAmount: draft.priceAmount ?? draft.priceCdf,
       priceCdf: draft.priceCdf,
+      priceCurrency: (draft.priceCurrency ?? 'CDF') as ListingPriceCurrency,
       syncStatus: 'synced' as const,
       title: draft.title,
     };

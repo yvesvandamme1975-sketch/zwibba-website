@@ -1,6 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import type { SessionRecord } from '../auth/auth.service';
+import type { ListingPriceCurrency } from '../common/price-validation';
 import { PrismaService } from '../database/prisma.service';
 import {
   applyLifecycleAction as applySellerLifecycleAction,
@@ -25,8 +26,10 @@ type PersistedListingRecord = {
   moderationStatus: string;
   ownerPhoneNumber: string;
   pausedAt?: Date | null;
+  priceAmount: number;
   previousLifecycleStatusBeforeDelete?: string | null;
   priceCdf: number;
+  priceCurrency?: string | null;
   slug: string;
   soldAt?: Date | null;
   soldChannel?: string | null;
@@ -200,16 +203,28 @@ function isPubliclyVisibleListing(listing: PersistedListingRecord) {
   );
 }
 
+function resolveListingPrice(listing: PersistedListingRecord) {
+  return {
+    priceAmount: listing.priceAmount ?? listing.priceCdf,
+    priceCdf: listing.priceCdf,
+    priceCurrency: (listing.priceCurrency ?? 'CDF') as ListingPriceCurrency,
+  };
+}
+
 function toListingSummary(
   listing: PersistedListingRecord,
   primaryImageUrl: string | null,
 ) {
+  const price = resolveListingPrice(listing);
+
   return {
     categoryId: listing.categoryId,
     categoryLabel: getCategoryLabel(listing.categoryId),
     id: listing.id,
     locationLabel: listing.area,
-    priceCdf: listing.priceCdf,
+    priceAmount: price.priceAmount,
+    priceCdf: price.priceCdf,
+    priceCurrency: price.priceCurrency,
     primaryImageUrl,
     slug: listing.slug,
     title: listing.title,
@@ -227,6 +242,8 @@ function toListingDetail({
   primaryImageUrl: string | null;
   viewerRole: 'buyer' | 'owner';
 }) {
+  const price = resolveListingPrice(listing);
+
   return {
     categoryId: listing.categoryId,
     categoryLabel: getCategoryLabel(listing.categoryId),
@@ -236,7 +253,9 @@ function toListingDetail({
     id: listing.id,
     images,
     locationLabel: listing.area,
-    priceCdf: listing.priceCdf,
+    priceAmount: price.priceAmount,
+    priceCdf: price.priceCdf,
+    priceCurrency: price.priceCurrency,
     primaryImageUrl,
     safetyTips: buildSafetyTips(listing.categoryId),
     seller: buildSellerProfile({
@@ -367,7 +386,7 @@ export class ListingsService {
         return {
           id: listing.id,
           moderationStatus: listing.moderationStatus,
-          priceCdf: listing.priceCdf,
+          ...resolveListingPrice(listing),
           primaryImageUrl,
           reasonSummary:
             moderationDecision?.reasonSummary ??

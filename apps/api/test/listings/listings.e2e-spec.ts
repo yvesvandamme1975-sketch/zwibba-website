@@ -343,7 +343,9 @@ async function publishListing(
     categoryId: string;
     description: string;
     phoneNumber: string;
-    priceCdf: number;
+    priceAmount?: number;
+    priceCdf?: number;
+    priceCurrency?: string;
     title: string;
   },
 ) {
@@ -376,7 +378,9 @@ async function publishListing(
           uploadStatus: 'uploaded',
         },
       ],
+      priceAmount: payload.priceAmount,
       priceCdf: payload.priceCdf,
+      priceCurrency: payload.priceCurrency,
       title: payload.title,
     })
     .expect(201);
@@ -489,7 +493,9 @@ test('listings feed includes approved active system seed listings from the same 
       categoryLabel: 'Alimentation',
       id: 'listing_seed_food_listing',
       locationLabel: 'Marché Kenya',
+      priceAmount: 12000,
       priceCdf: 12000,
+      priceCurrency: 'CDF',
       primaryImageUrl: '/assets/listings/mangues-et-avocats-frais-du-haut-katanga.jpg',
       slug: 'panier-fruits-frais',
       title: 'Panier de fruits frais',
@@ -538,6 +544,39 @@ test('listing detail returns a database-backed published listing with seller met
   assert.deepEqual(response.body.images, [
     'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
   ]);
+});
+
+test('listings feed and detail return USD listing prices when a seller publishes in dollars', async (t) => {
+  const {
+    app,
+  } = await createTestContext();
+  t.after(async () => {
+    await app.close();
+  });
+
+  await publishListing(app, {
+    area: 'Lubumbashi Centre',
+    categoryId: 'electronics',
+    description: 'MacBook Pro 14 pouces, prêt pour le travail.',
+    phoneNumber: '+243990000004',
+    priceAmount: 350,
+    priceCurrency: 'USD',
+    title: 'MacBook Pro 14',
+  });
+
+  const feedResponse = await request(app.getHttpServer())
+    .get('/listings')
+    .expect(200);
+
+  assert.equal(feedResponse.body.items[0].priceAmount, 350);
+  assert.equal(feedResponse.body.items[0].priceCurrency, 'USD');
+
+  const detailResponse = await request(app.getHttpServer())
+    .get('/listings/macbook-pro-14')
+    .expect(200);
+
+  assert.equal(detailResponse.body.priceAmount, 350);
+  assert.equal(detailResponse.body.priceCurrency, 'USD');
 });
 
 test('listing detail returns category-specific safety tips for food starter listings', async (t) => {

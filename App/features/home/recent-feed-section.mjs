@@ -1,7 +1,7 @@
 import {
   escapeAttribute,
   escapeHtml,
-  formatCdf,
+  formatListingPrice,
 } from '../../utils/rendering.mjs';
 import {
   buildImageFallbackHandler,
@@ -9,7 +9,7 @@ import {
 } from '../../utils/image-fallbacks.mjs';
 
 function renderListingCard(listing) {
-  const priceLabel = listing.priceLabel ?? formatCdf(listing.priceCdf);
+  const priceLabel = formatListingPrice(listing);
   const locationLabel = listing.location ?? listing.locationLabel ?? 'Localisation à confirmer';
   const publishedAt = listing.publishedAt ?? listing.categoryLabel ?? 'Disponible maintenant';
   const listingHref = listing.slug ? `#listing/${encodeURIComponent(listing.slug)}` : '#home';

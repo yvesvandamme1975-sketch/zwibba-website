@@ -44,7 +44,8 @@ test('listing cards link to in-app buyer detail routes', () => {
       {
         categoryId: 'phones_tablets',
         locationLabel: 'Golf',
-        priceCdf: 450000,
+        priceAmount: 450000,
+        priceCurrency: 'CDF',
         slug: 'samsung-galaxy-a54',
         title: 'Samsung Galaxy A54',
       },
@@ -55,6 +56,27 @@ test('listing cards link to in-app buyer detail routes', () => {
 
   assert.match(html, /href="#listing\/samsung-galaxy-a54"/);
   assert.match(html, /450\u202f000 CDF|450 000 CDF/);
+});
+
+test('listing cards render USD when a listing is priced in dollars', () => {
+  const html = renderHomeScreen({
+    categories,
+    draft: null,
+    featuredListings: [
+      {
+        categoryId: 'electronics',
+        locationLabel: 'Golf',
+        priceAmount: 350,
+        priceCurrency: 'USD',
+        slug: 'macbook-pro-13',
+        title: 'MacBook Pro 13',
+      },
+    ],
+    feedStatus: 'ready',
+    recentListings: [],
+  });
+
+  assert.match(html, /350 US\$/);
 });
 
 test('buyer listing cards render the primary image when the live feed provides one', () => {

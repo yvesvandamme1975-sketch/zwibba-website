@@ -3,7 +3,8 @@ import {
   createListingDraftFromFirstPhoto,
   updateListingDraft,
 } from '../../models/listing-draft.mjs';
-import { formatCdf } from '../../utils/rendering.mjs';
+import { normalizePriceCurrency } from '../../utils/price-input.mjs';
+import { formatListingPrice } from '../../utils/rendering.mjs';
 
 export const MAX_PRICE_CDF = 2_147_483_647;
 
@@ -309,6 +310,8 @@ export function validateDraftForPublish(
 ) {
   const errors = [];
   const primaryPhoto = resolvePrimaryPhoto(draft);
+  const priceCurrency = normalizePriceCurrency(draft.details.priceCurrency);
+  const priceAmount = draft.details.priceAmount;
 
   if (uploadsBusy) {
     errors.push({
@@ -356,15 +359,23 @@ export function validateDraftForPublish(
     });
   }
 
-  if (!draft.details.priceCdf) {
+  if (!priceCurrency) {
+    errors.push({
+      field: 'price',
+      message: 'Choisissez une devise pour votre prix.',
+    });
+  } else if (!priceAmount) {
     errors.push({
       field: 'price',
       message: 'Choisissez un prix final.',
     });
-  } else if (draft.details.priceCdf > MAX_PRICE_CDF) {
+  } else if (priceAmount > MAX_PRICE_CDF) {
     errors.push({
       field: 'price',
-      message: `Le prix final doit rester inférieur à ${formatCdf(MAX_PRICE_CDF)}.`,
+      message: `Le prix final doit rester inférieur à ${formatListingPrice({
+        priceAmount: MAX_PRICE_CDF,
+        priceCurrency,
+      })}.`,
     });
   }
 
@@ -420,6 +431,9 @@ export function createReadyDraft(overrides = {}) {
   const condition =
     Object.prototype.hasOwnProperty.call(overrides, 'condition') ? overrides.condition : '';
   const categoryId = overrides.categoryId ?? 'electronics';
+  const hasExplicitPriceAmount = Object.prototype.hasOwnProperty.call(overrides, 'priceAmount');
+  const hasExplicitPriceCurrency = Object.prototype.hasOwnProperty.call(overrides, 'priceCurrency');
+  const hasLegacyPrice = Object.prototype.hasOwnProperty.call(overrides, 'priceCdf');
   const defaultPreviewUrl = overrides.photoUrl ?? '/uploads/phone-front.jpg';
   const photos =
     Object.prototype.hasOwnProperty.call(overrides, 'photos')
@@ -451,8 +465,16 @@ export function createReadyDraft(overrides = {}) {
         title: overrides.title ?? 'Annonce prête à publier',
         categoryId,
         condition,
-        priceCdf:
-          Object.prototype.hasOwnProperty.call(overrides, 'priceCdf') ? overrides.priceCdf : 450_000,
+        priceAmount: hasExplicitPriceAmount
+          ? overrides.priceAmount
+          : hasLegacyPrice
+            ? overrides.priceCdf
+            : 450_000,
+        priceCurrency: hasExplicitPriceCurrency
+          ? overrides.priceCurrency
+          : hasLegacyPrice && overrides.priceCdf == null
+            ? ''
+            : 'CDF',
         description: overrides.description ?? 'Article prêt, propre et disponible immédiatement.',
         area: overrides.area ?? 'Golf',
       },

@@ -20,7 +20,12 @@ test('parsePriceInput returns null for empty or invalid values', () => {
 });
 
 test('formatPricePreview returns a formatted CDF helper for typed values', () => {
-  assert.equal(formatPricePreview('450000'), '450 000 CDF');
-  assert.equal(formatPricePreview('450 000'), '450 000 CDF');
-  assert.equal(formatPricePreview(''), 'Entrez votre prix en CDF.');
+  assert.equal(formatPricePreview('450000', 'CDF'), '450 000 CDF');
+  assert.equal(formatPricePreview('450 000', 'CDF'), '450 000 CDF');
+  assert.equal(formatPricePreview('', 'CDF'), 'Entrez votre prix en CDF.');
+});
+
+test('formatPricePreview switches helper copy and formatting for USD', () => {
+  assert.equal(formatPricePreview('350', 'USD'), '350 US$');
+  assert.equal(formatPricePreview('', 'USD'), 'Entrez votre prix en US$.');
 });

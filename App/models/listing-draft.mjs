@@ -3,23 +3,45 @@ export const draftSyncStates = {
   accountSyncable: 'account_syncable',
 };
 
+function normalizePriceCurrency(rawValue) {
+  if (rawValue === 'CDF' || rawValue === 'USD') {
+    return rawValue;
+  }
+
+  return '';
+}
+
+function normalizePriceAmount(details = {}) {
+  if (details.priceAmount === null || details.priceAmount === undefined || details.priceAmount === '') {
+    return details.priceCdf ?? null;
+  }
+
+  return details.priceAmount;
+}
+
 function createEmptyDetails() {
   return {
     title: '',
     categoryId: '',
     condition: '',
-    priceCdf: null,
+    priceAmount: null,
+    priceCurrency: '',
     description: '',
     area: '',
   };
 }
 
 function normalizeDetails(details = {}) {
+  const priceAmount = normalizePriceAmount(details);
+  const priceCurrency =
+    normalizePriceCurrency(details.priceCurrency) || (priceAmount != null ? 'CDF' : '');
+
   return {
     title: details.title ?? '',
     categoryId: details.categoryId ?? '',
     condition: details.condition ?? '',
-    priceCdf: details.priceCdf ?? null,
+    priceAmount,
+    priceCurrency,
     description: details.description ?? '',
     area: details.area ?? '',
   };
@@ -40,8 +62,20 @@ function normalizeDetailUpdates(details = {}) {
     nextDetails.condition = details.condition ?? '';
   }
 
+  if (Object.prototype.hasOwnProperty.call(details, 'priceAmount')) {
+    nextDetails.priceAmount = details.priceAmount ?? null;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(details, 'priceCurrency')) {
+    nextDetails.priceCurrency = normalizePriceCurrency(details.priceCurrency);
+  }
+
   if (Object.prototype.hasOwnProperty.call(details, 'priceCdf')) {
-    nextDetails.priceCdf = details.priceCdf ?? null;
+    nextDetails.priceAmount = details.priceCdf ?? null;
+
+    if (!Object.prototype.hasOwnProperty.call(details, 'priceCurrency')) {
+      nextDetails.priceCurrency = details.priceCdf == null ? '' : 'CDF';
+    }
   }
 
   if (Object.prototype.hasOwnProperty.call(details, 'description')) {

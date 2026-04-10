@@ -658,7 +658,10 @@ test('review form highlights publish blockers next to the submit action', () => 
 });
 
 test('review form keeps pricing fully manual and hides AI price guidance', () => {
-  const draft = createReadyDraft();
+  const draft = createReadyDraft({
+    priceAmount: 450_000,
+    priceCurrency: 'CDF',
+  });
   const html = renderReviewFormScreen({
     categories: [{ id: 'electronics', label: 'Électronique' }],
     conditionOptions: [{ value: 'like_new', label: 'Comme neuf' }],
@@ -667,8 +670,11 @@ test('review form keeps pricing fully manual and hides AI price guidance', () =>
     validationErrors: [],
   });
 
-  assert.match(html, /Prix final \(CDF\)/);
-  assert.match(html, /max="2147483647"/);
+  assert.match(html, /<span>Devise<\/span>/);
+  assert.match(html, /name="priceCurrency"/);
+  assert.match(html, /<option value="CDF" selected>CDF<\/option>/);
+  assert.match(html, /<option value="USD">US\$<\/option>/);
+  assert.match(html, /<span>Prix final<\/span>/);
   assert.match(html, /type="text"/);
   assert.match(html, /inputmode="numeric"/);
   assert.match(html, /placeholder="Ex: 450000"/);
@@ -677,6 +683,41 @@ test('review form keeps pricing fully manual and hides AI price guidance', () =>
   assert.doesNotMatch(html, /Ajoutez votre prix librement/i);
   assert.doesNotMatch(html, /400 000 CDF/);
   assert.doesNotMatch(html, /520 000 CDF/);
+});
+
+test('review form disables price entry until a currency is chosen and supports USD previews', () => {
+  const noCurrencyDraft = createReadyDraft({
+    priceAmount: null,
+    priceCurrency: '',
+  });
+  const disabledHtml = renderReviewFormScreen({
+    categories: [{ id: 'electronics', label: 'Électronique' }],
+    conditionOptions: [{ value: 'like_new', label: 'Comme neuf' }],
+    draft: noCurrencyDraft,
+    profileArea: 'Golf',
+    validationErrors: [],
+  });
+
+  assert.match(disabledHtml, /name="priceCurrency"/);
+  assert.match(disabledHtml, /name="priceAmount"/);
+  assert.match(disabledHtml, /Choisissez d’abord une devise\./i);
+  assert.match(disabledHtml, /disabled/);
+
+  const usdDraft = createReadyDraft({
+    priceAmount: 350,
+    priceCurrency: 'USD',
+  });
+  const usdHtml = renderReviewFormScreen({
+    categories: [{ id: 'electronics', label: 'Électronique' }],
+    conditionOptions: [{ value: 'like_new', label: 'Comme neuf' }],
+    draft: usdDraft,
+    profileArea: 'Golf',
+    validationErrors: [],
+  });
+
+  assert.match(usdHtml, /<option value="USD" selected>US\$<\/option>/);
+  assert.match(usdHtml, /placeholder="Ex: 350"/);
+  assert.match(usdHtml, /350 US\$/);
 });
 
 test('review form explains that the draft was prepared from the uploaded photo', () => {

@@ -22,6 +22,10 @@ test('system seed definitions cover the starter categories and mark them as syst
 
   for (const definition of definitions) {
     assert.equal(definition.listing.sourceType, 'system_seed');
+    assert.equal(definition.draft.priceAmount, definition.draft.priceCdf);
+    assert.equal(definition.draft.priceCurrency, 'CDF');
+    assert.equal(definition.listing.priceAmount, definition.listing.priceCdf);
+    assert.equal(definition.listing.priceCurrency, 'CDF');
     assert.match(definition.photo.publicUrl, /^\/assets\/listings\//);
   }
 });

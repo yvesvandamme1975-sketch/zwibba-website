@@ -41,7 +41,9 @@ export class ModerationController {
       description?: string;
       draftId?: string;
       ownerPhoneNumber?: string;
+      priceAmount?: number;
       priceCdf?: number;
+      priceCurrency?: string;
       title?: string;
     },
   ) {
@@ -50,7 +52,9 @@ export class ModerationController {
       description: body.description ?? '',
       draftId: body.draftId ?? '',
       ownerPhoneNumber: body.ownerPhoneNumber ?? session.phoneNumber,
-      priceCdf: body.priceCdf ?? 0,
+      priceAmount: body.priceAmount,
+      priceCdf: body.priceCdf,
+      priceCurrency: body.priceCurrency,
       title: body.title ?? '',
     });
   }

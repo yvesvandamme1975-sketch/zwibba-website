@@ -9,7 +9,8 @@ test('profile screen renders verified session details and seller listing actions
       {
         id: 'listing_approved',
         moderationStatus: 'approved',
-        priceCdf: 4256000,
+        priceAmount: 4256000,
+        priceCurrency: 'CDF',
         primaryImageUrl: 'https://pub.example.test/listing-approved.jpg',
         slug: 'samsung-galaxy-a54-128-go',
         title: 'Samsung Galaxy A54 128 Go',
@@ -17,7 +18,8 @@ test('profile screen renders verified session details and seller listing actions
       {
         id: 'listing_pending',
         moderationStatus: 'pending_manual_review',
-        priceCdf: 12000000,
+        priceAmount: 12000000,
+        priceCurrency: 'CDF',
         primaryImageUrl: null,
         slug: 'toyota-hilux-2019-4x4',
         title: 'Toyota Hilux 2019 4x4',
@@ -25,7 +27,8 @@ test('profile screen renders verified session details and seller listing actions
       {
         id: 'listing_blocked',
         moderationStatus: 'blocked_needs_fix',
-        priceCdf: 1800000,
+        priceAmount: 1800000,
+        priceCurrency: 'CDF',
         primaryImageUrl: null,
         slug: 'appartement-2-chambres',
         title: 'Appartement 2 chambres',
@@ -50,6 +53,40 @@ test('profile screen renders verified session details and seller listing actions
   assert.match(html, /Appartement 2 chambres/);
   assert.match(html, /data-action="activate-boost"/);
   assert.match(html, /href="#listing\/samsung-galaxy-a54-128-go"/);
+});
+
+test('profile screen renders mixed listing currencies per announcement', () => {
+  const html = renderProfileScreen({
+    listings: [
+      {
+        id: 'listing_cdf',
+        moderationStatus: 'approved',
+        priceAmount: 4256000,
+        priceCurrency: 'CDF',
+        primaryImageUrl: null,
+        slug: 'samsung-galaxy-a54-128-go',
+        title: 'Samsung Galaxy A54 128 Go',
+      },
+      {
+        id: 'listing_usd',
+        moderationStatus: 'approved',
+        priceAmount: 350,
+        priceCurrency: 'USD',
+        primaryImageUrl: null,
+        slug: 'macbook-pro-13',
+        title: 'MacBook Pro 13',
+      },
+    ],
+    session: {
+      canSyncDrafts: true,
+      phoneNumber: '+243990000001',
+      sessionToken: 'zwibba_session_123',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /4(?:\s|\u202f)256(?:\s|\u202f)000 CDF/);
+  assert.match(html, /350 US\$/);
 });
 
 test('profile screen shows a verification prompt when no session exists', () => {
