@@ -43,5 +43,7 @@ Current priority docs:
 - `2026-04-05-zwibba-profile-return-and-price-entry-implementation.md`
 - `2026-04-10-zwibba-db-seeded-feed-and-safety-card-design.md`
 - `2026-04-10-zwibba-db-seeded-feed-and-safety-card-implementation.md`
+- `2026-04-10-zwibba-multi-currency-listing-prices-design.md`
+- `2026-04-10-zwibba-multi-currency-listing-prices-implementation.md`
 
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
