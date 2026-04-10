@@ -30,6 +30,7 @@ type PersistedListingRecord = {
   slug: string;
   soldAt?: Date | null;
   soldChannel?: string | null;
+  sourceType?: string | null;
   title: string;
   updatedAt?: Date;
 };
@@ -84,6 +85,26 @@ function buildSellerProfile({
 
 function buildSafetyTips(categoryId: string) {
   switch (categoryId) {
+    case 'agriculture':
+      return [
+        'Inspectez l’état du matériel avant de payer.',
+        'Confirmez la capacité ou la compatibilité sur place.',
+      ];
+    case 'construction':
+      return [
+        'Vérifiez la quantité et l’état avant de payer.',
+        'Inspectez les outils ou matériaux sur place.',
+      ];
+    case 'education':
+      return [
+        'Vérifiez le lot complet avant de payer.',
+        'Confirmez le niveau ou l’édition avant achat.',
+      ];
+    case 'food':
+      return [
+        'Vérifiez la fraîcheur ou la date avant de payer.',
+        'Privilégiez une remise rapide pour les produits périssables.',
+      ];
     case 'vehicles':
       return [
         'Demandez les papiers du véhicule avant l’essai.',
@@ -98,6 +119,11 @@ function buildSafetyTips(categoryId: string) {
       return [
         'Rencontrez le vendeur dans un lieu public.',
         'Vérifiez le produit avant de payer.',
+      ];
+    case 'sports_leisure':
+      return [
+        'Testez l’équipement si possible avant de payer.',
+        'Inspectez l’usure avant de conclure l’achat.',
       ];
     default:
       return [

@@ -39,6 +39,7 @@ test('listing detail screen renders the buyer detail state inside /App', () => {
   assert.match(html, /450\u202f000 CDF|450 000 CDF/);
   assert.match(html, /Vendeur 0001/);
   assert.match(html, /Conseils de sécurité/);
+  assert.match(html, /Attention/);
   assert.match(html, /Envoyer un message/);
   assert.match(html, /data-action="start-thread"/);
   assert.match(html, /data-listing-id="listing_1"/);
@@ -50,6 +51,8 @@ test('listing detail screen renders the buyer detail state inside /App', () => {
   assert.match(html, /data-action="select-listing-image"/);
   assert.match(html, /data-image-index="1"/);
   assert.match(html, /app-detail__thumbnail is-active/);
+  assert.match(html, /class="app-detail__safety-card"/);
+  assert.doesNotMatch(html, /class="app-home__listing-card"/);
   assert.match(
     html,
     /onerror="this\.onerror=null;this\.src=&#39;\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.jpg&#39;;"/,

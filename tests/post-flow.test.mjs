@@ -1083,6 +1083,66 @@ test('vehicle publish requires avant, arrière, droite, gauche and intérieur ph
   );
 });
 
+test('food guidance suggests an overview and packaging label photo', () => {
+  const html = renderPhotoGuidanceScreen({
+    draft: createReadyDraft({
+      categoryId: 'food',
+      photos: [
+        {
+          id: 'photo-1',
+          kind: 'primary',
+          previewUrl: 'blob:food.jpg',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/capture/photo_1-food.jpg',
+        },
+      ],
+    }),
+  });
+
+  assert.match(html, /Vue d(?:'|&#39;)ensemble/i);
+  assert.match(html, /Emballage ou étiquette/i);
+});
+
+test('agriculture guidance suggests an overview and equipment condition photo', () => {
+  const html = renderPhotoGuidanceScreen({
+    draft: createReadyDraft({
+      categoryId: 'agriculture',
+      photos: [
+        {
+          id: 'photo-1',
+          kind: 'primary',
+          previewUrl: 'blob:agri.jpg',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/capture/photo_1-agri.jpg',
+        },
+      ],
+    }),
+  });
+
+  assert.match(html, /Vue d(?:'|&#39;)ensemble/i);
+  assert.match(html, /État du matériel/i);
+});
+
+test('education guidance suggests an overview and full lot photo', () => {
+  const html = renderPhotoGuidanceScreen({
+    draft: createReadyDraft({
+      categoryId: 'education',
+      photos: [
+        {
+          id: 'photo-1',
+          kind: 'primary',
+          previewUrl: 'blob:education.jpg',
+          uploadStatus: 'uploaded',
+          url: 'https://pub.example.test/draft-photos/capture/photo_1-education.jpg',
+        },
+      ],
+    }),
+  });
+
+  assert.match(html, /Vue d(?:'|&#39;)ensemble/i);
+  assert.match(html, /Lot complet/i);
+});
+
 test('capture screen renders staged progress for the first photo upload', () => {
   const html = renderCaptureScreen({
     busyLabel: '',

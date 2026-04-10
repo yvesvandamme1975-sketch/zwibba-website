@@ -1,0 +1,2 @@
+ALTER TABLE "Listing"
+ADD COLUMN "sourceType" TEXT NOT NULL DEFAULT 'user';

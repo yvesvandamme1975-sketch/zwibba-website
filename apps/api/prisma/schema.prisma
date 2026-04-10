@@ -86,6 +86,7 @@ model Listing {
   slug               String              @unique
   soldAt             DateTime?
   soldChannel        String?
+  sourceType         String              @default("user")
   title              String
   updatedAt          DateTime            @updatedAt
 

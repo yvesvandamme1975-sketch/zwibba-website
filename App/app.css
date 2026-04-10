@@ -717,6 +717,57 @@
   object-fit: cover;
 }
 
+.app-detail__safety-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: rgba(255, 166, 0, 0.1);
+  border: 1px solid rgba(255, 166, 0, 0.32);
+}
+
+.app-detail__safety-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-detail__safety-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(255, 166, 0, 0.18);
+  border: 1px solid rgba(255, 166, 0, 0.34);
+  color: #ffbd57;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.app-detail__safety-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.app-detail__safety-copy strong {
+  font-size: 0.9rem;
+}
+
+.app-detail__safety-copy span,
+.app-detail__safety-list {
+  color: rgba(255, 236, 204, 0.9);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.app-detail__safety-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+}
+
 .app-guidance__hero-media,
 .app-capture-result__hero-media,
 .app-review__hero-media,

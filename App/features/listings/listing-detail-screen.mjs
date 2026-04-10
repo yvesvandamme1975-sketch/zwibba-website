@@ -276,6 +276,33 @@ function renderDetailMedia(detail, selectedImageIndex = 0) {
   `;
 }
 
+function renderSafetyCard(detail) {
+  if (!Array.isArray(detail.safetyTips) || detail.safetyTips.length === 0) {
+    return '';
+  }
+
+  return `
+    <section class="app-detail__safety-card" aria-label="Conseils de sécurité">
+      <div class="app-detail__safety-head">
+        <span class="app-detail__safety-icon" aria-hidden="true">!</span>
+        <div class="app-detail__safety-copy">
+          <strong>Conseils de sécurité</strong>
+          <span>Attention</span>
+        </div>
+      </div>
+      <ul class="app-detail__safety-list">
+        ${detail.safetyTips
+          .map(
+            (tip) => `
+              <li>${escapeHtml(tip)}</li>
+            `,
+          )
+          .join('')}
+      </ul>
+    </section>
+  `;
+}
+
 export function renderListingDetailScreen({
   detail = null,
   errorMessage = '',
@@ -356,25 +383,7 @@ export function renderListingDetailScreen({
         <span>${escapeHtml(detail.seller.role)} · ${escapeHtml(detail.seller.responseTime)}</span>
       </div>
 
-      <section class="app-home__section">
-        <div class="app-home__section-head">
-          <h3>Conseils de sécurité</h3>
-          <span>Rencontre prudente</span>
-        </div>
-        <div class="app-home__recent-feed">
-          ${detail.safetyTips
-            .map(
-              (tip) => `
-                <article class="app-home__listing-card">
-                  <div class="app-home__listing-copy">
-                    <strong>${escapeHtml(tip)}</strong>
-                  </div>
-                </article>
-              `,
-            )
-            .join('')}
-        </div>
-      </section>
+      ${renderSafetyCard(detail)}
 
       ${
         detail.viewerRole === 'owner'

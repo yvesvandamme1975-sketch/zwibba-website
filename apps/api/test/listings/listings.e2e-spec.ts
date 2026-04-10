@@ -433,6 +433,70 @@ test('listings feed returns newly approved database-backed listings only', async
   );
 });
 
+test('listings feed includes approved active system seed listings from the same database feed', async (t) => {
+  const {
+    app,
+    prisma,
+  } = await createTestContext();
+  t.after(async () => {
+    await app.close();
+  });
+
+  prisma.drafts.set('draft_seed_food_listing', {
+    area: 'Marché Kenya',
+    categoryId: 'food',
+    condition: 'fresh',
+    description: 'Panier de fruits frais.',
+    id: 'draft_seed_food_listing',
+    ownerPhoneNumber: '+243990000031',
+    priceCdf: 12000,
+    syncStatus: 'synced',
+    title: 'Panier de fruits frais',
+  });
+  prisma.draftPhoto.create({
+    data: {
+      draftId: 'draft_seed_food_listing',
+      id: 'photo_seed_food_listing',
+      objectKey: 'system-seeds/panier-fruits-frais.jpg',
+      publicUrl: '/assets/listings/mangues-et-avocats-frais-du-haut-katanga.jpg',
+      sourcePresetId: 'capture',
+      uploadStatus: 'uploaded',
+    },
+  });
+  prisma.listings.set('listing_seed_food_listing', {
+    area: 'Marché Kenya',
+    categoryId: 'food',
+    description: 'Panier de fruits frais.',
+    draftId: 'draft_seed_food_listing',
+    id: 'listing_seed_food_listing',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+243990000031',
+    priceCdf: 12000,
+    publishedAt: new Date('2026-04-10T10:00:00.000Z'),
+    slug: 'panier-fruits-frais',
+    sourceType: 'system_seed',
+    title: 'Panier de fruits frais',
+    updatedAt: new Date('2026-04-10T10:00:00.000Z'),
+  });
+
+  const response = await request(app.getHttpServer())
+    .get('/listings')
+    .expect(200);
+
+  assert.deepEqual(response.body.items, [
+    {
+      categoryId: 'food',
+      categoryLabel: 'Alimentation',
+      id: 'listing_seed_food_listing',
+      locationLabel: 'Marché Kenya',
+      priceCdf: 12000,
+      primaryImageUrl: '/assets/listings/mangues-et-avocats-frais-du-haut-katanga.jpg',
+      slug: 'panier-fruits-frais',
+      title: 'Panier de fruits frais',
+    },
+  ]);
+});
+
 test('listing detail returns a database-backed published listing with seller metadata', async (t) => {
   const {
     app,
@@ -473,6 +537,62 @@ test('listing detail returns a database-backed published listing with seller met
   );
   assert.deepEqual(response.body.images, [
     'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
+  ]);
+});
+
+test('listing detail returns category-specific safety tips for food starter listings', async (t) => {
+  const {
+    app,
+    prisma,
+  } = await createTestContext();
+  t.after(async () => {
+    await app.close();
+  });
+
+  prisma.drafts.set('draft_food_listing', {
+    area: 'Marché Kenya',
+    categoryId: 'food',
+    condition: 'new_item',
+    description: 'Panier de fruits frais.',
+    id: 'draft_food_listing',
+    ownerPhoneNumber: '+243990000031',
+    priceCdf: 12000,
+    syncStatus: 'synced',
+    title: 'Panier de fruits frais',
+  });
+  prisma.draftPhoto.create({
+    data: {
+      draftId: 'draft_food_listing',
+      id: 'photo_food_listing',
+      objectKey: 'draft-photos/food/panier.jpg',
+      publicUrl: 'https://pub.example.test/food/panier.jpg',
+      sourcePresetId: 'capture',
+      uploadStatus: 'uploaded',
+    },
+  });
+  prisma.listings.set('listing_food_listing', {
+    area: 'Marché Kenya',
+    categoryId: 'food',
+    description: 'Panier de fruits frais.',
+    draftId: 'draft_food_listing',
+    id: 'listing_food_listing',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+243990000031',
+    priceCdf: 12000,
+    publishedAt: new Date('2026-04-10T10:00:00.000Z'),
+    slug: 'panier-fruits-frais',
+    sourceType: 'system_seed',
+    title: 'Panier de fruits frais',
+    updatedAt: new Date('2026-04-10T10:00:00.000Z'),
+  });
+
+  const response = await request(app.getHttpServer())
+    .get('/listings/panier-fruits-frais')
+    .expect(200);
+
+  assert.deepEqual(response.body.safetyTips, [
+    "Vérifiez la fraîcheur ou la date avant de payer.",
+    'Privilégiez une remise rapide pour les produits périssables.',
   ]);
 });
 

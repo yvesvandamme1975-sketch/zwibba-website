@@ -23,9 +23,29 @@ export const categoryGuidance = {
     required: ['vue_ensemble', 'etiquette', 'taille'],
     optional: ['detail'],
   },
+  food: {
+    required: [],
+    optional: ['vue_ensemble', 'emballage_etiquette'],
+  },
+  agriculture: {
+    required: [],
+    optional: ['vue_ensemble', 'etat_materiel'],
+  },
+  construction: {
+    required: [],
+    optional: ['vue_ensemble', 'detail_materiel'],
+  },
+  education: {
+    required: [],
+    optional: ['vue_ensemble', 'lot_complet'],
+  },
   home_garden: {
     required: ['vue_ensemble', 'cote'],
     optional: ['defaut'],
+  },
+  sports_leisure: {
+    required: [],
+    optional: ['vue_ensemble', 'detail_materiel'],
   },
 };
 
