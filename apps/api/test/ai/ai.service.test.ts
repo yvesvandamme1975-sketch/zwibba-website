@@ -118,6 +118,37 @@ test('ai service accepts emploi as a supported category', async () => {
   assert.equal(result.draftPatch.categoryId, 'emploi');
 });
 
+test('ai service accepts the expanded supported categories', async () => {
+  const supportedCategories = [
+    'food',
+    'agriculture',
+    'construction',
+    'education',
+    'sports_leisure',
+  ];
+
+  for (const categoryId of supportedCategories) {
+    const service = new AiService({
+      async generateDraftFromImage() {
+        return {
+          categoryId,
+          condition: 'used_good',
+          description: `Annonce ${categoryId} visible sur la photo.`,
+          title: `Annonce ${categoryId}`,
+        };
+      },
+    });
+
+    const result = await service.generateDraft({
+      photoUrl: `https://pub.example.test/draft-photos/capture/photo_1-${categoryId}.jpg`,
+    });
+
+    assert.equal(result.status, 'ready');
+    assert.ok(result.draftPatch);
+    assert.equal(result.draftPatch.categoryId, categoryId);
+  }
+});
+
 test('ai service falls back to manual mode when the provider fails', async () => {
   const service = new AiService({
     async generateDraftFromImage() {

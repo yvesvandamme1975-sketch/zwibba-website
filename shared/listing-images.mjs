@@ -23,6 +23,14 @@ export const seededListingImagesBySlug = {
       pageUrl: 'https://www.pexels.com/photo/avocados-and-mangoes-on-a-plate-10023042/',
     },
   },
+  'lot-ciment-outils-chantier-lubumbashi': {
+    src: '/assets/listings/lot-ciment-outils-chantier-lubumbashi.jpg',
+    alt: 'Ouvrier en train de lisser du béton sur un chantier extérieur.',
+    credit: {
+      provider: 'Pexels',
+      pageUrl: 'https://www.pexels.com/photo/a-person-constructing-a-road-4134382/',
+    },
+  },
   'ordinateur-portable-hp-elitebook': {
     src: '/assets/listings/ordinateur-portable-hp-elitebook.jpg',
     alt: 'Ordinateur portable posé sur un bureau de travail en bois.',
@@ -37,6 +45,22 @@ export const seededListingImagesBySlug = {
     credit: {
       provider: 'Pexels',
       pageUrl: 'https://www.pexels.com/photo/laptop-placed-on-top-of-a-wooden-work-desk-8472374/',
+    },
+  },
+  'pack-fournitures-scolaires-universitaires': {
+    src: '/assets/listings/pack-fournitures-scolaires-universitaires.jpg',
+    alt: 'Fournitures scolaires et universitaires disposées sur un bureau clair.',
+    credit: {
+      provider: 'Pexels',
+      pageUrl: 'https://www.pexels.com/photo/arranged-pastel-colored-school-supplies-6192765/',
+    },
+  },
+  'pulverisateur-agricole-16l-lubumbashi': {
+    src: '/assets/listings/pulverisateur-agricole-16l-lubumbashi.jpg',
+    alt: 'Tracteur agricole au travail dans un champ sec en zone rurale.',
+    credit: {
+      provider: 'Pexels',
+      pageUrl: 'https://www.pexels.com/photo/tractor-on-rural-field-21711155/',
     },
   },
   'robe-wax-africaine-taille-m': {
@@ -71,15 +95,27 @@ export const seededListingImagesBySlug = {
       pageUrl: 'https://www.pexels.com/photo/pickup-truck-on-road-18375383/',
     },
   },
+  'velo-fitness-loisir-lubumbashi': {
+    src: '/assets/listings/velo-fitness-loisir-lubumbashi.jpg',
+    alt: 'Vélo de route sur support d’entraînement dans un espace sport minimaliste.',
+    credit: {
+      provider: 'Pexels',
+      pageUrl: 'https://www.pexels.com/photo/black-bike-on-a-bike-stand-10347812/',
+    },
+  },
 };
 
 const seededPreviewSlugByCategory = {
+  agriculture: 'pulverisateur-agricole-16l-lubumbashi',
+  construction: 'lot-ciment-outils-chantier-lubumbashi',
+  education: 'pack-fournitures-scolaires-universitaires',
   emploi: 'offre-receptionniste-lubumbashi-centre',
   electronics: 'ordinateur-portable-hp-elitebook',
   fashion: 'robe-wax-africaine-taille-m',
   food: 'mangues-et-avocats-frais-du-haut-katanga',
   home_garden: 'canape-3-places-style-contemporain',
   services: 'service-plomberie-urgence-7j7',
+  sports_leisure: 'velo-fitness-loisir-lubumbashi',
   phones_tablets: 'samsung-galaxy-a54-neuf-lubumbashi',
   real_estate: 'appartement-2-chambres-quartier-industriel',
   vehicles: 'toyota-hilux-2019-4x4',

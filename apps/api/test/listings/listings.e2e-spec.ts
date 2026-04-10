@@ -700,6 +700,78 @@ test('listing labels support services and emploi categories', async (t) => {
     title: 'Offre réceptionniste',
     updatedAt: new Date('2026-03-29T11:00:00.000Z'),
   });
+  prisma.drafts.set('draft_food_label', {
+    area: 'Kenya',
+    categoryId: 'food',
+    condition: 'new_item',
+    description: 'Panier de fruits locaux.',
+    id: 'draft_food_label',
+    ownerPhoneNumber: '+243990000012',
+    priceCdf: 25000,
+    syncStatus: 'synced',
+    title: 'Panier de fruits frais',
+  });
+  prisma.draftPhoto.create({
+    data: {
+      draftId: 'draft_food_label',
+      id: 'photo_draft_food_label',
+      kind: 'primary',
+      objectKey: 'draft-photos/food/panier.jpg',
+      previewUrl: 'https://pub.example.test/food/panier.jpg',
+      publicUrl: 'https://pub.example.test/food/panier.jpg',
+      uploadStatus: 'uploaded',
+    },
+  });
+  prisma.listings.set('listing_draft_food_label', {
+    area: 'Kenya',
+    categoryId: 'food',
+    description: 'Panier de fruits locaux.',
+    draftId: 'draft_food_label',
+    id: 'listing_draft_food_label',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+243990000012',
+    priceCdf: 25000,
+    publishedAt: new Date('2026-03-29T11:02:00.000Z'),
+    slug: 'panier-fruits',
+    title: 'Panier de fruits frais',
+    updatedAt: new Date('2026-03-29T11:02:00.000Z'),
+  });
+  prisma.drafts.set('draft_sports_label', {
+    area: 'Golf',
+    categoryId: 'sports_leisure',
+    condition: 'used_good',
+    description: 'Vélo de loisir.',
+    id: 'draft_sports_label',
+    ownerPhoneNumber: '+243990000013',
+    priceCdf: 90000,
+    syncStatus: 'synced',
+    title: 'Vélo de loisir',
+  });
+  prisma.draftPhoto.create({
+    data: {
+      draftId: 'draft_sports_label',
+      id: 'photo_draft_sports_label',
+      kind: 'primary',
+      objectKey: 'draft-photos/sports/velo.jpg',
+      previewUrl: 'https://pub.example.test/sports/velo.jpg',
+      publicUrl: 'https://pub.example.test/sports/velo.jpg',
+      uploadStatus: 'uploaded',
+    },
+  });
+  prisma.listings.set('listing_draft_sports_label', {
+    area: 'Golf',
+    categoryId: 'sports_leisure',
+    description: 'Vélo de loisir.',
+    draftId: 'draft_sports_label',
+    id: 'listing_draft_sports_label',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+243990000013',
+    priceCdf: 90000,
+    publishedAt: new Date('2026-03-29T11:03:00.000Z'),
+    slug: 'velo-loisir',
+    title: 'Vélo de loisir',
+    updatedAt: new Date('2026-03-29T11:03:00.000Z'),
+  });
 
   const feedResponse = await request(app.getHttpServer())
     .get('/listings')
@@ -711,9 +783,17 @@ test('listing labels support services and emploi categories', async (t) => {
   const emploiListing = feedResponse.body.items.find(
     (item: { slug: string }) => item.slug === 'offre-receptionniste',
   );
+  const foodListing = feedResponse.body.items.find(
+    (item: { slug: string }) => item.slug === 'panier-fruits',
+  );
+  const sportsListing = feedResponse.body.items.find(
+    (item: { slug: string }) => item.slug === 'velo-loisir',
+  );
 
   assert.equal(serviceListing.categoryLabel, 'Services');
-  assert.equal(emploiListing.categoryLabel, 'Emploi');
+  assert.equal(emploiListing.categoryLabel, 'Emplois');
+  assert.equal(foodListing.categoryLabel, 'Alimentation');
+  assert.equal(sportsListing.categoryLabel, 'Sports et loisirs');
 });
 
 test('public listings hide paused, sold, and seller-deleted listings while owner can still view them', async (t) => {

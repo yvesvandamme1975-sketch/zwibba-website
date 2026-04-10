@@ -1,8 +1,13 @@
 export const supportedCategoryIds = [
   'phones_tablets',
   'electronics',
+  'food',
+  'agriculture',
+  'construction',
+  'education',
   'services',
   'emploi',
+  'sports_leisure',
   'vehicles',
   'real_estate',
   'fashion',

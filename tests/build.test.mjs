@@ -131,14 +131,40 @@ test('browse page exposes category discovery and marketplace filters', () => {
   buildSite();
 
   const browse = readFileSync(path.join(distDir, 'annonces/index.html'), 'utf8');
+  assert.match(browse, /Alimentation/i);
+  assert.match(browse, /Agriculture/i);
+  assert.match(browse, /Construction/i);
+  assert.match(browse, /[ÉE]cole ?\/ ?Universit[ée]/i);
   assert.match(browse, /Immobilier/i);
   assert.match(browse, /Services/i);
-  assert.match(browse, /Emploi/i);
+  assert.match(browse, /Emplois/i);
+  assert.match(browse, /Sports/i);
   assert.match(browse, /V[ée]hicules/i);
   assert.match(browse, /T[ée]l[ée]phones/i);
   assert.match(browse, /Prix/i);
   assert.match(browse, /[ÉE]tat/i);
   assert.match(browse, /Plus r[ée]cents|Recent/i);
+});
+
+test('build includes static pages for the new seeded agriculture, construction, education, and sports listings', () => {
+  buildSite();
+
+  assert.equal(
+    existsSync(path.join(distDir, 'annonce', 'pulverisateur-agricole-16l-lubumbashi', 'index.html')),
+    true,
+  );
+  assert.equal(
+    existsSync(path.join(distDir, 'annonce', 'lot-ciment-outils-chantier-lubumbashi', 'index.html')),
+    true,
+  );
+  assert.equal(
+    existsSync(path.join(distDir, 'annonce', 'pack-fournitures-scolaires-universitaires', 'index.html')),
+    true,
+  );
+  assert.equal(
+    existsSync(path.join(distDir, 'annonce', 'velo-fitness-loisir-lubumbashi', 'index.html')),
+    true,
+  );
 });
 
 test('listing detail pages include social metadata, contact actions, and safety tips', () => {

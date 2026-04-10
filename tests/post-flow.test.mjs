@@ -950,7 +950,7 @@ test('guidance screen keeps the uploaded photo visible and shows a manual fallba
   assert.doesNotMatch(html, /<strong>Titre<\/strong>/);
 });
 
-test('review form category dropdown includes Emploi and Services', () => {
+test('review form category dropdown includes the expanded seller categories with Emplois label', () => {
   const html = renderReviewFormScreen({
     areaOptions: ['Golf', 'Bel Air'],
     categories: sellerCategories,
@@ -959,8 +959,13 @@ test('review form category dropdown includes Emploi and Services', () => {
     validationErrors: [],
   });
 
-  assert.match(html, />Emploi<\/option>/);
+  assert.match(html, />Alimentation<\/option>/);
+  assert.match(html, />Agriculture<\/option>/);
+  assert.match(html, />Construction<\/option>/);
+  assert.match(html, />[ÉE]cole ?\/ ?Universit[ée]<\/option>/);
+  assert.match(html, />Emplois<\/option>/);
   assert.match(html, />Services<\/option>/);
+  assert.match(html, />Sports et loisirs<\/option>/);
 });
 
 test('services guidance suggests a business card or company logo', () => {

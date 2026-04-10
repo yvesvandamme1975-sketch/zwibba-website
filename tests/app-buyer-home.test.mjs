@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { sellerCategories } from '../App/demo-content.mjs';
 import { renderHomeScreen } from '../App/features/home/home-screen.mjs';
 
 const categories = [
@@ -117,6 +118,23 @@ test('home screen marks itself as the compact first-viewport screen', () => {
   });
 
   assert.match(html, /class="app-home app-screen app-screen--home"/);
+});
+
+test('buyer home renders the expanded category chips including Emplois', () => {
+  const html = renderHomeScreen({
+    categories: sellerCategories,
+    draft: null,
+    featuredListings: [],
+    feedStatus: 'ready',
+    recentListings: [],
+  });
+
+  assert.match(html, /Alimentation/);
+  assert.match(html, /Agriculture/);
+  assert.match(html, /Construction/);
+  assert.match(html, /[ÉE]cole ?\/ ?Universit[ée]/);
+  assert.match(html, /Emplois/);
+  assert.match(html, /Sports et loisirs/);
 });
 
 test('buyer listing cards keep the media placeholder when no image is available', () => {

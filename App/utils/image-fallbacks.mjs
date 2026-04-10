@@ -1,15 +1,23 @@
 import { resolveDemoPreviewUrl } from '../demo-preview-assets.mjs';
 
 const categoryIdByLabel = {
+  'agriculture': 'agriculture',
+  'alimentation': 'food',
+  'construction': 'construction',
+  'ecole / universite': 'education',
+  'ecole/universite': 'education',
+  'electronique': 'electronics',
   'emploi': 'emploi',
-  'électronique': 'electronics',
+  'emplois': 'emploi',
   'immobilier': 'real_estate',
   'maison': 'home_garden',
   'mode': 'fashion',
   'services': 'services',
-  'téléphones': 'phones_tablets',
-  'téléphones & tablettes': 'phones_tablets',
-  'véhicules': 'vehicles',
+  'sports et loisirs': 'sports_leisure',
+  'sports & loisirs': 'sports_leisure',
+  'telephones': 'phones_tablets',
+  'telephones & tablettes': 'phones_tablets',
+  'vehicules': 'vehicles',
 };
 
 function normalizeCategoryLabel(value = '') {

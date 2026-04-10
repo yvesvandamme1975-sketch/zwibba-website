@@ -165,6 +165,32 @@ test('listing detail screen falls back to a human category label from categoryId
   assert.match(html, /<span>Maison<\/span>/);
 });
 
+test('listing detail screen renders Emplois as the human label for emploi', () => {
+  const html = renderListingDetailScreen({
+    detail: {
+      categoryId: 'emploi',
+      categoryLabel: '',
+      contactActions: ['message'],
+      id: 'listing_job_1',
+      locationLabel: 'Bel Air',
+      priceCdf: 25000,
+      primaryImageUrl: null,
+      safetyTips: ['Évitez les paiements anticipés.'],
+      seller: {
+        name: 'Particulier 0002',
+        responseTime: 'Répond en moyenne en 9 min',
+        role: 'Particulier',
+      },
+      slug: 'offre-receptionniste',
+      summary: 'Offre de réceptionniste.',
+      title: 'Offre réceptionniste',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /<span>Emplois<\/span>/);
+});
+
 test('listing detail screen renders a loading state', () => {
   const html = renderListingDetailScreen({
     state: 'loading',

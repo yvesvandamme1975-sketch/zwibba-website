@@ -10,13 +10,18 @@ import {
 } from '../../utils/image-fallbacks.mjs';
 
 const categoryLabels = {
-  emploi: 'Emploi',
+  agriculture: 'Agriculture',
+  construction: 'Construction',
+  education: 'École / Université',
+  emploi: 'Emplois',
   electronics: 'Électronique',
   fashion: 'Mode',
+  food: 'Alimentation',
   home_garden: 'Maison',
   phones_tablets: 'Téléphones & Tablettes',
   real_estate: 'Immobilier',
   services: 'Services',
+  sports_leisure: 'Sports et loisirs',
   vehicles: 'Véhicules',
 };
 

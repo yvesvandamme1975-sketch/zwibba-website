@@ -13,3 +13,7 @@ Bundled listing starter images for static/seeded listings use Pexels assets.
 | `robe-wax-africaine-taille-m` | `/assets/listings/robe-wax-africaine-taille-m.jpg` | https://www.pexels.com/photo/portrait-of-a-woman-in-traditional-african-attire-33725837/ |
 | `ordinateur-portable-hp-elitebook` | `/assets/listings/ordinateur-portable-hp-elitebook.jpg` | https://www.pexels.com/photo/laptop-placed-on-top-of-a-wooden-work-desk-8472374/ |
 | `mangues-et-avocats-frais-du-haut-katanga` | `/assets/listings/mangues-et-avocats-frais-du-haut-katanga.jpg` | https://www.pexels.com/photo/avocados-and-mangoes-on-a-plate-10023042/ |
+| `pulverisateur-agricole-16l-lubumbashi` | `/assets/listings/pulverisateur-agricole-16l-lubumbashi.jpg` | https://www.pexels.com/photo/tractor-on-rural-field-21711155/ |
+| `lot-ciment-outils-chantier-lubumbashi` | `/assets/listings/lot-ciment-outils-chantier-lubumbashi.jpg` | https://www.pexels.com/photo/a-person-constructing-a-road-4134382/ |
+| `pack-fournitures-scolaires-universitaires` | `/assets/listings/pack-fournitures-scolaires-universitaires.jpg` | https://www.pexels.com/photo/arranged-pastel-colored-school-supplies-6192765/ |
+| `velo-fitness-loisir-lubumbashi` | `/assets/listings/velo-fitness-loisir-lubumbashi.jpg` | https://www.pexels.com/photo/black-bike-on-a-bike-stand-10347812/ |
