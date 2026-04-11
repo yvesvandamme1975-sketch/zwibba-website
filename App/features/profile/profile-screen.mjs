@@ -176,6 +176,14 @@ function renderListingCard(listing) {
         }
       </div>
       <div class="app-profile__listing-actions">
+        <button
+          class="app-flow__button"
+          type="button"
+          data-action="edit-listing"
+          data-listing-slug="${escapeAttribute(listing.slug)}"
+        >
+          Modifier
+        </button>
         <a class="app-flow__button app-flow__button--secondary" href="#listing/${escapeAttribute(listing.slug)}">Voir</a>
         ${
           canBoost

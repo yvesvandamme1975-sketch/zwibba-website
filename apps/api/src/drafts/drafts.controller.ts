@@ -17,6 +17,7 @@ export class DraftsController {
     body: {
       area?: string;
       categoryId?: string;
+      condition?: string;
       description?: string;
       draftId?: string;
       photos?: Array<{
@@ -35,6 +36,7 @@ export class DraftsController {
     return this.draftsService.syncDraft({
       area: body.area ?? '',
       categoryId: body.categoryId ?? '',
+      condition: body.condition ?? '',
       description: body.description ?? '',
       draftId: body.draftId,
       phoneNumber: session.phoneNumber,

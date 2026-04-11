@@ -64,6 +64,19 @@ function buildLifecycleActionButton({
   `;
 }
 
+function buildEditListingButton(detail) {
+  return `
+    <button
+      class="app-flow__button"
+      type="button"
+      data-action="edit-listing"
+      data-listing-slug="${escapeAttribute(detail.slug)}"
+    >
+      Modifier
+    </button>
+  `;
+}
+
 function buildActionMarkup(action, detail) {
   switch (action) {
     case 'message':
@@ -102,6 +115,10 @@ function buildActionMarkup(action, detail) {
 
 function renderOwnerLifecycleCard(detail) {
   const actions = [];
+
+  if (detail.editDraft) {
+    actions.push(buildEditListingButton(detail));
+  }
 
   if (detail.canPause) {
     actions.push(

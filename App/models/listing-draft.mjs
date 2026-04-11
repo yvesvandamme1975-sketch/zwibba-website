@@ -3,6 +3,31 @@ export const draftSyncStates = {
   accountSyncable: 'account_syncable',
 };
 
+function normalizeEditablePhoto(photo = {}, index = 0, hasCapturePhoto = false) {
+  const sourcePresetId = photo.sourcePresetId ?? (index === 0 ? 'capture' : '');
+  const isPrimary = sourcePresetId === 'capture' || (!hasCapturePhoto && index === 0);
+  const publicUrl = photo.publicUrl ?? '';
+
+  return {
+    id: photo.photoId ?? photo.id ?? `photo-${index + 1}`,
+    kind: isPrimary ? 'primary' : 'guided',
+    objectKey: photo.objectKey ?? '',
+    photoId: photo.photoId ?? photo.id ?? '',
+    promptId: isPrimary ? '' : sourcePresetId,
+    publicUrl,
+    uploadError: '',
+    sourcePresetId,
+    uploadStatus: photo.uploadStatus ?? 'uploaded',
+    fileName: photo.fileName ?? '',
+    contentType: photo.contentType ?? '',
+    url: publicUrl,
+    previewUrl: publicUrl,
+    sizeBytes: null,
+    originalSizeBytes: null,
+    wasCompressed: false,
+  };
+}
+
 function normalizePriceCurrency(rawValue) {
   if (rawValue === 'CDF' || rawValue === 'USD') {
     return rawValue;
@@ -192,6 +217,51 @@ export function createEmptyListingDraft({ now = new Date().toISOString() } = {})
     ownerPhoneNumber: '',
     remoteDraftId: '',
     syncStatus: '',
+  });
+}
+
+export function createEditableListingDraft(
+  editableDraft,
+  {
+    now = new Date().toISOString(),
+    phoneNumber = '',
+  } = {},
+) {
+  const baseDraft = createEmptyListingDraft({ now });
+  const editablePhotos = Array.isArray(editableDraft?.photos) ? editableDraft.photos : [];
+  const hasCapturePhoto = editablePhotos.some((photo) => photo?.sourcePresetId === 'capture');
+
+  return buildDraftShape({
+    ...baseDraft,
+    updatedAt: now,
+    auth: {
+      phoneNumber: phoneNumber || editableDraft?.ownerPhoneNumber || '',
+      otpVerified: Boolean(phoneNumber || editableDraft?.ownerPhoneNumber),
+    },
+    details: {
+      title: editableDraft?.title ?? '',
+      categoryId: editableDraft?.categoryId ?? '',
+      condition: editableDraft?.condition ?? '',
+      priceAmount: editableDraft?.priceAmount ?? editableDraft?.priceCdf ?? null,
+      priceCurrency:
+        normalizePriceCurrency(editableDraft?.priceCurrency) ||
+        ((editableDraft?.priceAmount ?? editableDraft?.priceCdf) != null ? 'CDF' : ''),
+      description: editableDraft?.description ?? '',
+      area: editableDraft?.area ?? '',
+    },
+    ai: {
+      applied: false,
+      status: 'manual_fallback',
+      message: 'Vous modifiez une annonce déjà publiée.',
+      confidence: 0,
+    },
+    ownerPhoneNumber: editableDraft?.ownerPhoneNumber ?? phoneNumber ?? '',
+    photos: editablePhotos.map((photo, index) =>
+      normalizeEditablePhoto(photo, index, hasCapturePhoto),
+    ),
+    remoteDraftId: editableDraft?.draftId ?? '',
+    syncState: draftSyncStates.accountSyncable,
+    syncStatus: 'synced',
   });
 }
 

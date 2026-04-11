@@ -52,6 +52,7 @@ test('profile screen renders verified session details and seller listing actions
   assert.match(html, /Toyota Hilux 2019 4x4/);
   assert.match(html, /Appartement 2 chambres/);
   assert.match(html, /data-action="activate-boost"/);
+  assert.match(html, /data-action="edit-listing"/);
   assert.match(html, /href="#listing\/samsung-galaxy-a54-128-go"/);
 });
 

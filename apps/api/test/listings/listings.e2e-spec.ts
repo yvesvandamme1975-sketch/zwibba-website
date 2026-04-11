@@ -1075,4 +1075,9 @@ test('public listings hide paused, sold, and seller-deleted listings while owner
   assert.equal(ownerDetailResponse.body.lifecycleStatus, 'deleted_by_seller');
   assert.equal(ownerDetailResponse.body.deletedReason, 'Je republierai plus tard');
   assert.equal(ownerDetailResponse.body.contactActions.length, 0);
+  assert.equal(ownerDetailResponse.body.editDraft.draftId, 'draft_deleted_listing');
+  assert.equal(ownerDetailResponse.body.editDraft.condition, 'used_good');
+  assert.equal(ownerDetailResponse.body.editDraft.photos.length, 1);
+  assert.equal(ownerDetailResponse.body.editDraft.photos[0].photoId, 'photo_deleted_listing');
+  assert.equal(ownerDetailResponse.body.editDraft.photos[0].objectKey, 'draft-photos/deleted.jpg');
 });

@@ -70,3 +70,14 @@ test('mobile shell fixes the tab nav to the viewport bottom and reserves content
     /@media \(max-width: 640px\) \{[\s\S]*?\.app-tab-shell__content\s*\{[\s\S]*?padding-bottom:\s*calc\([\s\S]*?var\(--app-mobile-nav-height\)[\s\S]*?\);[\s\S]*?\}/i,
   );
 });
+
+test('mobile footer keeps wallet on one line for narrow Android widths', () => {
+  assert.match(
+    appStyles,
+    /@media \(max-width: 640px\) \{[\s\S]*?\.app-tab-shell__nav-item\s*\{[\s\S]*?font-size:\s*0\.62rem;[\s\S]*?\}/i,
+  );
+  assert.match(
+    appStyles,
+    /@media \(max-width: 640px\) \{[\s\S]*?\.app-tab-shell__nav-label\s*\{[\s\S]*?white-space:\s*nowrap;[\s\S]*?overflow-wrap:\s*normal;[\s\S]*?word-break:\s*normal;[\s\S]*?\}/i,
+  );
+});

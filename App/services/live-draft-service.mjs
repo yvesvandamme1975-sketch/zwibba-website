@@ -73,6 +73,7 @@ export function createLiveDraftService({
         body: JSON.stringify({
           area: draft.details.area,
           categoryId: draft.details.categoryId,
+          condition: draft.details.condition,
           description: draft.details.description,
           draftId: draft.remoteDraftId || undefined,
           photos: draft.photos.map((photo) => buildPhotoPayload(photo)),

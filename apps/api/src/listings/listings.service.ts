@@ -40,9 +40,25 @@ type PersistedListingRecord = {
 
 type PersistedDraftPhotoRecord = {
   createdAt?: Date;
+  id?: string;
+  objectKey?: string;
   publicUrl: string;
   sourcePresetId?: string;
   uploadStatus: string;
+};
+
+type PersistedDraftRecord = {
+  area: string;
+  categoryId: string;
+  condition: string;
+  description: string;
+  id: string;
+  ownerPhoneNumber: string;
+  photos: PersistedDraftPhotoRecord[];
+  priceAmount: number;
+  priceCdf: number;
+  priceCurrency?: string | null;
+  title: string;
 };
 
 const categoryLabels: Record<string, string> = {
@@ -232,11 +248,13 @@ function toListingSummary(
 }
 
 function toListingDetail({
+  editDraft = null,
   images,
   listing,
   primaryImageUrl,
   viewerRole,
 }: {
+  editDraft?: PersistedDraftRecord | null;
   images: string[];
   listing: PersistedListingRecord;
   primaryImageUrl: string | null;
@@ -250,6 +268,28 @@ function toListingDetail({
     contactActions: viewerRole === 'owner' ? [] : ['message', 'call'],
     contactPhoneNumber:
       viewerRole === 'owner' ? '' : listing.ownerPhoneNumber,
+    editDraft:
+      viewerRole === 'owner' && editDraft
+        ? {
+            area: editDraft.area,
+            categoryId: editDraft.categoryId,
+            condition: editDraft.condition,
+            description: editDraft.description,
+            draftId: editDraft.id,
+            ownerPhoneNumber: editDraft.ownerPhoneNumber,
+            photos: editDraft.photos.map((photo) => ({
+              objectKey: photo.objectKey ?? '',
+              photoId: photo.id ?? '',
+              publicUrl: photo.publicUrl,
+              sourcePresetId: photo.sourcePresetId ?? '',
+              uploadStatus: photo.uploadStatus,
+            })),
+            priceAmount: editDraft.priceAmount ?? editDraft.priceCdf,
+            priceCdf: editDraft.priceCdf,
+            priceCurrency: (editDraft.priceCurrency ?? 'CDF') as ListingPriceCurrency,
+            title: editDraft.title,
+          }
+        : null,
     id: listing.id,
     images,
     locationLabel: listing.area,
@@ -289,6 +329,23 @@ export class ListingsService {
     return getListingImageUrls(
       (draft?.photos ?? []) as PersistedDraftPhotoRecord[],
     );
+  }
+
+  private async resolveListingDraft(listing: PersistedListingRecord) {
+    const draft = await this.prismaService.draft.findUnique({
+      include: {
+        photos: true,
+      },
+      where: {
+        id: listing.draftId,
+      },
+    });
+
+    if (!draft) {
+      return null;
+    }
+
+    return draft as PersistedDraftRecord;
   }
 
   async listBrowseFeed() {
@@ -344,9 +401,13 @@ export class ListingsService {
       throw new NotFoundException('Annonce introuvable.');
     }
 
-    const images = await this.resolveListingImages(persistedListing);
+    const [draft, images] = await Promise.all([
+      viewerRole === 'owner' ? this.resolveListingDraft(persistedListing) : Promise.resolve(null),
+      this.resolveListingImages(persistedListing),
+    ]);
 
     return toListingDetail({
+      editDraft: draft,
       images,
       listing: persistedListing,
       primaryImageUrl: images[0] ?? null,

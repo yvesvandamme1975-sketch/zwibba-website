@@ -49,6 +49,7 @@ export class DraftsService {
   async syncDraft({
     area,
     categoryId,
+    condition,
     description,
     draftId,
     phoneNumber,
@@ -60,6 +61,7 @@ export class DraftsService {
   }: {
     area: string;
     categoryId: string;
+    condition?: string;
     description: string;
     draftId?: string;
     phoneNumber: string;
@@ -111,6 +113,7 @@ export class DraftsService {
           data: {
             area: resolvedArea,
             categoryId,
+            condition: condition ?? existingDraft.condition,
             description,
             ownerPhoneNumber: phoneNumber,
             priceAmount: supportedPrice.priceAmount,
@@ -123,6 +126,7 @@ export class DraftsService {
           data: {
             area: resolvedArea,
             categoryId,
+            condition: condition ?? '',
             description,
             id: generatedDraftId,
             ownerPhoneNumber: phoneNumber,
@@ -151,7 +155,7 @@ export class DraftsService {
     return {
       area: resolvedArea,
       categoryId,
-      condition: persistedDraft.condition,
+      condition: persistedDraft.condition ?? condition ?? '',
       description,
       draftId: persistedDraft.id,
       ownerPhoneNumber: phoneNumber,

@@ -29,6 +29,7 @@ import { renderWalletScreen } from './features/wallet/wallet-screen.mjs';
 import { submitLivePublish } from './features/post/live-publish-flow.mjs';
 import { getCategoryGuidance } from './models/category-guidance.mjs';
 import {
+  createEditableListingDraft,
   markDraftOtpVerified,
   updateListingDraft,
 } from './models/listing-draft.mjs';
@@ -1458,6 +1459,47 @@ if (appRoot) {
     }
   }
 
+  async function handleEditListing(listingSlug) {
+    if (!state.session || !listingSlug) {
+      return;
+    }
+
+    try {
+      const currentDetail = buyerBrowseController.state.detail;
+      const detail =
+        currentDetail?.slug === listingSlug && currentDetail?.editDraft
+          ? currentDetail
+          : await listingsService.getListingDetail(listingSlug, {
+              session: state.session,
+            });
+
+      if (detail.viewerRole !== 'owner' || !detail.editDraft) {
+        throw new Error("Impossible de préparer cette annonce pour modification.");
+      }
+
+      state.draft = syncDraftAreaFromProfile(
+        createEditableListingDraft(detail.editDraft, {
+          phoneNumber: state.session.phoneNumber,
+        }),
+        state.profile?.area ?? detail.editDraft.area ?? '',
+      );
+      draftStorage.saveDraft(state.draft);
+      state.publishError = '';
+      state.publishedDraft = null;
+      state.publishOutcome = null;
+      state.publishedListingRoute = '';
+      state.publishedListingUrl = '';
+      state.reviewErrors = [];
+      window.location.hash = '#review';
+    } catch (error) {
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : "Impossible de préparer cette annonce pour modification.",
+      );
+    }
+  }
+
   async function handleSendThreadMessage(form) {
     if (!state.session) {
       return;
@@ -1600,6 +1642,11 @@ if (appRoot) {
       }
 
       await handleBoost(trigger.dataset.listingId || '');
+      return;
+    }
+
+    if (trigger.dataset.action === 'edit-listing') {
+      await handleEditListing(trigger.dataset.listingSlug || '');
       return;
     }
 

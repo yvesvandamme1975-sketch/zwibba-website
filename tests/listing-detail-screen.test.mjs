@@ -234,6 +234,10 @@ test('listing detail screen replaces buyer contact actions with owner lifecycle 
   const html = renderListingDetailScreen({
     detail: {
       canDelete: true,
+      editDraft: {
+        draftId: 'draft_owner_1',
+        photos: [],
+      },
       canMarkSold: true,
       canPause: true,
       canRelist: false,
@@ -265,9 +269,12 @@ test('listing detail screen replaces buyer contact actions with owner lifecycle 
   });
 
   assert.match(html, /Gérer mon annonce/);
+  assert.match(html, /Modifier/);
   assert.match(html, /Mettre en pause/);
   assert.match(html, /Marquer comme vendue/);
   assert.match(html, /Supprimer l’annonce/);
+  assert.match(html, /data-action="edit-listing"/);
+  assert.match(html, /data-listing-slug="ordinateur-portable-test"/);
   assert.match(html, /data-action="listing-lifecycle"/);
   assert.doesNotMatch(html, /Envoyer un message/);
   assert.doesNotMatch(html, /href="tel:/);
