@@ -19,6 +19,21 @@ model User {
   walletTransactions WalletTransaction[]
 }
 
+model LocationOption {
+  id              String   @id @default(cuid())
+  countryCode     String
+  createdAt       DateTime @default(now())
+  label           String
+  normalizedLabel String
+  sourceType      String
+  status          String
+  type            String
+  updatedAt       DateTime @updatedAt
+
+  @@index([countryCode, type, status])
+  @@unique([countryCode, type, normalizedLabel])
+}
+
 model Draft {
   id               String      @id @default(cuid())
   area             String

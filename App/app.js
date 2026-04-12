@@ -1,6 +1,5 @@
 import { renderAppTabShell } from './components/app-tab-shell.mjs';
 import {
-  areaOptions,
   conditionOptions,
   sellerCategories,
 } from './demo-content.mjs';
@@ -63,6 +62,7 @@ import {
   restoreScrollRenderState,
 } from './utils/scroll-render-state.mjs';
 import { syncDraftAreaFromProfile } from './utils/profile-area-sync.mjs';
+import { deriveProfileCityAutocompleteState } from './utils/profile-city-autocomplete-state.mjs';
 import {
   formatPricePreview,
   getPriceInputPlaceholder,
@@ -210,10 +210,16 @@ if (appRoot) {
     phoneError: '',
     phoneNumber: authService.getPendingChallenge()?.phoneNumber ?? '+243',
     profile: null,
+    profileCityBusy: false,
+    profileCityInput: '',
+    profileCityOptions: [],
+    profileCityOptionsPromise: null,
+    profileCityOptionsStatus: 'idle',
     profileError: '',
     profileMessage: '',
     profilePromise: null,
     profileSaveBusy: false,
+    profileSelectedArea: '',
     profileStatus: 'idle',
     publishError: '',
     publishedDraft: null,
@@ -698,6 +704,8 @@ if (appRoot) {
       })
       .then((profile) => {
         state.profile = profile;
+        state.profileCityInput = profile.area ?? '';
+        state.profileSelectedArea = profile.area ?? '';
         state.profileStatus = 'ready';
         state.draft = syncDraftAreaFromProfile(state.draft, profile.area);
         if (state.draft) {
@@ -718,6 +726,36 @@ if (appRoot) {
       });
 
     return state.profilePromise;
+  }
+
+  async function loadProfileCityOptions() {
+    if (state.profileCityOptionsPromise) {
+      return state.profileCityOptionsPromise;
+    }
+
+    state.profileCityOptionsStatus = 'loading';
+    state.profileCityOptionsPromise = profileService
+      .listCities({
+        countryCode: 'CD',
+      })
+      .then((items) => {
+        state.profileCityOptions = items;
+        state.profileCityOptionsStatus = 'ready';
+        return items;
+      })
+      .catch((error) => {
+        state.profileCityOptions = [];
+        state.profileCityOptionsStatus = 'error';
+        state.profileError =
+          error instanceof Error ? error.message : 'Impossible de charger les villes.';
+        return [];
+      })
+      .finally(() => {
+        state.profileCityOptionsPromise = null;
+        renderApp();
+      });
+
+    return state.profileCityOptionsPromise;
   }
 
   function primeBuyerRouteState(route) {
@@ -754,6 +792,10 @@ if (appRoot) {
 
     if (route.type === 'profile' && state.session && state.sellerListingsStatus === 'idle') {
       void loadSellerListings();
+    }
+
+    if (route.type === 'profile' && state.profileCityOptionsStatus === 'idle') {
+      void loadProfileCityOptions();
     }
   }
 
@@ -873,17 +915,28 @@ if (appRoot) {
           wallet: state.wallet,
         });
       case 'profile':
+        {
+          const profileCityState = deriveProfileCityAutocompleteState({
+            cityOptions: state.profileCityOptions,
+            inputValue: state.profileCityInput,
+            selectedArea: state.profileSelectedArea,
+          });
+
         return renderProfileScreen({
-          areaOptions,
+          citySuggestions: profileCityState.suggestions,
           draftExists: Boolean(state.draft),
           lifecycleMessage: state.listingLifecycleMessage,
           listings: state.sellerListings,
           listingsError: state.sellerListingsError,
           profile: state.profile,
+          profileAreaInput: profileCityState.inputValue,
+          profileCityBusy: state.profileCityBusy,
           session: state.session,
           profileError: state.profileError,
+          profileMissingCityLabel: profileCityState.missingCityLabel,
           profileMessage: state.profileMessage,
           profileSaveBusy: state.profileSaveBusy,
+          selectedProfileArea: profileCityState.selectedArea,
           profileState: state.profileStatus,
           state: state.session
             ? state.sellerListingsStatus === 'idle'
@@ -891,6 +944,7 @@ if (appRoot) {
               : state.sellerListingsStatus
             : 'locked',
         });
+        }
       case 'buy':
         return renderBuyScreen({
           categories: sellerCategories,
@@ -1238,9 +1292,15 @@ if (appRoot) {
       state.otpError = '';
       state.inboxStatus = 'idle';
       state.profile = null;
+      state.profileCityBusy = false;
+      state.profileCityInput = '';
+      state.profileCityOptions = [];
+      state.profileCityOptionsPromise = null;
+      state.profileCityOptionsStatus = 'idle';
       state.profileError = '';
       state.profileMessage = '';
       state.profileStatus = 'idle';
+      state.profileSelectedArea = '';
       state.walletStatus = 'idle';
       state.sellerListingsStatus = 'idle';
 
@@ -1296,6 +1356,8 @@ if (appRoot) {
       });
 
       state.profile = profile;
+      state.profileCityInput = profile.area;
+      state.profileSelectedArea = profile.area;
       state.profileStatus = 'ready';
       state.profileSaveBusy = false;
       state.profileMessage = `Zone enregistrée : ${profile.area}.`;
@@ -1308,6 +1370,34 @@ if (appRoot) {
       state.profileSaveBusy = false;
       state.profileError =
         error instanceof Error ? error.message : 'Impossible de sauvegarder votre zone.';
+      renderApp();
+    }
+  }
+
+  async function handleProfileCitySuggestion(label) {
+    state.profileCityBusy = true;
+    state.profileError = '';
+    state.profileMessage = '';
+    renderApp();
+
+    try {
+      const city = await profileService.suggestCity({
+        countryCode: 'CD',
+        label,
+      });
+
+      if (!state.profileCityOptions.some((item) => item.label === city.label)) {
+        state.profileCityOptions = [...state.profileCityOptions, city];
+      }
+
+      state.profileCityBusy = false;
+      state.profileCityInput = city.label;
+      state.profileSelectedArea = city.label;
+      renderApp();
+    } catch (error) {
+      state.profileCityBusy = false;
+      state.profileError =
+        error instanceof Error ? error.message : 'Impossible d’ajouter cette ville.';
       renderApp();
     }
   }
@@ -1573,6 +1663,20 @@ if (appRoot) {
       return;
     }
 
+    if (trigger.dataset.action === 'select-profile-city') {
+      const cityLabel = trigger.dataset.cityLabel || '';
+      state.profileCityInput = cityLabel;
+      state.profileSelectedArea = cityLabel;
+      state.profileError = '';
+      renderApp();
+      return;
+    }
+
+    if (trigger.dataset.action === 'suggest-profile-city') {
+      await handleProfileCitySuggestion(trigger.dataset.cityLabel || '');
+      return;
+    }
+
     if (trigger.dataset.action === 'submit-publish') {
       await handlePublishSubmit();
       return;
@@ -1668,6 +1772,19 @@ if (appRoot) {
 
     if (target.name === 'buyerSearch') {
       buyerBrowseController.setSearchQuery(target.value);
+      renderApp();
+      return;
+    }
+
+    if (target.name === 'areaSearch') {
+      state.profileCityInput = target.value;
+      state.profileError = '';
+      const profileCityState = deriveProfileCityAutocompleteState({
+        cityOptions: state.profileCityOptions,
+        inputValue: target.value,
+        selectedArea: state.profileSelectedArea,
+      });
+      state.profileSelectedArea = profileCityState.selectedArea;
       renderApp();
       return;
     }

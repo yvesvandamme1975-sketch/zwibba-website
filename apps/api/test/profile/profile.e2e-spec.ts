@@ -9,6 +9,7 @@ import request from 'supertest';
 import { TwilioVerifyService } from '../../src/auth/twilio-verify.service';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/database/prisma.service';
+import { normalizeLocationLabel } from '../../src/locations/location-normalization';
 
 class _FakeTwilioVerifyService {
   async checkVerification() {
@@ -27,6 +28,15 @@ class _FakeTwilioVerifyService {
 }
 
 class _FakePrismaService {
+  locationOptions = new Map<string, {
+    countryCode: string;
+    id: string;
+    label: string;
+    normalizedLabel: string;
+    sourceType: string;
+    status: string;
+    type: string;
+  }>();
   sessions = new Map<string, {
     token: string;
     user: {
@@ -144,6 +154,79 @@ class _FakePrismaService {
     },
   };
 
+  readonly locationOption = {
+    findFirst: async ({
+      where,
+    }: {
+      where: {
+        countryCode: string;
+        label?: string;
+        normalizedLabel?: string;
+        status: string;
+        type: string;
+      };
+    }) => {
+      return Array.from(this.locationOptions.values()).find((location) => {
+        return location.countryCode === where.countryCode &&
+          location.status === where.status &&
+          location.type === where.type &&
+          (where.label ? location.label === where.label : true) &&
+          (where.normalizedLabel ? location.normalizedLabel === where.normalizedLabel : true);
+      }) ?? null;
+    },
+    findUnique: async ({
+      where,
+    }: {
+      where: {
+        countryCode_type_normalizedLabel: {
+          countryCode: string;
+          normalizedLabel: string;
+          type: string;
+        };
+      };
+    }) => {
+      const key = [
+        where.countryCode_type_normalizedLabel.countryCode,
+        where.countryCode_type_normalizedLabel.type,
+        where.countryCode_type_normalizedLabel.normalizedLabel,
+      ].join(':');
+      return this.locationOptions.get(key) ?? null;
+    },
+    upsert: async ({
+      create,
+      update,
+      where,
+    }: {
+      create: Record<string, string>;
+      update: Record<string, string>;
+      where: {
+        countryCode_type_normalizedLabel: {
+          countryCode: string;
+          normalizedLabel: string;
+          type: string;
+        };
+      };
+    }) => {
+      const key = [
+        where.countryCode_type_normalizedLabel.countryCode,
+        where.countryCode_type_normalizedLabel.type,
+        where.countryCode_type_normalizedLabel.normalizedLabel,
+      ].join(':');
+      const existing = this.locationOptions.get(key);
+      const nextValue = existing
+        ? {
+            ...existing,
+            ...update,
+          }
+        : {
+            ...create,
+            id: create.id ?? `loc_${where.countryCode_type_normalizedLabel.normalizedLabel}`,
+          };
+      this.locationOptions.set(key, nextValue as never);
+      return nextValue;
+    },
+  };
+
   readonly verificationAttempt = {
     create: async () => ({ id: 'attempt_1' }),
     updateMany: async () => ({ count: 1 }),
@@ -153,10 +236,24 @@ class _FakePrismaService {
     count: async () => 0,
     create: async () => ({ id: 'wallet_tx_1' }),
   };
+
+  seedCity(label: string) {
+    const normalizedLabel = normalizeLocationLabel(label);
+    this.locationOptions.set(`CD:city:${normalizedLabel}`, {
+      countryCode: 'CD',
+      id: `loc_${normalizedLabel}`,
+      label,
+      normalizedLabel,
+      sourceType: 'system_seed',
+      status: 'active',
+      type: 'city',
+    });
+  }
 }
 
 async function createTestApp() {
   const prisma = new _FakePrismaService();
+  prisma.seedCity('Lubumbashi');
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
   })
@@ -203,17 +300,53 @@ test('profile endpoints return and persist the seller zone for the active sessio
     .post('/profile')
     .set('authorization', `Bearer ${sessionToken}`)
     .send({
-      area: 'Golf',
+      area: 'Lubumbashi',
     })
     .expect(201);
 
   assert.equal(saveResponse.body.phoneNumber, '+243990000001');
-  assert.equal(saveResponse.body.area, 'Golf');
+  assert.equal(saveResponse.body.area, 'Lubumbashi');
 
   const getAfter = await request(harness.app.getHttpServer())
     .get('/profile')
     .set('authorization', `Bearer ${sessionToken}`)
     .expect(200);
 
-  assert.equal(getAfter.body.area, 'Golf');
+  assert.equal(getAfter.body.area, 'Lubumbashi');
+});
+
+test('profile save accepts a newly suggested city after it is added through locations', async (t) => {
+  const harness = await createTestApp();
+  t.after(async () => {
+    await harness.app.close();
+  });
+
+  const verifyResponse = await request(harness.app.getHttpServer())
+    .post('/auth/verify-otp')
+    .send({
+      code: '123456',
+      phoneNumber: '+243990000001',
+    })
+    .expect(201);
+
+  const sessionToken = verifyResponse.body.sessionToken;
+
+  await request(harness.app.getHttpServer())
+    .post('/locations/suggestions')
+    .send({
+      countryCode: 'CD',
+      label: 'Kasumbalesa',
+      type: 'city',
+    })
+    .expect(201);
+
+  const saveResponse = await request(harness.app.getHttpServer())
+    .post('/profile')
+    .set('authorization', `Bearer ${sessionToken}`)
+    .send({
+      area: 'Kasumbalesa',
+    })
+    .expect(201);
+
+  assert.equal(saveResponse.body.area, 'Kasumbalesa');
 });

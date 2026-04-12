@@ -211,11 +211,12 @@ test('profile screen renders a persisted seller zone form', () => {
   const html = renderProfileScreen({
     listings: [],
     profile: {
-      area: 'Golf',
+      area: 'Lubumbashi',
       phoneNumber: '+243990000001',
     },
-    areaOptions: ['Bel Air', 'Golf', 'Lubumbashi Centre'],
+    citySuggestions: ['Likasi', 'Lubumbashi'],
     draftExists: true,
+    profileAreaInput: 'L',
     session: {
       canSyncDrafts: true,
       phoneNumber: '+243990000001',
@@ -226,9 +227,29 @@ test('profile screen renders a persisted seller zone form', () => {
 
   assert.match(html, /Ma zone/);
   assert.match(html, /data-form="profile-zone"/);
-  assert.match(html, /name="area"/);
-  assert.match(html, /value="Golf" selected/);
+  assert.match(html, /name="areaSearch"/);
+  assert.match(html, /value="L"/);
+  assert.match(html, /data-selected-area="Lubumbashi"/);
+  assert.match(html, /Likasi/);
+  assert.match(html, /Lubumbashi/);
   assert.match(html, /Enregistrer ma zone/);
   assert.match(html, /Revenir au brouillon/);
   assert.match(html, /href="#review"/);
+});
+
+test('profile screen renders a missing-city action when the typed city has no exact match', () => {
+  const html = renderProfileScreen({
+    listings: [],
+    profileAreaInput: 'Kasumbalesa',
+    profileMissingCityLabel: 'Kasumbalesa',
+    session: {
+      canSyncDrafts: true,
+      phoneNumber: '+243990000001',
+      sessionToken: 'zwibba_session_123',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /Ville absente \? Utiliser "Kasumbalesa"/);
+  assert.match(html, /data-action="suggest-profile-city"/);
 });

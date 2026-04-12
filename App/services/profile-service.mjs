@@ -73,5 +73,46 @@ export function createProfileService({
 
       return response.json();
     },
+
+    async listCities({
+      countryCode,
+    }) {
+      const response = await fetchFn(
+        `${apiBaseUrl}/locations/cities?countryCode=${encodeURIComponent(countryCode)}`,
+        {
+          method: 'GET',
+        },
+      );
+
+      if (!response.ok) {
+        throw await parseError(response, 'Impossible de charger les villes.');
+      }
+
+      const json = await response.json();
+      return Array.isArray(json?.items) ? json.items : [];
+    },
+
+    async suggestCity({
+      countryCode,
+      label,
+    }) {
+      const response = await fetchFn(`${apiBaseUrl}/locations/suggestions`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          countryCode,
+          label,
+          type: 'city',
+        }),
+      });
+
+      if (!response.ok) {
+        throw await parseError(response, 'Impossible d’ajouter cette ville.');
+      }
+
+      return response.json();
+    },
   };
 }

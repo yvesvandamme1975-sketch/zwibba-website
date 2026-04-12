@@ -77,3 +77,61 @@ test('profile service saves the seller zone with the active session', async () =
     area: 'Lubumbashi Centre',
   });
 });
+
+test('profile service lists Congo city options and can suggest a missing city', async () => {
+  const requests = [];
+  const responses = [
+    {
+      items: [
+        { id: 'loc_likasi', label: 'Likasi' },
+        { id: 'loc_lubumbashi', label: 'Lubumbashi' },
+      ],
+    },
+    {
+      countryCode: 'CD',
+      id: 'loc_kasumbalesa',
+      label: 'Kasumbalesa',
+      sourceType: 'user_suggested',
+      type: 'city',
+    },
+  ];
+  const service = createProfileService({
+    apiBaseUrl: 'https://api.example.test',
+    fetchFn: async (url, options) => {
+      requests.push({
+        options,
+        url,
+      });
+
+      return {
+        ok: true,
+        async json() {
+          return responses.shift();
+        },
+      };
+    },
+  });
+
+  const cities = await service.listCities({
+    countryCode: 'CD',
+  });
+  const suggested = await service.suggestCity({
+    countryCode: 'CD',
+    label: 'Kasumbalesa',
+  });
+
+  assert.deepEqual(cities, [
+    { id: 'loc_likasi', label: 'Likasi' },
+    { id: 'loc_lubumbashi', label: 'Lubumbashi' },
+  ]);
+  assert.equal(suggested.label, 'Kasumbalesa');
+  assert.equal(requests[0].url, 'https://api.example.test/locations/cities?countryCode=CD');
+  assert.equal(requests[0].options.method, 'GET');
+  assert.equal(requests[1].url, 'https://api.example.test/locations/suggestions');
+  assert.equal(requests[1].options.method, 'POST');
+  assert.deepEqual(JSON.parse(requests[1].options.body), {
+    countryCode: 'CD',
+    label: 'Kasumbalesa',
+    type: 'city',
+  });
+});

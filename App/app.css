@@ -1480,6 +1480,28 @@
   font-size: 0.82rem;
 }
 
+.app-profile__city-suggestions {
+  display: grid;
+  gap: 8px;
+}
+
+.app-profile__city-suggestion,
+.app-profile__city-create {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(107, 230, 107, 0.16);
+  background: rgba(107, 230, 107, 0.08);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+
+.app-profile__city-create {
+  border-color: rgba(255, 180, 77, 0.24);
+  background: rgba(255, 180, 77, 0.1);
+}
+
 .app-profile__stats article span {
   font-size: 1.2rem;
   font-weight: 800;

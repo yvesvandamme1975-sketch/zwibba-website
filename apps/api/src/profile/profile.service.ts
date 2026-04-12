@@ -7,7 +7,7 @@ import {
 
 import type { SessionRecord } from '../auth/auth.service';
 import { PrismaService } from '../database/prisma.service';
-import { isSupportedProfileArea } from './profile-areas';
+import { normalizeLocationLabel } from '../locations/location-normalization';
 
 @Injectable()
 export class ProfileService {
@@ -37,13 +37,23 @@ export class ProfileService {
     area: string;
     session: SessionRecord;
   }) {
-    const normalizedArea = area.trim();
+    const normalizedArea = normalizeLocationLabel(area);
 
     if (!normalizedArea) {
       throw new BadRequestException('Choisissez une zone pour votre profil.');
     }
 
-    if (!isSupportedProfileArea(normalizedArea)) {
+    const location = await this.prismaService.locationOption.findUnique({
+      where: {
+        countryCode_type_normalizedLabel: {
+          countryCode: 'CD',
+          normalizedLabel: normalizedArea,
+          type: 'city',
+        },
+      },
+    });
+
+    if (!location || location.status !== 'active') {
       throw new BadRequestException('Zone de profil invalide.');
     }
 
@@ -52,7 +62,7 @@ export class ProfileService {
         phoneNumber: session.phoneNumber,
       },
       data: {
-        area: normalizedArea,
+        area: location.label,
       },
     });
 

@@ -23,12 +23,6 @@ function formatListingStatus(status) {
   }
 }
 
-function renderOption(option, currentValue) {
-  const selected = option === currentValue ? ' selected' : '';
-
-  return `<option value="${escapeAttribute(option)}"${selected}>${escapeHtml(option)}</option>`;
-}
-
 function groupListingsByLifecycle(listings) {
   return {
     active: listings.filter((listing) => (listing.lifecycleStatus || 'active') === 'active'),
@@ -230,13 +224,15 @@ function renderLifecycleSection({
 }
 
 export function renderProfileScreen({
-  areaOptions = [],
+  citySuggestions = [],
   draftExists = false,
   lifecycleMessage = '',
   listings = [],
   listingsError = '',
   profile = null,
+  profileAreaInput = '',
   profileError = '',
+  profileMissingCityLabel = '',
   profileMessage = '',
   profileState = 'idle',
   profileSaveBusy = false,
@@ -280,6 +276,7 @@ export function renderProfileScreen({
   const lifecycleGroups = groupListingsByLifecycle(listings);
   const hasListings = listings.length > 0;
   const profileArea = String(profile?.area ?? '').trim();
+  const profileAreaSearchValue = String(profileAreaInput || profileArea).trim();
   const profilePhoneNumber = profile?.phoneNumber || session.phoneNumber;
 
   return `
@@ -308,11 +305,56 @@ export function renderProfileScreen({
         <form class="app-profile__zone-form" data-form="profile-zone">
           <label class="app-review__field app-review__field--full">
             <span>Zone du profil</span>
-            <select name="area" ${profileSaveBusy ? 'disabled' : ''}>
-              <option value="">Choisir une zone</option>
-              ${areaOptions.map((option) => renderOption(option, profileArea)).join('')}
-            </select>
+            <input
+              name="areaSearch"
+              type="text"
+              value="${escapeAttribute(profileAreaSearchValue)}"
+              placeholder="Tapez une ville"
+              autocomplete="off"
+              spellcheck="false"
+              ${profileSaveBusy ? 'disabled' : ''}
+            />
+            <input
+              type="hidden"
+              name="area"
+              value="${escapeAttribute(profileArea)}"
+              data-selected-area="${escapeAttribute(profileArea)}"
+            />
           </label>
+
+          ${
+            citySuggestions.length
+              ? `
+                <div class="app-profile__city-suggestions" role="listbox" aria-label="Suggestions de villes">
+                  ${citySuggestions.map((city) => `
+                    <button
+                      class="app-profile__city-suggestion"
+                      type="button"
+                      data-action="select-profile-city"
+                      data-city-label="${escapeAttribute(city)}"
+                    >
+                      ${escapeHtml(city)}
+                    </button>
+                  `).join('')}
+                </div>
+              `
+              : ''
+          }
+
+          ${
+            profileMissingCityLabel
+              ? `
+                <button
+                  class="app-profile__city-create"
+                  type="button"
+                  data-action="suggest-profile-city"
+                  data-city-label="${escapeAttribute(profileMissingCityLabel)}"
+                >
+                  Ville absente ? Utiliser "${escapeHtml(profileMissingCityLabel)}"
+                </button>
+              `
+              : ''
+          }
 
           ${
             profileState === 'loading'
