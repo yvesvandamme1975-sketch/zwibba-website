@@ -30,6 +30,14 @@ export type PublishOutcome = {
   statusLabel: string;
 };
 
+const vehicleRequiredSourcePresetIds = [
+  'avant',
+  'arriere',
+  'droite',
+  'gauche',
+  'interieur',
+];
+
 function slugify(value: string) {
   return value
     .trim()
@@ -71,13 +79,15 @@ function buildReasonSummary({
 }
 
 function detectValidationError({
+  categoryId,
   description,
   photos,
   priceAmount,
   title,
 }: {
+  categoryId: string;
   description: string;
-  photos: Array<{ uploadStatus: string }>;
+  photos: Array<{ sourcePresetId?: string; uploadStatus: string }>;
   priceAmount: number;
   title: string;
 }) {
@@ -100,6 +110,22 @@ function detectValidationError({
     return 'Ajoutez au moins une photo valide avant publication.';
   }
 
+  if (categoryId === 'vehicles') {
+    const uploadedVehiclePresetIds = new Set(
+      photos
+        .filter((photo) => photo.uploadStatus === 'uploaded')
+        .map((photo) => photo.sourcePresetId ?? '')
+        .filter(Boolean),
+    );
+    const missingVehiclePresetIds = vehicleRequiredSourcePresetIds.filter((presetId) => {
+      return !uploadedVehiclePresetIds.has(presetId);
+    });
+
+    if (missingVehiclePresetIds.length) {
+      return `Ajoutez ces vues avant publication : ${missingVehiclePresetIds.join(', ')}.`;
+    }
+  }
+
   return undefined;
 }
 
@@ -114,7 +140,7 @@ function resolveModerationStatus({
     return 'blocked_needs_fix';
   }
 
-  if (categoryId === 'vehicles' || categoryId === 'real_estate') {
+  if (categoryId === 'real_estate') {
     return 'pending_manual_review';
   }
 
@@ -205,6 +231,7 @@ export class ModerationService {
       title: normalizedTitle || syncedDraft.title,
     });
     const validationError = detectValidationError({
+      categoryId: normalizedCategoryId,
       description: normalizedDescription,
       photos: syncedDraft.photos,
       priceAmount: supportedPrice.priceAmount,

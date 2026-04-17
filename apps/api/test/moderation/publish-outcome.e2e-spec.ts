@@ -371,6 +371,7 @@ async function syncDraft(
   body: {
     area: string;
     categoryId: string;
+    photos?: Array<Record<string, unknown>>;
     priceAmount?: number;
     priceCdf?: number;
     priceCurrency?: string;
@@ -382,7 +383,7 @@ async function syncDraft(
     .set('authorization', `Bearer ${sessionToken}`)
     .send({
       ...body,
-      photos: [
+      photos: body.photos ?? [
         {
           objectKey: 'draft-photos/phone-front.jpg',
           photoId: 'photo_phone-front',
@@ -464,7 +465,7 @@ test('publishing a synced phone draft persists the listing and moderation decisi
   );
 });
 
-test('publishing a synced vehicle draft persists a pending moderation decision', async (t) => {
+test('publishing a complete synced vehicle draft auto-approves the listing', async (t) => {
   const prisma = new _FakePrismaService();
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
@@ -486,6 +487,50 @@ test('publishing a synced vehicle draft persists a pending moderation decision',
     title: 'Toyota Hilux 2019 4x4',
     categoryId: 'vehicles',
     area: 'Bel Air',
+    photos: [
+      {
+        objectKey: 'draft-photos/vehicle-primary.jpg',
+        photoId: 'photo_vehicle_primary',
+        publicUrl: 'https://cdn.zwibba.example/draft-photos/vehicle-primary.jpg',
+        sourcePresetId: 'capture',
+        uploadStatus: 'uploaded',
+      },
+      {
+        objectKey: 'draft-photos/vehicle-avant.jpg',
+        photoId: 'photo_vehicle_avant',
+        publicUrl: 'https://cdn.zwibba.example/draft-photos/vehicle-avant.jpg',
+        sourcePresetId: 'avant',
+        uploadStatus: 'uploaded',
+      },
+      {
+        objectKey: 'draft-photos/vehicle-arriere.jpg',
+        photoId: 'photo_vehicle_arriere',
+        publicUrl: 'https://cdn.zwibba.example/draft-photos/vehicle-arriere.jpg',
+        sourcePresetId: 'arriere',
+        uploadStatus: 'uploaded',
+      },
+      {
+        objectKey: 'draft-photos/vehicle-droite.jpg',
+        photoId: 'photo_vehicle_droite',
+        publicUrl: 'https://cdn.zwibba.example/draft-photos/vehicle-droite.jpg',
+        sourcePresetId: 'droite',
+        uploadStatus: 'uploaded',
+      },
+      {
+        objectKey: 'draft-photos/vehicle-gauche.jpg',
+        photoId: 'photo_vehicle_gauche',
+        publicUrl: 'https://cdn.zwibba.example/draft-photos/vehicle-gauche.jpg',
+        sourcePresetId: 'gauche',
+        uploadStatus: 'uploaded',
+      },
+      {
+        objectKey: 'draft-photos/vehicle-interieur.jpg',
+        photoId: 'photo_vehicle_interieur',
+        publicUrl: 'https://cdn.zwibba.example/draft-photos/vehicle-interieur.jpg',
+        sourcePresetId: 'interieur',
+        uploadStatus: 'uploaded',
+      },
+    ],
     priceCdf: 18500000,
   });
 
@@ -498,30 +543,85 @@ test('publishing a synced vehicle draft persists a pending moderation decision',
     })
     .expect(201);
 
-  assert.equal(publishResponse.body.status, 'pending_manual_review');
+  assert.equal(publishResponse.body.status, 'approved');
   assert.equal(
     publishResponse.body.statusLabel,
-    'Annonce envoyée en revue manuelle',
+    'Annonce approuvée et prête à partager',
   );
 
   const persistedListing = getPersistedListing(prisma, publishResponse.body.id);
   assert.equal(persistedListing.slug, 'toyota-hilux-2019-4x4');
-  assert.equal(persistedListing.moderationStatus, 'pending_manual_review');
+  assert.equal(persistedListing.moderationStatus, 'approved');
 
   const persistedDecision = getPersistedModerationDecision(
     prisma,
     publishResponse.body.id as string,
   );
-  assert.equal(persistedDecision.status, 'pending_manual_review');
+  assert.equal(persistedDecision.status, 'approved');
 
   const queueResponse = await request(app.getHttpServer())
     .get('/moderation/queue')
     .expect(200);
 
-  assert.equal(queueResponse.body.items.length, 1);
-  assert.equal(queueResponse.body.items[0].id, publishResponse.body.id);
-  assert.equal(queueResponse.body.items[0].listingTitle, 'Toyota Hilux 2019 4x4');
-  assert.equal(queueResponse.body.items[0].status, 'pending_manual_review');
+  assert.equal(queueResponse.body.items.length, 0);
+});
+
+test('publishing an incomplete synced vehicle draft blocks the listing with a clear photo error', async (t) => {
+  const prisma = new _FakePrismaService();
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule],
+  })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .overrideProvider(TwilioVerifyService)
+      .useValue(new _FakeTwilioVerifyService())
+      .compile();
+
+  const app = moduleRef.createNestApplication();
+  await app.init();
+  t.after(async () => {
+    await app.close();
+  });
+
+  const sessionToken = await createSellerSession(app, '+243990000009');
+  const syncedDraft = await syncDraft(app, sessionToken, {
+    title: 'Polestar 2 voiture électrique',
+    categoryId: 'vehicles',
+    area: 'Bel Air',
+    photos: [
+      {
+        objectKey: 'draft-photos/vehicle-primary.jpg',
+        photoId: 'photo_vehicle_primary',
+        publicUrl: 'https://cdn.zwibba.example/draft-photos/vehicle-primary.jpg',
+        sourcePresetId: 'capture',
+        uploadStatus: 'uploaded',
+      },
+      {
+        objectKey: 'draft-photos/vehicle-avant.jpg',
+        photoId: 'photo_vehicle_avant',
+        publicUrl: 'https://cdn.zwibba.example/draft-photos/vehicle-avant.jpg',
+        sourcePresetId: 'avant',
+        uploadStatus: 'uploaded',
+      },
+    ],
+    priceAmount: 65000,
+    priceCurrency: 'USD',
+  });
+
+  const publishResponse = await request(app.getHttpServer())
+    .post('/moderation/publish')
+    .set('authorization', `Bearer ${sessionToken}`)
+    .send({
+      ...syncedDraft,
+      description: 'Voiture électrique en très bon état.',
+    })
+    .expect(201);
+
+  assert.equal(publishResponse.body.status, 'blocked_needs_fix');
+  assert.match(publishResponse.body.reasonSummary, /vue/i);
+
+  const persistedListing = getPersistedListing(prisma, publishResponse.body.id);
+  assert.equal(persistedListing.moderationStatus, 'blocked_needs_fix');
 });
 
 test('publishing a synced USD draft persists amount and currency on the listing', async (t) => {
