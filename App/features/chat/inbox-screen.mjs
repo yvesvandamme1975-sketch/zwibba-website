@@ -16,6 +16,22 @@ function renderInboxItem(item) {
   `;
 }
 
+function sortUnreadFirst(items) {
+  return items
+    .map((item, index) => ({ index, item }))
+    .sort((left, right) => {
+      const leftHasUnread = Number(left.item?.unreadCount ?? 0) > 0;
+      const rightHasUnread = Number(right.item?.unreadCount ?? 0) > 0;
+
+      if (leftHasUnread !== rightHasUnread) {
+        return leftHasUnread ? -1 : 1;
+      }
+
+      return left.index - right.index;
+    })
+    .map(({ item }) => item);
+}
+
 export function renderInboxScreen({
   items = [],
   state = 'loading',
@@ -69,6 +85,8 @@ export function renderInboxScreen({
     `;
   }
 
+  const sortedItems = sortUnreadFirst(items);
+
   return `
     <section class="app-flow app-screen">
       <header class="app-flow__header">
@@ -82,14 +100,14 @@ export function renderInboxScreen({
       </header>
 
       ${
-        items.length === 0
+        sortedItems.length === 0
           ? `
             <div class="app-auth__card">
               <strong>Aucune conversation pour le moment</strong>
               <p>Ouvrez une annonce et démarrez une conversation depuis la fiche.</p>
             </div>
           `
-          : `<div class="app-thread-list">${items.map(renderInboxItem).join('')}</div>`
+          : `<div class="app-thread-list">${sortedItems.map(renderInboxItem).join('')}</div>`
       }
     </section>
   `;

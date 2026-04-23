@@ -29,6 +29,35 @@ test('messages inbox screen renders live thread summaries inside the beta shell'
   assert.match(html, /1 non lu\(s\)/);
 });
 
+test('messages inbox screen prioritizes unread conversations above read ones', () => {
+  const html = renderInboxScreen({
+    items: [
+      {
+        id: 'thread_read',
+        lastMessagePreview: 'Merci pour votre retour.',
+        listingSlug: 'piano-korg',
+        listingTitle: 'Piano numérique Korg',
+        participantName: 'Vendeur Zwibba',
+        unreadCount: 0,
+      },
+      {
+        id: 'thread_unread',
+        lastMessagePreview: 'Est-ce toujours disponible ?',
+        listingSlug: 'macbook-pro',
+        listingTitle: 'MacBook Pro',
+        participantName: 'Acheteur Zwibba',
+        unreadCount: 2,
+      },
+    ],
+    state: 'ready',
+  });
+
+  assert.ok(
+    html.indexOf('MacBook Pro') < html.indexOf('Piano numérique Korg'),
+    'Expected unread thread to render before already-read thread.',
+  );
+});
+
 test('messages inbox screen shows a verification prompt without a session', () => {
   const html = renderInboxScreen({
     state: 'locked',
