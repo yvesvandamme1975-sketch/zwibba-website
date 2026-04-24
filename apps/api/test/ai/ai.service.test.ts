@@ -211,6 +211,96 @@ test('ai service strips background context from a product description', async ()
   );
 });
 
+test('ai service enriches a generic seller draft with Google Vision signals when enabled', async () => {
+  const service = new AiService({
+    googleVisionEnrichmentProvider: {
+      async collectSignalsFromImage() {
+        return {
+          labels: ['Job posting'],
+          logos: [],
+          objects: ['Poster'],
+          ocrText: 'Recrutement commercial\nLubumbashi',
+        };
+      },
+    },
+    visionDraftProvider: {
+      async generateDraftFromImage() {
+        return {
+          categoryId: 'electronics',
+          condition: 'used_good',
+          description: 'Visuel d’entreprise pour une offre d’emploi.',
+          title: 'Annonce préparée par IA',
+        };
+      },
+    },
+  });
+
+  const result = await service.generateDraft({
+    photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-emploi.jpg',
+  });
+
+  assert.equal(result.status, 'ready');
+  assert.ok(result.draftPatch);
+  assert.equal(result.draftPatch.categoryId, 'emploi');
+  assert.equal(result.draftPatch.title, 'Recrutement commercial');
+});
+
+test('ai service keeps the Gemini draft when Google Vision enrichment fails', async () => {
+  const service = new AiService({
+    googleVisionEnrichmentProvider: {
+      async collectSignalsFromImage() {
+        throw new Error('vision timeout');
+      },
+    },
+    visionDraftProvider: {
+      async generateDraftFromImage() {
+        return {
+          categoryId: 'electronics',
+          condition: 'used_good',
+          description: 'Ordinateur portable argenté avec clavier gris clair.',
+          title: 'Ordinateur portable argenté',
+        };
+      },
+    },
+  });
+
+  const result = await service.generateDraft({
+    photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-laptop.jpg',
+  });
+
+  assert.equal(result.status, 'ready');
+  assert.ok(result.draftPatch);
+  assert.equal(result.draftPatch.categoryId, 'electronics');
+  assert.equal(result.draftPatch.title, 'Ordinateur portable argenté');
+});
+
+test('ai service still falls back to manual mode when the primary provider fails even if Google Vision succeeds', async () => {
+  const service = new AiService({
+    googleVisionEnrichmentProvider: {
+      async collectSignalsFromImage() {
+        return {
+          labels: ['Plumbing service'],
+          logos: ['Zwibba Pro'],
+          objects: ['Document'],
+          ocrText: 'ZWIBBA PRO\nPlomberie 7j/7',
+        };
+      },
+    },
+    visionDraftProvider: {
+      async generateDraftFromImage() {
+        throw new Error('gemini timeout');
+      },
+    },
+  });
+
+  const result = await service.generateDraft({
+    photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-service.jpg',
+  });
+
+  assert.equal(result.status, 'manual_fallback');
+  assert.ok(result.message);
+});
+
 test('vision prompt tells the provider to ignore background context', () => {
   const prompt = buildVisionDraftPrompt();
 

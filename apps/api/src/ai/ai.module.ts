@@ -6,6 +6,8 @@ import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
 import { FallbackVisionDraftProvider } from './fallback-vision-draft-provider';
 import { GeminiVisionDraftProvider } from './gemini-vision-draft-provider';
+import { GoogleCloudVisionEnrichmentProvider } from './google-cloud-vision-enrichment-provider';
+import { GOOGLE_VISION_ENRICHMENT_PROVIDER } from './google-vision-enrichment-provider';
 import { MistralVisionDraftProvider } from './mistral-vision-draft-provider';
 import { VISION_DRAFT_PROVIDER, VisionDraftProvider } from './vision-draft-provider';
 
@@ -67,7 +69,6 @@ function createStubVisionDraftProvider(): VisionDraftProvider {
 @Module({
   controllers: [AiController],
   providers: [
-    AiService,
     {
       provide: VISION_DRAFT_PROVIDER,
       useFactory() {
@@ -111,6 +112,34 @@ function createStubVisionDraftProvider(): VisionDraftProvider {
 
         return createStubVisionDraftProvider();
       },
+    },
+    {
+      provide: GOOGLE_VISION_ENRICHMENT_PROVIDER,
+      useFactory() {
+        const env = loadEnv();
+
+        if (!env.ai.googleVisionEnrichmentEnabled || !env.ai.googleVision) {
+          return null;
+        }
+
+        return new GoogleCloudVisionEnrichmentProvider({
+          apiKey: env.ai.googleVision.apiKey,
+          projectId: env.ai.googleVision.projectId,
+        });
+      },
+    },
+    {
+      provide: AiService,
+      useFactory(
+        visionDraftProvider: VisionDraftProvider,
+        googleVisionEnrichmentProvider: GoogleCloudVisionEnrichmentProvider | null,
+      ) {
+        return new AiService({
+          googleVisionEnrichmentProvider: googleVisionEnrichmentProvider ?? undefined,
+          visionDraftProvider,
+        });
+      },
+      inject: [VISION_DRAFT_PROVIDER, GOOGLE_VISION_ENRICHMENT_PROVIDER],
     },
   ],
 })

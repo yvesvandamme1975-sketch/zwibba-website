@@ -19,6 +19,11 @@ export type ZwibbaEnv = {
       apiKey: string;
       model: string;
     };
+    googleVision?: {
+      apiKey: string;
+      projectId: string;
+    };
+    googleVisionEnrichmentEnabled: boolean;
     provider: AiProvider;
   };
   appBaseUrl: string;
@@ -53,8 +58,11 @@ const defaultEnvValues = {
   DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
   DEMO_OTP_ALLOWLIST: '+243990000001',
   DEMO_OTP_CODE: '123456',
+  GOOGLE_CLOUD_PROJECT_ID: 'zwibba-dev',
+  GOOGLE_CLOUD_VISION_API_KEY: 'google-cloud-vision-api-key',
   GEMINI_API_KEY: 'gemini-api-key',
   GEMINI_MODEL: 'gemini-2.5-flash-lite',
+  AI_GOOGLE_VISION_ENRICHMENT_ENABLED: 'false',
   MISTRAL_API_KEY: 'mistral-api-key',
   MISTRAL_MODEL: 'pixtral-12b-2409',
   NODE_ENV: 'development',
@@ -136,6 +144,24 @@ function readAiProvider(source: EnvSource): AiProvider {
   throw new Error('AI_PROVIDER must be either "stub", "mistral", or "multi".');
 }
 
+function readBooleanFlag(
+  source: EnvSource,
+  key: keyof typeof defaultEnvValues,
+) {
+  const isProduction = isProductionEnv(source);
+  const rawValue = isProduction ? source[key] : (source[key] ?? defaultEnvValues[key]);
+
+  if (rawValue === 'true') {
+    return true;
+  }
+
+  if (rawValue === 'false' || rawValue === undefined) {
+    return false;
+  }
+
+  throw new Error(`${key} must be either "true" or "false".`);
+}
+
 function readOptionalProviderConfig(
   source: EnvSource,
   {
@@ -170,6 +196,10 @@ function readOptionalProviderConfig(
 export function loadEnv(source: EnvSource = process.env): ZwibbaEnv {
   const aiProvider = readAiProvider(source);
   const otpProvider = readOtpProvider(source);
+  const googleVisionEnrichmentEnabled = readBooleanFlag(
+    source,
+    'AI_GOOGLE_VISION_ENRICHMENT_ENABLED',
+  );
 
   return {
     admin: {
@@ -199,6 +229,13 @@ export function loadEnv(source: EnvSource = process.env): ZwibbaEnv {
               model: readRequiredString(source, 'MISTRAL_MODEL'),
             }
           : undefined,
+      googleVision: googleVisionEnrichmentEnabled
+        ? {
+            projectId: readRequiredString(source, 'GOOGLE_CLOUD_PROJECT_ID'),
+            apiKey: readRequiredString(source, 'GOOGLE_CLOUD_VISION_API_KEY'),
+          }
+        : undefined,
+      googleVisionEnrichmentEnabled,
       provider: aiProvider,
     },
     appBaseUrl: readRequiredString(source, 'APP_BASE_URL'),
