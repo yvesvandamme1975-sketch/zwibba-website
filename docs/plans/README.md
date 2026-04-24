@@ -47,5 +47,7 @@ Current priority docs:
 - `2026-04-10-zwibba-multi-currency-listing-prices-implementation.md`
 - `2026-04-12-zwibba-db-backed-city-autocomplete-design.md`
 - `2026-04-12-zwibba-db-backed-city-autocomplete-implementation.md`
+- `2026-04-24-zwibba-google-hybrid-seller-vision-design.md`
+- `2026-04-24-zwibba-google-hybrid-seller-vision-implementation.md`
 
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
