@@ -1,6 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import type { SessionRecord } from '../auth/auth.service';
+import { normalizeListingAttributesJson } from '../common/listing-attributes';
 import type { ListingPriceCurrency } from '../common/price-validation';
 import { PrismaService } from '../database/prisma.service';
 import {
@@ -16,6 +17,7 @@ import {
 
 type PersistedListingRecord = {
   area: string;
+  attributesJson?: unknown;
   categoryId: string;
   deletedBySellerAt?: Date | null;
   deletedReason?: string | null;
@@ -49,6 +51,7 @@ type PersistedDraftPhotoRecord = {
 
 type PersistedDraftRecord = {
   area: string;
+  attributesJson?: unknown;
   categoryId: string;
   condition: string;
   description: string;
@@ -266,6 +269,7 @@ function toListingDetail({
   const price = resolveListingPrice(listing);
 
   return {
+    attributesJson: normalizeListingAttributesJson(listing.attributesJson),
     categoryId: listing.categoryId,
     categoryLabel: getCategoryLabel(listing.categoryId),
     contactActions: viewerRole === 'owner' ? [] : ['message', 'call'],
@@ -275,6 +279,7 @@ function toListingDetail({
       viewerRole === 'owner' && editDraft
         ? {
             area: editDraft.area,
+            attributesJson: normalizeListingAttributesJson(editDraft.attributesJson),
             categoryId: editDraft.categoryId,
             condition: editDraft.condition,
             description: editDraft.description,

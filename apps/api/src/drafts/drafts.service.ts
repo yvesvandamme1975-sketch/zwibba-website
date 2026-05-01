@@ -11,6 +11,11 @@ import {
   ListingPriceCurrency,
   resolveSubmittedListingPrice,
 } from '../common/price-validation';
+import {
+  type ListingAttributesJson,
+  normalizeListingAttributesJson,
+  toPrismaListingAttributesJson,
+} from '../common/listing-attributes';
 import { PrismaService } from '../database/prisma.service';
 import { R2StorageService } from '../media/r2-storage.service';
 
@@ -24,6 +29,7 @@ export type SyncedDraftPhotoRecord = {
 
 export type SyncedDraftRecord = {
   area: string;
+  attributesJson: ListingAttributesJson;
   categoryId: string;
   condition: string;
   description: string;
@@ -48,6 +54,7 @@ export class DraftsService {
 
   async syncDraft({
     area,
+    attributesJson,
     categoryId,
     condition,
     description,
@@ -60,6 +67,7 @@ export class DraftsService {
     title,
   }: {
     area: string;
+    attributesJson?: unknown;
     categoryId: string;
     condition?: string;
     description: string;
@@ -77,6 +85,7 @@ export class DraftsService {
       priceCurrency,
     });
     const resolvedArea = (await this.resolveProfileArea(phoneNumber, area)) ?? '';
+    const normalizedAttributesJson = normalizeListingAttributesJson(attributesJson);
     const existingDraft = draftId
       ? await this.prismaService.draft.findFirst({
           where: {
@@ -112,6 +121,7 @@ export class DraftsService {
           },
           data: {
             area: resolvedArea,
+            attributesJson: toPrismaListingAttributesJson(normalizedAttributesJson),
             categoryId,
             condition: condition ?? existingDraft.condition,
             description,
@@ -125,6 +135,7 @@ export class DraftsService {
       : await this.prismaService.draft.create({
           data: {
             area: resolvedArea,
+            attributesJson: toPrismaListingAttributesJson(normalizedAttributesJson),
             categoryId,
             condition: condition ?? '',
             description,
@@ -154,6 +165,7 @@ export class DraftsService {
 
     return {
       area: resolvedArea,
+      attributesJson: normalizedAttributesJson,
       categoryId,
       condition: persistedDraft.condition ?? condition ?? '',
       description,
@@ -200,6 +212,7 @@ export class DraftsService {
 
     return {
       area: draft.area,
+      attributesJson: normalizeListingAttributesJson((draft as { attributesJson?: unknown }).attributesJson),
       categoryId: draft.categoryId,
       condition: draft.condition,
       description: draft.description,

@@ -5,6 +5,7 @@ import {
   ListingPriceCurrency,
   resolveSubmittedListingPrice,
 } from '../common/price-validation';
+import { toPrismaListingAttributesJson } from '../common/listing-attributes';
 import { PrismaService } from '../database/prisma.service';
 import { DraftsService } from '../drafts/drafts.service';
 
@@ -253,6 +254,7 @@ export class ModerationService {
         },
         create: {
           area: syncedDraft.area,
+          attributesJson: toPrismaListingAttributesJson(syncedDraft.attributesJson),
           categoryId: normalizedCategoryId,
           description: normalizedDescription,
           draftId: syncedDraft.draftId,
@@ -267,6 +269,7 @@ export class ModerationService {
         },
         update: {
           area: syncedDraft.area,
+          attributesJson: toPrismaListingAttributesJson(syncedDraft.attributesJson),
           categoryId: normalizedCategoryId,
           description: normalizedDescription,
           moderationStatus: status,

@@ -340,6 +340,7 @@ async function publishListing(
   app: INestApplication,
   payload: {
     area: string;
+    attributesJson?: Record<string, unknown>;
     categoryId: string;
     description: string;
     phoneNumber: string;
@@ -367,6 +368,7 @@ async function publishListing(
     .set('authorization', `Bearer ${verifyResponse.body.sessionToken}`)
     .send({
       area: payload.area,
+      attributesJson: payload.attributesJson,
       categoryId: payload.categoryId,
       description: payload.description,
       photos: [
@@ -513,6 +515,12 @@ test('listing detail returns a database-backed published listing with seller met
 
   await publishListing(app, {
     area: 'Lubumbashi Centre',
+    attributesJson: {
+      fashion: {
+        itemType: 'shoes',
+        size: '39',
+      },
+    },
     categoryId: 'phones_tablets',
     description: 'Téléphone propre, batterie stable, vendu avec chargeur.',
     phoneNumber: '+243990000001',
@@ -528,6 +536,12 @@ test('listing detail returns a database-backed published listing with seller met
   assert.equal(response.body.title, 'Samsung Galaxy A54 128 Go');
   assert.equal(response.body.locationLabel, 'Lubumbashi Centre');
   assert.equal(response.body.priceCdf, 4256000);
+  assert.deepEqual(response.body.attributesJson, {
+    fashion: {
+      itemType: 'shoes',
+      size: '39',
+    },
+  });
   assert.ok(Array.isArray(response.body.contactActions));
   assert.deepEqual(response.body.contactActions, [
     'message',
@@ -1123,6 +1137,12 @@ test('public listings hide paused, sold, and seller-deleted listings while owner
 
   prisma.drafts.set('draft_deleted_listing', {
     area: 'Golf',
+    attributesJson: {
+      fashion: {
+        itemType: 'tops',
+        size: 'M',
+      },
+    },
     categoryId: 'home_garden',
     condition: 'used_good',
     description: 'Table basse.',
@@ -1144,6 +1164,12 @@ test('public listings hide paused, sold, and seller-deleted listings while owner
   });
   prisma.listings.set('listing_deleted_listing', {
     area: 'Golf',
+    attributesJson: {
+      fashion: {
+        itemType: 'tops',
+        size: 'M',
+      },
+    },
     categoryId: 'home_garden',
     deletedBySellerAt: new Date('2026-03-30T09:30:00.000Z'),
     deletedReason: 'republish_later',
@@ -1197,6 +1223,12 @@ test('public listings hide paused, sold, and seller-deleted listings while owner
   assert.equal(ownerDetailResponse.body.contactActions.length, 0);
   assert.equal(ownerDetailResponse.body.editDraft.draftId, 'draft_deleted_listing');
   assert.equal(ownerDetailResponse.body.editDraft.condition, 'used_good');
+  assert.deepEqual(ownerDetailResponse.body.editDraft.attributesJson, {
+    fashion: {
+      itemType: 'tops',
+      size: 'M',
+    },
+  });
   assert.equal(ownerDetailResponse.body.editDraft.photos.length, 1);
   assert.equal(ownerDetailResponse.body.editDraft.photos[0].photoId, 'photo_deleted_listing');
   assert.equal(ownerDetailResponse.body.editDraft.photos[0].objectKey, 'draft-photos/deleted.jpg');

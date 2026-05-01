@@ -37,6 +37,7 @@ model LocationOption {
 model Draft {
   id               String      @id @default(cuid())
   area             String
+  attributesJson   Json?
   categoryId       String
   condition        String      @default("")
   createdAt        DateTime    @default(now())
@@ -81,6 +82,7 @@ model Session {
 model Listing {
   id                 String              @id @default(cuid())
   area               String
+  attributesJson     Json?
   boostPurchases     BoostPurchase[]
   categoryId         String
   chatThreads        ChatThread[]

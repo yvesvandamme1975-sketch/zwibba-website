@@ -16,6 +16,7 @@ export class DraftsController {
     @Body()
     body: {
       area?: string;
+      attributesJson?: Record<string, unknown>;
       categoryId?: string;
       condition?: string;
       description?: string;
@@ -35,6 +36,7 @@ export class DraftsController {
   ) {
     return this.draftsService.syncDraft({
       area: body.area ?? '',
+      attributesJson: body.attributesJson,
       categoryId: body.categoryId ?? '',
       condition: body.condition ?? '',
       description: body.description ?? '',

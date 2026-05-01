@@ -257,6 +257,12 @@ test('draft sync persists metadata and photo records', async (t) => {
     .set('authorization', `Bearer ${verifyResponse.body.sessionToken}`)
     .send({
       area: 'Lubumbashi Centre',
+      attributesJson: {
+        fashion: {
+          itemType: 'shoes',
+          size: '39',
+        },
+      },
       categoryId: 'phones_tablets',
       condition: 'like_new',
       description: 'Téléphone propre, batterie stable, vendu avec chargeur.',
@@ -277,12 +283,24 @@ test('draft sync persists metadata and photo records', async (t) => {
   assert.equal(syncResponse.body.syncStatus, 'synced');
   assert.equal(syncResponse.body.description, 'Téléphone propre, batterie stable, vendu avec chargeur.');
   assert.equal(syncResponse.body.condition, 'like_new');
+  assert.deepEqual(syncResponse.body.attributesJson, {
+    fashion: {
+      itemType: 'shoes',
+      size: '39',
+    },
+  });
   assert.equal(syncResponse.body.photos.length, 1);
   assert.equal(syncResponse.body.photos[0].objectKey, 'draft-photos/phone-front.jpg');
   assert.equal(harness.prisma.drafts.size, 1);
   assert.equal(harness.prisma.draftPhotosByDraftId.size, 1);
   const persistedDraft = Array.from(harness.prisma.drafts.values())[0] as Record<string, unknown>;
   assert.equal(persistedDraft.condition, 'like_new');
+  assert.deepEqual(persistedDraft.attributesJson, {
+    fashion: {
+      itemType: 'shoes',
+      size: '39',
+    },
+  });
 });
 
 test('draft sync accepts USD listing prices and persists amount plus currency', async (t) => {
