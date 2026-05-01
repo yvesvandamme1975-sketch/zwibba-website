@@ -39,6 +39,18 @@ export const categoryGuidance = {
     required: [],
     optional: ['vue_ensemble', 'lot_complet'],
   },
+  music: {
+    required: [],
+    optional: [],
+  },
+  health: {
+    required: [],
+    optional: [],
+  },
+  beauty: {
+    required: [],
+    optional: [],
+  },
   home_garden: {
     required: ['vue_ensemble', 'cote'],
     optional: ['defaut'],

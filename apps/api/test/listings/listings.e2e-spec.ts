@@ -775,7 +775,7 @@ test('listings without uploaded photos still return a null primary image', async
   assert.equal(detailResponse.body.primaryImageUrl, null);
 });
 
-test('listing labels support services and emploi categories', async (t) => {
+test('listing labels support services, emploi, and expanded marketplace categories', async (t) => {
   const {
     app,
     prisma,
@@ -906,6 +906,114 @@ test('listing labels support services and emploi categories', async (t) => {
     syncStatus: 'synced',
     title: 'Vélo de loisir',
   });
+  prisma.drafts.set('draft_music_label', {
+    area: 'Golf',
+    categoryId: 'music',
+    condition: 'used_good',
+    description: 'Clavier musical en bon état.',
+    id: 'draft_music_label',
+    ownerPhoneNumber: '+243990000014',
+    priceCdf: 350000,
+    syncStatus: 'synced',
+    title: 'Clavier musical 61 touches',
+  });
+  prisma.draftPhoto.create({
+    data: {
+      draftId: 'draft_music_label',
+      id: 'photo_draft_music_label',
+      kind: 'primary',
+      objectKey: 'draft-photos/music/clavier.jpg',
+      previewUrl: 'https://pub.example.test/music/clavier.jpg',
+      publicUrl: 'https://pub.example.test/music/clavier.jpg',
+      uploadStatus: 'uploaded',
+    },
+  });
+  prisma.listings.set('listing_draft_music_label', {
+    area: 'Golf',
+    categoryId: 'music',
+    description: 'Clavier musical en bon état.',
+    draftId: 'draft_music_label',
+    id: 'listing_draft_music_label',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+243990000014',
+    priceCdf: 350000,
+    publishedAt: new Date('2026-03-29T11:04:00.000Z'),
+    slug: 'clavier-musical-61-touches',
+    title: 'Clavier musical 61 touches',
+    updatedAt: new Date('2026-03-29T11:04:00.000Z'),
+  });
+  prisma.drafts.set('draft_health_label', {
+    area: 'Kenya',
+    categoryId: 'health',
+    condition: 'new_item',
+    description: 'Tensiomètre neuf.',
+    id: 'draft_health_label',
+    ownerPhoneNumber: '+243990000015',
+    priceCdf: 90000,
+    syncStatus: 'synced',
+    title: 'Tensiomètre numérique',
+  });
+  prisma.draftPhoto.create({
+    data: {
+      draftId: 'draft_health_label',
+      id: 'photo_draft_health_label',
+      kind: 'primary',
+      objectKey: 'draft-photos/health/tensiometre.jpg',
+      previewUrl: 'https://pub.example.test/health/tensiometre.jpg',
+      publicUrl: 'https://pub.example.test/health/tensiometre.jpg',
+      uploadStatus: 'uploaded',
+    },
+  });
+  prisma.listings.set('listing_draft_health_label', {
+    area: 'Kenya',
+    categoryId: 'health',
+    description: 'Tensiomètre neuf.',
+    draftId: 'draft_health_label',
+    id: 'listing_draft_health_label',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+243990000015',
+    priceCdf: 90000,
+    publishedAt: new Date('2026-03-29T11:05:00.000Z'),
+    slug: 'tensiometre-numerique',
+    title: 'Tensiomètre numérique',
+    updatedAt: new Date('2026-03-29T11:05:00.000Z'),
+  });
+  prisma.drafts.set('draft_beauty_label', {
+    area: 'Centre Ville',
+    categoryId: 'beauty',
+    condition: 'new_item',
+    description: 'Kit de maquillage complet.',
+    id: 'draft_beauty_label',
+    ownerPhoneNumber: '+243990000016',
+    priceCdf: 70000,
+    syncStatus: 'synced',
+    title: 'Kit maquillage complet',
+  });
+  prisma.draftPhoto.create({
+    data: {
+      draftId: 'draft_beauty_label',
+      id: 'photo_draft_beauty_label',
+      kind: 'primary',
+      objectKey: 'draft-photos/beauty/kit.jpg',
+      previewUrl: 'https://pub.example.test/beauty/kit.jpg',
+      publicUrl: 'https://pub.example.test/beauty/kit.jpg',
+      uploadStatus: 'uploaded',
+    },
+  });
+  prisma.listings.set('listing_draft_beauty_label', {
+    area: 'Centre Ville',
+    categoryId: 'beauty',
+    description: 'Kit de maquillage complet.',
+    draftId: 'draft_beauty_label',
+    id: 'listing_draft_beauty_label',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+243990000016',
+    priceCdf: 70000,
+    publishedAt: new Date('2026-03-29T11:06:00.000Z'),
+    slug: 'kit-maquillage-complet',
+    title: 'Kit maquillage complet',
+    updatedAt: new Date('2026-03-29T11:06:00.000Z'),
+  });
   prisma.draftPhoto.create({
     data: {
       draftId: 'draft_sports_label',
@@ -948,11 +1056,23 @@ test('listing labels support services and emploi categories', async (t) => {
   const sportsListing = feedResponse.body.items.find(
     (item: { slug: string }) => item.slug === 'velo-loisir',
   );
+  const musicListing = feedResponse.body.items.find(
+    (item: { slug: string }) => item.slug === 'clavier-musical-61-touches',
+  );
+  const healthListing = feedResponse.body.items.find(
+    (item: { slug: string }) => item.slug === 'tensiometre-numerique',
+  );
+  const beautyListing = feedResponse.body.items.find(
+    (item: { slug: string }) => item.slug === 'kit-maquillage-complet',
+  );
 
   assert.equal(serviceListing.categoryLabel, 'Services');
   assert.equal(emploiListing.categoryLabel, 'Emplois');
   assert.equal(foodListing.categoryLabel, 'Alimentation');
   assert.equal(sportsListing.categoryLabel, 'Sports et loisirs');
+  assert.equal(musicListing.categoryLabel, 'Musique');
+  assert.equal(healthListing.categoryLabel, 'Santé');
+  assert.equal(beautyListing.categoryLabel, 'Beauté');
 });
 
 test('public listings hide paused, sold, and seller-deleted listings while owner can still view them', async (t) => {

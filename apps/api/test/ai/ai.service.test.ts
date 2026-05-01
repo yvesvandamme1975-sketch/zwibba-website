@@ -124,6 +124,9 @@ test('ai service accepts the expanded supported categories', async () => {
     'agriculture',
     'construction',
     'education',
+    'music',
+    'health',
+    'beauty',
     'sports_leisure',
   ];
 

@@ -1002,8 +1002,11 @@ test('review form category dropdown includes the expanded seller categories with
 
   assert.match(html, />Alimentation<\/option>/);
   assert.match(html, />Agriculture<\/option>/);
-  assert.match(html, />Construction<\/option>/);
+  assert.match(html, />Bricolage ?\/ ?Construction<\/option>/);
   assert.match(html, />[ÉE]cole ?\/ ?Universit[ée]<\/option>/);
+  assert.match(html, />Musique<\/option>/);
+  assert.match(html, />Sant[ée]<\/option>/);
+  assert.match(html, />Beaut[ée]<\/option>/);
   assert.match(html, />Emplois<\/option>/);
   assert.match(html, />Services<\/option>/);
   assert.match(html, />Sports et loisirs<\/option>/);

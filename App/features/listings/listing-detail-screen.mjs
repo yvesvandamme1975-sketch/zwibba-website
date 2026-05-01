@@ -11,13 +11,16 @@ import {
 
 const categoryLabels = {
   agriculture: 'Agriculture',
-  construction: 'Construction',
+  beauty: 'Beauté',
+  construction: 'Bricolage / Construction',
   education: 'École / Université',
   emploi: 'Emplois',
   electronics: 'Électronique',
   fashion: 'Mode',
   food: 'Alimentation',
+  health: 'Santé',
   home_garden: 'Maison',
+  music: 'Musique',
   phones_tablets: 'Téléphones & Tablettes',
   real_estate: 'Immobilier',
   services: 'Services',

@@ -153,8 +153,11 @@ test('buyer home renders the expanded category chips including Emplois', () => {
 
   assert.match(html, /Alimentation/);
   assert.match(html, /Agriculture/);
-  assert.match(html, /Construction/);
+  assert.match(html, /Bricolage ?\/ ?Construction/);
   assert.match(html, /[ÉE]cole ?\/ ?Universit[ée]/);
+  assert.match(html, /Musique/);
+  assert.match(html, /Sant[ée]/);
+  assert.match(html, /Beaut[ée]/);
   assert.match(html, /Emplois/);
   assert.match(html, /Sports et loisirs/);
 });

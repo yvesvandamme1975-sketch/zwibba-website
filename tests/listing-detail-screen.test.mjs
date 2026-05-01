@@ -222,6 +222,32 @@ test('listing detail screen renders Emplois as the human label for emploi', () =
   assert.match(html, /<span>Emplois<\/span>/);
 });
 
+test('listing detail screen renders Bricolage / Construction as the human label for construction', () => {
+  const html = renderListingDetailScreen({
+    detail: {
+      categoryId: 'construction',
+      categoryLabel: '',
+      contactActions: ['message'],
+      id: 'listing_construction_1',
+      locationLabel: 'Bel Air',
+      priceCdf: 25000,
+      primaryImageUrl: null,
+      safetyTips: ['Évitez les paiements anticipés.'],
+      seller: {
+        name: 'Particulier 0002',
+        responseTime: 'Répond en moyenne en 9 min',
+        role: 'Particulier',
+      },
+      slug: 'lot-ciment',
+      summary: 'Matériaux de chantier.',
+      title: 'Lot de ciment',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /<span>Bricolage ?\/ ?Construction<\/span>/);
+});
+
 test('listing detail screen renders a loading state', () => {
   const html = renderListingDetailScreen({
     state: 'loading',
