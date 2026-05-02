@@ -2,6 +2,7 @@ import { Inject, Injectable, Optional } from '@nestjs/common';
 
 import { disambiguateVisionCategory } from './category-disambiguation';
 import { fuseGoogleVisionSignalsIntoDraft } from './google-hybrid-draft-fusion';
+import type { GoogleVisionSignals } from './google-vision-signals';
 import {
   GOOGLE_VISION_ENRICHMENT_PROVIDER,
   type GoogleVisionEnrichmentProvider,
@@ -54,7 +55,7 @@ export class AiService {
         await this.visionDraftProvider.generateDraftFromImage(input),
       );
       let draftPatch = geminiDraftPatch;
-      let googleVisionSignals = {
+      let googleVisionSignals: GoogleVisionSignals = {
         labels: [],
         logos: [],
         objects: [],
