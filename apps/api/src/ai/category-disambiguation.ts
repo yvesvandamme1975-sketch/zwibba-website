@@ -42,7 +42,11 @@ function hasStrongRecruitmentSignal(haystack: string) {
 
 function hasStrongServiceSignal(haystack: string) {
   return hasAnyPattern(haystack, [
+    'plumbing',
     'plomberie',
+    'mecanicien',
+    'mechanic',
+    'repair',
     'coiffure',
     'garage',
     'service',

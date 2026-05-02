@@ -371,6 +371,48 @@ test('ai service promotes a clear instrument to music on strong evidence', async
   assert.equal(result.draftPatch.categoryId, 'music');
 });
 
+test('ai service can still disambiguate education from strong Gemini text without Google Vision signals', async () => {
+  const service = new AiService({
+    async generateDraftFromImage() {
+      return {
+        categoryId: 'electronics',
+        condition: 'new_item',
+        description: 'Ensemble de papeterie avec calculatrice.',
+        title: 'Calculatrice et papeterie',
+      };
+    },
+  });
+
+  const result = await service.generateDraft({
+    photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-education.jpg',
+  });
+
+  assert.equal(result.status, 'ready');
+  assert.ok(result.draftPatch);
+  assert.equal(result.draftPatch.categoryId, 'education');
+});
+
+test('ai service can still disambiguate services from strong Gemini text without Google Vision signals', async () => {
+  const service = new AiService({
+    async generateDraftFromImage() {
+      return {
+        categoryId: 'fashion',
+        condition: 'used_good',
+        description: 'Allen wrench for plumbing repair.',
+        title: 'Plumbing repair service tool',
+      };
+    },
+  });
+
+  const result = await service.generateDraft({
+    photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-service.jpg',
+  });
+
+  assert.equal(result.status, 'ready');
+  assert.ok(result.draftPatch);
+  assert.equal(result.draftPatch.categoryId, 'services');
+});
+
 test('ai service keeps the Gemini draft when Google Vision enrichment fails', async () => {
   const service = new AiService({
     googleVisionEnrichmentProvider: {

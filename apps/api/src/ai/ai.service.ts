@@ -54,11 +54,18 @@ export class AiService {
         await this.visionDraftProvider.generateDraftFromImage(input),
       );
       let draftPatch = geminiDraftPatch;
-      let googleVisionSignals = null;
+      let googleVisionSignals = {
+        labels: [],
+        logos: [],
+        objects: [],
+        ocrText: '',
+      };
+      let hasGoogleVisionSignals = false;
 
       if (this.googleVisionEnrichmentProvider) {
         try {
           googleVisionSignals = await this.googleVisionEnrichmentProvider.collectSignalsFromImage(input);
+          hasGoogleVisionSignals = true;
           draftPatch = normalizeVisionDraftPatch(
             fuseGoogleVisionSignalsIntoDraft({
               draftPatch: geminiDraftPatch,
@@ -67,11 +74,17 @@ export class AiService {
           );
         } catch {
           draftPatch = geminiDraftPatch;
-          googleVisionSignals = null;
+          googleVisionSignals = {
+            labels: [],
+            logos: [],
+            objects: [],
+            ocrText: '',
+          };
+          hasGoogleVisionSignals = false;
         }
       }
 
-      if (googleVisionSignals) {
+      if (hasGoogleVisionSignals || draftPatch.title || draftPatch.description) {
         draftPatch = normalizeVisionDraftPatch(
           disambiguateVisionCategory({
             draftPatch,

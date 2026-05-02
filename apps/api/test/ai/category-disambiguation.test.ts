@@ -42,6 +42,25 @@ test('promotes service uniforms with explicit service wording to services', () =
   assert.equal(result.categoryId, 'services');
 });
 
+test('promotes plumbing repair contexts to services even without the literal word service', () => {
+  const result = disambiguateVisionCategory({
+    draftPatch: {
+      categoryId: 'construction',
+      condition: 'used_good',
+      description: 'Allen wrench for plumbing repair.',
+      title: 'Mécanicien plomberie',
+    },
+    signals: {
+      labels: ['Tool'],
+      logos: [],
+      objects: ['Wrench'],
+      ocrText: '',
+    },
+  });
+
+  assert.equal(result.categoryId, 'services');
+});
+
 test('promotes to emploi only on explicit recruiting evidence', () => {
   const result = disambiguateVisionCategory({
     draftPatch: {
