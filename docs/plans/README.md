@@ -51,5 +51,7 @@ Current priority docs:
 - `2026-04-24-zwibba-google-hybrid-seller-vision-implementation.md`
 - `2026-05-01-zwibba-category-expansion-and-fashion-sizing-design.md`
 - `2026-05-01-zwibba-category-expansion-and-fashion-sizing-implementation.md`
+- `2026-05-02-zwibba-conservative-ai-category-disambiguation-design.md`
+- `2026-05-02-zwibba-conservative-ai-category-disambiguation-implementation.md`
 
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
