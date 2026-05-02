@@ -272,6 +272,105 @@ test('ai service enriches a generic seller draft with Google Vision signals when
   assert.equal(result.draftPatch.title, 'Recrutement commercial');
 });
 
+test('ai service promotes a generic electronics draft to services on strong business-card evidence', async () => {
+  const service = new AiService({
+    googleVisionEnrichmentProvider: {
+      async collectSignalsFromImage() {
+        return {
+          labels: ['Business card'],
+          logos: ['Zwibba Pro'],
+          objects: ['Document'],
+          ocrText: 'ZWIBBA PRO\nPlomberie 7j/7\n+243 000 000 000',
+        };
+      },
+    },
+    visionDraftProvider: {
+      async generateDraftFromImage() {
+        return {
+          categoryId: 'electronics',
+          condition: 'used_good',
+          description: 'Carte visible sur la photo.',
+          title: 'Annonce préparée par IA',
+        };
+      },
+    },
+  });
+
+  const result = await service.generateDraft({
+    photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-service-card.jpg',
+  });
+
+  assert.equal(result.status, 'ready');
+  assert.ok(result.draftPatch);
+  assert.equal(result.draftPatch.categoryId, 'services');
+});
+
+test('ai service keeps electronics for generic audio gear with weak music evidence', async () => {
+  const service = new AiService({
+    googleVisionEnrichmentProvider: {
+      async collectSignalsFromImage() {
+        return {
+          labels: ['Speaker', 'Electronics'],
+          logos: [],
+          objects: ['Speaker'],
+          ocrText: 'Bluetooth speaker',
+        };
+      },
+    },
+    visionDraftProvider: {
+      async generateDraftFromImage() {
+        return {
+          categoryId: 'electronics',
+          condition: 'used_good',
+          description: 'Appareil audio visible.',
+          title: 'Annonce préparée par IA',
+        };
+      },
+    },
+  });
+
+  const result = await service.generateDraft({
+    photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-speaker.jpg',
+  });
+
+  assert.equal(result.status, 'ready');
+  assert.ok(result.draftPatch);
+  assert.equal(result.draftPatch.categoryId, 'electronics');
+});
+
+test('ai service promotes a clear instrument to music on strong evidence', async () => {
+  const service = new AiService({
+    googleVisionEnrichmentProvider: {
+      async collectSignalsFromImage() {
+        return {
+          labels: ['Keyboard instrument'],
+          logos: ['Yamaha'],
+          objects: ['Musical keyboard'],
+          ocrText: 'Yamaha clavier musical',
+        };
+      },
+    },
+    visionDraftProvider: {
+      async generateDraftFromImage() {
+        return {
+          categoryId: 'electronics',
+          condition: 'used_good',
+          description: 'Instrument visible.',
+          title: 'Annonce préparée par IA',
+        };
+      },
+    },
+  });
+
+  const result = await service.generateDraft({
+    photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-keyboard.jpg',
+  });
+
+  assert.equal(result.status, 'ready');
+  assert.ok(result.draftPatch);
+  assert.equal(result.draftPatch.categoryId, 'music');
+});
+
 test('ai service keeps the Gemini draft when Google Vision enrichment fails', async () => {
   const service = new AiService({
     googleVisionEnrichmentProvider: {
@@ -333,4 +432,12 @@ test('vision prompt tells the provider to ignore background context', () => {
 
   assert.match(prompt, /ignore/i);
   assert.match(prompt, /arrière-plan|décor|environnement/i);
+});
+
+test('vision prompt tells the provider to stay conservative between close categories', () => {
+  const prompt = buildVisionDraftPrompt();
+
+  assert.match(prompt, /n'utilise pas emploi sans/i);
+  assert.match(prompt, /n'utilise pas music pour un simple appareil audio/i);
+  assert.match(prompt, /préfère une catégorie plus large et sûre/i);
 });

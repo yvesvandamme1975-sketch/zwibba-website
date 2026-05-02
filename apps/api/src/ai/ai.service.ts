@@ -1,5 +1,6 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
 
+import { disambiguateVisionCategory } from './category-disambiguation';
 import { fuseGoogleVisionSignalsIntoDraft } from './google-hybrid-draft-fusion';
 import {
   GOOGLE_VISION_ENRICHMENT_PROVIDER,
@@ -53,18 +54,30 @@ export class AiService {
         await this.visionDraftProvider.generateDraftFromImage(input),
       );
       let draftPatch = geminiDraftPatch;
+      let googleVisionSignals = null;
 
       if (this.googleVisionEnrichmentProvider) {
         try {
+          googleVisionSignals = await this.googleVisionEnrichmentProvider.collectSignalsFromImage(input);
           draftPatch = normalizeVisionDraftPatch(
             fuseGoogleVisionSignalsIntoDraft({
               draftPatch: geminiDraftPatch,
-              signals: await this.googleVisionEnrichmentProvider.collectSignalsFromImage(input),
+              signals: googleVisionSignals,
             }),
           );
         } catch {
           draftPatch = geminiDraftPatch;
+          googleVisionSignals = null;
         }
+      }
+
+      if (googleVisionSignals) {
+        draftPatch = normalizeVisionDraftPatch(
+          disambiguateVisionCategory({
+            draftPatch,
+            signals: googleVisionSignals,
+          }),
+        );
       }
 
       if (!isCompleteVisionDraftPatch(draftPatch)) {
