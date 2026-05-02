@@ -67,8 +67,8 @@ import {
   formatPricePreview,
   getPriceInputPlaceholder,
   normalizePriceCurrency,
-  parsePriceInput,
 } from './utils/price-input.mjs';
+import { buildReviewDraftDetails } from './utils/review-draft-form.mjs';
 import {
   resolveDraftlessSellerRoute,
   shouldRetainDraftAfterPublish,
@@ -268,10 +268,6 @@ if (appRoot) {
     }
   }
 
-  function parsePrice(rawValue) {
-    return parsePriceInput(rawValue);
-  }
-
   function syncReviewPriceUi(form) {
     if (!(form instanceof HTMLFormElement) || form.dataset.form !== 'review-draft') {
       return;
@@ -391,6 +387,43 @@ if (appRoot) {
   function persistDraft(nextDraft) {
     state.draft = postFlowController.saveDraft(nextDraft);
     return state.draft;
+  }
+
+  function buildReviewDraftValues(form) {
+    const formData = new FormData(form);
+
+    return {
+      title: String(formData.get('title') ?? '').trim(),
+      categoryId: String(formData.get('categoryId') ?? '').trim(),
+      condition: String(formData.get('condition') ?? '').trim(),
+      fashionItemType: String(formData.get('fashionItemType') ?? '').trim(),
+      fashionSize: String(formData.get('fashionSize') ?? '').trim(),
+      priceAmount: formData.get('priceAmount'),
+      priceCurrency: String(formData.get('priceCurrency') ?? '').trim(),
+      description: String(formData.get('description') ?? '').trim(),
+    };
+  }
+
+  function syncDraftFromReviewForm(form) {
+    if (!(form instanceof HTMLFormElement) || form.dataset.form !== 'review-draft' || !state.draft) {
+      return null;
+    }
+
+    const reviewDraftValues = buildReviewDraftValues(form);
+    const nextDetails = buildReviewDraftDetails({
+      existingDetails: state.draft.details,
+      profileArea: String(state.profile?.area ?? state.draft.details.area ?? '').trim(),
+      values: reviewDraftValues,
+    });
+    const nextDraft = updateListingDraft(
+      state.draft,
+      {
+        details: nextDetails,
+        guidance: getCategoryGuidance(nextDetails.categoryId),
+      },
+    );
+
+    return persistDraft(nextDraft);
   }
 
   function beginAuthIntent(intent) {
@@ -1180,27 +1213,12 @@ if (appRoot) {
       await loadProfile();
     }
 
-    const formData = new FormData(form);
-    const categoryId = String(formData.get('categoryId') ?? '').trim();
-    const priceCurrency = normalizePriceCurrency(formData.get('priceCurrency'));
-    const resolvedProfileArea = String(state.profile?.area ?? state.draft.details.area ?? '').trim();
-    const nextDraft = updateListingDraft(
-      state.draft,
-      {
-        details: {
-          title: String(formData.get('title') ?? '').trim(),
-          categoryId,
-          condition: String(formData.get('condition') ?? '').trim(),
-          priceAmount: parsePrice(formData.get('priceAmount')),
-          priceCurrency,
-          description: String(formData.get('description') ?? '').trim(),
-          area: resolvedProfileArea,
-        },
-        guidance: getCategoryGuidance(categoryId),
-      },
-    );
+    const nextDraft = syncDraftFromReviewForm(form);
 
-    persistDraft(nextDraft);
+    if (!nextDraft) {
+      return;
+    }
+
     state.publishError = '';
     state.publishedDraft = null;
     state.publishOutcome = null;
@@ -1796,6 +1814,22 @@ if (appRoot) {
 
   appRoot.addEventListener('change', async (event) => {
     const target = event.target;
+
+    if (target instanceof HTMLSelectElement) {
+      const form = target.form;
+
+      if (form?.dataset.form === 'review-draft') {
+        if (target.name === 'categoryId' || target.name === 'fashionItemType') {
+          syncDraftFromReviewForm(form);
+          renderApp();
+          return;
+        }
+
+        if (target.name === 'fashionSize' || target.name === 'priceCurrency') {
+          syncReviewPriceUi(form);
+        }
+      }
+    }
 
     if (!(target instanceof HTMLInputElement) || target.type !== 'file') {
       return;

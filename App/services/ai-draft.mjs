@@ -58,6 +58,8 @@ export function mapAiDraftResponse(response) {
     categoryId: response.category_id ?? response.categoryId ?? '',
     condition: response.condition ?? '',
     description: response.description ?? '',
+    itemType: response.item_type ?? response.itemType ?? '',
+    size: response.size ?? '',
   };
 }
 

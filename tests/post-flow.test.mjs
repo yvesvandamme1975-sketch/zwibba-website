@@ -153,6 +153,44 @@ test('first real photo starts a draft and uploads immediately', async () => {
   assert.deepEqual(mediaService.requests.map((request) => request.type), ['slot', 'upload']);
 });
 
+test('AI fashion metadata prefills Mode item type and size when the signal is strong', async () => {
+  const draftStorage = createDraftStorageService({
+    storage: createMemoryStorage(),
+  });
+  const mediaService = createMediaServiceMock();
+  const aiDraftService = createAiDraftServiceMock({
+    status: 'ready',
+    draftPatch: {
+      categoryId: 'fashion',
+      title: 'Baskets Nike blanches',
+      condition: 'like_new',
+      description: 'Chaussures avec taille lisible sur l’étiquette.',
+      itemType: 'shoes',
+      size: '39',
+    },
+  });
+  const controller = createPostFlowController({
+    draftStorage,
+    imageCompressionService: createImageCompressionServiceMock(),
+    aiDraftService,
+    createPreviewUrl: (file) => `blob:${file.name}`,
+    mediaService,
+  });
+
+  const draft = await controller.captureFirstPhoto(createBrowserFile({
+    name: 'fashion-front.jpg',
+    size: 1_200_000,
+  }));
+
+  assert.equal(draft.details.categoryId, 'fashion');
+  assert.deepEqual(draft.details.attributesJson, {
+    fashion: {
+      itemType: 'shoes',
+      size: '39',
+    },
+  });
+});
+
 test('first photo upload uses the compressed bytes and normalized image metadata', async () => {
   const draftStorage = createDraftStorageService({
     storage: createMemoryStorage(),
@@ -1010,6 +1048,71 @@ test('review form category dropdown includes the expanded seller categories with
   assert.match(html, />Emplois<\/option>/);
   assert.match(html, />Services<\/option>/);
   assert.match(html, />Sports et loisirs<\/option>/);
+});
+
+test('review form renders fashion item type and size fields for Mode listings', () => {
+  const html = renderReviewFormScreen({
+    areaOptions: ['Golf', 'Bel Air'],
+    categories: sellerCategories,
+    conditionOptions: [{ value: 'used_good', label: 'Bon état' }],
+    draft: createReadyDraft({
+      categoryId: 'fashion',
+      attributesJson: {
+        fashion: {
+          itemType: 'shoes',
+          size: '39',
+        },
+      },
+    }),
+    validationErrors: [],
+  });
+
+  assert.match(html, /name="fashionItemType"/);
+  assert.match(html, />Chaussures<\/option>/);
+  assert.match(html, /name="fashionSize"/);
+  assert.match(html, />39<\/option>/);
+  assert.match(html, /option value="39" selected/);
+});
+
+test('review form keeps fashion size disabled until a type is chosen', () => {
+  const html = renderReviewFormScreen({
+    areaOptions: ['Golf', 'Bel Air'],
+    categories: sellerCategories,
+    conditionOptions: [{ value: 'used_good', label: 'Bon état' }],
+    draft: createReadyDraft({
+      categoryId: 'fashion',
+      attributesJson: {
+        fashion: {
+          itemType: '',
+          size: '',
+        },
+      },
+    }),
+    validationErrors: [],
+  });
+
+  assert.match(html, /name="fashionSize"[\s\S]*disabled/);
+});
+
+test('publish validation requires item type and size for Mode listings', () => {
+  const errors = validateDraftForPublish(
+    createReadyDraft({
+      categoryId: 'fashion',
+      attributesJson: {
+        fashion: {
+          itemType: '',
+          size: '',
+        },
+      },
+    }),
+  );
+
+  assert.deepEqual(
+    errors
+      .filter((error) => error.field === 'fashion_item_type' || error.field === 'fashion_size')
+      .map((error) => error.field),
+    ['fashion_item_type', 'fashion_size'],
+  );
 });
 
 test('services guidance suggests a business card or company logo', () => {

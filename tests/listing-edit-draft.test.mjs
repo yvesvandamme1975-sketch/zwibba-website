@@ -11,6 +11,12 @@ test('createEditableListingDraft rebuilds a synced seller draft from owner listi
   const now = '2026-04-11T12:00:00.000Z';
   const draft = listingDraftModel.createEditableListingDraft({
     area: 'Lubumbashi Centre',
+    attributesJson: {
+      fashion: {
+        itemType: 'shoes',
+        size: '39',
+      },
+    },
     categoryId: 'electronics',
     condition: 'used_good',
     description: 'Piano numérique en bon état.',
@@ -51,6 +57,12 @@ test('createEditableListingDraft rebuilds a synced seller draft from owner listi
   assert.equal(draft.details.condition, 'used_good');
   assert.equal(draft.details.description, 'Piano numérique en bon état.');
   assert.equal(draft.details.area, 'Lubumbashi Centre');
+  assert.deepEqual(draft.details.attributesJson, {
+    fashion: {
+      itemType: 'shoes',
+      size: '39',
+    },
+  });
   assert.equal(draft.details.priceAmount, 250);
   assert.equal(draft.details.priceCurrency, 'USD');
   assert.equal(draft.photos.length, 2);

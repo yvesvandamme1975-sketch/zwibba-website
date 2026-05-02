@@ -8,6 +8,8 @@ export type VisionDraftPatch = {
   categoryId: string;
   condition: string;
   description: string;
+  itemType?: string;
+  size?: string;
   title: string;
 };
 

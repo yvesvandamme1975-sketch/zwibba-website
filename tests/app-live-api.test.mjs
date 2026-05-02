@@ -268,6 +268,12 @@ test('live draft service syncs and publishes with the seller bearer token', asyn
       if (url.endsWith('/drafts/sync')) {
         return createJsonResponse(200, {
           area: 'Golf',
+          attributesJson: {
+            fashion: {
+              itemType: 'shoes',
+              size: '39',
+            },
+          },
           categoryId: 'phones_tablets',
           condition: 'like_new',
           description: 'Téléphone complet, prêt à être récupéré.',
@@ -313,6 +319,12 @@ test('live draft service syncs and publishes with the seller bearer token', asyn
       details: {
         ...draft.details,
         area: 'Golf',
+        attributesJson: {
+          fashion: {
+            itemType: 'shoes',
+            size: '39',
+          },
+        },
         categoryId: 'phones_tablets',
         condition: 'like_new',
         description: 'Téléphone complet, prêt à être récupéré.',
@@ -339,9 +351,16 @@ test('live draft service syncs and publishes with the seller bearer token', asyn
   });
 
   assert.equal(syncedDraft.remoteDraftId, 'draft_live_1');
+  assert.deepEqual(syncedDraft.details.attributesJson, {
+    fashion: {
+      itemType: 'shoes',
+      size: '39',
+    },
+  });
   assert.equal(publishOutcome.listingSlug, 'samsung-galaxy-a54');
   assert.equal(requests[0].headers.authorization, 'Bearer zwibba_session_live_123');
   assert.equal(requests[1].headers.authorization, 'Bearer zwibba_session_live_123');
+  assert.match(String(requests[0].body), /"attributesJson"/);
 });
 
 test('live draft service deletes a seller draft with the bearer token', async () => {

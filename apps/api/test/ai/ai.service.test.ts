@@ -152,6 +152,30 @@ test('ai service accepts the expanded supported categories', async () => {
   }
 });
 
+test('ai service keeps optional fashion item type and size when they are valid', async () => {
+  const service = new AiService({
+    async generateDraftFromImage() {
+      return {
+        categoryId: 'fashion',
+        condition: 'like_new',
+        description: 'Baskets blanches avec étiquette visible.',
+        itemType: 'shoes',
+        size: '39',
+        title: 'Baskets Nike blanches',
+      };
+    },
+  });
+
+  const result = await service.generateDraft({
+    photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-fashion.jpg',
+  });
+
+  assert.equal(result.status, 'ready');
+  assert.ok(result.draftPatch);
+  assert.equal(result.draftPatch.itemType, 'shoes');
+  assert.equal(result.draftPatch.size, '39');
+});
+
 test('ai service falls back to manual mode when the provider fails', async () => {
   const service = new AiService({
     async generateDraftFromImage() {

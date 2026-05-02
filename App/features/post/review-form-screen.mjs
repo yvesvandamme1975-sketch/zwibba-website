@@ -13,6 +13,12 @@ import {
   getPriceInputPlaceholder,
   normalizePriceCurrency,
 } from '../../utils/price-input.mjs';
+import {
+  getFashionAttributes,
+  getFashionItemTypeOptions,
+  getFashionSizeOptions,
+  isFashionCategory,
+} from '../../utils/fashion-attributes.mjs';
 
 function renderError(error) {
   return `<li data-review-error-field="${escapeAttribute(error.field)}">${escapeHtml(error.message)}</li>`;
@@ -115,6 +121,11 @@ export function renderReviewFormScreen({
   const pricePreview = formatPricePreview(priceInputValue, priceCurrency);
   const pricePlaceholder = getPriceInputPlaceholder(priceCurrency);
   const isPriceDisabled = !priceCurrency;
+  const isFashion = isFashionCategory(draft.details.categoryId);
+  const fashionAttributes = getFashionAttributes(draft.details.attributesJson);
+  const fashionItemTypeOptions = getFashionItemTypeOptions();
+  const fashionSizeOptions = getFashionSizeOptions(fashionAttributes.itemType);
+  const isFashionSizeDisabled = !fashionAttributes.itemType;
 
   return `
     <section class="app-flow app-flow--review">
@@ -193,6 +204,32 @@ export function renderReviewFormScreen({
               ${conditionOptions.map((option) => renderOption(option, draft.details.condition)).join('')}
             </select>
           </label>
+
+          ${
+            isFashion
+              ? `
+                <label class="${renderFieldClass({ validationErrors, field: 'fashion_item_type' })}">
+                  <span>Type d’article</span>
+                  <select name="fashionItemType">
+                    <option value="">Choisir</option>
+                    ${fashionItemTypeOptions
+                      .map((option) => renderOption(option, fashionAttributes.itemType))
+                      .join('')}
+                  </select>
+                </label>
+
+                <label class="${renderFieldClass({ validationErrors, field: 'fashion_size' })}">
+                  <span>Taille</span>
+                  <select name="fashionSize" ${isFashionSizeDisabled ? 'disabled' : ''}>
+                    <option value="">Choisir</option>
+                    ${fashionSizeOptions
+                      .map((option) => renderOption(option, fashionAttributes.size))
+                      .join('')}
+                  </select>
+                </label>
+              `
+              : ''
+          }
 
           <label class="${renderFieldClass({ validationErrors, field: 'price' })}">
             <span>Devise</span>

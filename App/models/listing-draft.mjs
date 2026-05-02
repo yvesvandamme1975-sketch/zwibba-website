@@ -1,3 +1,5 @@
+import { normalizeListingAttributesJson } from '../utils/fashion-attributes.mjs';
+
 export const draftSyncStates = {
   localOnly: 'local_only',
   accountSyncable: 'account_syncable',
@@ -49,6 +51,7 @@ function createEmptyDetails() {
     title: '',
     categoryId: '',
     condition: '',
+    attributesJson: null,
     priceAmount: null,
     priceCurrency: '',
     description: '',
@@ -65,6 +68,7 @@ function normalizeDetails(details = {}) {
     title: details.title ?? '',
     categoryId: details.categoryId ?? '',
     condition: details.condition ?? '',
+    attributesJson: normalizeListingAttributesJson(details.attributesJson),
     priceAmount,
     priceCurrency,
     description: details.description ?? '',
@@ -85,6 +89,10 @@ function normalizeDetailUpdates(details = {}) {
 
   if (Object.prototype.hasOwnProperty.call(details, 'condition')) {
     nextDetails.condition = details.condition ?? '';
+  }
+
+  if (Object.prototype.hasOwnProperty.call(details, 'attributesJson')) {
+    nextDetails.attributesJson = normalizeListingAttributesJson(details.attributesJson);
   }
 
   if (Object.prototype.hasOwnProperty.call(details, 'priceAmount')) {
@@ -242,6 +250,7 @@ export function createEditableListingDraft(
       title: editableDraft?.title ?? '',
       categoryId: editableDraft?.categoryId ?? '',
       condition: editableDraft?.condition ?? '',
+      attributesJson: normalizeListingAttributesJson(editableDraft?.attributesJson),
       priceAmount: editableDraft?.priceAmount ?? editableDraft?.priceCdf ?? null,
       priceCurrency:
         normalizePriceCurrency(editableDraft?.priceCurrency) ||

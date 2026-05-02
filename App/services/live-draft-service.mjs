@@ -72,6 +72,7 @@ export function createLiveDraftService({
         },
         body: JSON.stringify({
           area: draft.details.area,
+          attributesJson: draft.details.attributesJson,
           categoryId: draft.details.categoryId,
           condition: draft.details.condition,
           description: draft.details.description,
@@ -93,6 +94,7 @@ export function createLiveDraftService({
       return updateListingDraft(draft, {
         details: {
           area: syncedDraft.area,
+          attributesJson: syncedDraft.attributesJson ?? draft.details.attributesJson,
           categoryId: syncedDraft.categoryId,
           condition: syncedDraft.condition ?? draft.details.condition,
           description: syncedDraft.description,

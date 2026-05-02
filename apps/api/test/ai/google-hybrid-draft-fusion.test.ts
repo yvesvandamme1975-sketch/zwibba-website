@@ -62,3 +62,24 @@ test('google hybrid fusion does not override categories outside the enrichment r
   assert.equal(result.categoryId, 'electronics');
   assert.equal(result.title, 'Annonce préparée par IA');
 });
+
+test('google hybrid fusion can infer fashion item type and size from OCR-heavy label text', () => {
+  const result = fuseGoogleVisionSignalsIntoDraft({
+    draftPatch: {
+      categoryId: 'fashion',
+      condition: 'like_new',
+      description: 'Chaussures visibles sur la photo.',
+      title: 'Annonce préparée par IA',
+    },
+    signals: {
+      labels: ['Sneakers'],
+      logos: ['Nike'],
+      objects: ['Shoe'],
+      ocrText: 'NIKE\nCHAUSSURES\nEU 39',
+    },
+  });
+
+  assert.equal(result.categoryId, 'fashion');
+  assert.equal(result.itemType, 'shoes');
+  assert.equal(result.size, '39');
+});

@@ -87,6 +87,42 @@ test('listing detail screen renders USD listing prices when provided', () => {
   assert.match(html, /350 US\$/);
 });
 
+test('listing detail screen renders fashion item type and size details when provided', () => {
+  const html = renderListingDetailScreen({
+    detail: {
+      attributesJson: {
+        fashion: {
+          itemType: 'shoes',
+          size: '39',
+        },
+      },
+      categoryId: 'fashion',
+      categoryLabel: 'Mode',
+      contactActions: ['message'],
+      id: 'listing_fashion_1',
+      locationLabel: 'Golf',
+      priceAmount: 120,
+      priceCurrency: 'USD',
+      primaryImageUrl: null,
+      safetyTips: ['Évitez les paiements anticipés.'],
+      seller: {
+        name: 'Particulier 0005',
+        responseTime: 'Répond en moyenne en 9 min',
+        role: 'Particulier',
+      },
+      slug: 'baskets-blanches-39',
+      summary: 'Baskets blanches en très bon état.',
+      title: 'Baskets blanches',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /<strong>D[ée]tails<\/strong>/);
+  assert.match(html, /Type d(?:&#39;|')article/i);
+  assert.match(html, /Chaussures/);
+  assert.match(html, /<span>39<\/span>/);
+});
+
 test('listing detail screen swaps legacy dead CDN image URLs for a local preview before render', () => {
   const html = renderListingDetailScreen({
     detail: {

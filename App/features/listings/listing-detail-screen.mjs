@@ -8,6 +8,10 @@ import {
   buildImageFallbackHandler,
   sanitizeListingImageUrl,
 } from '../../utils/image-fallbacks.mjs';
+import {
+  getFashionAttributes,
+  getFashionItemTypeLabel,
+} from '../../utils/fashion-attributes.mjs';
 
 const categoryLabels = {
   agriculture: 'Agriculture',
@@ -216,6 +220,35 @@ function resolveCategoryLabel(detail) {
   return detail.categoryLabel || categoryLabels[detail.categoryId] || 'Annonce';
 }
 
+function renderAttributeDetails(detail) {
+  if (detail.categoryId !== 'fashion') {
+    return '';
+  }
+
+  const fashionAttributes = getFashionAttributes(detail.attributesJson);
+  const itemTypeLabel = getFashionItemTypeLabel(fashionAttributes.itemType);
+
+  if (!itemTypeLabel && !fashionAttributes.size) {
+    return '';
+  }
+
+  return `
+    <div class="app-auth__card">
+      <strong>Détails</strong>
+      ${
+        itemTypeLabel
+          ? `<p><strong>Type d'article :</strong> ${escapeHtml(itemTypeLabel)}</p>`
+          : ''
+      }
+      ${
+        fashionAttributes.size
+          ? `<p><strong>Taille :</strong> <span>${escapeHtml(fashionAttributes.size)}</span></p>`
+          : ''
+      }
+    </div>
+  `;
+}
+
 function resolveGalleryImages(detail) {
   const rawImages = Array.isArray(detail.images) && detail.images.length
     ? detail.images
@@ -397,6 +430,8 @@ export function renderListingDetailScreen({
         <strong>Description</strong>
         <p>${escapeHtml(detail.summary)}</p>
       </div>
+
+      ${renderAttributeDetails(detail)}
 
       <div class="app-publish__status is-verified">
         <strong>${escapeHtml(detail.seller.name)}</strong>

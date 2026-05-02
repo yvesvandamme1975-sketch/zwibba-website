@@ -5,6 +5,11 @@ import {
 } from '../../models/listing-draft.mjs';
 import { normalizePriceCurrency } from '../../utils/price-input.mjs';
 import { formatListingPrice } from '../../utils/rendering.mjs';
+import {
+  getFashionAttributes,
+  isFashionCategory,
+  updateFashionAttributes,
+} from '../../utils/fashion-attributes.mjs';
 
 export const MAX_PRICE_CDF = 2_147_483_647;
 
@@ -281,14 +286,22 @@ export function applyAiResultToDraft(
   }
 
   const patch = aiResult.draftPatch ?? {};
+  const nextCategoryId = patch.categoryId ?? draft.details.categoryId;
+  const nextAttributesJson = isFashionCategory(nextCategoryId)
+    ? updateFashionAttributes(draft.details.attributesJson, {
+        itemType: patch.itemType,
+        size: patch.size,
+      })
+    : updateFashionAttributes(draft.details.attributesJson);
 
   return updateListingDraft(
     draft,
     {
       details: {
         title: patch.title ?? draft.details.title,
-        categoryId: patch.categoryId ?? draft.details.categoryId,
+        categoryId: nextCategoryId,
         condition: patch.condition ?? draft.details.condition,
+        attributesJson: nextAttributesJson,
         description: patch.description ?? draft.details.description,
       },
       ai: {
@@ -296,7 +309,7 @@ export function applyAiResultToDraft(
         status: 'ready',
         message: 'Brouillon préparé à partir de votre photo.',
       },
-      guidance: resolveGuidance(patch.categoryId ?? draft.details.categoryId),
+      guidance: resolveGuidance(nextCategoryId),
     },
     { now },
   );
@@ -357,6 +370,24 @@ export function validateDraftForPublish(
       field: 'condition',
       message: "L'état est requis pour cette catégorie.",
     });
+  }
+
+  if (isFashionCategory(draft.details.categoryId)) {
+    const fashionAttributes = getFashionAttributes(draft.details.attributesJson);
+
+    if (!fashionAttributes.itemType) {
+      errors.push({
+        field: 'fashion_item_type',
+        message: "Choisissez le type d'article pour la rubrique Mode.",
+      });
+    }
+
+    if (!fashionAttributes.size) {
+      errors.push({
+        field: 'fashion_size',
+        message: 'Choisissez une taille pour la rubrique Mode.',
+      });
+    }
   }
 
   if (!priceCurrency) {
@@ -465,6 +496,7 @@ export function createReadyDraft(overrides = {}) {
         title: overrides.title ?? 'Annonce prête à publier',
         categoryId,
         condition,
+        attributesJson: overrides.attributesJson ?? null,
         priceAmount: hasExplicitPriceAmount
           ? overrides.priceAmount
           : hasLegacyPrice

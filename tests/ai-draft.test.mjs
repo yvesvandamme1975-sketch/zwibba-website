@@ -49,6 +49,27 @@ test('AI draft response maps into title, category, condition, and description on
   assert.equal('suggestedPriceMaxCdf' in result.draftPatch, false);
 });
 
+test('AI draft response keeps optional fashion item type and size when provided', async () => {
+  const aiDraftService = createAiDraftService({
+    responder: async () => ({
+      title: 'Baskets Nike blanches',
+      category_id: 'fashion',
+      condition: 'like_new',
+      description: 'Chaussures avec taille lisible sur l’étiquette.',
+      itemType: 'shoes',
+      size: '39',
+    }),
+  });
+
+  const result = await aiDraftService.generateDraft({
+    id: 'fashion-front',
+  });
+
+  assert.equal(result.status, 'ready');
+  assert.equal(result.draftPatch.itemType, 'shoes');
+  assert.equal(result.draftPatch.size, '39');
+});
+
 test('AI draft service sends the uploaded photo URL to the live API', async () => {
   const requests = [];
   const aiDraftService = createAiDraftService({

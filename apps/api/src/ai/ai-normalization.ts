@@ -4,6 +4,11 @@ import {
   supportedCategoryIds,
   supportedConditionValues,
 } from './ai-taxonomy';
+import {
+  isFashionCategory,
+  normalizeFashionItemType,
+  normalizeFashionSize,
+} from '../common/fashion-attributes';
 import type { VisionDraftPatch } from './vision-draft-provider';
 
 function normalizeString(value: unknown) {
@@ -63,16 +68,31 @@ function sanitizeVisionDescription(description: string) {
 export function normalizeVisionDraftPatch(candidate: Record<string, unknown>): VisionDraftPatch {
   const categoryId = normalizeString(candidate.categoryId);
   const condition = normalizeString(candidate.condition);
+  const normalizedCategoryId = supportedCategoryIdSet.has(
+    categoryId as (typeof supportedCategoryIds)[number],
+  )
+    ? categoryId
+    : defaultCategoryId;
+  const normalizedItemType = isFashionCategory(normalizedCategoryId)
+    ? normalizeFashionItemType(candidate.itemType)
+    : '';
+  const normalizedSize = normalizedItemType
+    ? normalizeFashionSize(normalizedItemType, candidate.size)
+    : '';
 
   return {
-    categoryId: supportedCategoryIdSet.has(categoryId as (typeof supportedCategoryIds)[number])
-      ? categoryId
-      : defaultCategoryId,
+    categoryId: normalizedCategoryId,
     condition: supportedConditionSet.has(condition as (typeof supportedConditionValues)[number])
       ? condition
       : defaultCondition,
     description: sanitizeVisionDescription(normalizeString(candidate.description)),
     title: normalizeString(candidate.title),
+    ...(normalizedItemType
+      ? {
+          itemType: normalizedItemType,
+          ...(normalizedSize ? { size: normalizedSize } : {}),
+        }
+      : {}),
   };
 }
 
