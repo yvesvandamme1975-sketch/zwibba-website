@@ -9,8 +9,16 @@ function normalizeText(value: string) {
     .trim();
 }
 
-function buildSignalHaystack(signals: GoogleVisionSignals) {
+function buildSignalHaystack({
+  draftPatch,
+  signals,
+}: {
+  draftPatch: VisionDraftPatch;
+  signals: GoogleVisionSignals;
+}) {
   return normalizeText([
+    draftPatch.title,
+    draftPatch.description,
     signals.ocrText,
     ...signals.labels,
     ...signals.logos,
@@ -38,6 +46,7 @@ function hasStrongServiceSignal(haystack: string) {
     'coiffure',
     'garage',
     'service',
+    'сервис',
     'business card',
     'carte professionnelle',
   ]);
@@ -124,6 +133,7 @@ function hasStrongAgricultureSignal(haystack: string) {
 function hasStrongEducationSignal(haystack: string) {
   return hasAnyPattern(haystack, [
     'fournitures scolaires',
+    'fournitures de bureau',
     'school supplies',
     'ecole',
     'scolaire',
@@ -134,6 +144,11 @@ function hasStrongEducationSignal(haystack: string) {
     'notebook',
     'livre',
     'livres',
+    'calculatrice',
+    'crayon',
+    'crayons',
+    'carnet',
+    'carnets',
   ]);
 }
 
@@ -144,7 +159,10 @@ export function disambiguateVisionCategory({
   draftPatch: VisionDraftPatch;
   signals: GoogleVisionSignals;
 }): VisionDraftPatch {
-  const haystack = buildSignalHaystack(signals);
+  const haystack = buildSignalHaystack({
+    draftPatch,
+    signals,
+  });
 
   if (!haystack) {
     return draftPatch;

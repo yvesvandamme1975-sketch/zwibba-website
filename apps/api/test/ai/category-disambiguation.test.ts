@@ -22,6 +22,26 @@ test('does not promote services to emploi on generic business card OCR', () => {
   assert.equal(result.categoryId, 'services');
 });
 
+test('promotes service uniforms with explicit service wording to services', () => {
+  const result = disambiguateVisionCategory({
+    draftPatch: {
+      categoryId: 'fashion',
+      condition: 'used_good',
+      description:
+        "Salopette de travail noire avec une étiquette marquée 'СЕРВИС' sur la poche.",
+      title: 'Ensemble salopette de travail',
+    },
+    signals: {
+      labels: ['Workwear'],
+      logos: [],
+      objects: ['Clothing'],
+      ocrText: '',
+    },
+  });
+
+  assert.equal(result.categoryId, 'services');
+});
+
 test('promotes to emploi only on explicit recruiting evidence', () => {
   const result = disambiguateVisionCategory({
     draftPatch: {
@@ -206,6 +226,26 @@ test('promotes clear school supply bundles to education', () => {
       logos: [],
       objects: ['Notebook'],
       ocrText: 'Pack fournitures scolaires',
+    },
+  });
+
+  assert.equal(result.categoryId, 'education');
+});
+
+test('promotes education when Gemini already describes a school-supplies bundle', () => {
+  const result = disambiguateVisionCategory({
+    draftPatch: {
+      categoryId: 'electronics',
+      condition: 'new_item',
+      description:
+        'Ensemble de fournitures de bureau comprenant une calculatrice, deux carnets et des crayons.',
+      title: 'Calculatrice et fournitures de bureau',
+    },
+    signals: {
+      labels: ['Office supplies'],
+      logos: [],
+      objects: ['Calculator'],
+      ocrText: '',
     },
   });
 
