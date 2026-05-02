@@ -136,6 +136,7 @@ function hasStrongEducationSignal(haystack: string) {
     'fournitures de bureau',
     'school supplies',
     'ecole',
+    'papeterie',
     'scolaire',
     'universite',
     'cours',

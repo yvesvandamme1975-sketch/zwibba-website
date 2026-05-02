@@ -252,6 +252,25 @@ test('promotes education when Gemini already describes a school-supplies bundle'
   assert.equal(result.categoryId, 'education');
 });
 
+test('promotes papeterie bundles with calculator cues to education', () => {
+  const result = disambiguateVisionCategory({
+    draftPatch: {
+      categoryId: 'electronics',
+      condition: 'new_item',
+      description: 'Ensemble de papeterie avec calculatrice.',
+      title: 'Calculatrice et papeterie',
+    },
+    signals: {
+      labels: ['Office supplies'],
+      logos: [],
+      objects: ['Calculator'],
+      ocrText: '',
+    },
+  });
+
+  assert.equal(result.categoryId, 'education');
+});
+
 test('does not promote generic office items to education on weak evidence', () => {
   const result = disambiguateVisionCategory({
     draftPatch: {
