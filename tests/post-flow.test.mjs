@@ -12,6 +12,7 @@ import {
   createPostFlowController,
   createReadyDraft,
   getMissingRequiredPhotoPrompts,
+  refreshReviewValidationErrors,
   validateDraftForPublish,
 } from '../App/features/post/post-flow-controller.mjs';
 import {
@@ -1112,6 +1113,30 @@ test('publish validation requires item type and size for Mode listings', () => {
       .filter((error) => error.field === 'fashion_item_type' || error.field === 'fashion_size')
       .map((error) => error.field),
     ['fashion_item_type', 'fashion_size'],
+  );
+});
+
+test('review validation clears a stale price-currency error once currency and amount are fixed', () => {
+  const initialErrors = validateDraftForPublish(
+    createReadyDraft({
+      priceAmount: null,
+      priceCurrency: '',
+    }),
+  );
+
+  const refreshedErrors = refreshReviewValidationErrors(
+    initialErrors,
+    createReadyDraft({
+      priceAmount: 350,
+      priceCurrency: 'USD',
+    }),
+  );
+
+  assert.equal(
+    refreshedErrors.some(
+      (error) => error.field === 'price' && /Choisissez une devise pour votre prix\./.test(error.message),
+    ),
+    false,
   );
 });
 

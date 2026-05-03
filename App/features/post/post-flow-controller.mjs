@@ -427,6 +427,22 @@ export function validateDraftForPublish(
   return errors;
 }
 
+export function refreshReviewValidationErrors(
+  currentErrors,
+  draft,
+  {
+    uploadsBusy = false,
+  } = {},
+) {
+  if (!draft || !Array.isArray(currentErrors) || currentErrors.length === 0) {
+    return Array.isArray(currentErrors) ? currentErrors : [];
+  }
+
+  return validateDraftForPublish(draft, {
+    uploadsBusy,
+  });
+}
+
 export function decidePublishGate({
   draft,
   session,

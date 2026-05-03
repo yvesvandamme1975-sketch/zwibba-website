@@ -77,6 +77,7 @@ import {
   createPostFlowController,
   decidePublishGate,
   getMissingRequiredPhotoPrompts,
+  refreshReviewValidationErrors,
   validateDraftForPublish,
 } from './features/post/post-flow-controller.mjs';
 
@@ -423,7 +424,12 @@ if (appRoot) {
       },
     );
 
-    return persistDraft(nextDraft);
+    const persistedDraft = persistDraft(nextDraft);
+    state.reviewErrors = refreshReviewValidationErrors(state.reviewErrors, persistedDraft, {
+      uploadsBusy: photoUploadQueue.isBusy(),
+    });
+
+    return persistedDraft;
   }
 
   function beginAuthIntent(intent) {
@@ -1819,14 +1825,23 @@ if (appRoot) {
       const form = target.form;
 
       if (form?.dataset.form === 'review-draft') {
+        const hadReviewErrors = state.reviewErrors.length > 0;
+
+        syncDraftFromReviewForm(form);
+
         if (target.name === 'categoryId' || target.name === 'fashionItemType') {
-          syncDraftFromReviewForm(form);
           renderApp();
           return;
         }
 
-        if (target.name === 'fashionSize' || target.name === 'priceCurrency') {
+        if (hadReviewErrors) {
+          renderApp();
+          return;
+        }
+
+        if (target.name === 'priceCurrency') {
           syncReviewPriceUi(form);
+          return;
         }
       }
     }
@@ -1900,11 +1915,13 @@ if (appRoot) {
   appRoot.addEventListener('input', (event) => {
     const target = event.target;
 
-    if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement)) {
-      return;
-    }
-
-    if (target.name !== 'priceAmount' && target.name !== 'priceCurrency') {
+    if (
+      !(
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLSelectElement ||
+        target instanceof HTMLTextAreaElement
+      )
+    ) {
       return;
     }
 
@@ -1914,7 +1931,29 @@ if (appRoot) {
       return;
     }
 
-    syncReviewPriceUi(form);
+    const hadReviewErrors = state.reviewErrors.length > 0;
+    const shouldSyncDraft =
+      target.name === 'priceAmount' ||
+      target.name === 'priceCurrency' ||
+      hadReviewErrors;
+
+    if (shouldSyncDraft) {
+      syncDraftFromReviewForm(form);
+    }
+
+    if (target.name === 'priceAmount' || target.name === 'priceCurrency') {
+      if (hadReviewErrors) {
+        renderApp();
+        return;
+      }
+
+      syncReviewPriceUi(form);
+      return;
+    }
+
+    if (hadReviewErrors) {
+      renderApp();
+    }
   });
 
   window.addEventListener('hashchange', () => {
