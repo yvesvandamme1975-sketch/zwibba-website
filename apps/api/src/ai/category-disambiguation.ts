@@ -68,47 +68,75 @@ function hasStrongMusicSignal(haystack: string) {
   ]);
 }
 
+const constructionMaterialPatterns = [
+  'ciment',
+  'beton',
+  'brique',
+];
+
+const constructionHandToolPatterns = [
+  'marteau',
+  'maillet',
+  'hammer',
+  'tournevis',
+  'screwdriver',
+  'pince',
+  'pliers',
+  'cle a molette',
+  'wrench',
+  'spanner',
+  'scie',
+  'saw',
+  'niveau a bulle',
+  'level',
+  'cutter',
+  'utility knife',
+  'truelle',
+  'trowel',
+  'burin',
+  'chisel',
+  'serre-joint',
+  'clamp',
+];
+
+const constructionPowerToolPatterns = [
+  'visseuse',
+  'vissuese',
+  'drill driver',
+  'foreuse',
+  'perceuse',
+  'drill',
+  'disqueuse',
+  'meuleuse',
+  'angle grinder',
+  'ponceuse',
+  'sander',
+  'rabot',
+  'plane',
+];
+
+const constructionChantierPatterns = [
+  'chantier',
+  'power tool',
+  'marteau-piqueur',
+  'marteau piqeur',
+  'marteau-piquer',
+  'jackhammer',
+  'pelle',
+  'shovel',
+  'pioche',
+  'pickaxe',
+];
+
+const constructionKeywordPatterns = [
+  ...constructionMaterialPatterns,
+  ...constructionHandToolPatterns,
+  ...constructionPowerToolPatterns,
+  ...constructionChantierPatterns,
+];
+
 function hasStrongConstructionSignal(haystack: string) {
-  return hasAnyPattern(haystack, [
-    'ciment',
-    'beton',
-    'brique',
-    'marteau',
-    'maillet',
-    'tournevis',
-    'screwdriver',
-    'pince',
-    'pliers',
-    'cle a molette',
-    'wrench',
-    'spanner',
-    'scie',
-    'saw',
-    'niveau a bulle',
-    'level',
-    'cutter',
-    'utility knife',
-    'visseuse',
-    'vissuese',
-    'drill driver',
-    'foreuse',
-    'marteau-piqueur',
-    'marteau piqeur',
-    'marteau-piquer',
-    'jackhammer',
-    'meuleuse',
-    'angle grinder',
-    'ponceuse',
-    'sander',
-    'truelle',
-    'trowel',
-    'perceuse',
-    'disqueuse',
-    'chantier',
-    'hammer',
-    'power tool',
-    'drill',
-  ]);
+  return hasAnyPattern(haystack, constructionKeywordPatterns);
 }
 
 function hasStrongBeautySignal(haystack: string) {

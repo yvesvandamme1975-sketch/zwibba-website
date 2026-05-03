@@ -194,6 +194,18 @@ test('promotes common hand tools to construction', () => {
       labels: ['Tool'],
       objects: ['Utility knife'],
     },
+    {
+      title: 'Burin plat',
+      description: 'Burin pour travaux de maçonnerie.',
+      labels: ['Tool'],
+      objects: ['Chisel'],
+    },
+    {
+      title: 'Serre-joint acier',
+      description: 'Serre-joint pour atelier et assemblage.',
+      labels: ['Tool'],
+      objects: ['Clamp'],
+    },
   ];
 
   for (const toolCase of cases) {
@@ -263,6 +275,18 @@ test('promotes common power and chantier tools to construction', () => {
     {
       title: 'Truelle de maçon',
       description: 'Truelle pour ciment et finition.',
+      labels: ['Hardware'],
+      objects: ['Tool'],
+    },
+    {
+      title: 'Rabot électrique',
+      description: 'Rabot pour ajustement de surface.',
+      labels: ['Hardware'],
+      objects: ['Tool'],
+    },
+    {
+      title: 'Pelle de chantier',
+      description: 'Pelle robuste pour travaux extérieurs.',
       labels: ['Hardware'],
       objects: ['Tool'],
     },
