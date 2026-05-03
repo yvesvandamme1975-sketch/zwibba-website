@@ -137,6 +137,85 @@ test('promotes chantier tools to construction', () => {
   assert.equal(result.categoryId, 'construction');
 });
 
+test('promotes a rubber hammer to construction', () => {
+  const result = disambiguateVisionCategory({
+    draftPatch: {
+      categoryId: 'home_garden',
+      condition: 'used_good',
+      description: 'Marteau en caoutchouc pour petits travaux.',
+      title: 'Marteau en caoutchouc',
+    },
+    signals: {
+      labels: ['Hammer', 'Tool'],
+      logos: [],
+      objects: ['Hammer'],
+      ocrText: '',
+    },
+  });
+
+  assert.equal(result.categoryId, 'construction');
+});
+
+test('promotes common hand tools to construction', () => {
+  const cases = [
+    {
+      title: 'Tournevis plat',
+      description: 'Tournevis manuel pour travaux de réparation.',
+      labels: ['Tool'],
+      objects: ['Screwdriver'],
+    },
+    {
+      title: 'Pince multiprise',
+      description: 'Pince de bricolage en bon état.',
+      labels: ['Tool'],
+      objects: ['Pliers'],
+    },
+    {
+      title: 'Clé à molette',
+      description: 'Clé de serrage pour atelier.',
+      labels: ['Tool'],
+      objects: ['Wrench'],
+    },
+    {
+      title: 'Scie manuelle',
+      description: 'Scie de coupe pour travaux simples.',
+      labels: ['Tool'],
+      objects: ['Saw'],
+    },
+    {
+      title: 'Niveau à bulle',
+      description: 'Niveau pour alignement de chantier.',
+      labels: ['Tool'],
+      objects: ['Level'],
+    },
+    {
+      title: 'Cutter professionnel',
+      description: 'Cutter de bricolage avec lame rétractable.',
+      labels: ['Tool'],
+      objects: ['Utility knife'],
+    },
+  ];
+
+  for (const toolCase of cases) {
+    const result = disambiguateVisionCategory({
+      draftPatch: {
+        categoryId: 'home_garden',
+        condition: 'used_good',
+        description: toolCase.description,
+        title: toolCase.title,
+      },
+      signals: {
+        labels: toolCase.labels,
+        logos: [],
+        objects: toolCase.objects,
+        ocrText: '',
+      },
+    });
+
+    assert.equal(result.categoryId, 'construction', `expected ${toolCase.title} to map to construction`);
+  }
+});
+
 test('does not promote a generic bottle to beauty or health on weak evidence', () => {
   const result = disambiguateVisionCategory({
     draftPatch: {
