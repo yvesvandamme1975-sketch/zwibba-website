@@ -216,6 +216,78 @@ test('promotes common hand tools to construction', () => {
   }
 });
 
+test('promotes common power and chantier tools to construction', () => {
+  const cases = [
+    {
+      title: 'Visseuse sans fil',
+      description: 'Visseuse de bricolage rechargeable.',
+      labels: ['Hardware'],
+      objects: ['Tool'],
+    },
+    {
+      title: 'Vissuese sans fil',
+      description: 'Vissuese de bricolage rechargeable.',
+      labels: ['Hardware'],
+      objects: ['Tool'],
+    },
+    {
+      title: 'Foreuse Bosch',
+      description: 'Foreuse pour atelier et chantier.',
+      labels: ['Hardware'],
+      objects: ['Tool'],
+    },
+    {
+      title: 'Marteau-piqueur',
+      description: 'Marteau-piqueur pour travaux lourds.',
+      labels: ['Hardware'],
+      objects: ['Tool'],
+    },
+    {
+      title: 'Marteau-piquer',
+      description: 'Marteau-piquer pour démolition.',
+      labels: ['Hardware'],
+      objects: ['Tool'],
+    },
+    {
+      title: 'Meuleuse angle',
+      description: 'Meuleuse pour coupe et finition.',
+      labels: ['Hardware'],
+      objects: ['Tool'],
+    },
+    {
+      title: 'Ponceuse orbitale',
+      description: 'Ponceuse électrique en bon état.',
+      labels: ['Hardware'],
+      objects: ['Tool'],
+    },
+    {
+      title: 'Truelle de maçon',
+      description: 'Truelle pour ciment et finition.',
+      labels: ['Hardware'],
+      objects: ['Tool'],
+    },
+  ];
+
+  for (const toolCase of cases) {
+    const result = disambiguateVisionCategory({
+      draftPatch: {
+        categoryId: 'home_garden',
+        condition: 'used_good',
+        description: toolCase.description,
+        title: toolCase.title,
+      },
+      signals: {
+        labels: toolCase.labels,
+        logos: [],
+        objects: toolCase.objects,
+        ocrText: '',
+      },
+    });
+
+    assert.equal(result.categoryId, 'construction', `expected ${toolCase.title} to map to construction`);
+  }
+});
+
 test('does not promote a generic bottle to beauty or health on weak evidence', () => {
   const result = disambiguateVisionCategory({
     draftPatch: {
