@@ -331,6 +331,44 @@ test('does not promote a generic bottle to beauty or health on weak evidence', (
   assert.equal(result.categoryId, 'electronics');
 });
 
+test('promotes explicit makeup and nail products to beauty', () => {
+  const cases = [
+    {
+      title: 'Fond de teint mat',
+      description: 'Fond de teint longue tenue.',
+      labels: ['Beauty product'],
+      objects: ['Cosmetic bottle'],
+      ocrText: 'Fond de teint mat longue tenue',
+    },
+    {
+      title: 'Vernis à ongles nude',
+      description: 'Vernis à ongles brillant.',
+      labels: ['Cosmetics'],
+      objects: ['Nail polish'],
+      ocrText: 'Vernis a ongles nude',
+    },
+  ];
+
+  for (const beautyCase of cases) {
+    const result = disambiguateVisionCategory({
+      draftPatch: {
+        categoryId: 'electronics',
+        condition: 'new_item',
+        description: beautyCase.description,
+        title: beautyCase.title,
+      },
+      signals: {
+        labels: beautyCase.labels,
+        logos: [],
+        objects: beautyCase.objects,
+        ocrText: beautyCase.ocrText,
+      },
+    });
+
+    assert.equal(result.categoryId, 'beauty', `expected ${beautyCase.title} to map to beauty`);
+  }
+});
+
 test('promotes explicit cosmetic products to beauty', () => {
   const result = disambiguateVisionCategory({
     draftPatch: {
@@ -350,6 +388,44 @@ test('promotes explicit cosmetic products to beauty', () => {
   assert.equal(result.categoryId, 'beauty');
 });
 
+test('promotes pharmacy and home medical products to health', () => {
+  const cases = [
+    {
+      title: 'Tensiomètre digital',
+      description: 'Tensiomètre pour suivi à domicile.',
+      labels: ['Medical equipment'],
+      objects: ['Blood pressure monitor'],
+      ocrText: 'Tensiometre digital',
+    },
+    {
+      title: 'Pack pharmacie familiale',
+      description: 'Produits de pharmacie et premiers soins.',
+      labels: ['Pharmacy'],
+      objects: ['Medicine'],
+      ocrText: 'Pharmacie familiale',
+    },
+  ];
+
+  for (const healthCase of cases) {
+    const result = disambiguateVisionCategory({
+      draftPatch: {
+        categoryId: 'electronics',
+        condition: 'used_good',
+        description: healthCase.description,
+        title: healthCase.title,
+      },
+      signals: {
+        labels: healthCase.labels,
+        logos: [],
+        objects: healthCase.objects,
+        ocrText: healthCase.ocrText,
+      },
+    });
+
+    assert.equal(result.categoryId, 'health', `expected ${healthCase.title} to map to health`);
+  }
+});
+
 test('promotes explicit medical gear to health', () => {
   const result = disambiguateVisionCategory({
     draftPatch: {
@@ -367,6 +443,55 @@ test('promotes explicit medical gear to health', () => {
   });
 
   assert.equal(result.categoryId, 'health');
+});
+
+test('does not promote ambiguous creams or mixed beauty-health signals', () => {
+  const ambiguousCases = [
+    {
+      title: 'Crème hydratante',
+      description: 'Crème en pot sans autre indication.',
+      labels: ['Jar'],
+      objects: ['Jar'],
+      ocrText: 'Creme hydratante',
+    },
+    {
+      title: 'Gel en flacon',
+      description: 'Flacon neutre sans contexte clair.',
+      labels: ['Bottle'],
+      objects: ['Bottle'],
+      ocrText: 'Gel 250 ml',
+    },
+    {
+      title: 'Crème de soin',
+      description: 'Produit de soin avec indices mixtes.',
+      labels: ['Cosmetics', 'Medical equipment'],
+      objects: ['Bottle'],
+      ocrText: 'Creme soin medical',
+    },
+  ];
+
+  for (const ambiguousCase of ambiguousCases) {
+    const result = disambiguateVisionCategory({
+      draftPatch: {
+        categoryId: 'electronics',
+        condition: 'used_good',
+        description: ambiguousCase.description,
+        title: ambiguousCase.title,
+      },
+      signals: {
+        labels: ambiguousCase.labels,
+        logos: [],
+        objects: ambiguousCase.objects,
+        ocrText: ambiguousCase.ocrText,
+      },
+    });
+
+    assert.equal(
+      result.categoryId,
+      'electronics',
+      `expected ${ambiguousCase.title} to stay in a safe generic category`,
+    );
+  }
 });
 
 test('promotes packaged groceries to food', () => {

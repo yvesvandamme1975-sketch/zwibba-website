@@ -371,6 +371,72 @@ test('ai service promotes a clear instrument to music on strong evidence', async
   assert.equal(result.draftPatch.categoryId, 'music');
 });
 
+test('ai service promotes clear beauty evidence to beauty on strong signals', async () => {
+  const service = new AiService({
+    googleVisionEnrichmentProvider: {
+      async collectSignalsFromImage() {
+        return {
+          labels: ['Beauty product'],
+          logos: [],
+          objects: ['Cosmetic bottle'],
+          ocrText: 'Fond de teint mat longue tenue',
+        };
+      },
+    },
+    visionDraftProvider: {
+      async generateDraftFromImage() {
+        return {
+          categoryId: 'electronics',
+          condition: 'new_item',
+          description: 'Produit visible.',
+          title: 'Annonce préparée par IA',
+        };
+      },
+    },
+  });
+
+  const result = await service.generateDraft({
+    photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-foundation.jpg',
+  });
+
+  assert.equal(result.status, 'ready');
+  assert.ok(result.draftPatch);
+  assert.equal(result.draftPatch.categoryId, 'beauty');
+});
+
+test('ai service keeps a safe generic category for ambiguous cream signals', async () => {
+  const service = new AiService({
+    googleVisionEnrichmentProvider: {
+      async collectSignalsFromImage() {
+        return {
+          labels: ['Jar'],
+          logos: [],
+          objects: ['Jar'],
+          ocrText: 'Creme hydratante',
+        };
+      },
+    },
+    visionDraftProvider: {
+      async generateDraftFromImage() {
+        return {
+          categoryId: 'electronics',
+          condition: 'used_good',
+          description: 'Produit visible.',
+          title: 'Annonce préparée par IA',
+        };
+      },
+    },
+  });
+
+  const result = await service.generateDraft({
+    photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-cream.jpg',
+  });
+
+  assert.equal(result.status, 'ready');
+  assert.ok(result.draftPatch);
+  assert.equal(result.draftPatch.categoryId, 'electronics');
+});
+
 test('ai service can still disambiguate education from strong Gemini text without Google Vision signals', async () => {
   const service = new AiService({
     async generateDraftFromImage() {

@@ -139,30 +139,57 @@ function hasStrongConstructionSignal(haystack: string) {
   return hasAnyPattern(haystack, constructionKeywordPatterns);
 }
 
+const beautyCosmeticsPatterns = [
+  'maquillage',
+  'cosmetics',
+  'parfum',
+  'fond de teint',
+  'foundation',
+  'vernis',
+  'vernis a ongles',
+  'nail polish',
+  'rouge a levres',
+  'lipstick',
+];
+
+const beautySalonPatterns = [
+  'coiffure',
+  'onglerie',
+  'salon beaute',
+  'salon de coiffure',
+];
+
+const beautyKeywordPatterns = [
+  ...beautyCosmeticsPatterns,
+  ...beautySalonPatterns,
+];
+
 function hasStrongBeautySignal(haystack: string) {
-  return hasAnyPattern(haystack, [
-    'maquillage',
-    'parfum',
-    'coiffure',
-    'onglerie',
-    'salon beaute',
-    'rouge a levres',
-    'lipstick',
-    'cosmetics',
-  ]);
+  return hasAnyPattern(haystack, beautyKeywordPatterns);
 }
 
+const healthMedicalDevicePatterns = [
+  'tensiometre',
+  'thermometre',
+  'medical',
+  'medical equipment',
+  'soin medical',
+  'bandage',
+];
+
+const healthPharmacyPatterns = [
+  'pharmacie',
+  'complement',
+  'complement sante',
+];
+
+const healthKeywordPatterns = [
+  ...healthMedicalDevicePatterns,
+  ...healthPharmacyPatterns,
+];
+
 function hasStrongHealthSignal(haystack: string) {
-  return hasAnyPattern(haystack, [
-    'pharmacie',
-    'complement',
-    'tensiometre',
-    'thermometre',
-    'medical',
-    'medical equipment',
-    'soin medical',
-    'bandage',
-  ]);
+  return hasAnyPattern(haystack, healthKeywordPatterns);
 }
 
 function hasStrongFoodSignal(haystack: string) {
