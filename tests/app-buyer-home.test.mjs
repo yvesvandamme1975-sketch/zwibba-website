@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { renderBuyScreen } from '../App/features/home/buy-screen.mjs';
 import { sellerCategories } from '../App/demo-content.mjs';
 import { renderHomeScreen } from '../App/features/home/home-screen.mjs';
 
@@ -181,4 +182,27 @@ test('buyer listing cards keep the media placeholder when no image is available'
 
   assert.match(html, /class="app-home__listing-media"/);
   assert.doesNotMatch(html, /<img[^>]+class="app-home__listing-image"/);
+});
+
+test('buy screen hides the recent section when no recent listings are available', () => {
+  const html = renderBuyScreen({
+    categories,
+    featuredListings: [
+      {
+        categoryId: 'beauty',
+        locationLabel: 'Lubumbashi Centre',
+        priceAmount: 5,
+        priceCurrency: 'CDF',
+        slug: 'mini-flacon-poivre-noir-jasmin',
+        title: 'Mini flacon de parfum "Poivre Noir Jasmin"',
+      },
+    ],
+    feedStatus: 'ready',
+    recentListings: [],
+  });
+
+  assert.match(html, /En avant/);
+  assert.doesNotMatch(html, /<h3>Récent<\/h3>/);
+  assert.doesNotMatch(html, /Flux acheteur/);
+  assert.doesNotMatch(html, /Aucune annonce ne correspond à vos filtres pour le moment\./);
 });

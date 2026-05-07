@@ -70,6 +70,10 @@ export function renderRecentFeedSection({
   listings,
   status = 'ready',
 }) {
+  if (status === 'ready' && !listings.length) {
+    return '';
+  }
+
   return `
     <section class="app-home__section" data-recent-feed-section>
       <div class="app-home__section-head">
