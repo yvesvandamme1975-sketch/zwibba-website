@@ -823,7 +823,6 @@
 .app-capture__resume strong,
 .app-upload-progress strong,
 .app-guidance__hero-card strong,
-.app-capture-result__status-card strong,
 .app-capture-result__summary-card strong,
 .app-guidance__summary-card strong,
 .app-guidance__status strong,
@@ -839,7 +838,6 @@
 .app-capture__resume span,
 .app-upload-progress span,
 .app-guidance__hero-card span,
-.app-capture-result__status-card span,
 .app-capture-result__summary-card span,
 .app-guidance__summary-card span,
 .app-guidance__status span,
@@ -940,30 +938,6 @@
 .app-capture-result__summary-card,
 .app-guidance__summary-card {
   gap: 14px;
-}
-
-.app-capture-result__status-cards {
-  display: grid;
-  gap: 12px;
-}
-
-.app-capture-result__status-card {
-  display: grid;
-  gap: 6px;
-  padding: 14px;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.app-capture-result__status-card.is-success {
-  border-color: rgba(107, 230, 107, 0.24);
-  background: rgba(107, 230, 107, 0.08);
-}
-
-.app-capture-result__status-card.is-warning {
-  border-color: rgba(255, 194, 102, 0.3);
-  background: rgba(255, 194, 102, 0.08);
 }
 
 .app-capture-result__summary-fields {

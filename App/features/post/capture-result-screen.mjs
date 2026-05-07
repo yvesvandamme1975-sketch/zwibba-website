@@ -75,7 +75,7 @@ export function renderCaptureResultScreen({
   draft,
 }) {
   const primaryImageUrl = resolveDraftPrimaryImage(draft);
-  const imageAlt = draft?.details?.title || 'Photo téléversée Zwibba';
+  const imageAlt = draft?.details?.title || 'Aperçu Zwibba';
   const isManualFallback = draft?.ai?.status === 'manual_fallback';
 
   return `
@@ -90,24 +90,6 @@ export function renderCaptureResultScreen({
           <h2 class="app-flow__title">Photo confirmée</h2>
         </div>
       </header>
-
-      <div class="app-capture-result__status-cards">
-        <div class="app-capture-result__status-card">
-          <strong>Photo téléversée</strong>
-          <span>Votre première photo est bien enregistrée dans le brouillon.</span>
-        </div>
-        <div class="app-capture-result__status-card${
-          isManualFallback ? ' is-warning' : ' is-success'
-        }">
-          <strong>${isManualFallback ? 'Analyse IA indisponible' : 'Analyse IA terminée'}</strong>
-          <span>${escapeHtml(
-            draft?.ai?.message ||
-              (isManualFallback
-                ? "Continuez manuellement à l'étape suivante."
-                : 'Les champs ont été préparés à partir de votre photo.'),
-          )}</span>
-        </div>
-      </div>
 
       ${
         primaryImageUrl

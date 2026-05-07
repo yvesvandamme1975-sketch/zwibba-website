@@ -943,8 +943,8 @@ test('capture result screen shows the uploaded photo and AI-generated details be
     }),
   });
 
-  assert.match(html, /Photo téléversée/i);
-  assert.match(html, /Analyse IA terminée/i);
+  assert.doesNotMatch(html, /Photo téléversée/i);
+  assert.doesNotMatch(html, /Analyse IA terminée/i);
   assert.match(
     html,
     /<img[^>]+class="app-capture-result__hero-image"[^>]+src="https:\/\/pub\.example\.test\/draft-photos\/capture\/photo_1-dress\.jpg"/,
@@ -987,7 +987,7 @@ test('capture result screen shows a manual fallback note when AI preparation is 
     }),
   });
 
-  assert.match(html, /Photo téléversée/i);
+  assert.doesNotMatch(html, /Photo téléversée/i);
   assert.match(html, /Analyse IA indisponible/i);
   assert.match(html, /Continuez manuellement/i);
   assert.match(html, /href="#guidance"/);
