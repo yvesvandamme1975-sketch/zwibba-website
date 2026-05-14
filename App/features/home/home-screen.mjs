@@ -10,7 +10,20 @@ import {
 } from './recent-feed-section.mjs';
 
 function renderCategoryChips(categories, selectedCategoryId = '') {
-  return categories
+  const allCategoryChip = `
+      <button
+        class="app-home__chip${!selectedCategoryId ? ' is-active' : ''}"
+        type="button"
+        data-action="filter-category"
+        data-category-id=""
+      >
+        Toutes
+      </button>
+    `;
+
+  return [
+    allCategoryChip,
+    ...categories
     .map((category) => `
       <button
         class="app-home__chip${category.id === selectedCategoryId ? ' is-active' : ''}"
@@ -20,7 +33,8 @@ function renderCategoryChips(categories, selectedCategoryId = '') {
       >
         ${escapeHtml(category.label)}
       </button>
-    `)
+    `),
+  ]
     .join('');
 }
 

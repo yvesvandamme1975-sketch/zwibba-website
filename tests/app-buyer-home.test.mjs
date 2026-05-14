@@ -174,6 +174,8 @@ test('buyer home renders the expanded category chips including Emplois', () => {
     recentListings: [],
   });
 
+  assert.match(html, /Toutes/);
+  assert.match(html, /data-category-id=""/);
   assert.match(html, /Alimentation/);
   assert.match(html, /Agriculture/);
   assert.match(html, /Bricolage ?\/ ?Construction/);
@@ -183,6 +185,25 @@ test('buyer home renders the expanded category chips including Emplois', () => {
   assert.match(html, /Beaut[ée]/);
   assert.match(html, /Emplois/);
   assert.match(html, /Sports et loisirs/);
+});
+
+test('buy screen exposes a clear-all category chip when a category filter is active', () => {
+  const html = renderBuyScreen({
+    categories: sellerCategories,
+    featuredListings: [],
+    feedStatus: 'ready',
+    recentListings: [],
+    selectedCategoryId: 'beauty',
+  });
+
+  assert.match(
+    html,
+    /class="app-home__chip"[\s\S]*data-action="filter-category"[\s\S]*data-category-id=""[\s\S]*Toutes/,
+  );
+  assert.match(
+    html,
+    /class="app-home__chip is-active"[\s\S]*data-category-id="beauty"[\s\S]*Beaut[ée]/,
+  );
 });
 
 test('buyer listing cards keep the media placeholder when no image is available', () => {

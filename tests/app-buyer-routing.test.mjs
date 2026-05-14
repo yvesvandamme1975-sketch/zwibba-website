@@ -83,6 +83,13 @@ test('buyer browse controller loads the live feed and filters it by search plus 
   assert.equal(filtered.featuredListings.length, 1);
   assert.equal(filtered.featuredListings[0].slug, 'toyota-hilux');
   assert.equal(filtered.recentListings.length, 0);
+
+  controller.setSearchQuery('');
+  controller.setSelectedCategoryId('');
+
+  const unfiltered = controller.getHomeSections();
+
+  assert.equal(unfiltered.featuredListings.length, 2);
 });
 
 test('buyer browse controller loads a listing detail and captures errors', async () => {
