@@ -1097,6 +1097,44 @@ if (appRoot) {
     }
   }
 
+  async function handlePrimaryPhotoReplacement(file, draftResetSerial = state.draftResetSerial) {
+    state.busyLabel = 'Remplacement de la photo et analyse IA en cours...';
+    renderApp();
+
+    try {
+      const nextDraft = await postFlowController.replacePrimaryPhoto(file);
+
+      if (draftResetSerial !== state.draftResetSerial) {
+        state.busyLabel = '';
+        renderApp();
+        return;
+      }
+
+      state.busyLabel = '';
+      state.uploadProgress = null;
+      state.draft = syncDraftAreaFromProfile(nextDraft, state.profile?.area ?? '');
+      if (state.draft) {
+        draftStorage.saveDraft(state.draft);
+      }
+      state.publishError = '';
+      state.reviewErrors = [];
+      window.location.hash = '#capture-result';
+    } catch (error) {
+      if (draftResetSerial !== state.draftResetSerial) {
+        state.busyLabel = '';
+        renderApp();
+        return;
+      }
+
+      state.busyLabel = '';
+      state.uploadProgress = null;
+      state.draft = syncDraftAreaFromProfile(error?.draft ?? state.draft, state.profile?.area ?? '');
+      state.publishError =
+        error instanceof Error ? error.message : 'Impossible de remplacer la photo principale.';
+      renderApp();
+    }
+  }
+
   async function handleGuidedCapture(promptId, file, draftResetSerial = state.draftResetSerial) {
     state.busyLabel = 'Compression et téléversement de la photo guidée...';
     renderApp();
@@ -1861,6 +1899,17 @@ if (appRoot) {
     if (target.dataset.input === 'capture-first-photo') {
       const draftResetSerial = state.draftResetSerial;
       const task = photoUploadQueue.run(() => handleCapture(file, draftResetSerial));
+      renderApp();
+      await task;
+      renderApp();
+      return;
+    }
+
+    if (target.dataset.input === 'replace-primary-photo') {
+      const draftResetSerial = state.draftResetSerial;
+      const task = photoUploadQueue.run(() =>
+        handlePrimaryPhotoReplacement(file, draftResetSerial),
+      );
       renderApp();
       await task;
       renderApp();

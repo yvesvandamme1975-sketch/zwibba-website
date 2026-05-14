@@ -1006,6 +1006,12 @@
   cursor: pointer;
 }
 
+.app-capture-result__replace-photo {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
 .app-guidance__list {
   display: grid;
   gap: 12px;

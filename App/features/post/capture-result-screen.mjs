@@ -118,6 +118,16 @@ export function renderCaptureResultScreen({
       }
 
       <div class="app-flow__actions">
+        <label class="app-flow__button app-flow__button--secondary app-capture-result__replace-photo">
+          <span>Modifier la photo</span>
+          <input
+            class="app-flow__file-input app-flow__file-input--overlay"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            data-input="replace-primary-photo"
+          />
+        </label>
         <a class="app-flow__button app-flow__button--secondary" href="${escapeAttribute(
           continueHref,
         )}">${escapeHtml(continueLabel)}</a>

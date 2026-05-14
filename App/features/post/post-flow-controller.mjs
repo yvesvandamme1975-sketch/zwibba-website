@@ -623,6 +623,71 @@ export function createPostFlowController({
         await onUploadStageChange(null);
       }
     },
+    async replacePrimaryPhoto(file) {
+      const draft = draftStorage.loadDraft();
+
+      if (!draft) {
+        throw new Error('No draft available.');
+      }
+
+      await onUploadStageChange({
+        flow: 'primary',
+        stage: 'compressing',
+      });
+      const compressionResult = await imageCompressionService.compressImage(
+        file,
+        createSelectedPhotoRecord(file, {
+          createPreviewUrl,
+          kind: 'primary',
+        }),
+      );
+      const preparedPhoto = compressionResult?.photo ?? compressionResult;
+      const upload = compressionResult?.upload ?? null;
+      const nonPrimaryPhotos = draft.photos.filter((photo) => photo.kind !== 'primary');
+
+      try {
+        await onUploadStageChange({
+          flow: 'primary',
+          stage: 'uploading',
+        });
+        const uploadedPhoto = await uploadDraftPhoto({
+          file,
+          mediaService,
+          photo: preparedPhoto,
+          upload,
+        });
+        let updatedDraft = updateListingDraft(
+          draft,
+          {
+            photos: [uploadedPhoto, ...nonPrimaryPhotos],
+            upload: {
+              compressed: Boolean(preparedPhoto.wasCompressed),
+              originalSizeBytes: preparedPhoto.originalSizeBytes ?? preparedPhoto.sizeBytes ?? null,
+              uploadedSizeBytes: preparedPhoto.sizeBytes ?? null,
+            },
+          },
+          { now: now() },
+        );
+        draftStorage.saveDraft(updatedDraft);
+
+        await onUploadStageChange({
+          flow: 'primary',
+          stage: 'analyzing',
+        });
+        const aiResult = await aiDraftService.generateDraft(uploadedPhoto);
+
+        updatedDraft = applyAiResultToDraft(updatedDraft, aiResult, {
+          now: now(),
+        });
+        draftStorage.saveDraft(updatedDraft);
+
+        return updatedDraft;
+      } catch (error) {
+        throw attachDraftToError(error, draftStorage.loadDraft() ?? draft);
+      } finally {
+        await onUploadStageChange(null);
+      }
+    },
     async addGuidedPhoto(promptId, file) {
       const draft = draftStorage.loadDraft();
 

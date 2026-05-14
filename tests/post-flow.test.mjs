@@ -260,6 +260,85 @@ test('first photo upload uses the compressed bytes and normalized image metadata
   assert.equal(mediaService.requests[1].payload.contentType, 'image/jpeg');
 });
 
+test('primary photo can be replaced without starting a new draft', async () => {
+  const draftStorage = createDraftStorageService({
+    storage: createMemoryStorage(),
+  });
+  const mediaService = createMediaServiceMock({
+    slot: {
+      objectKey: 'draft-photos/capture/photo_2-lamp.jpg',
+      photoId: 'photo_capture_2',
+      publicUrl: 'https://pub.example.test/draft-photos/capture/photo_2-lamp.jpg',
+    },
+  });
+  const aiDraftService = createAiDraftServiceMock({
+    status: 'ready',
+    draftPatch: {
+      categoryId: 'home_garden',
+      title: 'Lampe de bureau',
+      condition: 'used_good',
+      description: 'Lampe de bureau propre et fonctionnelle.',
+    },
+  });
+  const controller = createPostFlowController({
+    draftStorage,
+    imageCompressionService: createImageCompressionServiceMock(),
+    aiDraftService,
+    createPreviewUrl: (file) => `blob:${file.name}`,
+    mediaService,
+  });
+  const originalDraft = createReadyDraft({
+    categoryId: 'electronics',
+    description: 'Ancienne description.',
+    photos: [
+      {
+        id: 'photo-1',
+        kind: 'primary',
+        objectKey: 'draft-photos/capture/photo_1-phone.jpg',
+        previewUrl: 'blob:phone.jpg',
+        sourcePresetId: 'capture',
+        uploadStatus: 'uploaded',
+        url: 'https://pub.example.test/draft-photos/capture/photo_1-phone.jpg',
+      },
+      {
+        id: 'photo-guided',
+        kind: 'guided',
+        promptId: 'detail',
+        previewUrl: 'blob:detail.jpg',
+        sourcePresetId: 'detail',
+        uploadStatus: 'uploaded',
+        url: 'https://pub.example.test/draft-photos/detail.jpg',
+      },
+    ],
+    title: 'Ancien téléphone',
+  });
+  draftStorage.saveDraft(originalDraft);
+
+  const updatedDraft = await controller.replacePrimaryPhoto(
+    createBrowserFile({
+      name: 'lamp.jpg',
+      size: 900_000,
+    }),
+  );
+
+  assert.equal(updatedDraft.id, originalDraft.id);
+  assert.equal(updatedDraft.photos.length, 2);
+  assert.equal(updatedDraft.photos[0].kind, 'primary');
+  assert.equal(updatedDraft.photos[0].objectKey, 'draft-photos/capture/photo_2-lamp.jpg');
+  assert.equal(
+    updatedDraft.photos[0].url,
+    'https://pub.example.test/draft-photos/capture/photo_2-lamp.jpg',
+  );
+  assert.equal(updatedDraft.photos[1].promptId, 'detail');
+  assert.equal(updatedDraft.details.title, 'Lampe de bureau');
+  assert.equal(updatedDraft.details.categoryId, 'home_garden');
+  assert.equal(
+    aiDraftService.calls[0].publicUrl,
+    'https://pub.example.test/draft-photos/capture/photo_2-lamp.jpg',
+  );
+  assert.equal(draftStorage.loadDraft().photos[0].objectKey, 'draft-photos/capture/photo_2-lamp.jpg');
+});
+
 test('incomplete ready AI output falls back to manual mode instead of partially filling the draft', async () => {
   const draftStorage = createDraftStorageService({
     storage: createMemoryStorage(),
@@ -974,6 +1053,11 @@ test('capture result screen shows the uploaded photo and AI-generated details be
   assert.match(html, /<strong>Description<\/strong>/);
   assert.match(html, /href="#review"/);
   assert.match(html, /Continuer vers le brouillon/i);
+  assert.match(html, /Modifier la photo/i);
+  assert.match(
+    html,
+    /<input[^>]+class="app-flow__file-input app-flow__file-input--overlay"[\s\S]*data-input="replace-primary-photo"/,
+  );
 });
 
 test('capture result screen shows a manual fallback note when AI preparation is unavailable', () => {
