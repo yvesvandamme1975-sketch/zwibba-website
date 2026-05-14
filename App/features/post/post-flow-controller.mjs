@@ -395,7 +395,7 @@ export function validateDraftForPublish(
       field: 'price',
       message: 'Choisissez une devise pour votre prix.',
     });
-  } else if (!priceAmount) {
+  } else if (priceAmount === null || priceAmount === undefined) {
     errors.push({
       field: 'price',
       message: 'Choisissez un prix final.',

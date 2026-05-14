@@ -351,6 +351,54 @@ test('draft sync accepts USD listing prices and persists amount plus currency', 
   assert.equal(persistedDraft.priceCurrency, 'USD');
 });
 
+test('draft sync accepts zero price for free listings when currency is selected', async (t) => {
+  const harness = await createTestApp();
+  t.after(async () => {
+    await harness.app.close();
+  });
+
+  await request(harness.app.getHttpServer())
+    .post('/auth/request-otp')
+    .send({ phoneNumber: '+243990000001' })
+    .expect(201);
+
+  const verifyResponse = await request(harness.app.getHttpServer())
+    .post('/auth/verify-otp')
+    .send({
+      phoneNumber: '+243990000001',
+      code: '123456',
+    })
+    .expect(201);
+
+  const syncResponse = await request(harness.app.getHttpServer())
+    .post('/drafts/sync')
+    .set('authorization', `Bearer ${verifyResponse.body.sessionToken}`)
+    .send({
+      area: 'Lubumbashi Centre',
+      categoryId: 'home_garden',
+      description: 'Chaise disponible gratuitement.',
+      priceAmount: 0,
+      priceCurrency: 'CDF',
+      title: 'Chaise à donner',
+      photos: [
+        {
+          objectKey: 'draft-photos/free-chair.jpg',
+          publicUrl: 'https://cdn.zwibba.example/draft-photos/free-chair.jpg',
+          sourcePresetId: 'capture',
+          uploadStatus: 'uploaded',
+        },
+      ],
+    })
+    .expect(201);
+
+  assert.equal(syncResponse.body.priceAmount, 0);
+  assert.equal(syncResponse.body.priceCurrency, 'CDF');
+
+  const persistedDraft = Array.from(harness.prisma.drafts.values())[0] as Record<string, unknown>;
+  assert.equal(persistedDraft.priceAmount, 0);
+  assert.equal(persistedDraft.priceCurrency, 'CDF');
+});
+
 test('draft sync rejects prices above the 32-bit beta limit with a clear seller error', async (t) => {
   const harness = await createTestApp();
   t.after(async () => {

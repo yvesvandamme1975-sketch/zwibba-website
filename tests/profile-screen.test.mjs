@@ -90,6 +90,31 @@ test('profile screen renders mixed listing currencies per announcement', () => {
   assert.match(html, /350 US\$/);
 });
 
+test('profile screen renders zero-priced listings as free giveaways', () => {
+  const html = renderProfileScreen({
+    listings: [
+      {
+        id: 'listing_free',
+        moderationStatus: 'approved',
+        priceAmount: 0,
+        priceCurrency: 'USD',
+        primaryImageUrl: null,
+        slug: 'chaise-a-donner',
+        title: 'Chaise à donner',
+      },
+    ],
+    session: {
+      canSyncDrafts: true,
+      phoneNumber: '+243990000001',
+      sessionToken: 'zwibba_session_123',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /À donner/);
+  assert.doesNotMatch(html, /0 US\$/);
+});
+
 test('profile screen shows a verification prompt when no session exists', () => {
   const html = renderProfileScreen({
     listings: [],

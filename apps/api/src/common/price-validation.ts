@@ -23,6 +23,10 @@ export function formatListingPrice({
 }) {
   const suffix = priceCurrency === 'USD' ? 'US$' : 'CDF';
 
+  if (priceAmount === 0) {
+    return 'À donner';
+  }
+
   return `${new Intl.NumberFormat('fr-FR').format(priceAmount)} ${suffix}`;
 }
 
@@ -55,10 +59,7 @@ export function resolveSubmittedListingPrice({
     });
   }
 
-  return assertSupportedListingPrice({
-    priceAmount: priceCdf ?? 0,
-    priceCurrency: 'CDF',
-  });
+  throw new BadRequestException('Le prix final doit être confirmé avant publication.');
 }
 
 export function assertSupportedListingPrice({
@@ -68,7 +69,7 @@ export function assertSupportedListingPrice({
   priceAmount: number;
   priceCurrency: ListingPriceCurrency;
 }) {
-  if (!Number.isInteger(priceAmount) || priceAmount <= 0) {
+  if (!Number.isInteger(priceAmount) || priceAmount < 0) {
     throw new BadRequestException('Le prix final doit être confirmé avant publication.');
   }
 

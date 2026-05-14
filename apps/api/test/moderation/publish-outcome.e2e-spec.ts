@@ -666,6 +666,48 @@ test('publishing a synced USD draft persists amount and currency on the listing'
   assert.equal(persistedListing.priceCurrency, 'USD');
 });
 
+test('publishing a synced free listing persists zero amount and selected currency', async (t) => {
+  const prisma = new _FakePrismaService();
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule],
+  })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .overrideProvider(TwilioVerifyService)
+      .useValue(new _FakeTwilioVerifyService())
+      .compile();
+
+  const app = moduleRef.createNestApplication();
+  await app.init();
+  t.after(async () => {
+    await app.close();
+  });
+
+  const sessionToken = await createSellerSession(app, '+243990000005');
+  const syncedDraft = await syncDraft(app, sessionToken, {
+    title: 'Chaise à donner',
+    categoryId: 'home_garden',
+    area: 'Lubumbashi Centre',
+    priceAmount: 0,
+    priceCurrency: 'CDF',
+  });
+
+  const publishResponse = await request(app.getHttpServer())
+    .post('/moderation/publish')
+    .set('authorization', `Bearer ${sessionToken}`)
+    .send({
+      ...syncedDraft,
+      description: 'Chaise disponible gratuitement.',
+    })
+    .expect(201);
+
+  assert.equal(publishResponse.body.status, 'approved');
+
+  const persistedListing = getPersistedListing(prisma, publishResponse.body.id);
+  assert.equal(persistedListing.priceAmount, 0);
+  assert.equal(persistedListing.priceCurrency, 'CDF');
+});
+
 test('publishing a synced draft with missing metadata persists a blocked moderation decision', async (t) => {
   const prisma = new _FakePrismaService();
   const moduleRef = await Test.createTestingModule({

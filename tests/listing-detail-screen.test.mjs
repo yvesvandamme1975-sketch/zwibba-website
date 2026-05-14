@@ -87,6 +87,34 @@ test('listing detail screen renders USD listing prices when provided', () => {
   assert.match(html, /350 US\$/);
 });
 
+test('listing detail screen renders zero-priced listings as free giveaways', () => {
+  const html = renderListingDetailScreen({
+    detail: {
+      categoryId: 'home_garden',
+      categoryLabel: 'Maison',
+      contactActions: ['message'],
+      id: 'listing_free_1',
+      locationLabel: 'Golf',
+      priceAmount: 0,
+      priceCurrency: 'CDF',
+      primaryImageUrl: null,
+      safetyTips: ['Rencontrez le vendeur dans un lieu public.'],
+      seller: {
+        name: 'Particulier 0005',
+        responseTime: 'Répond en moyenne en 9 min',
+        role: 'Particulier',
+      },
+      slug: 'chaise-a-donner',
+      summary: 'Chaise disponible gratuitement.',
+      title: 'Chaise à donner',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /À donner/);
+  assert.doesNotMatch(html, /0 CDF/);
+});
+
 test('listing detail screen renders fashion item type and size details when provided', () => {
   const html = renderListingDetailScreen({
     detail: {

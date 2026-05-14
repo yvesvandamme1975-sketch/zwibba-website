@@ -44,6 +44,10 @@ export function formatListingPrice(listingOrPrice) {
     return '—';
   }
 
+  if (Number(rawAmount) === 0) {
+    return 'À donner';
+  }
+
   const groupedValue = new Intl.NumberFormat('fr-FR')
     .format(Number(rawAmount))
     .replaceAll(/\s/gu, ' ');

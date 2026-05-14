@@ -83,6 +83,27 @@ test('buildReviewDraftDetails clears fashion attributes when category is no long
   assert.equal(details.priceCurrency, 'USD');
 });
 
+test('buildReviewDraftDetails preserves zero price for free listings', () => {
+  const details = buildReviewDraftDetails({
+    existingDetails: {
+      area: 'Lubumbashi',
+      attributesJson: null,
+    },
+    profileArea: 'Lubumbashi',
+    values: {
+      categoryId: 'home_garden',
+      condition: 'used_good',
+      description: 'Chaise à donner.',
+      priceAmount: '0',
+      priceCurrency: 'CDF',
+      title: 'Chaise gratuite',
+    },
+  });
+
+  assert.equal(details.priceAmount, 0);
+  assert.equal(details.priceCurrency, 'CDF');
+});
+
 test('buildReviewDraftDetails drops invalid fashion sizes for the selected item type', () => {
   const details = buildReviewDraftDetails({
     existingDetails: {

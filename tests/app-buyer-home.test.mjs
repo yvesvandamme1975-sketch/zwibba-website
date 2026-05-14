@@ -80,6 +80,28 @@ test('listing cards render USD when a listing is priced in dollars', () => {
   assert.match(html, /350 US\$/);
 });
 
+test('listing cards render zero-priced listings as free giveaways', () => {
+  const html = renderHomeScreen({
+    categories,
+    draft: null,
+    featuredListings: [
+      {
+        categoryId: 'home_garden',
+        locationLabel: 'Golf',
+        priceAmount: 0,
+        priceCurrency: 'CDF',
+        slug: 'chaise-a-donner',
+        title: 'Chaise à donner',
+      },
+    ],
+    feedStatus: 'ready',
+    recentListings: [],
+  });
+
+  assert.match(html, /À donner/);
+  assert.doesNotMatch(html, /0 CDF/);
+});
+
 test('buyer listing cards render the primary image when the live feed provides one', () => {
   const html = renderHomeScreen({
     categories,

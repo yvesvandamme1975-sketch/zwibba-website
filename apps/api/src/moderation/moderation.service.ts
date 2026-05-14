@@ -96,7 +96,7 @@ function detectValidationError({
     return 'Le titre de l’annonce doit être complété avant publication.';
   }
 
-  if (priceAmount <= 0) {
+  if (priceAmount < 0) {
     return 'Le prix final doit être confirmé avant publication.';
   }
 

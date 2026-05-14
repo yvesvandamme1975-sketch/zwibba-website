@@ -662,6 +662,21 @@ test('seller can publish with only the primary uploaded photo during beta', () =
   assert.equal(validationErrors.some((error) => error.field === 'guided_photos'), false);
 });
 
+test('seller can publish a free listing when currency is selected and price is zero', () => {
+  const validationErrors = validateDraftForPublish(
+    createReadyDraft({
+      categoryId: 'home_garden',
+      condition: 'used_good',
+      description: 'Table à donner.',
+      area: 'Lubumbashi',
+      priceAmount: 0,
+      priceCurrency: 'CDF',
+    }),
+  );
+
+  assert.equal(validationErrors.some((error) => error.field === 'price'), false);
+});
+
 test('publish validation rejects prices above the supported beta limit', () => {
   const validationErrors = validateDraftForPublish(
     createReadyDraft({

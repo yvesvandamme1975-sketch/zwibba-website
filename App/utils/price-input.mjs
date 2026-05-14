@@ -29,7 +29,7 @@ export function parsePriceInput(rawValue) {
 
   const parsedValue = Number.parseInt(digits, 10);
 
-  return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : null;
+  return Number.isFinite(parsedValue) && parsedValue >= 0 ? parsedValue : null;
 }
 
 export function getPriceInputPlaceholder(currency) {
@@ -45,8 +45,12 @@ export function formatPricePreview(rawValue, currency) {
 
   const parsedValue = parsePriceInput(rawValue);
 
-  if (!parsedValue) {
+  if (parsedValue === null) {
     return `Entrez votre prix en ${getCurrencyLabel(normalizedCurrency)}.`;
+  }
+
+  if (parsedValue === 0) {
+    return 'À donner';
   }
 
   const groupedValue = formatGroupedAmount(parsedValue);
