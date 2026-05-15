@@ -1715,10 +1715,13 @@ if (appRoot) {
   appRoot.addEventListener('click', async (event) => {
     const scrollTopTrigger = event.target.closest('[data-scroll-top-target]');
 
-    if (scrollTopTrigger?.dataset.scrollTopTarget === 'sell') {
-      pendingScrollReset.request('sell');
+    if (scrollTopTrigger) {
+      const scrollTopTarget = scrollTopTrigger.dataset.scrollTopTarget || '';
+      const rootHash = `#${scrollTopTarget}`;
 
-      if (window.location.hash === '#sell') {
+      pendingScrollReset.request(scrollTopTarget);
+
+      if (window.location.hash === rootHash) {
         event.preventDefault();
         renderApp();
       }

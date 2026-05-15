@@ -6,13 +6,13 @@ import { createPendingScrollResetController } from '../App/utils/pending-scroll-
 test('pending scroll reset returns a one-shot top reset for the requested route', () => {
   const pendingScrollReset = createPendingScrollResetController();
 
-  pendingScrollReset.request('sell');
+  pendingScrollReset.request('messages');
 
-  assert.deepEqual(pendingScrollReset.consume('sell'), {
+  assert.deepEqual(pendingScrollReset.consume('messages'), {
     contentScrollTop: 0,
     pageScrollY: 0,
   });
-  assert.equal(pendingScrollReset.consume('sell'), null);
+  assert.equal(pendingScrollReset.consume('messages'), null);
 });
 
 test('pending scroll reset waits for the matching route before consuming', () => {
