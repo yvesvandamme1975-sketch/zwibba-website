@@ -29,6 +29,7 @@ export function renderAppTabShell({
             class="app-tab-shell__nav-item${tab.id === activeTab ? ' is-active' : ''}"
             href="${tab.href}"
             data-tab-id="${tab.id}"
+            ${tab.id === 'sell' ? 'data-scroll-top-target="sell"' : ''}
           >
             <span class="app-tab-shell__nav-label">${tab.label}</span>
             ${

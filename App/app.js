@@ -48,6 +48,10 @@ import {
   captureBuyerSearchRenderState,
   restoreBuyerSearchRenderState,
 } from './utils/buyer-search-render-state.mjs';
+import {
+  captureBuyerCategoryScrollRenderState,
+  restoreBuyerCategoryScrollRenderState,
+} from './utils/buyer-category-scroll-render-state.mjs';
 import { resolveDiscardDraftRoute } from './utils/draft-discard-navigation.mjs';
 import {
   captureReviewDraftRenderState,
@@ -61,6 +65,7 @@ import {
   captureScrollRenderState,
   restoreScrollRenderState,
 } from './utils/scroll-render-state.mjs';
+import { createPendingScrollResetController } from './utils/pending-scroll-reset.mjs';
 import { syncDraftAreaFromProfile } from './utils/profile-area-sync.mjs';
 import { deriveProfileCityAutocompleteState } from './utils/profile-city-autocomplete-state.mjs';
 import {
@@ -128,6 +133,7 @@ if (appRoot) {
       renderApp();
     },
   });
+  const pendingScrollReset = createPendingScrollResetController();
   const chatLiveRefreshController = createChatLiveRefreshController();
   function buildUploadProgress(flow, stage) {
     if (!flow || !stage) {
@@ -1011,7 +1017,9 @@ if (appRoot) {
     const route = resolveRenderableRoute();
     const routeKey = getRenderableRouteKey(route);
     const scrollRenderState =
-      lastRenderedRouteKey === routeKey ? captureScrollRenderState(appRoot, window) : null;
+      pendingScrollReset.consume(route.type) ??
+      (lastRenderedRouteKey === routeKey ? captureScrollRenderState(appRoot, window) : null);
+    const buyerCategoryScrollRenderState = captureBuyerCategoryScrollRenderState(appRoot);
     const buyerSearchRenderState = captureBuyerSearchRenderState(document.activeElement);
     const reviewDraftRenderState = captureReviewDraftRenderState(appRoot, document.activeElement);
     const threadComposerRenderState = captureThreadComposerRenderState(document.activeElement);
@@ -1030,6 +1038,9 @@ if (appRoot) {
     });
     if (route.type === 'buy') {
       restoreBuyerSearchRenderState(appRoot, buyerSearchRenderState);
+    }
+    if (route.type === 'buy' || route.type === 'sell') {
+      restoreBuyerCategoryScrollRenderState(appRoot, buyerCategoryScrollRenderState);
     }
     if (route.type === 'review') {
       restoreReviewDraftRenderState(appRoot, reviewDraftRenderState);
@@ -1702,6 +1713,19 @@ if (appRoot) {
   }
 
   appRoot.addEventListener('click', async (event) => {
+    const scrollTopTrigger = event.target.closest('[data-scroll-top-target]');
+
+    if (scrollTopTrigger?.dataset.scrollTopTarget === 'sell') {
+      pendingScrollReset.request('sell');
+
+      if (window.location.hash === '#sell') {
+        event.preventDefault();
+        renderApp();
+      }
+
+      return;
+    }
+
     const trigger = event.target.closest('[data-action]');
 
     if (!trigger) {

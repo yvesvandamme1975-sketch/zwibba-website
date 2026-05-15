@@ -11,6 +11,7 @@ test('app tab shell renders the five persistent beta routes', () => {
   });
 
   assert.match(html, /href="#sell"/);
+  assert.match(html, /data-scroll-top-target="sell"/);
   assert.match(html, /href="#buy"/);
   assert.match(html, /href="#messages"/);
   assert.match(html, /href="#wallet"/);
