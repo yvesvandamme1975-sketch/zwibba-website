@@ -14,6 +14,13 @@ test('mobile app shell hides the standalone marketing note so the app starts fir
   );
 });
 
+test('mobile app shell hides the standalone topbar so the app opens without site chrome', () => {
+  assert.match(
+    appStyles,
+    /@media \(max-width: 640px\) \{[\s\S]*?\.app-standalone__topbar\s*\{\s*display:\s*none;\s*\}/,
+  );
+});
+
 test('desktop shell gives more space to the phone and less to the landing copy', () => {
   assert.match(
     appStyles,

@@ -48,6 +48,8 @@ test('internal beta device QA runbook exists with real-device coverage and teste
   assert.match(contents, /Desktop/u);
   assert.match(contents, /\+243990000001/u);
   assert.match(contents, /\+243990000002/u);
+  assert.match(contents, /\+243990000004/u);
+  assert.match(contents, /generic test account/i);
   assert.match(contents, /123456/u);
   assert.match(contents, /seller flow/u);
   assert.match(contents, /messaging flow/u);

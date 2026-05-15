@@ -10,6 +10,7 @@ Tester accounts:
 
 - Seller flow: `+243990000001`
 - Buyer flow: `+243990000002`
+- Generic test account: `+243990000004`
 - Demo OTP code: `123456`
 
 ## Real-device coverage

@@ -1550,8 +1550,7 @@
   }
 
   .app-standalone__topbar {
-    padding: 14px 14px 0;
-    margin-bottom: 12px;
+    display: none;
   }
 
   .app-standalone__entry {
