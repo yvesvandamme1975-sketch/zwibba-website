@@ -262,6 +262,29 @@ test('profile screen renders a persisted seller zone form', () => {
   assert.match(html, /href="#review"/);
 });
 
+test('profile screen submits the current exact-match zone before it has been persisted', () => {
+  const html = renderProfileScreen({
+    citySuggestions: ['Lubumbashi Centre'],
+    listings: [],
+    profile: {
+      area: '',
+      phoneNumber: '+243990000004',
+    },
+    profileAreaInput: 'Lubumbashi Centre',
+    selectedProfileArea: 'Lubumbashi Centre',
+    session: {
+      canSyncDrafts: true,
+      phoneNumber: '+243990000004',
+      sessionToken: 'zwibba_session_004',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /name="area"/);
+  assert.match(html, /value="Lubumbashi Centre"/);
+  assert.match(html, /data-selected-area="Lubumbashi Centre"/);
+});
+
 test('profile screen renders a missing-city action when the typed city has no exact match', () => {
   const html = renderProfileScreen({
     listings: [],

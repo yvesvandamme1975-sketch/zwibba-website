@@ -68,6 +68,7 @@ import {
 import { createPendingScrollResetController } from './utils/pending-scroll-reset.mjs';
 import { syncDraftAreaFromProfile } from './utils/profile-area-sync.mjs';
 import { deriveProfileCityAutocompleteState } from './utils/profile-city-autocomplete-state.mjs';
+import { resolveProfileAreaForSubmit } from './utils/profile-zone-submit.mjs';
 import {
   formatPricePreview,
   getPriceInputPlaceholder,
@@ -1415,7 +1416,25 @@ if (appRoot) {
     }
 
     const formData = new FormData(form);
-    const area = String(formData.get('area') ?? '').trim();
+    const areaSearch = String(formData.get('areaSearch') ?? '').trim();
+
+    if (
+      areaSearch &&
+      (state.profileCityOptionsStatus === 'idle' || state.profileCityOptionsStatus === 'loading')
+    ) {
+      await loadProfileCityOptions();
+    }
+
+    const area = resolveProfileAreaForSubmit({
+      area: formData.get('area'),
+      areaSearch,
+      cityOptions: state.profileCityOptions,
+      selectedArea: state.profileSelectedArea,
+    });
+
+    if (area) {
+      state.profileSelectedArea = area;
+    }
 
     state.profileSaveBusy = true;
     state.profileError = '';

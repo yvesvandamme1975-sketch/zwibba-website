@@ -236,6 +236,7 @@ export function renderProfileScreen({
   profileMessage = '',
   profileState = 'idle',
   profileSaveBusy = false,
+  selectedProfileArea = '',
   session = null,
   state = 'loading',
 } = {}) {
@@ -276,6 +277,7 @@ export function renderProfileScreen({
   const lifecycleGroups = groupListingsByLifecycle(listings);
   const hasListings = listings.length > 0;
   const profileArea = String(profile?.area ?? '').trim();
+  const currentSelectedArea = String(selectedProfileArea || profileArea).trim();
   const profileAreaSearchValue = String(profileAreaInput || profileArea).trim();
   const profilePhoneNumber = profile?.phoneNumber || session.phoneNumber;
 
@@ -317,8 +319,8 @@ export function renderProfileScreen({
             <input
               type="hidden"
               name="area"
-              value="${escapeAttribute(profileArea)}"
-              data-selected-area="${escapeAttribute(profileArea)}"
+              value="${escapeAttribute(currentSelectedArea)}"
+              data-selected-area="${escapeAttribute(currentSelectedArea)}"
             />
           </label>
 
