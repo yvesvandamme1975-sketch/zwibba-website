@@ -147,7 +147,7 @@ test('locations endpoints list seeded CD cities and create user suggestions with
 
   assert.deepEqual(
     listResponse.body.items.map((item: { label: string }) => item.label),
-    ['Likasi', 'Lubumbashi'],
+    ['Lubumbashi', 'Likasi'],
   );
 
   const firstSuggestion = await request(harness.app.getHttpServer())

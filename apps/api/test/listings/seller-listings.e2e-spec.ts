@@ -254,6 +254,9 @@ async function createSellerSession(
 
 test('seller listings endpoint returns the owner listing cards with moderation metadata', async (t) => {
   const prisma = new _FakePrismaService();
+  const deletedBySellerAt = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const restoreUntil = new Date(deletedBySellerAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+
   prisma.seedDraft({
     id: 'draft_approved',
     photos: [
@@ -288,7 +291,7 @@ test('seller listings endpoint returns the owner listing cards with moderation m
     area: 'Bel Air',
     categoryId: 'vehicles',
     lifecycleStatus: 'deleted_by_seller',
-    deletedBySellerAt: new Date('2026-03-30T08:00:00.000Z'),
+    deletedBySellerAt,
     deletedReason: 'Je republierai plus tard',
     previousLifecycleStatusBeforeDelete: 'active',
     draftId: 'draft_pending',
@@ -329,7 +332,7 @@ test('seller listings endpoint returns the owner listing cards with moderation m
   assert.equal(response.body.items[1].moderationStatus, 'pending_manual_review');
   assert.equal(response.body.items[1].lifecycleStatus, 'deleted_by_seller');
   assert.equal(response.body.items[1].deletedReason, 'Je republierai plus tard');
-  assert.match(response.body.items[1].restoreUntil, /2026-04-29T08:00:00.000Z/);
+  assert.equal(response.body.items[1].restoreUntil, restoreUntil.toISOString());
   assert.equal(response.body.items[1].canRestore, true);
   assert.equal(response.body.items[1].reasonSummary, 'Documents véhicule à vérifier');
 });

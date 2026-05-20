@@ -16,3 +16,17 @@ test('profile zone submit accepts an exact typed city when the hidden selection 
 
   assert.equal(area, 'Lubumbashi Centre');
 });
+
+test('profile zone submit ignores a stale hidden area when the typed city changed', () => {
+  const area = resolveProfileAreaForSubmit({
+    area: 'Lubumbashi Centre',
+    areaSearch: 'Likasi',
+    cityOptions: [
+      { label: 'Likasi' },
+      { label: 'Lubumbashi Centre' },
+    ],
+    selectedArea: 'Lubumbashi Centre',
+  });
+
+  assert.equal(area, 'Likasi');
+});

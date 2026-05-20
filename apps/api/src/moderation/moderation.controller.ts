@@ -40,7 +40,6 @@ export class ModerationController {
       categoryId?: string;
       description?: string;
       draftId?: string;
-      ownerPhoneNumber?: string;
       priceAmount?: number;
       priceCdf?: number;
       priceCurrency?: string;
@@ -51,7 +50,7 @@ export class ModerationController {
       categoryId: body.categoryId ?? '',
       description: body.description ?? '',
       draftId: body.draftId ?? '',
-      ownerPhoneNumber: body.ownerPhoneNumber ?? session.phoneNumber,
+      ownerPhoneNumber: session.phoneNumber,
       priceAmount: body.priceAmount,
       priceCdf: body.priceCdf,
       priceCurrency: body.priceCurrency,
@@ -60,7 +59,8 @@ export class ModerationController {
   }
 
   @Get('queue')
-  queue() {
+  queue(@Headers('x-zwibba-admin-secret') adminSecret: string) {
+    this.requireAdminSecret(adminSecret);
     return this.moderationService.listQueue();
   }
 

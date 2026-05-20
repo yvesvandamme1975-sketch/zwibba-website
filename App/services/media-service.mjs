@@ -93,10 +93,12 @@ export function createMediaService({
 
     async deleteUploadedObjects({
       objectKeys,
+      session,
     }) {
       const response = await fetchFn(`${apiBaseUrl}/media/discard-uploaded`, {
         method: 'POST',
         headers: {
+          authorization: `Bearer ${session?.sessionToken ?? ''}`,
           'content-type': 'application/json',
         },
         body: JSON.stringify({

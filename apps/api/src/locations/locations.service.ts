@@ -6,6 +6,58 @@ import {
   normalizeLocationLabel,
 } from './location-normalization';
 
+const congoCityPriority = new Map([
+  'Kinshasa',
+  'Lubumbashi',
+  'Likasi',
+  'Kolwezi',
+  'Goma',
+  'Bukavu',
+  'Kisangani',
+  'Mbuji-Mayi',
+  'Kananga',
+  'Matadi',
+  'Beni',
+  'Butembo',
+  'Bunia',
+  'Tshikapa',
+  'Uvira',
+].map((label, index) => [normalizeLocationLabel(label), index]));
+
+type LocationListItem = {
+  countryCode: string;
+  id: string;
+  label: string;
+  sourceType: string;
+  type: string;
+};
+
+function getSourceRank(sourceType: string) {
+  return sourceType === 'user_suggested' ? 1 : 0;
+}
+
+function getCongoCityPriorityRank(label: string) {
+  const normalizedLabel = normalizeLocationLabel(label);
+
+  if (congoCityPriority.has(normalizedLabel)) {
+    return congoCityPriority.get(normalizedLabel) ?? Number.POSITIVE_INFINITY;
+  }
+
+  for (const [city, rank] of congoCityPriority) {
+    if (normalizedLabel.startsWith(`${city} `) || normalizedLabel.startsWith(`${city}-`)) {
+      return rank;
+    }
+  }
+
+  return Number.POSITIVE_INFINITY;
+}
+
+function compareLocationListItems(left: LocationListItem, right: LocationListItem) {
+  return getSourceRank(left.sourceType) - getSourceRank(right.sourceType) ||
+    getCongoCityPriorityRank(left.label) - getCongoCityPriorityRank(right.label) ||
+    left.label.localeCompare(right.label, 'fr');
+}
+
 @Injectable()
 export class LocationsService {
   constructor(@Inject(PrismaService) private readonly prismaService: PrismaService) {}
@@ -39,7 +91,7 @@ export class LocationsService {
         label: item.label,
         sourceType: item.sourceType,
         type: item.type,
-      })),
+      })).sort(compareLocationListItems),
     };
   }
 

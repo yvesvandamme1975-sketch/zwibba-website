@@ -278,7 +278,7 @@ export function renderProfileScreen({
   const hasListings = listings.length > 0;
   const profileArea = String(profile?.area ?? '').trim();
   const currentSelectedArea = String(selectedProfileArea || profileArea).trim();
-  const profileAreaSearchValue = String(profileAreaInput || profileArea).trim();
+  const profileAreaSearchValue = String(profileAreaInput ?? profileArea).trim();
   const profilePhoneNumber = profile?.phoneNumber || session.phoneNumber;
 
   return `

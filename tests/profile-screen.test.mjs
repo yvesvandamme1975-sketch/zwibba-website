@@ -285,6 +285,28 @@ test('profile screen submits the current exact-match zone before it has been per
   assert.match(html, /data-selected-area="Lubumbashi Centre"/);
 });
 
+test('profile screen keeps an explicitly emptied city search editable', () => {
+  const html = renderProfileScreen({
+    listings: [],
+    profile: {
+      area: 'Lubumbashi Centre',
+      phoneNumber: '+243990000004',
+    },
+    profileAreaInput: '',
+    selectedProfileArea: '',
+    session: {
+      canSyncDrafts: true,
+      phoneNumber: '+243990000004',
+      sessionToken: 'zwibba_session_004',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /name="areaSearch"/);
+  assert.match(html, /value=""/);
+  assert.doesNotMatch(html, /name="areaSearch"[^>]+value="Lubumbashi Centre"/);
+});
+
 test('profile screen renders a missing-city action when the typed city has no exact match', () => {
   const html = renderProfileScreen({
     listings: [],

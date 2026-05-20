@@ -216,7 +216,7 @@ test('media service fails when the public upload cannot be verified', async () =
   );
 });
 
-test('media service can discard uploaded draft objects by object key', async () => {
+test('media service discards uploaded draft objects with the seller bearer token', async () => {
   const requests = [];
   const mediaService = createMediaService({
     apiBaseUrl: 'https://api.example.test',
@@ -235,6 +235,9 @@ test('media service can discard uploaded draft objects by object key', async () 
 
   const result = await mediaService.deleteUploadedObjects({
     objectKeys: ['draft-photos/capture/photo_1.jpg', 'draft-photos/face/photo_2.jpg'],
+    session: {
+      sessionToken: 'zwibba_session_live_123',
+    },
   });
 
   assert.deepEqual(result, {
@@ -246,6 +249,7 @@ test('media service can discard uploaded draft objects by object key', async () 
       url: 'https://api.example.test/media/discard-uploaded',
       method: 'POST',
       headers: {
+        authorization: 'Bearer zwibba_session_live_123',
         'content-type': 'application/json',
       },
       body: JSON.stringify({

@@ -465,6 +465,51 @@ test('publishing a synced phone draft persists the listing and moderation decisi
   );
 });
 
+test('publishing ignores a spoofed owner phone number from the request body', async (t) => {
+  const prisma = new _FakePrismaService();
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule],
+  })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .overrideProvider(TwilioVerifyService)
+      .useValue(new _FakeTwilioVerifyService())
+      .compile();
+
+  const app = moduleRef.createNestApplication();
+  await app.init();
+  t.after(async () => {
+    await app.close();
+  });
+
+  const attackerSessionToken = await createSellerSession(app, '+243990000001');
+  const victimSessionToken = await createSellerSession(app, '+243990000002');
+  const victimDraft = await syncDraft(app, victimSessionToken, {
+    title: 'MacBook Pro victime',
+    categoryId: 'electronics',
+    area: 'Lubumbashi Centre',
+    priceAmount: 350,
+    priceCurrency: 'USD',
+  });
+
+  const publishResponse = await request(app.getHttpServer())
+    .post('/moderation/publish')
+    .set('authorization', `Bearer ${attackerSessionToken}`)
+    .send({
+      ...victimDraft,
+      description: 'Tentative de publication depuis une autre session.',
+      ownerPhoneNumber: '+243990000002',
+    })
+    .expect(201);
+
+  assert.equal(publishResponse.body.status, 'blocked_needs_fix');
+  assert.match(
+    publishResponse.body.reasonSummary,
+    /ne correspond pas à cette session/i,
+  );
+  assert.equal(prisma.listings.size, 0);
+});
+
 test('publishing a complete synced vehicle draft auto-approves the listing', async (t) => {
   const prisma = new _FakePrismaService();
   const moduleRef = await Test.createTestingModule({
@@ -561,6 +606,7 @@ test('publishing a complete synced vehicle draft auto-approves the listing', asy
 
   const queueResponse = await request(app.getHttpServer())
     .get('/moderation/queue')
+    .set('x-zwibba-admin-secret', 'zwibba-admin-secret')
     .expect(200);
 
   assert.equal(queueResponse.body.items.length, 0);

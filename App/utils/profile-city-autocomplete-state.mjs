@@ -16,7 +16,7 @@ export function deriveProfileCityAutocompleteState({
   const optionLabels = cityOptions.map((item) => {
     return typeof item === 'string' ? item : item?.label;
   }).filter(Boolean);
-  const suggestions = getMatchingLocationSuggestions(inputValue, optionLabels);
+  const suggestions = getMatchingLocationSuggestions(inputValue, cityOptions);
   const exactMatch = optionLabels.find((label) => {
     return normalizeLocationValueForMatch(label) === normalizedInput;
   }) ?? '';

@@ -1,11 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 
+import { PrismaService } from '../database/prisma.service';
 import { R2StorageService } from './r2-storage.service';
 
 @Injectable()
 export class MediaService {
   constructor(
+    @Inject(PrismaService)
+    private readonly prismaService: PrismaService,
     @Inject(R2StorageService)
     private readonly r2StorageService: R2StorageService,
   ) {}
@@ -43,7 +46,13 @@ export class MediaService {
     };
   }
 
-  async discardUploadedObjects(objectKeys: string[]) {
+  async discardUploadedObjects({
+    objectKeys,
+    phoneNumber,
+  }: {
+    objectKeys: string[];
+    phoneNumber: string;
+  }) {
     const uniqueObjectKeys = Array.from(
       new Set(
         objectKeys
@@ -52,13 +61,29 @@ export class MediaService {
           .filter((objectKey) => objectKey.startsWith('draft-photos/')),
       ),
     );
+    const ownedPhotos = await this.prismaService.draftPhoto.findMany({
+      where: {
+        draft: {
+          is: {
+            ownerPhoneNumber: phoneNumber,
+          },
+        },
+        objectKey: {
+          in: uniqueObjectKeys,
+        },
+      },
+      select: {
+        objectKey: true,
+      },
+    });
+    const ownedObjectKeys = ownedPhotos.map((photo) => photo.objectKey);
 
-    for (const objectKey of uniqueObjectKeys) {
+    for (const objectKey of ownedObjectKeys) {
       await this.r2StorageService.deleteObject(objectKey);
     }
 
     return {
-      deletedCount: uniqueObjectKeys.length,
+      deletedCount: ownedObjectKeys.length,
       status: 'deleted' as const,
     };
   }

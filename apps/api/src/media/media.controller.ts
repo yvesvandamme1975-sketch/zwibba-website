@@ -1,5 +1,8 @@
-import { Body, Controller, Inject, Post } from '@nestjs/common';
+import { Body, Controller, Inject, Post, UseGuards } from '@nestjs/common';
 
+import type { SessionRecord } from '../auth/auth.service';
+import { CurrentSession } from '../auth/current-session.decorator';
+import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { MediaService } from './media.service';
 
 @Controller('media')
@@ -23,12 +26,17 @@ export class MediaController {
   }
 
   @Post('discard-uploaded')
+  @UseGuards(SessionAuthGuard)
   async discardUploaded(
+    @CurrentSession() session: SessionRecord,
     @Body()
     body: {
       objectKeys?: string[];
     },
   ) {
-    return this.mediaService.discardUploadedObjects(body.objectKeys ?? []);
+    return this.mediaService.discardUploadedObjects({
+      objectKeys: body.objectKeys ?? [],
+      phoneNumber: session.phoneNumber,
+    });
   }
 }

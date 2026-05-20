@@ -62,12 +62,17 @@ import {
   restoreThreadComposerRenderState,
 } from './utils/thread-composer-render-state.mjs';
 import {
+  captureProfileCityRenderState,
+  restoreProfileCityRenderState,
+} from './utils/profile-city-render-state.mjs';
+import {
   captureScrollRenderState,
   restoreScrollRenderState,
 } from './utils/scroll-render-state.mjs';
 import { createPendingScrollResetController } from './utils/pending-scroll-reset.mjs';
 import { syncDraftAreaFromProfile } from './utils/profile-area-sync.mjs';
 import { deriveProfileCityAutocompleteState } from './utils/profile-city-autocomplete-state.mjs';
+import { resolveProfileCityHydration } from './utils/profile-city-hydration.mjs';
 import { resolveProfileAreaForSubmit } from './utils/profile-zone-submit.mjs';
 import {
   formatPricePreview,
@@ -744,14 +749,22 @@ if (appRoot) {
 
     state.profileStatus = 'loading';
     state.profileError = '';
+    const profileCityInputAtLoadStart = state.profileCityInput;
     state.profilePromise = profileService
       .fetchProfile({
         session: state.session,
       })
       .then((profile) => {
+        const hydratedCity = resolveProfileCityHydration({
+          currentInput: state.profileCityInput,
+          currentSelectedArea: state.profileSelectedArea,
+          inputAtLoadStart: profileCityInputAtLoadStart,
+          profileArea: profile.area ?? '',
+        });
+
         state.profile = profile;
-        state.profileCityInput = profile.area ?? '';
-        state.profileSelectedArea = profile.area ?? '';
+        state.profileCityInput = hydratedCity.inputValue;
+        state.profileSelectedArea = hydratedCity.selectedArea;
         state.profileStatus = 'ready';
         state.draft = syncDraftAreaFromProfile(state.draft, profile.area);
         if (state.draft) {
@@ -1024,6 +1037,7 @@ if (appRoot) {
     const buyerSearchRenderState = captureBuyerSearchRenderState(document.activeElement);
     const reviewDraftRenderState = captureReviewDraftRenderState(appRoot, document.activeElement);
     const threadComposerRenderState = captureThreadComposerRenderState(document.activeElement);
+    const profileCityRenderState = captureProfileCityRenderState(document.activeElement);
 
     primeBuyerRouteState(route);
     chatLiveRefreshController.sync({
@@ -1053,6 +1067,9 @@ if (appRoot) {
     }
     if (route.type === 'thread') {
       restoreThreadComposerRenderState(appRoot, threadComposerRenderState);
+    }
+    if (route.type === 'profile') {
+      restoreProfileCityRenderState(appRoot, profileCityRenderState);
     }
     restoreScrollRenderState(appRoot, scrollRenderState, window);
     appRoot.dataset.appReady = 'true';
@@ -1228,9 +1245,10 @@ if (appRoot) {
           .map((photo) => photo.objectKey || '')
           .filter(Boolean);
 
-        if (uploadedObjectKeys.length) {
+        if (uploadedObjectKeys.length && state.session?.sessionToken) {
           await mediaService.deleteUploadedObjects({
             objectKeys: uploadedObjectKeys,
+            session: state.session,
           });
         }
       }

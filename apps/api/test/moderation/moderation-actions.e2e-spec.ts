@@ -222,6 +222,18 @@ test('moderation actions require the admin secret and update listing state', asy
   });
 
   await request(app.getHttpServer())
+    .get('/moderation/queue')
+    .expect(401);
+
+  const queueResponse = await request(app.getHttpServer())
+    .get('/moderation/queue')
+    .set('x-zwibba-admin-secret', 'zwibba-admin-secret')
+    .expect(200);
+
+  assert.equal(queueResponse.body.items.length, 1);
+  assert.equal(queueResponse.body.items[0].sellerPhoneNumber, '+243990000001');
+
+  await request(app.getHttpServer())
     .post('/moderation/listing_pending/approve')
     .expect(401);
 
