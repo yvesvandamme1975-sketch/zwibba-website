@@ -53,6 +53,8 @@ Current priority docs:
 - `2026-05-01-zwibba-category-expansion-and-fashion-sizing-implementation.md`
 - `2026-05-02-zwibba-conservative-ai-category-disambiguation-design.md`
 - `2026-05-02-zwibba-conservative-ai-category-disambiguation-implementation.md`
+- `2026-05-21-zwibba-home-header-beta-badge-design.md`
+- `2026-05-21-zwibba-home-header-beta-badge-implementation.md`
 - `2026-05-21-zwibba-agent-operating-briefs-design.md`
 - `2026-05-21-zwibba-agent-operating-briefs-implementation.md`
 
