@@ -1,7 +1,12 @@
+import { escapeHtml } from '../utils/rendering.mjs';
+
 export function renderInAppBrand({
+  badge = '',
   compact = false,
   subtitle = '',
 } = {}) {
+  const badgeLabel = String(badge).trim();
+
   return `
     <div class="app-brand-mark${compact ? ' app-brand-mark--compact' : ''}" data-app-brand>
       <span class="app-brand-mark__icon" aria-hidden="true">
@@ -11,6 +16,7 @@ export function renderInAppBrand({
         <strong>Zwibba</strong>
         ${subtitle ? `<span>${subtitle}</span>` : ''}
       </span>
+      ${badgeLabel ? `<span class="app-brand-mark__badge">${escapeHtml(badgeLabel)}</span>` : ''}
     </div>
   `;
 }
