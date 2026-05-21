@@ -59,5 +59,7 @@ Current priority docs:
 - `2026-05-21-zwibba-agent-operating-briefs-implementation.md`
 - `2026-05-21-zwibba-agents-md-ux-ui-conventions-design.md`
 - `2026-05-21-zwibba-agents-md-ux-ui-conventions-implementation.md`
+- `2026-05-21-zwibba-codex-deploy-handoff-design.md`
+- `2026-05-21-zwibba-codex-deploy-handoff-implementation.md`
 
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
