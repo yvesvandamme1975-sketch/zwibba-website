@@ -33,3 +33,23 @@ test('AGENTS.md UX/UI section calls out the mobile-first principle', async () =>
   const content = await readAgents();
   assert.match(content, /mobile-first/);
 });
+
+test('AGENTS.md rule 9 describes conditional auto-deploy', async () => {
+  const content = await readAgents();
+  assert.match(content, /conditional auto-deploy/i);
+});
+
+test('AGENTS.md rule 9 references the smoke marker convention', async () => {
+  const content = await readAgents();
+  assert.match(content, /smoke marker/i);
+});
+
+test('AGENTS.md rule 9 mentions railway redeploy for rollback', async () => {
+  const content = await readAgents();
+  assert.match(content, /railway redeploy/);
+});
+
+test('AGENTS.md rule 9 forbids pushing directly to the base branch', async () => {
+  const content = await readAgents();
+  assert.match(content, /Never push directly to/);
+});
