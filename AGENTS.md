@@ -85,6 +85,52 @@ When executing a plan, follow these without negotiation.
 7. **French copy.** Customer-facing strings are in French (DRC). Don't translate or anglicise existing strings without an explicit instruction from a plan.
 8. **No invented APIs.** Every reference to a function, endpoint, table, env var, or file must be grounded in a file in the working tree. If something is missing, the plan must add it explicitly before referencing it.
 
+## UX/UI conventions for App/
+
+These conventions apply to every markup, style, or copy change under `App/`. They are extracted from the existing vanilla PWA code and CSS in this repository, not invented as a new design system, so new work should reinforce these patterns instead of introducing parallel ones.
+
+### Color palette and design tokens
+
+The canonical design tokens are defined in `src/site/styles.css`: `--bg`, `--bg-elevated`, `--surface`, `--surface-strong`, `--surface-soft`, `--text`, `--text-muted`, `--text-soft`, `--line`, `--green`, `--green-strong`, `--green-soft`, `--gold`, `--danger`, `--warning`, `--radius-sm`, `--radius-md`, `--radius-lg`, `--shadow-soft`, `--shadow-green`, and `--max-width`.
+
+`App/app.css` consumes these through `var(--...)`, and new rules in `App/` must do the same; use `var(--green)` for the canonical brand green. Prefer `background: var(--green-soft)` over `background: rgba(107, 230, 107, 0.12)`, and prefer `border-radius: var(--radius-md)` over `border-radius: 22px`.
+
+The single locally declared exception is `--app-mobile-nav-height: 88px` in `App/app.css`, because the app shell needs a mobile navigation height token that does not belong to the public landing stylesheet.
+
+### BEM class naming
+
+Every selector under `App/` uses the `.app-` prefix. Structure block names as `.app-{block}`, elements as `.app-{block}__{element}`, modifiers as `.app-{block}--{modifier}`, and element modifiers as `.app-{block}__{element}--{modifier}`.
+
+Real examples already in the codebase include `.app-flow__button--danger`, `.app-brand-mark--compact`, `.app-capture-result__hero-media--fallback`, and `.app-detail__media--placeholder`.
+
+Transient states use the utility classes `.is-active`, `.is-busy`, `.is-loading`, and `.is-error`. They cohabit with BEM in the same `class` attribute, for example a selected item keeps its BEM selector and adds `.is-active`.
+
+### Component structure
+
+Every `App/` component exports a function named `renderXxxScreen({...} = {})`, or `renderXxx({...} = {})` for shared components, and returns an HTML template string. Options must have defaults through destructuring with `{...} = {}` so tests and controllers can call render functions without arguments.
+
+Render functions are pure: no DOM reads, no event binding, no fetch calls, no timers, and no mutation of external state. Lifecycle logic belongs in controllers under `App/features/*/...controller.mjs` and shared effects belong in `App/services/`.
+
+Use `renderAppTabShell` in `App/components/app-tab-shell.mjs` as the canonical example: it accepts explicit options, escapes interpolated values, and returns the shell markup without touching the DOM.
+
+### HTML escaping and ARIA
+
+Every non-static interpolation in a template string must pass through `escapeHtml` for text nodes or `escapeAttribute` for attribute values, both imported from `App/utils/rendering.mjs`. There are no exceptions, including numeric counters, category IDs, route fragments, and status values.
+
+For accessibility, `aria-label` is mandatory on interactions that have no visible text, `aria-hidden="true"` belongs on decorative icons, decorative images use `alt=""` instead of omitting `alt`, and every navigation region uses `<nav aria-label="...">`.
+
+Controllers target markup through `data-*` attributes such as `data-action`, `data-category-id`, and `data-tab-id`. Avoid `id="..."` unless a platform feature or label relationship specifically requires it.
+
+### Mobile-first FR
+
+Every user-facing string is French for the DRC product context. English strings are tolerated only for internal debug tokens such as `data-*` names and `console.log` output.
+
+Layouts are mobile-first: base styles target the phone viewport, and desktop rules are added inside `@media` blocks above a breakpoint. Components must not assume hover availability; interactive states use `:active` and `.is-active`, not `:hover`, as the only signal.
+
+Viewport height is precious in this PWA. Avoid gratuitous vertical margins, keep the first viewport information-dense, and preserve the browser phone shell direction captured in `2026-03-22-zwibba-browser-phone-shell-refresh-design.md`.
+
+If this section changes, update the corresponding section in `CLAUDE.md` in the same commit or immediately after, following the existing rule in `## Pointers across files` that the agent briefs stay in sync.
+
 ## Commands you'll actually run
 
 - Backend dev: `npm run dev:api`, `npm run dev:admin`
