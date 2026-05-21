@@ -55,5 +55,7 @@ Current priority docs:
 - `2026-05-02-zwibba-conservative-ai-category-disambiguation-implementation.md`
 - `2026-05-21-zwibba-agent-operating-briefs-design.md`
 - `2026-05-21-zwibba-agent-operating-briefs-implementation.md`
+- `2026-05-21-zwibba-agents-md-ux-ui-conventions-design.md`
+- `2026-05-21-zwibba-agents-md-ux-ui-conventions-implementation.md`
 
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
