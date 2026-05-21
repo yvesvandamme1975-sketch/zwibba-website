@@ -44,8 +44,8 @@ apps/admin/             Node TS admin service
 
 apps/api/               NestJS API
   src/ai/               Gemini, Google Vision hybrid fusion, normalization, disambiguation
-  src/auth, src/boost, src/chat, src/config, src/database, src/drafts,
-  src/health, src/listings, src/media, src/moderation, src/wallet
+  src/auth, src/boost, src/chat, src/common, src/config, src/database, src/drafts,
+  src/health, src/listings, src/locations, src/media, src/moderation, src/profile, src/wallet
   prisma/               schema and migrations (treat as source of truth)
   scripts/seed-*.ts     seeders for locations and system listings
 
