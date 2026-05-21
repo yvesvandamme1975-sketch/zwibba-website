@@ -1,6 +1,7 @@
 import { renderInAppBrand } from '../../components/in-app-brand.mjs';
 import { escapeAttribute, escapeHtml, formatListingPrice } from '../../utils/rendering.mjs';
 import { sanitizeListingImageUrl } from '../../utils/image-fallbacks.mjs';
+import { normalizeLocationValueForMatch } from '../../utils/location-search.mjs';
 
 function buildCounts(listings) {
   return {
@@ -223,6 +224,53 @@ function renderLifecycleSection({
   `;
 }
 
+export function renderProfileCityFeedback({
+  citySuggestions = [],
+  profileMissingCityLabel = '',
+} = {}) {
+  return `
+    ${
+      citySuggestions.length
+        ? `
+          <div
+            class="app-profile__city-suggestions"
+            id="profile-city-suggestions"
+            role="listbox"
+            aria-label="Suggestions de villes"
+          >
+            ${citySuggestions.map((city) => `
+              <button
+                class="app-profile__city-suggestion"
+                type="button"
+                role="option"
+                data-action="select-profile-city"
+                data-city-label="${escapeAttribute(city)}"
+              >
+                ${escapeHtml(city)}
+              </button>
+            `).join('')}
+          </div>
+        `
+        : '<div id="profile-city-suggestions" hidden></div>'
+    }
+
+    ${
+      profileMissingCityLabel
+        ? `
+          <button
+            class="app-profile__city-create"
+            type="button"
+            data-action="suggest-profile-city"
+            data-city-label="${escapeAttribute(profileMissingCityLabel)}"
+          >
+            Ville absente ? Utiliser "${escapeHtml(profileMissingCityLabel)}"
+          </button>
+        `
+        : ''
+    }
+  `;
+}
+
 export function renderProfileScreen({
   citySuggestions = [],
   draftExists = false,
@@ -230,7 +278,7 @@ export function renderProfileScreen({
   listings = [],
   listingsError = '',
   profile = null,
-  profileAreaInput = '',
+  profileAreaInput = null,
   profileError = '',
   profileMissingCityLabel = '',
   profileMessage = '',
@@ -277,9 +325,15 @@ export function renderProfileScreen({
   const lifecycleGroups = groupListingsByLifecycle(listings);
   const hasListings = listings.length > 0;
   const profileArea = String(profile?.area ?? '').trim();
-  const currentSelectedArea = String(selectedProfileArea || profileArea).trim();
   const profileAreaSearchValue = String(profileAreaInput ?? profileArea).trim();
+  const searchMatchesProfile =
+    profileArea &&
+    normalizeLocationValueForMatch(profileAreaSearchValue) === normalizeLocationValueForMatch(profileArea);
+  const currentSelectedArea = String(
+    selectedProfileArea || (searchMatchesProfile ? profileArea : ''),
+  ).trim();
   const profilePhoneNumber = profile?.phoneNumber || session.phoneNumber;
+  const hasCityFeedback = citySuggestions.length > 0 || Boolean(profileMissingCityLabel);
 
   return `
     <section class="app-flow app-screen">
@@ -306,13 +360,20 @@ export function renderProfileScreen({
 
         <form class="app-profile__zone-form" data-form="profile-zone">
           <label class="app-review__field app-review__field--full">
-            <span>Zone du profil</span>
+            <span>Ville</span>
             <input
               name="areaSearch"
               type="text"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-controls="profile-city-suggestions"
+              aria-expanded="${hasCityFeedback ? 'true' : 'false'}"
               value="${escapeAttribute(profileAreaSearchValue)}"
-              placeholder="Tapez une ville"
+              placeholder="Ex. Likasi"
               autocomplete="off"
+              autocapitalize="words"
+              enterkeyhint="done"
+              inputmode="search"
               spellcheck="false"
               ${profileSaveBusy ? 'disabled' : ''}
             />
@@ -324,39 +385,12 @@ export function renderProfileScreen({
             />
           </label>
 
-          ${
-            citySuggestions.length
-              ? `
-                <div class="app-profile__city-suggestions" role="listbox" aria-label="Suggestions de villes">
-                  ${citySuggestions.map((city) => `
-                    <button
-                      class="app-profile__city-suggestion"
-                      type="button"
-                      data-action="select-profile-city"
-                      data-city-label="${escapeAttribute(city)}"
-                    >
-                      ${escapeHtml(city)}
-                    </button>
-                  `).join('')}
-                </div>
-              `
-              : ''
-          }
-
-          ${
-            profileMissingCityLabel
-              ? `
-                <button
-                  class="app-profile__city-create"
-                  type="button"
-                  data-action="suggest-profile-city"
-                  data-city-label="${escapeAttribute(profileMissingCityLabel)}"
-                >
-                  Ville absente ? Utiliser "${escapeHtml(profileMissingCityLabel)}"
-                </button>
-              `
-              : ''
-          }
+          <div class="app-profile__city-feedback" data-profile-city-feedback>
+            ${renderProfileCityFeedback({
+              citySuggestions,
+              profileMissingCityLabel,
+            })}
+          </div>
 
           ${
             profileState === 'loading'
@@ -368,13 +402,13 @@ export function renderProfileScreen({
 
           ${
             profileMessage
-              ? `<div class="app-publish__status is-verified"><strong>Zone enregistrée</strong><span>${escapeHtml(profileMessage)}</span></div>`
+              ? `<div class="app-publish__status is-verified" data-profile-zone-message><strong>Zone enregistrée</strong><span>${escapeHtml(profileMessage)}</span></div>`
               : ''
           }
 
           ${
             profileError
-              ? `<div class="app-review__error-summary"><strong>Impossible de mettre à jour le profil</strong><ul class="app-review__errors"><li>${escapeHtml(profileError)}</li></ul></div>`
+              ? `<div class="app-review__error-summary" data-profile-zone-error><strong>Impossible de mettre à jour le profil</strong><ul class="app-review__errors"><li>${escapeHtml(profileError)}</li></ul></div>`
               : ''
           }
 

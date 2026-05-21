@@ -23,7 +23,10 @@ import { renderPublishGateScreen } from './features/post/publish-gate-screen.mjs
 import { renderReviewFormScreen } from './features/post/review-form-screen.mjs';
 import { renderSuccessScreen } from './features/post/success-screen.mjs';
 import { createUploadTaskQueue } from './features/post/upload-task-queue.mjs';
-import { renderProfileScreen } from './features/profile/profile-screen.mjs';
+import {
+  renderProfileCityFeedback,
+  renderProfileScreen,
+} from './features/profile/profile-screen.mjs';
 import { renderWalletScreen } from './features/wallet/wallet-screen.mjs';
 import { submitLivePublish } from './features/post/live-publish-flow.mjs';
 import { getCategoryGuidance } from './models/category-guidance.mjs';
@@ -1027,6 +1030,53 @@ if (appRoot) {
     }
   }
 
+  function updateProfileCityField(profileCityState, { focusInput = false, inputValue = null } = {}) {
+    const form = appRoot.querySelector('form[data-form="profile-zone"]');
+
+    if (!form) {
+      return false;
+    }
+
+    const hiddenAreaInput = form.querySelector('input[name="area"]');
+    const searchInput = form.querySelector('input[name="areaSearch"]');
+    const feedback = form.querySelector('[data-profile-city-feedback]');
+
+    if (hiddenAreaInput instanceof HTMLInputElement) {
+      hiddenAreaInput.value = profileCityState.selectedArea;
+      hiddenAreaInput.dataset.selectedArea = profileCityState.selectedArea;
+    }
+
+    if (searchInput instanceof HTMLInputElement) {
+      if (inputValue !== null) {
+        searchInput.value = inputValue;
+      }
+
+      searchInput.setAttribute(
+        'aria-expanded',
+        profileCityState.suggestions.length > 0 || profileCityState.missingCityLabel
+          ? 'true'
+          : 'false',
+      );
+
+      if (focusInput) {
+        searchInput.focus();
+        searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+      }
+    }
+
+    if (feedback) {
+      feedback.innerHTML = renderProfileCityFeedback({
+        citySuggestions: profileCityState.suggestions,
+        profileMissingCityLabel: profileCityState.missingCityLabel,
+      });
+    }
+
+    form.querySelector('[data-profile-zone-error]')?.remove();
+    form.querySelector('[data-profile-zone-message]')?.remove();
+
+    return true;
+  }
+
   function renderApp() {
     const route = resolveRenderableRoute();
     const routeKey = getRenderableRouteKey(route);
@@ -1794,7 +1844,20 @@ if (appRoot) {
       state.profileCityInput = cityLabel;
       state.profileSelectedArea = cityLabel;
       state.profileError = '';
-      renderApp();
+      state.profileMessage = '';
+      if (!updateProfileCityField(
+        {
+          missingCityLabel: '',
+          selectedArea: cityLabel,
+          suggestions: [],
+        },
+        {
+          focusInput: true,
+          inputValue: cityLabel,
+        },
+      )) {
+        renderApp();
+      }
       return;
     }
 
@@ -1905,13 +1968,16 @@ if (appRoot) {
     if (target.name === 'areaSearch') {
       state.profileCityInput = target.value;
       state.profileError = '';
+      state.profileMessage = '';
       const profileCityState = deriveProfileCityAutocompleteState({
         cityOptions: state.profileCityOptions,
         inputValue: target.value,
         selectedArea: state.profileSelectedArea,
       });
       state.profileSelectedArea = profileCityState.selectedArea;
-      renderApp();
+      if (!updateProfileCityField(profileCityState)) {
+        renderApp();
+      }
       return;
     }
 

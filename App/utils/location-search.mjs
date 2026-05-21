@@ -11,6 +11,10 @@ export function normalizeLocationValueForMatch(value) {
   return normalizeLocationValue(value);
 }
 
+export function normalizeLocationValueForLooseMatch(value) {
+  return normalizeLocationValue(value).replace(/[\s._'-]+/g, '');
+}
+
 const congoCityPriority = new Map([
   'kinshasa',
   'lubumbashi',
@@ -83,6 +87,7 @@ function uniqueLocationOptions(options) {
 
 export function getMatchingLocationSuggestions(query, locationOptions, limit = 6) {
   const normalizedQuery = normalizeLocationValue(query);
+  const looseQuery = normalizeLocationValueForLooseMatch(query);
 
   if (!normalizedQuery) {
     return [];
@@ -91,9 +96,11 @@ export function getMatchingLocationSuggestions(query, locationOptions, limit = 6
   return uniqueLocationOptions(locationOptions)
     .map(({ label, option }) => {
       const normalizedLabel = normalizeLocationValue(label);
-      const isExact = normalizedLabel === normalizedQuery;
-      const isPrefix = normalizedLabel.startsWith(normalizedQuery);
-      const contains = normalizedLabel.includes(normalizedQuery);
+      const looseLabel = normalizeLocationValueForLooseMatch(label);
+      const isExact = normalizedLabel === normalizedQuery || looseLabel === looseQuery;
+      const isPrefix =
+        normalizedLabel.startsWith(normalizedQuery) || looseLabel.startsWith(looseQuery);
+      const contains = normalizedLabel.includes(normalizedQuery) || looseLabel.includes(looseQuery);
 
       if (!isExact && !isPrefix && !contains) {
         return null;

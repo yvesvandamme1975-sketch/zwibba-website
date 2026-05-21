@@ -1,5 +1,6 @@
 import {
   getMatchingLocationSuggestions,
+  normalizeLocationValueForLooseMatch,
   normalizeLocationValueForMatch,
 } from './location-search.mjs';
 
@@ -13,12 +14,14 @@ export function deriveProfileCityAutocompleteState({
   selectedArea = '',
 } = {}) {
   const normalizedInput = normalizeLocationValueForMatch(inputValue);
+  const looseInput = normalizeLocationValueForLooseMatch(inputValue);
   const optionLabels = cityOptions.map((item) => {
     return typeof item === 'string' ? item : item?.label;
   }).filter(Boolean);
   const suggestions = getMatchingLocationSuggestions(inputValue, cityOptions);
   const exactMatch = optionLabels.find((label) => {
-    return normalizeLocationValueForMatch(label) === normalizedInput;
+    return normalizeLocationValueForMatch(label) === normalizedInput ||
+      normalizeLocationValueForLooseMatch(label) === looseInput;
   }) ?? '';
   const nextSelectedArea = exactMatch
     ? exactMatch

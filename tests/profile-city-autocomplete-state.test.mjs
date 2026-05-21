@@ -15,6 +15,18 @@ test('deriveProfileCityAutocompleteState auto-selects an exact city match', () =
   assert.deepEqual(result.suggestions, ['Lubumbashi']);
 });
 
+test('deriveProfileCityAutocompleteState auto-selects a multi-word city when mobile input omits spaces', () => {
+  const result = deriveProfileCityAutocompleteState({
+    cityOptions: [{ label: 'Likasi' }, { label: 'Lubumbashi Centre' }],
+    inputValue: 'LubumbashiCentre',
+    selectedArea: '',
+  });
+
+  assert.equal(result.selectedArea, 'Lubumbashi Centre');
+  assert.equal(result.missingCityLabel, '');
+  assert.deepEqual(result.suggestions, ['Lubumbashi Centre']);
+});
+
 test('deriveProfileCityAutocompleteState exposes a missing-city action only when no suggestion remains', () => {
   const result = deriveProfileCityAutocompleteState({
     cityOptions: [{ label: 'Likasi' }, { label: 'Lubumbashi' }],

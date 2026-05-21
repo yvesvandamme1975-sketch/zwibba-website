@@ -1461,23 +1461,47 @@
 }
 
 .app-profile__city-suggestions {
+  display: flex;
+  gap: 8px;
+  margin: -2px 0 0;
+  overflow-x: auto;
+  padding: 2px 0 4px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-profile__city-suggestions::-webkit-scrollbar {
+  display: none;
+}
+
+.app-profile__city-feedback {
   display: grid;
   gap: 8px;
 }
 
 .app-profile__city-suggestion,
 .app-profile__city-create {
-  width: 100%;
+  cursor: pointer;
+  min-height: 44px;
   padding: 12px 14px;
-  border-radius: 16px;
+  border-radius: 999px;
   border: 1px solid rgba(107, 230, 107, 0.16);
   background: rgba(107, 230, 107, 0.08);
   color: var(--text);
   font: inherit;
+  font-weight: 800;
   text-align: left;
 }
 
+.app-profile__city-suggestion {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  white-space: nowrap;
+}
+
 .app-profile__city-create {
+  width: 100%;
   border-color: rgba(255, 180, 77, 0.24);
   background: rgba(255, 180, 77, 0.1);
 }

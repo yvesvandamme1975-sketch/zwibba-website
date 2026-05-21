@@ -33,3 +33,13 @@ test('location search collapses accents and supports containment matches after p
 
   assert.deepEqual(results, ['Mbuji-Mayi']);
 });
+
+test('location search tolerates omitted spaces in multi-word city names', () => {
+  const results = getMatchingLocationSuggestions('lubumbashicentre', [
+    'Likasi',
+    'Lubumbashi Centre',
+    'Lubumbashi',
+  ]);
+
+  assert.deepEqual(results, ['Lubumbashi Centre']);
+});

@@ -253,8 +253,11 @@ test('profile screen renders a persisted seller zone form', () => {
   assert.match(html, /Ma zone/);
   assert.match(html, /data-form="profile-zone"/);
   assert.match(html, /name="areaSearch"/);
+  assert.match(html, /role="combobox"/);
+  assert.match(html, /aria-controls="profile-city-suggestions"/);
   assert.match(html, /value="L"/);
-  assert.match(html, /data-selected-area="Lubumbashi"/);
+  assert.match(html, /data-profile-city-feedback/);
+  assert.match(html, /data-selected-area=""/);
   assert.match(html, /Likasi/);
   assert.match(html, /Lubumbashi/);
   assert.match(html, /Enregistrer ma zone/);
