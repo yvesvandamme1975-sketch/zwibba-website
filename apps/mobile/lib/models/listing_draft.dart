@@ -53,6 +53,7 @@ class DraftPhoto {
 class ListingDraft {
   const ListingDraft({
     required this.area,
+    this.attributesJson,
     this.categoryId = '',
     this.condition = '',
     required this.description,
@@ -68,6 +69,9 @@ class ListingDraft {
   factory ListingDraft.fromJson(Map<String, dynamic> json) {
     return ListingDraft(
       area: json['area'] as String? ?? '',
+      attributesJson: json['attributesJson'] is Map
+          ? Map<String, dynamic>.from(json['attributesJson'] as Map)
+          : null,
       categoryId: json['categoryId'] as String? ?? '',
       condition: json['condition'] as String? ?? '',
       description: json['description'] as String? ?? '',
@@ -105,6 +109,7 @@ class ListingDraft {
   }
 
   final String area;
+  final Map<String, dynamic>? attributesJson;
   final String categoryId;
   final String condition;
   final String description;
@@ -122,6 +127,7 @@ class ListingDraft {
 
   ListingDraft copyWith({
     String? area,
+    Map<String, dynamic>? attributesJson,
     String? categoryId,
     String? condition,
     String? description,
@@ -135,6 +141,7 @@ class ListingDraft {
   }) {
     return ListingDraft(
       area: area ?? this.area,
+      attributesJson: attributesJson ?? this.attributesJson,
       categoryId: categoryId ?? this.categoryId,
       condition: condition ?? this.condition,
       description: description ?? this.description,
@@ -149,7 +156,7 @@ class ListingDraft {
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    final json = {
       'area': area,
       'categoryId': categoryId,
       'condition': condition,
@@ -162,5 +169,11 @@ class ListingDraft {
       'syncStatus': syncStatus,
       'title': title,
     };
+
+    if (attributesJson != null) {
+      json['attributesJson'] = attributesJson;
+    }
+
+    return json;
   }
 }
