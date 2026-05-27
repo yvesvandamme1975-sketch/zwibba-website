@@ -857,7 +857,7 @@ test('review form explains that the draft was prepared from the uploaded photo',
   const draft = createReadyDraft({
     ai: {
       status: 'ready',
-      message: 'Brouillon préparé à partir de votre photo.',
+      message: 'À partir de votre photo.',
     },
   });
   const html = renderReviewFormScreen({
@@ -868,7 +868,7 @@ test('review form explains that the draft was prepared from the uploaded photo',
     validationErrors: [],
   });
 
-  assert.match(html, /Brouillon préparé à partir de votre photo\./i);
+  assert.match(html, /À partir de votre photo\./i);
   assert.match(html, /Détails préparés/i);
 });
 
@@ -989,7 +989,7 @@ test('guidance screen shows the uploaded primary photo and AI-generated details 
       ai: {
         status: 'ready',
         applied: true,
-        message: 'Brouillon préparé à partir de votre photo.',
+        message: 'À partir de votre photo.',
       },
     }),
   });
@@ -999,8 +999,8 @@ test('guidance screen shows the uploaded primary photo and AI-generated details 
     html,
     /<img[^>]+class="app-guidance__hero-image"[^>]+src="https:\/\/pub\.example\.test\/draft-photos\/capture\/photo_1-dress\.jpg"/,
   );
-  assert.match(html, /Brouillon préparé par IA/i);
-  assert.match(html, /Brouillon préparé à partir de votre photo\./i);
+  assert.match(html, /Préparé par IA/i);
+  assert.match(html, /À partir de votre photo\./i);
   assert.match(html, /<strong>Titre<\/strong>/);
   assert.match(html, /Robe wax bleu marine/);
   assert.match(html, /<strong>Catégorie<\/strong>/);
@@ -1032,7 +1032,7 @@ test('capture result screen shows the uploaded photo and AI-generated details be
       ai: {
         status: 'ready',
         applied: true,
-        message: 'Brouillon préparé à partir de votre photo.',
+        message: 'À partir de votre photo.',
       },
     }),
   });
@@ -1043,7 +1043,7 @@ test('capture result screen shows the uploaded photo and AI-generated details be
     html,
     /<img[^>]+class="app-capture-result__hero-image"[^>]+src="https:\/\/pub\.example\.test\/draft-photos\/capture\/photo_1-dress\.jpg"/,
   );
-  assert.match(html, /Brouillon préparé par IA/i);
+  assert.match(html, /Préparé par IA/i);
   assert.match(html, /<strong>Titre<\/strong>/);
   assert.match(html, /Robe wax bleu marine/);
   assert.match(html, /<strong>Catégorie<\/strong>/);

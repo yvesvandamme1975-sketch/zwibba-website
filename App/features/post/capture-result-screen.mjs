@@ -31,8 +31,8 @@ function renderReadyAiSummary(draft) {
   return `
     <div class="app-capture-result__summary-card">
       <div class="app-capture-result__summary-copy">
-        <strong>Brouillon préparé par IA</strong>
-        <span>${escapeHtml(draft.ai.message || 'Brouillon préparé à partir de votre photo.')}</span>
+        <strong>Préparé par IA</strong>
+        <span>${escapeHtml(draft.ai.message || 'À partir de votre photo.')}</span>
       </div>
       <div class="app-capture-result__summary-fields">
         <div class="app-capture-result__summary-field">
