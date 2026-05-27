@@ -42,6 +42,30 @@ export class R2StorageService {
     };
   }
 
+  async putBuffer({
+    body,
+    contentType,
+    objectKey,
+  }: {
+    body: Buffer;
+    contentType: string;
+    objectKey: string;
+  }) {
+    await this.s3Client.send(
+      new PutObjectCommand({
+        Body: body,
+        Bucket: this.env.r2.bucket,
+        ContentType: contentType,
+        Key: objectKey,
+      }),
+    );
+
+    return {
+      objectKey,
+      publicUrl: `${this.env.r2.publicBaseUrl.replace(/\/$/, '')}/${objectKey}`,
+    };
+  }
+
   async deleteObject(objectKey: string) {
     if (!objectKey) {
       return;
