@@ -64,3 +64,69 @@ export function detectJewelryItemTypeFromText(text: string): JewelryItemType | n
 
   return matches.values().next().value as JewelryItemType;
 }
+
+const legacyClothingItemTypes = new Set([
+  'tops',
+  'dress_skirt',
+  'jacket_sweater',
+  'pants',
+  'shoes',
+]);
+
+export interface JewelryBackfillProposal {
+  from: { itemType: string; size: string };
+  to: { itemType: JewelryItemType; size: '' };
+  evidence: string;
+}
+
+export function proposeJewelryBackfillForRecord(record: {
+  categoryId: string;
+  attributesJson: unknown;
+  title: string;
+  description: string;
+}): JewelryBackfillProposal | null {
+  if (record.categoryId !== 'fashion') {
+    return null;
+  }
+
+  const fashion =
+    record.attributesJson && typeof record.attributesJson === 'object'
+      ? (record.attributesJson as Record<string, unknown>).fashion
+      : null;
+
+  if (!fashion || typeof fashion !== 'object') {
+    return null;
+  }
+
+  const currentItemType =
+    typeof (fashion as Record<string, unknown>).itemType === 'string'
+      ? ((fashion as Record<string, unknown>).itemType as string)
+      : '';
+  const currentSize =
+    typeof (fashion as Record<string, unknown>).size === 'string'
+      ? ((fashion as Record<string, unknown>).size as string)
+      : '';
+
+  if (!legacyClothingItemTypes.has(currentItemType)) {
+    return null;
+  }
+
+  const combinedText = `${record.title ?? ''} ${record.description ?? ''}`;
+  const detected = detectJewelryItemTypeFromText(combinedText);
+  if (!detected) {
+    return null;
+  }
+
+  // Recover the evidence keyword by re-applying the matched pattern set.
+  const normalized = normalize(combinedText);
+  const matchedPattern = jewelryPatterns
+    .find((entry) => entry.itemType === detected)
+    ?.patterns.find((pattern) => pattern.test(normalized));
+  const evidence = matchedPattern?.exec(normalized)?.[0] ?? detected;
+
+  return {
+    from: { itemType: currentItemType, size: currentSize },
+    to: { itemType: detected, size: '' },
+    evidence,
+  };
+}
