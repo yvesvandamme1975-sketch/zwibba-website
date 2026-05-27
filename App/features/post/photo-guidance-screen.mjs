@@ -157,7 +157,6 @@ function renderPrompt(prompt) {
           class="app-flow__file-input app-flow__file-input--overlay"
           type="file"
           accept="image/*"
-          capture="environment"
           data-input="guided-photo"
           data-prompt-id="${escapeAttribute(prompt.id)}"
         />

@@ -426,7 +426,7 @@ test('capture screen renders a real image picker instead of demo preset cards', 
   assert.match(html, /Zwibba/);
   assert.match(html, /type="file"/);
   assert.match(html, /accept="image\/\*"/);
-  assert.match(html, /capture="environment"/);
+  assert.doesNotMatch(html, /capture=/);
   assert.match(
     html,
     /<label class="app-capture__picker">[\s\S]*<input[^>]+class="app-flow__file-input app-flow__file-input--overlay"[\s\S]*data-input="capture-first-photo"/,
