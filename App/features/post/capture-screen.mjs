@@ -122,7 +122,7 @@ export function renderCaptureScreen({
       <div class="app-capture__grid">
         <div class="app-capture__picker-card">
           <strong>Photo principale</strong>
-          <span>Utilisez une vraie photo depuis votre appareil. Sur mobile, l’appareil photo peut s’ouvrir directement.</span>
+          <span>Utilisez une vraie photo depuis votre appareil. Sur mobile, choisissez dans votre galerie ou prenez une photo.</span>
           <label class="app-capture__picker">
             <span>${escapeHtml(pickerLabel)}</span>
             <input
