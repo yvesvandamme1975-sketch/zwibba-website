@@ -36,6 +36,7 @@ type PersistedListingRecord = {
   soldAt?: Date | null;
   soldChannel?: string | null;
   sourceType?: string | null;
+  storyImageUrl?: string | null;
   title: string;
   updatedAt?: Date;
 };
@@ -249,6 +250,7 @@ function toListingSummary(
     priceCurrency: price.priceCurrency,
     primaryImageUrl,
     slug: listing.slug,
+    storyImageUrl: listing.storyImageUrl ?? null,
     title: listing.title,
   };
 }
@@ -311,6 +313,7 @@ function toListingDetail({
       ownerPhoneNumber: listing.ownerPhoneNumber,
     }),
     slug: listing.slug,
+    storyImageUrl: listing.storyImageUrl ?? null,
     summary: listing.description,
     title: listing.title,
     viewerRole,
