@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { renderReviewFormScreen } from '../App/features/post/review-form-screen.mjs';
+import { createReadyDraft } from '../App/features/post/post-flow-controller.mjs';
+import { sellerCategories } from '../App/demo-content.mjs';
 import { buildReviewDraftDetails } from '../App/utils/review-draft-form.mjs';
 
 test('buildReviewDraftDetails builds fashion attributes from review form values', () => {
@@ -129,4 +132,48 @@ test('buildReviewDraftDetails drops invalid fashion sizes for the selected item 
       size: '',
     },
   });
+});
+
+test('review form omits the Taille select for jewelry subtypes without a size grid', () => {
+  const html = renderReviewFormScreen({
+    categories: sellerCategories,
+    conditionOptions: [{ value: 'used_good', label: 'Bon état' }],
+    draft: createReadyDraft({
+      area: 'Gombe',
+      attributesJson: { fashion: { itemType: 'jewelry_earrings', size: '' } },
+      categoryId: 'fashion',
+      condition: 'used_good',
+      description: "Boucles d'oreilles fantaisie.",
+      priceAmount: 25000,
+      priceCurrency: 'CDF',
+      title: "Boucles d'oreilles à strass",
+    }),
+    profileArea: 'Gombe',
+    validationErrors: [],
+  });
+
+  assert.match(html, /name="fashionItemType"/);
+  assert.doesNotMatch(html, /name="fashionSize"/);
+});
+
+test('review form keeps the Taille select for jewelry_ring', () => {
+  const html = renderReviewFormScreen({
+    categories: sellerCategories,
+    conditionOptions: [{ value: 'used_good', label: 'Bon état' }],
+    draft: createReadyDraft({
+      area: 'Gombe',
+      attributesJson: { fashion: { itemType: 'jewelry_ring', size: '54' } },
+      categoryId: 'fashion',
+      condition: 'used_good',
+      description: 'Bague en or blanc.',
+      priceAmount: 80000,
+      priceCurrency: 'CDF',
+      title: 'Bague or blanc losanges',
+    }),
+    profileArea: 'Gombe',
+    validationErrors: [],
+  });
+
+  assert.match(html, /name="fashionSize"/);
+  assert.match(html, /value="54"[^>]*selected/);
 });
