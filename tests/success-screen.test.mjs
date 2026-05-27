@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import { renderSuccessScreen } from '../App/features/post/success-screen.mjs';
 
-function buildApprovedContext({ storyImageUrl = null } = {}) {
+function buildApprovedContext({ storyImageUrl = 'https://r2/l1/story.png' } = {}) {
   return {
     draft: {
       ai: { status: 'ready', message: '' },

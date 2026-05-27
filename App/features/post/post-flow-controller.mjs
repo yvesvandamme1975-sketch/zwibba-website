@@ -219,6 +219,60 @@ function attachDraftToError(error, draft) {
   return nextError;
 }
 
+export function buildStoryShareText({ listingUrl, title }) {
+  return `Je vends sur Zwibba ! ${title || 'Mon annonce'} — ${listingUrl}`;
+}
+
+export function canShareStoryImage({
+  blobCtor = globalThis.Blob,
+  fileCtor = globalThis.File,
+  navigatorObject = globalThis.navigator,
+} = {}) {
+  if (!navigatorObject?.share || !navigatorObject?.canShare || !fileCtor || !blobCtor) {
+    return false;
+  }
+
+  try {
+    const file = new fileCtor([new blobCtor([])], 'zwibba-story.png', {
+      type: 'image/png',
+    });
+
+    return navigatorObject.canShare({ files: [file] });
+  } catch {
+    return false;
+  }
+}
+
+export async function shareStoryImageNative({
+  fetchFn = globalThis.fetch,
+  fileCtor = globalThis.File,
+  listingUrl,
+  navigatorObject = globalThis.navigator,
+  storyImageUrl,
+  title,
+}) {
+  if (!storyImageUrl || !navigatorObject?.share || !fileCtor) {
+    throw new Error('Partage natif indisponible.');
+  }
+
+  const response = await fetchFn(storyImageUrl);
+  const blob = await response.blob();
+  const file = new fileCtor([blob], 'zwibba-story.png', {
+    type: blob.type || 'image/png',
+  });
+  const absoluteUrl =
+    typeof window === 'undefined'
+      ? listingUrl
+      : new URL(listingUrl, window.location.origin).toString();
+
+  await navigatorObject.share({
+    files: [file],
+    text: buildStoryShareText({ listingUrl: absoluteUrl, title }),
+    title: 'Je vends sur Zwibba !',
+    url: absoluteUrl,
+  });
+}
+
 export function getGuidedPhotoPrompts(draft) {
   const guidance = resolveGuidance(draft.details.categoryId);
 
