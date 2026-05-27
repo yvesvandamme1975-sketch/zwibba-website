@@ -53,3 +53,56 @@ test('detectJewelryItemTypeFromText returns null when the text is ambiguous', ()
     null,
   );
 });
+
+import { proposeJewelryBackfillForRecord } from '../../src/common/jewelry-text-detection';
+
+test('proposeJewelryBackfillForRecord returns null for non-fashion records', () => {
+  assert.equal(
+    proposeJewelryBackfillForRecord({
+      categoryId: 'electronics',
+      attributesJson: { fashion: { itemType: 'tops', size: 'M' } },
+      title: 'Bague vintage',
+      description: '',
+    }),
+    null,
+  );
+});
+
+test('proposeJewelryBackfillForRecord returns null when itemType is already jewelry', () => {
+  assert.equal(
+    proposeJewelryBackfillForRecord({
+      categoryId: 'fashion',
+      attributesJson: { fashion: { itemType: 'jewelry_ring', size: '54' } },
+      title: 'Bague or blanc',
+      description: '',
+    }),
+    null,
+  );
+});
+
+test('proposeJewelryBackfillForRecord proposes jewelry_ring on a misclassified bague', () => {
+  const result = proposeJewelryBackfillForRecord({
+    categoryId: 'fashion',
+    attributesJson: { fashion: { itemType: 'dress_skirt', size: 'M' } },
+    title: 'Bague en or blanc avec motif losanges',
+    description: 'Bague unique, jamais portée',
+  });
+
+  assert.deepEqual(result, {
+    from: { itemType: 'dress_skirt', size: 'M' },
+    to: { itemType: 'jewelry_ring', size: '' },
+    evidence: 'bague',
+  });
+});
+
+test('proposeJewelryBackfillForRecord returns null when text is ambiguous', () => {
+  assert.equal(
+    proposeJewelryBackfillForRecord({
+      categoryId: 'fashion',
+      attributesJson: { fashion: { itemType: 'tops', size: 'M' } },
+      title: 'Parure bague collier',
+      description: 'Pendentif assorti',
+    }),
+    null,
+  );
+});
