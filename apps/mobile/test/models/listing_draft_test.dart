@@ -20,4 +20,27 @@ void main() {
     expect(draft.toJson().containsKey('suggestedPriceMinCdf'), isFalse);
     expect(draft.toJson().containsKey('suggestedPriceMaxCdf'), isFalse);
   });
+
+  test('listing draft round-trips attributesJson with fashion jewelry payload',
+      () {
+    final draft = ListingDraft.fromJson({
+      'area': 'Gombe',
+      'attributesJson': {
+        'fashion': {'itemType': 'jewelry_earrings', 'size': ''},
+      },
+      'categoryId': 'fashion',
+      'condition': 'used_good',
+      'description': "Boucles d'oreilles fantaisie à strass.",
+      'guidancePrompts': const <String>[],
+      'photos': const [],
+      'title': "Boucles d'oreilles strass",
+    });
+
+    expect(draft.attributesJson, isA<Map<String, dynamic>>());
+    expect(
+      draft.attributesJson?['fashion'],
+      {'itemType': 'jewelry_earrings', 'size': ''},
+    );
+    expect(draft.toJson()['attributesJson'], draft.attributesJson);
+  });
 }
