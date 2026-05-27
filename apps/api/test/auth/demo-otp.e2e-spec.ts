@@ -139,6 +139,7 @@ class _FakePrismaService {
 
 function setDemoEnv() {
   process.env.APP_BASE_URL = 'https://zwibba.example';
+  process.env.AI_PROVIDER = 'stub';
   process.env.DATABASE_URL = 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba';
   process.env.DEMO_OTP_ALLOWLIST = '+243990000001,+243990000002';
   process.env.DEMO_OTP_CODE = '123456';
