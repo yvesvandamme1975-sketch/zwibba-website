@@ -83,6 +83,7 @@ model Listing {
   id                 String              @id @default(cuid())
   area               String
   attributesJson     Json?
+  storyImageUrl      String?
   boostPurchases     BoostPurchase[]
   categoryId         String
   chatThreads        ChatThread[]
