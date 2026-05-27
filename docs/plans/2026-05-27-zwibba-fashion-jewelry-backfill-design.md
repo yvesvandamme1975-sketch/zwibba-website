@@ -84,7 +84,7 @@ Couvrir trois niveaux :
 - `proposeJewelryBackfillForRecord` : passé une bague mal classée `dress_skirt`, renvoie un objet `to: jewelry_ring, size: ''` ; passé un t-shirt légitime, renvoie `null`.
 - Le script lui-même n'est pas testé end-to-end (script CLI standalone). À la place, un test sur la fonction principale `runBackfillOnce(prisma, { apply })` qui agrège la logique et est appelée par le wrapper CLI — ce qui rend l'orchestration testable avec un mock minimal de prisma.
 
-### 5. Runbook d'exécution
+### 5. Procédure d'exécution
 
 Le plan livre aussi un runbook court : comment Yves doit exécuter le script.
 
@@ -101,3 +101,12 @@ Pas de rollback automatique. La restauration en cas d'erreur passe par le snapsh
 - Le script refuse de tourner si `process.env.DATABASE_URL` n'est pas défini (évite un connect vers une DB par défaut).
 - Le mode `--apply` exige aussi un flag `--confirm-apply` pour éviter une faute de frappe.
 - Le script ne traite jamais plus de 500 records en une exécution. Si la query Prisma en retourne plus, il logge un warning et stoppe — protection contre un appel accidentel sur une DB de production massive.
+
+## Runbook
+
+1. `git checkout codex/website-vitrine-backup && git pull --ff-only origin codex/website-vitrine-backup`
+2. `pnpm -C apps/api install`
+3. Dry-run: `pnpm -C apps/api exec tsx scripts/backfill-fashion-jewelry.ts`
+4. Read the JSON, verify each candidate's `evidence` and `to.itemType`. If any candidate looks wrong, stop and patch the heuristic before applying.
+5. Apply: `pnpm -C apps/api exec tsx scripts/backfill-fashion-jewelry.ts --apply --confirm-apply`
+6. Save the resulting JSON to `_proj/zwibba/backfills/2026-05-27.md` in the Obsidian vault for audit.
