@@ -8,6 +8,7 @@ import {
 import { toPrismaListingAttributesJson } from '../common/listing-attributes';
 import { PrismaService } from '../database/prisma.service';
 import { DraftsService } from '../drafts/drafts.service';
+import { StoryImageService } from '../share/story-image.service';
 
 export type ModerationStatus =
   | 'approved'
@@ -153,6 +154,7 @@ export class ModerationService {
   constructor(
     @Inject(DraftsService) private readonly draftsService: DraftsService,
     @Inject(PrismaService) private readonly prismaService: PrismaService,
+    @Inject(StoryImageService) private readonly storyImageService: StoryImageService,
   ) {}
 
   private async resolveListingSlug({
@@ -383,6 +385,14 @@ export class ModerationService {
         status: 'approved',
       },
     });
+
+    // Fire-and-forget: the admin approval path should not wait on photo
+    // download, sharp composition, and R2 upload.
+    void this.storyImageService
+      .generateAndStoreForListing(listingId)
+      .catch((error) => {
+        console.warn(`[moderation] story image generation failed for ${listingId}`, error);
+      });
 
     return {
       id: listingId,
