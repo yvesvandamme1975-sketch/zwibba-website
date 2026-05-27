@@ -11,6 +11,8 @@ const fashionItemTypeValues = [
   'jewelry_watch',
 ] as const;
 
+export const fashionItemTypeIds = fashionItemTypeValues;
+
 const sharedClothingSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const;
 const ringSizes = ['44', '46', '48', '50', '52', '54', '56', '58', '60', '62', '64', '66'] as const;
 

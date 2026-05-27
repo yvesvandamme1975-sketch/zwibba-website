@@ -1,4 +1,5 @@
 import { supportedCategoryIds, supportedConditionValues } from './ai-taxonomy';
+import { fashionItemTypeIds } from '../common/fashion-attributes';
 
 export function buildVisionDraftPrompt() {
   return [
@@ -9,8 +10,9 @@ export function buildVisionDraftPrompt() {
     'title est obligatoire et doit être un titre court, naturel, spécifique au produit visible.',
     `Choisis categoryId uniquement parmi: ${supportedCategoryIds.join(', ')}.`,
     `Choisis condition uniquement parmi: ${supportedConditionValues.join(', ')}.`,
-    'Si categoryId vaut fashion, choisis itemType uniquement parmi: shoes, pants, tops, dress_skirt, jacket_sweater.',
-    "N'ajoute size que si itemType est clair et si la taille est explicitement visible.",
+    `Si categoryId vaut fashion, choisis itemType uniquement parmi: ${fashionItemTypeIds.join(', ')}.`,
+    "Pour les bijoux, utilise le sous-type adapté: jewelry_ring (bague), jewelry_earrings (boucles d'oreilles), jewelry_necklace (collier), jewelry_bracelet (bracelet), jewelry_watch (montre).",
+    "Pour size, ne renseigne une valeur que pour shoes, pants, dress_skirt, jacket_sweater, tops, et jewelry_ring quand la taille est explicitement visible. Pour jewelry_earrings, jewelry_necklace, jewelry_bracelet et jewelry_watch, laisse size vide.",
     "N'inclus jamais de prix ni de fourchette de prix.",
     'Sois conservateur: si la catégorie est incertaine, choisis electronics.',
     "N'utilise pas emploi sans indice clair de recrutement ou d'offre d'emploi.",
