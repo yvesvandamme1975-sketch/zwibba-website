@@ -125,7 +125,7 @@ export function renderReviewFormScreen({
   const fashionAttributes = getFashionAttributes(draft.details.attributesJson);
   const fashionItemTypeOptions = getFashionItemTypeOptions();
   const fashionSizeOptions = getFashionSizeOptions(fashionAttributes.itemType);
-  const isFashionSizeDisabled = !fashionAttributes.itemType;
+  const hasFashionSizeGrid = fashionSizeOptions.length > 0;
 
   return `
     <section class="app-flow app-flow--review">
@@ -218,15 +218,21 @@ export function renderReviewFormScreen({
                   </select>
                 </label>
 
-                <label class="${renderFieldClass({ validationErrors, field: 'fashion_size' })}">
-                  <span>Taille</span>
-                  <select name="fashionSize" ${isFashionSizeDisabled ? 'disabled' : ''}>
-                    <option value="">Choisir</option>
-                    ${fashionSizeOptions
-                      .map((option) => renderOption(option, fashionAttributes.size))
-                      .join('')}
-                  </select>
-                </label>
+                ${
+                  hasFashionSizeGrid
+                    ? `
+                      <label class="${renderFieldClass({ validationErrors, field: 'fashion_size' })}">
+                        <span>Taille</span>
+                        <select name="fashionSize">
+                          <option value="">Choisir</option>
+                          ${fashionSizeOptions
+                            .map((option) => renderOption(option, fashionAttributes.size))
+                            .join('')}
+                        </select>
+                      </label>
+                    `
+                    : ''
+                }
               `
               : ''
           }
