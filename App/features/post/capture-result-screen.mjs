@@ -124,7 +124,6 @@ export function renderCaptureResultScreen({
             class="app-flow__file-input app-flow__file-input--overlay"
             type="file"
             accept="image/*"
-            capture="environment"
             data-input="replace-primary-photo"
           />
         </label>
