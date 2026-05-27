@@ -11,7 +11,7 @@ function buildWhatsAppShareUrl({ draft, listingUrl }) {
     typeof window === 'undefined'
       ? listingUrl
       : new URL(listingUrl, window.location.origin).toString();
-  const text = `${title} est maintenant en ligne sur Zwibba: ${absoluteUrl}`;
+  const text = `Je vends sur Zwibba ! ${title} — ${absoluteUrl}`;
 
   return `https://wa.me/?text=${encodeURIComponent(text)}`;
 }
@@ -69,9 +69,13 @@ export function renderSuccessScreen({
     status: 'approved',
   }, { listingUrl });
   const primaryImageUrl = resolveDraftPrimaryImage(draft);
+  const storyImageUrl = outcome?.storyImageUrl || '';
+  const storyImageAttribute = storyImageUrl
+    ? ` data-story-image-url="${escapeAttribute(storyImageUrl)}"`
+    : '';
 
   return `
-    <section class="app-flow app-flow--success">
+    <section class="app-flow app-flow--success"${storyImageAttribute}>
       <header class="app-flow__header">
         <div class="app-flow__meta">
           <a class="app-flow__back" href="#publish">Retour</a>
@@ -137,12 +141,45 @@ export function renderSuccessScreen({
             ? `
               <a
                 class="app-flow__button"
+                data-action="share-whatsapp-chat"
                 href="${escapeAttribute(buildWhatsAppShareUrl({ draft, listingUrl }))}"
                 rel="noreferrer"
                 target="_blank"
               >
                 Partager sur WhatsApp
               </a>
+              <button
+                class="app-flow__button app-flow__button--secondary"
+                type="button"
+                data-action="share-facebook"
+                data-listing-url="${escapeAttribute(listingUrl)}"
+              >
+                Partager sur Facebook
+              </button>
+              ${
+                storyImageUrl
+                  ? `
+                    <button
+                      class="app-flow__button app-flow__button--secondary"
+                      type="button"
+                      data-action="share-native"
+                      data-listing-url="${escapeAttribute(listingUrl)}"
+                      data-story-image-url="${escapeAttribute(storyImageUrl)}"
+                      data-share-title="${escapeAttribute(draft.details.title || 'Annonce Zwibba')}"
+                    >
+                      Partager en story
+                    </button>
+                    <button
+                      class="app-flow__button app-flow__button--secondary"
+                      type="button"
+                      data-action="download-story-image"
+                      data-story-image-url="${escapeAttribute(storyImageUrl)}"
+                    >
+                      Télécharger l'image
+                    </button>
+                  `
+                  : ''
+              }
               <button
                 class="app-flow__button app-flow__button--secondary"
                 type="button"

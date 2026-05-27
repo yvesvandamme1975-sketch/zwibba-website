@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import test from 'node:test';
@@ -8,6 +8,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const distDir = path.join(repoRoot, 'dist');
+const contentPath = path.join(repoRoot, 'src/site/content.mjs');
 
 function buildSite(env = {}) {
   execFileSync('node', ['scripts/build.mjs'], {
@@ -15,6 +16,17 @@ function buildSite(env = {}) {
     env: { ...process.env, ...env },
     stdio: 'pipe',
   });
+}
+
+function buildSiteWithContentPatch(patch) {
+  const original = readFileSync(contentPath, 'utf8');
+
+  try {
+    writeFileSync(contentPath, patch(original));
+    buildSite();
+  } finally {
+    writeFileSync(contentPath, original);
+  }
 }
 
 async function withServer(run) {
@@ -260,4 +272,45 @@ test('build can inject Plausible analytics when configured', () => {
   const landing = readFileSync(path.join(distDir, 'index.html'), 'utf8');
   assert.match(landing, /plausible\.io\/js\/script\.js/i);
   assert.match(landing, /data-domain="zwibba\.com"/i);
+});
+
+test('build.mjs uses storyImageUrl as og:image when available', () => {
+  const storyImageUrl = 'https://r2.example.com/listings/story-test/story.png';
+
+  buildSiteWithContentPatch((content) =>
+    content.replace(
+      "slug: 'samsung-galaxy-a54-neuf-lubumbashi',",
+      `slug: 'samsung-galaxy-a54-neuf-lubumbashi',\n    storyImageUrl: '${storyImageUrl}',`,
+    ),
+  );
+
+  const detail = readFileSync(
+    path.join(distDir, 'annonce', 'samsung-galaxy-a54-neuf-lubumbashi', 'index.html'),
+    'utf8',
+  );
+
+  assert.match(detail, new RegExp(`<meta property="og:image" content="${storyImageUrl}" />`));
+  assert.match(detail, /<meta property="og:image:width" content="1080" \/>/);
+  assert.match(detail, /<meta property="og:image:height" content="1920" \/>/);
+  assert.match(detail, /<meta property="og:title" content="Je vends sur Zwibba ! Samsung Galaxy A54 neuf sous emballage" \/>/);
+  assert.match(detail, /<meta property="product:price:amount" content="450000" \/>/);
+  assert.match(detail, /<meta property="product:price:currency" content="CDF" \/>/);
+});
+
+test('build.mjs falls back to primaryImageUrl when storyImageUrl is null', () => {
+  buildSite();
+
+  const detail = readFileSync(
+    path.join(distDir, 'annonce', 'samsung-galaxy-a54-neuf-lubumbashi', 'index.html'),
+    'utf8',
+  );
+
+  assert.match(
+    detail,
+    /<meta property="og:image" content="https:\/\/zwibba\.com\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.jpg" \/>/,
+  );
+  assert.doesNotMatch(detail, /property="og:image:width"/);
+  assert.doesNotMatch(detail, /property="og:image:height"/);
+  assert.match(detail, /<meta property="og:title" content="Samsung Galaxy A54 neuf sous emballage \| Zwibba" \/>/);
+  assert.doesNotMatch(detail, /Je vends sur Zwibba ! Samsung Galaxy A54/);
 });

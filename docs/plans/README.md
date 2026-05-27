@@ -67,5 +67,7 @@ Current priority docs:
 - `2026-05-27-zwibba-fashion-jewelry-backfill-implementation.md`
 - `2026-05-27-zwibba-mobile-photo-gallery-access-design.md`
 - `2026-05-27-zwibba-mobile-photo-gallery-access-implementation.md`
+- `2026-05-27-zwibba-share-story-image-design.md`
+- `2026-05-27-zwibba-share-story-image-implementation.md`
 
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.

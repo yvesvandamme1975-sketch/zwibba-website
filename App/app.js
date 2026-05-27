@@ -88,10 +88,12 @@ import {
   shouldRetainDraftAfterPublish,
 } from './utils/post-publish-draft-state.mjs';
 import {
+  canShareStoryImage,
   createPostFlowController,
   decidePublishGate,
   getMissingRequiredPhotoPrompts,
   refreshReviewValidationErrors,
+  shareStoryImageNative,
   validateDraftForPublish,
 } from './features/post/post-flow-controller.mjs';
 
@@ -1101,6 +1103,13 @@ if (appRoot) {
       content: renderRoute(route),
       unreadMessagesCount: getTotalUnreadMessages(),
     });
+    if (!canShareStoryImage()) {
+      const nativeStoryShareButton = appRoot.querySelector('[data-action="share-native"]');
+
+      if (nativeStoryShareButton instanceof HTMLElement) {
+        nativeStoryShareButton.style.display = 'none';
+      }
+    }
     if (route.type === 'buy') {
       restoreBuyerSearchRenderState(appRoot, buyerSearchRenderState);
     }
@@ -1799,6 +1808,40 @@ if (appRoot) {
     window.prompt('Copiez ce lien', absoluteUrl);
   }
 
+  async function handleNativeStoryShare(trigger) {
+    const storyImageUrl = trigger.dataset.storyImageUrl || '';
+    const listingUrl = trigger.dataset.listingUrl || buildListingUrl(state.publishedDraft ?? state.draft);
+
+    await shareStoryImageNative({
+      fetchFn: window.fetch.bind(window),
+      listingUrl: new URL(listingUrl, window.location.origin).toString(),
+      navigatorObject: navigator,
+      storyImageUrl,
+      title: trigger.dataset.shareTitle || state.publishedDraft?.details?.title || state.draft?.details?.title || '',
+    });
+  }
+
+  function handleFacebookShare(rawListingUrl) {
+    const absoluteUrl = new URL(rawListingUrl, window.location.origin).toString();
+    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(absoluteUrl)}`;
+
+    window.open(shareUrl, '_blank', 'noopener');
+  }
+
+  function handleStoryImageDownload(storyImageUrl) {
+    if (!storyImageUrl) {
+      return;
+    }
+
+    const link = document.createElement('a');
+    link.href = storyImageUrl;
+    link.download = 'zwibba-story.png';
+    link.rel = 'noreferrer';
+    document.body.append(link);
+    link.click();
+    link.remove();
+  }
+
   appRoot.addEventListener('click', async (event) => {
     const scrollTopTrigger = event.target.closest('[data-scroll-top-target]');
 
@@ -1873,6 +1916,21 @@ if (appRoot) {
 
     if (trigger.dataset.action === 'copy-listing-link') {
       await handleListingLinkCopy(trigger.dataset.listingUrl || buildListingUrl(state.draft));
+      return;
+    }
+
+    if (trigger.dataset.action === 'share-native') {
+      await handleNativeStoryShare(trigger);
+      return;
+    }
+
+    if (trigger.dataset.action === 'share-facebook') {
+      handleFacebookShare(trigger.dataset.listingUrl || buildListingUrl(state.draft));
+      return;
+    }
+
+    if (trigger.dataset.action === 'download-story-image') {
+      handleStoryImageDownload(trigger.dataset.storyImageUrl || '');
       return;
     }
 

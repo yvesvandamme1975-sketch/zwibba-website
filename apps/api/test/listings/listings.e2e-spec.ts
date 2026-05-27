@@ -500,6 +500,7 @@ test('listings feed includes approved active system seed listings from the same 
       priceCurrency: 'CDF',
       primaryImageUrl: '/assets/listings/mangues-et-avocats-frais-du-haut-katanga.jpg',
       slug: 'panier-fruits-frais',
+      storyImageUrl: null,
       title: 'Panier de fruits frais',
     },
   ]);

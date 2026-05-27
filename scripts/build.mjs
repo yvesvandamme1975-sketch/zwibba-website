@@ -303,6 +303,11 @@ function renderLayout({
   body,
   canonicalPath = currentPath,
   ogImage = '/assets/brand/logo-zwibba.svg',
+  ogImageHeight = '',
+  ogImageWidth = '',
+  ogTitle = title,
+  productPriceAmount = '',
+  productPriceCurrency = '',
   schema,
   bodyClass = '',
 }) {
@@ -327,12 +332,16 @@ function renderLayout({
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="${site.locale}" />
     <meta property="og:site_name" content="${site.name}" />
-    <meta property="og:title" content="${escapeHtml(title)}" />
+    <meta property="og:title" content="${escapeHtml(ogTitle)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:url" content="${canonicalUrl}" />
     <meta property="og:image" content="${resolveUrl(ogImage)}" />
+    ${ogImageWidth ? `<meta property="og:image:width" content="${escapeHtml(ogImageWidth)}" />` : ''}
+    ${ogImageHeight ? `<meta property="og:image:height" content="${escapeHtml(ogImageHeight)}" />` : ''}
+    ${productPriceAmount !== '' ? `<meta property="product:price:amount" content="${escapeHtml(productPriceAmount)}" />` : ''}
+    ${productPriceCurrency ? `<meta property="product:price:currency" content="${escapeHtml(productPriceCurrency)}" />` : ''}
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${escapeHtml(title)}" />
+    <meta name="twitter:title" content="${escapeHtml(ogTitle)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
     <meta name="twitter:image" content="${resolveUrl(ogImage)}" />
     <link rel="canonical" href="${canonicalUrl}" />
@@ -732,6 +741,11 @@ function renderBrowsePage() {
 
 function renderListingPage(listing) {
   const listingImageAsset = resolveListingImageAsset(listing);
+  const hasStoryImage = Boolean(listing.storyImageUrl);
+  const ogImage = hasStoryImage ? listing.storyImageUrl : listingImageAsset;
+  const ogTitle = hasStoryImage
+    ? `Je vends sur Zwibba ! ${listing.title}`
+    : `${listing.title} | Zwibba`;
   const similar = listings
     .filter((item) => item.slug !== listing.slug && item.category === listing.category)
     .slice(0, 2)
@@ -849,7 +863,12 @@ function renderListingPage(listing) {
     canonicalPath: `/annonce/${listing.slug}/`,
     title: `${listing.title} | Zwibba`,
     description: listing.summary,
-    ogImage: listingImageAsset,
+    ogImage,
+    ogImageHeight: hasStoryImage ? '1920' : '',
+    ogImageWidth: hasStoryImage ? '1080' : '',
+    ogTitle,
+    productPriceAmount: hasStoryImage ? String(listing.priceCdf) : '',
+    productPriceCurrency: hasStoryImage ? 'CDF' : '',
     body: detailBody,
     schema,
     bodyClass: 'page-listing',
