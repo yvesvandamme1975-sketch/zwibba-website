@@ -1174,7 +1174,7 @@ test('review form renders fashion item type and size fields for Mode listings', 
   assert.match(html, /option value="39" selected/);
 });
 
-test('review form keeps fashion size disabled until a type is chosen', () => {
+test('review form hides the fashion size select until a type with a size grid is chosen', () => {
   const html = renderReviewFormScreen({
     areaOptions: ['Golf', 'Bel Air'],
     categories: sellerCategories,
@@ -1191,7 +1191,8 @@ test('review form keeps fashion size disabled until a type is chosen', () => {
     validationErrors: [],
   });
 
-  assert.match(html, /name="fashionSize"[\s\S]*disabled/);
+  assert.match(html, /name="fashionItemType"/);
+  assert.doesNotMatch(html, /name="fashionSize"/);
 });
 
 test('publish validation requires item type and size for Mode listings', () => {

@@ -2,6 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../../services/listings_api_service.dart';
 
+const Map<String, String> _fashionItemTypeLabels = {
+  'shoes': 'Chaussures',
+  'pants': 'Pantalon',
+  'tops': 'T-shirt / Chemise',
+  'dress_skirt': 'Robe / Jupe',
+  'jacket_sweater': 'Veste / Pull',
+  'jewelry_ring': 'Bague',
+  'jewelry_earrings': "Boucles d'oreilles",
+  'jewelry_necklace': 'Collier',
+  'jewelry_bracelet': 'Bracelet',
+  'jewelry_watch': 'Montre',
+};
+
 class ListingDetailScreen extends StatelessWidget {
   const ListingDetailScreen({
     required this.detail,
@@ -58,6 +71,8 @@ class ListingDetailScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
+        _buildFashionDetailsBlock(context, detail),
+        const SizedBox(height: 18),
         Text('Conseils de sécurité', style: theme.textTheme.titleMedium),
         const SizedBox(height: 10),
         for (final tip in detail.safetyTips) ...[
@@ -74,4 +89,43 @@ class ListingDetailScreen extends StatelessWidget {
       ],
     );
   }
+}
+
+Widget _buildFashionDetailsBlock(BuildContext context, ListingDetail detail) {
+  if (detail.categoryId != 'fashion') {
+    return const SizedBox.shrink();
+  }
+
+  final Map<String, dynamic>? fashion =
+      (detail.attributesJson?['fashion'] as Map?)?.cast<String, dynamic>();
+  final itemType = fashion?['itemType'] as String? ?? '';
+  final label = _fashionItemTypeLabels[itemType] ?? '';
+  final size = (fashion?['size'] as String? ?? '').trim();
+
+  if (label.isEmpty && size.isEmpty) {
+    return const SizedBox.shrink();
+  }
+
+  final theme = Theme.of(context);
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text('Détails', style: theme.textTheme.titleMedium),
+      if (label.isNotEmpty) ...[
+        const SizedBox(height: 10),
+        Text(
+          "Type d'article : $label",
+          style: theme.textTheme.bodyMedium,
+        ),
+      ],
+      if (size.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        Text(
+          'Taille : $size',
+          style: theme.textTheme.bodyMedium,
+        ),
+      ],
+    ],
+  );
 }

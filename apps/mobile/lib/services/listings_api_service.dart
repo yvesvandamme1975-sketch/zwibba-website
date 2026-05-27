@@ -20,6 +20,8 @@ class ListingSummary {
 
 class ListingDetail {
   const ListingDetail({
+    this.attributesJson,
+    this.categoryId = '',
     required this.contactActions,
     required this.id,
     required this.locationLabel,
@@ -33,6 +35,8 @@ class ListingDetail {
     required this.title,
   });
 
+  final Map<String, dynamic>? attributesJson;
+  final String categoryId;
   final List<String> contactActions;
   final String id;
   final String locationLabel;
@@ -87,6 +91,10 @@ class HttpListingsApiService implements ListingsApiService {
     final seller = Map<String, dynamic>.from(json['seller'] as Map);
 
     return ListingDetail(
+      attributesJson: json['attributesJson'] is Map
+          ? Map<String, dynamic>.from(json['attributesJson'] as Map)
+          : null,
+      categoryId: json['categoryId'] as String? ?? '',
       contactActions: List<String>.from(json['contactActions'] as List),
       id: json['id'] as String,
       locationLabel: json['locationLabel'] as String,

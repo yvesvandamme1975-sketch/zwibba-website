@@ -4,9 +4,15 @@ const fashionItemTypeOptions = [
   { value: 'tops', label: 'T-shirt / Chemise' },
   { value: 'dress_skirt', label: 'Robe / Jupe' },
   { value: 'jacket_sweater', label: 'Veste / Pull' },
+  { value: 'jewelry_ring', label: 'Bague' },
+  { value: 'jewelry_earrings', label: "Boucles d'oreilles" },
+  { value: 'jewelry_necklace', label: 'Collier' },
+  { value: 'jewelry_bracelet', label: 'Bracelet' },
+  { value: 'jewelry_watch', label: 'Montre' },
 ];
 
 const sharedClothingSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+const ringSizes = ['44', '46', '48', '50', '52', '54', '56', '58', '60', '62', '64', '66'];
 
 const fashionSizeOptionsByItemType = {
   dress_skirt: sharedClothingSizes,
@@ -14,6 +20,11 @@ const fashionSizeOptionsByItemType = {
   pants: ['36', '38', '40', '42', '44', '46', '48', '50'],
   shoes: ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'],
   tops: sharedClothingSizes,
+  jewelry_ring: ringSizes,
+  jewelry_earrings: [],
+  jewelry_necklace: [],
+  jewelry_bracelet: [],
+  jewelry_watch: [],
 };
 
 const fashionItemTypeLabels = Object.fromEntries(

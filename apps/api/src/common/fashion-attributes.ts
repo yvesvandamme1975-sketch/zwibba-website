@@ -4,9 +4,17 @@ const fashionItemTypeValues = [
   'tops',
   'dress_skirt',
   'jacket_sweater',
+  'jewelry_ring',
+  'jewelry_earrings',
+  'jewelry_necklace',
+  'jewelry_bracelet',
+  'jewelry_watch',
 ] as const;
 
+export const fashionItemTypeIds = fashionItemTypeValues;
+
 const sharedClothingSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const;
+const ringSizes = ['44', '46', '48', '50', '52', '54', '56', '58', '60', '62', '64', '66'] as const;
 
 const fashionSizeOptionsByItemType = {
   dress_skirt: sharedClothingSizes,
@@ -14,6 +22,11 @@ const fashionSizeOptionsByItemType = {
   pants: ['36', '38', '40', '42', '44', '46', '48', '50'] as const,
   shoes: ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'] as const,
   tops: sharedClothingSizes,
+  jewelry_ring: ringSizes,
+  jewelry_earrings: [] as const,
+  jewelry_necklace: [] as const,
+  jewelry_bracelet: [] as const,
+  jewelry_watch: [] as const,
 } as const;
 
 function normalizeString(value: unknown) {
