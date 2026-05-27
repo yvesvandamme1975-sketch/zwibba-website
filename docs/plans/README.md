@@ -63,6 +63,8 @@ Current priority docs:
 - `2026-05-21-zwibba-codex-deploy-handoff-implementation.md`
 - `2026-05-27-zwibba-jewelry-fashion-subtypes-design.md`
 - `2026-05-27-zwibba-jewelry-fashion-subtypes-implementation.md`
+- `2026-05-27-zwibba-fashion-jewelry-backfill-design.md`
+- `2026-05-27-zwibba-fashion-jewelry-backfill-implementation.md`
 - `2026-05-27-zwibba-mobile-photo-gallery-access-design.md`
 - `2026-05-27-zwibba-mobile-photo-gallery-access-implementation.md`
 
