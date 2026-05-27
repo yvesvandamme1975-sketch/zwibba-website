@@ -307,7 +307,7 @@ export function applyAiResultToDraft(
       ai: {
         applied: true,
         status: 'ready',
-        message: 'Brouillon préparé à partir de votre photo.',
+        message: 'À partir de votre photo.',
       },
       guidance: resolveGuidance(nextCategoryId),
     },
@@ -529,7 +529,7 @@ export function createReadyDraft(overrides = {}) {
       ai: overrides.ai ?? {
         applied: true,
         status: 'ready',
-        message: 'Brouillon préparé à partir de votre photo.',
+        message: 'À partir de votre photo.',
       },
       guidance: resolveGuidance(categoryId),
     },
