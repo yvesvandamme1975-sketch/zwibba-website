@@ -13,7 +13,7 @@ function buildWhatsAppShareUrl({ draft, listingUrl }) {
       : new URL(listingUrl, window.location.origin).toString();
   const text = `Je vends sur Zwibba ! ${title} — ${absoluteUrl}`;
 
-  return `https://wa.me/?text=${encodeURIComponent(text)}`;
+  return `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
 }
 
 function resolveDraftPrimaryImage(draft) {
