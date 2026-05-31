@@ -1828,6 +1828,16 @@ if (appRoot) {
     window.open(shareUrl, '_blank', 'noopener');
   }
 
+  function handleWhatsAppShare(rawListingUrl) {
+    const absoluteUrl = new URL(rawListingUrl, window.location.origin).toString();
+    const title =
+      state.publishedDraft?.details?.title || state.draft?.details?.title || 'Mon annonce Zwibba';
+    const text = `Je vends sur Zwibba ! ${title} — ${absoluteUrl}`;
+    const shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+
+    window.open(shareUrl, '_blank', 'noopener');
+  }
+
   function handleStoryImageDownload(storyImageUrl) {
     if (!storyImageUrl) {
       return;
@@ -1926,6 +1936,11 @@ if (appRoot) {
 
     if (trigger.dataset.action === 'share-facebook') {
       handleFacebookShare(trigger.dataset.listingUrl || buildListingUrl(state.draft));
+      return;
+    }
+
+    if (trigger.dataset.action === 'share-whatsapp-chat') {
+      handleWhatsAppShare(trigger.dataset.listingUrl || buildListingUrl(state.draft));
       return;
     }
 
