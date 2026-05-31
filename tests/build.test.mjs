@@ -117,6 +117,17 @@ test('app entry page bootstraps the live API base URL for the browser seller flo
   assert.match(appEntry, /https:\/\/api-production-b1b58\.up\.railway\.app/);
 });
 
+test('app shell exposes Open Graph tags with a raster default image', () => {
+  buildSite();
+
+  const appShell = readFileSync(path.join(distDir, 'App', 'index.html'), 'utf8');
+  assert.match(appShell, /<meta property="og:image" content="https:\/\/zwibba\.com\/assets\/brand\/og-default\.png"/);
+  assert.match(appShell, /<meta property="og:title"/);
+  assert.match(appShell, /<meta property="og:description"/);
+  assert.match(appShell, /<meta property="og:url" content="https:\/\/zwibba\.com\/App\/"/);
+  assert.doesNotMatch(appShell, /<meta property="og:image" content="[^"]+\.svg"/);
+});
+
 test('app entry page renders a dedicated inner phone viewport for desktop scrolling', () => {
   buildSite();
 
