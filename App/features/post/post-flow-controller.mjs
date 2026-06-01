@@ -246,16 +246,19 @@ export function canShareStoryImage({
 export async function shareStoryImageNative({
   fetchFn = globalThis.fetch,
   fileCtor = globalThis.File,
+  imageUrl,
   listingUrl,
   navigatorObject = globalThis.navigator,
   storyImageUrl,
   title,
 }) {
-  if (!storyImageUrl || !navigatorObject?.share || !fileCtor) {
+  const effectiveImageUrl = storyImageUrl || imageUrl;
+
+  if (!effectiveImageUrl || !navigatorObject?.share || !fileCtor) {
     throw new Error('Partage natif indisponible.');
   }
 
-  const response = await fetchFn(storyImageUrl);
+  const response = await fetchFn(effectiveImageUrl);
   const blob = await response.blob();
   const file = new fileCtor([blob], 'zwibba-story.png', {
     type: blob.type || 'image/png',
