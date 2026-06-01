@@ -13,6 +13,7 @@ import {
   createReadyDraft,
   getMissingRequiredPhotoPrompts,
   refreshReviewValidationErrors,
+  shareStoryImageNative,
   validateDraftForPublish,
 } from '../App/features/post/post-flow-controller.mjs';
 import {
@@ -152,6 +153,39 @@ test('first real photo starts a draft and uploads immediately', async () => {
   assert.equal(aiDraftService.calls[0].objectKey, 'draft-photos/capture/photo_1-phone.jpg');
   assert.equal(draftStorage.loadDraft().id, draft.id);
   assert.deepEqual(mediaService.requests.map((request) => request.type), ['slot', 'upload']);
+});
+
+test('shareStoryImageNative shares a fallback image when no story image is given', async () => {
+  const shared = [];
+  const navigatorObject = {
+    canShare: () => true,
+    share: async (data) => {
+      shared.push(data);
+    },
+  };
+
+  await shareStoryImageNative({
+    fetchFn: async () => ({
+      blob: async () => new Blob([new Uint8Array([1])], { type: 'image/jpeg' }),
+    }),
+    fileCtor: File,
+    imageUrl: 'https://cdn/photo.jpg',
+    listingUrl: 'https://zwibba.com/annonce/x/',
+    navigatorObject,
+    title: 'X',
+  });
+
+  assert.equal(shared.length, 1);
+  assert.ok(shared[0].files?.length === 1);
+});
+
+test('shareStoryImageNative throws only when no image at all is available', async () => {
+  await assert.rejects(() => shareStoryImageNative({
+    fileCtor: File,
+    listingUrl: 'https://zwibba.com/annonce/x/',
+    navigatorObject: { share: async () => {}, canShare: () => true },
+    title: 'X',
+  }));
 });
 
 test('AI fashion metadata prefills Mode item type and size when the signal is strong', async () => {
