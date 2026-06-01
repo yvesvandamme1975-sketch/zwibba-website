@@ -73,5 +73,7 @@ Current priority docs:
 - `2026-05-31-zwibba-share-fb-whatsapp-fix-implementation.md`
 - `2026-05-31-zwibba-per-listing-share-og-design.md`
 - `2026-05-31-zwibba-per-listing-share-og-implementation.md`
+- `2026-05-31-zwibba-native-story-share-design.md`
+- `2026-05-31-zwibba-native-story-share-implementation.md`
 
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
