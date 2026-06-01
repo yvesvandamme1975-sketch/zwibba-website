@@ -12,14 +12,15 @@ const PHOTO_BUFFER = readFileSync(path.resolve(__dirname, '../fixtures/sample-pr
 function buildMocks() {
   const updates: any[] = [];
   const r2Puts: any[] = [];
+  const fetchedUrls: string[] = [];
 
   const prismaService = {
     listing: {
       findUnique: async () => ({
         id: 'l1',
+        draftId: 'd1',
         title: 'Bague or blanc motif losanges',
-        primaryImageUrl: 'https://cdn.example.com/photo.jpg',
-        zoneLabel: 'Gombe, Kinshasa',
+        area: 'Gombe, Kinshasa',
         priceAmount: 80000,
         priceCurrency: 'CDF',
       }),
@@ -27,6 +28,19 @@ function buildMocks() {
         updates.push(args);
         return args.data;
       },
+    },
+    draft: {
+      findUnique: async () => ({
+        id: 'd1',
+        photos: [
+          {
+            publicUrl: 'https://cdn.example.com/photo.jpg',
+            uploadStatus: 'uploaded',
+            sourcePresetId: 'capture',
+            createdAt: new Date(),
+          },
+        ],
+      }),
     },
   };
 
@@ -38,9 +52,12 @@ function buildMocks() {
   };
 
   // sharp composite is the real pipeline; we'll feed a tiny photo via fetch mock
-  const fetchImpl = async () => ({ arrayBuffer: async () => PHOTO_BUFFER });
+  const fetchImpl = async (url: string) => {
+    fetchedUrls.push(url);
+    return { arrayBuffer: async () => PHOTO_BUFFER };
+  };
 
-  return { prismaService, r2StorageService, updates, r2Puts, fetchImpl };
+  return { prismaService, r2StorageService, updates, r2Puts, fetchedUrls, fetchImpl };
 }
 
 test('generateAndStoreForListing composes, uploads, and persists the URL', async () => {
@@ -56,6 +73,17 @@ test('generateAndStoreForListing composes, uploads, and persists the URL', async
   assert.equal(mocks.updates.length, 1);
   assert.equal(mocks.updates[0].where.id, 'l1');
   assert.match(mocks.updates[0].data.storyImageUrl, /listings\/l1\/story\.png$/);
+  assert.equal(mocks.fetchedUrls[0], 'https://cdn.example.com/photo.jpg');
+});
+
+test('generateAndStoreForListing throws when no uploaded draft photo is available', async () => {
+  const mocks = buildMocks();
+  mocks.prismaService.draft.findUnique = async () => ({ id: 'd1', photos: [] });
+  const service = new StoryImageService(mocks.prismaService as any, mocks.r2StorageService as any, { fetchImpl: mocks.fetchImpl as any });
+
+  await assert.rejects(() => service.generateAndStoreForListing('l1'), /image/i);
+  assert.equal(mocks.r2Puts.length, 0);
+  assert.equal(mocks.updates.length, 0);
 });
 
 test('generateAndStoreForListing throws when the listing is not found', async () => {
