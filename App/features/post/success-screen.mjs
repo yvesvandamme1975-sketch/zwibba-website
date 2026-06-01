@@ -70,6 +70,7 @@ export function renderSuccessScreen({
   }, { listingUrl });
   const primaryImageUrl = resolveDraftPrimaryImage(draft);
   const storyImageUrl = outcome?.storyImageUrl || '';
+  const shareImageUrl = storyImageUrl || primaryImageUrl;
   const storyImageAttribute = storyImageUrl
     ? ` data-story-image-url="${escapeAttribute(storyImageUrl)}"`
     : '';
@@ -153,22 +154,31 @@ export function renderSuccessScreen({
                 type="button"
                 data-action="share-facebook"
                 data-listing-url="${escapeAttribute(listingUrl)}"
+                ${shareImageUrl ? `data-share-image-url="${escapeAttribute(shareImageUrl)}"` : ''}
+                ${storyImageUrl ? `data-story-image-url="${escapeAttribute(storyImageUrl)}"` : ''}
               >
                 Partager sur Facebook
               </button>
               ${
-                storyImageUrl
+                shareImageUrl
                   ? `
                     <button
                       class="app-flow__button app-flow__button--secondary"
                       type="button"
                       data-action="share-native"
                       data-listing-url="${escapeAttribute(listingUrl)}"
-                      data-story-image-url="${escapeAttribute(storyImageUrl)}"
+                      data-share-image-url="${escapeAttribute(shareImageUrl)}"
+                      ${storyImageUrl ? `data-story-image-url="${escapeAttribute(storyImageUrl)}"` : ''}
                       data-share-title="${escapeAttribute(draft.details.title || 'Annonce Zwibba')}"
                     >
                       Partager en story
                     </button>
+                  `
+                  : ''
+              }
+              ${
+                storyImageUrl
+                  ? `
                     <button
                       class="app-flow__button app-flow__button--secondary"
                       type="button"
