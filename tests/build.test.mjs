@@ -1,5 +1,6 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import test from 'node:test';
@@ -29,13 +30,13 @@ function buildSiteWithContentPatch(patch) {
   }
 }
 
-async function withServer(run) {
+async function withServer(run, env = {}) {
   buildSite();
 
   const port = 4311;
   const server = spawn('node', ['server.mjs'], {
     cwd: repoRoot,
-    env: { ...process.env, PORT: String(port) },
+    env: { ...process.env, ...env, PORT: String(port) },
     stdio: 'ignore',
   });
 
@@ -59,6 +60,30 @@ async function withServer(run) {
   } finally {
     server.kill('SIGTERM');
     await delay(150);
+  }
+}
+
+async function withMockApi(handler, run) {
+  const mockApi = createServer(handler);
+
+  await new Promise((resolve) => {
+    mockApi.listen(0, '127.0.0.1', resolve);
+  });
+
+  try {
+    const { port } = mockApi.address();
+    await run(`http://127.0.0.1:${port}`);
+  } finally {
+    await new Promise((resolve, reject) => {
+      mockApi.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve();
+      });
+    });
   }
 }
 
@@ -271,6 +296,59 @@ test('runtime serves App module assets with a JavaScript MIME type', async () =>
     assert.equal(response.status, 200);
     assert.match(response.headers.get('content-type') || '', /application\/javascript/i);
     assert.match(response.headers.get('cache-control') || '', /no-cache/i);
+  });
+});
+
+test('runtime renders per-listing OG tags for a non-static slug via the API', async () => {
+  await withMockApi((request, response) => {
+    if (request.url === '/listings/mon-annonce-test') {
+      response.writeHead(200, { 'content-type': 'application/json' });
+      response.end(
+        JSON.stringify({
+          slug: 'mon-annonce-test',
+          title: 'Mon annonce test',
+          priceAmount: 80000,
+          priceCurrency: 'CDF',
+          locationLabel: 'Gombe, Kinshasa',
+          primaryImageUrl: 'https://cdn.example.com/listings/mon-annonce/photo.jpg',
+          storyImageUrl: 'https://r2.example.com/listings/mon-annonce/story.png',
+        }),
+      );
+      return;
+    }
+
+    response.writeHead(404, { 'content-type': 'application/json' });
+    response.end(JSON.stringify({ message: 'Not found' }));
+  }, async (mockBase) => {
+    await withServer(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/annonce/mon-annonce-test/`, {
+        signal: AbortSignal.timeout(3000),
+      });
+      const body = await response.text();
+
+      assert.equal(response.status, 200);
+      assert.match(body, /property="og:image" content="https:\/\/r2\.example\.com\/listings\/mon-annonce\/story\.png"/);
+      assert.match(body, /80\s?000 CDF/);
+      assert.match(body, /Gombe, Kinshasa/);
+      assert.match(body, /#listing\/mon-annonce-test/);
+    }, { ZWIBBA_API_BASE_URL: mockBase });
+  });
+});
+
+test('runtime falls back to brand og-default.png when the API has no such listing', async () => {
+  await withMockApi((request, response) => {
+    response.writeHead(404, { 'content-type': 'application/json' });
+    response.end(JSON.stringify({ message: `No listing for ${request.url}` }));
+  }, async (mockBase) => {
+    await withServer(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/annonce/inconnu-xyz/`, {
+        signal: AbortSignal.timeout(3000),
+      });
+      const body = await response.text();
+
+      assert.equal(response.status, 200);
+      assert.match(body, /assets\/brand\/og-default\.png/);
+    }, { ZWIBBA_API_BASE_URL: mockBase });
   });
 });
 

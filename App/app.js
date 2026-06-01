@@ -1601,7 +1601,9 @@ if (appRoot) {
       state.publishOutcome = result.outcome;
       state.publishedListingRoute = listingRoute;
       state.publishedListingUrl =
-        listingRoute ? `/App/${listingRoute}` : result.listingUrl || buildListingUrl(result.draft);
+        result.outcome?.listingSlug
+          ? `/annonce/${result.outcome.listingSlug}/`
+          : result.listingUrl || buildListingUrl(result.draft);
       state.sellerListingsStatus = 'idle';
       if (result.outcome?.status === 'approved') {
         buyerBrowseController.state.feedStatus = 'idle';

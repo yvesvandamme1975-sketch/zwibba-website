@@ -3,14 +3,17 @@ import test from 'node:test';
 
 import { renderSuccessScreen } from '../App/features/post/success-screen.mjs';
 
-function buildApprovedContext({ storyImageUrl = 'https://r2/l1/story.png' } = {}) {
+function buildApprovedContext({
+  listingUrl = 'https://zwibba.com/annonce/bague-or-blanc/',
+  storyImageUrl = 'https://r2/l1/story.png',
+} = {}) {
   return {
     draft: {
       ai: { status: 'ready', message: '' },
       details: { title: 'Bague or blanc', area: 'Gombe', priceAmount: 80000, priceCurrency: 'CDF' },
       photos: [{ photoId: 'p1', publicUrl: 'https://cdn/photo.jpg', kind: 'primary' }],
     },
-    listingUrl: 'https://zwibba.com/annonce/bague-or-blanc/',
+    listingUrl,
     listingRoute: '#listing/bague-or-blanc',
     outcome: { status: 'approved', id: 'l1', storyImageUrl },
   };
@@ -28,6 +31,17 @@ test('success screen whatsapp link uses the api.whatsapp.com endpoint', () => {
   const html = renderSuccessScreen(buildApprovedContext());
   assert.match(html, /href="https:\/\/api\.whatsapp\.com\/send\?text=[^"]+"/);
   assert.doesNotMatch(html, /href="https:\/\/wa\.me/);
+});
+
+test('success screen share affordances point to the public /annonce/<slug>/ url', () => {
+  const html = renderSuccessScreen(buildApprovedContext({ listingUrl: '/annonce/mon-annonce/' }));
+  const whatsappShare = html.match(/<a[^>]*data-action="share-whatsapp-chat"[^>]*>/s)?.[0] ?? '';
+  const facebookShare = html.match(/<button[^>]*data-action="share-facebook"[^>]*>/s)?.[0] ?? '';
+
+  assert.match(whatsappShare, /href="[^"]*%2Fannonce%2Fmon-annonce%2F[^"]*"/);
+  assert.match(facebookShare, /data-listing-url="\/annonce\/mon-annonce\/"/);
+  assert.doesNotMatch(whatsappShare, /#listing\//);
+  assert.doesNotMatch(facebookShare, /#listing\//);
 });
 
 test('success screen embeds the story image URL when present', () => {
