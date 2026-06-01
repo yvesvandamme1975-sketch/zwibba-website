@@ -49,8 +49,14 @@ test('success screen embeds the story image URL when present', () => {
   assert.match(html, /data-story-image-url="https:\/\/r2\/l1\/story\.png"/);
 });
 
-test('success screen omits story-image-dependent affordances when storyImageUrl is null', () => {
+test('success screen exposes a native share affordance even without a story image', () => {
+  const html = renderSuccessScreen(buildApprovedContext({ storyImageUrl: '' }));
+  assert.match(html, /data-action="share-native"/);
+  assert.match(html, /data-share-image-url="https:\/\/cdn\/photo\.jpg"/);
+  assert.doesNotMatch(html, /data-action="download-story-image"/);
+});
+
+test('success screen omits story-image download when storyImageUrl is null', () => {
   const html = renderSuccessScreen(buildApprovedContext({ storyImageUrl: null }));
-  assert.doesNotMatch(html, /data-action="share-native"/);
   assert.doesNotMatch(html, /data-action="download-story-image"/);
 });
