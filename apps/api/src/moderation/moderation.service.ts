@@ -305,6 +305,14 @@ export class ModerationService {
       return persistedListing;
     });
 
+    if (status === 'approved') {
+      void this.storyImageService
+        .generateAndStoreForListing(listing.id)
+        .catch((error) => {
+          console.warn(`[moderation] story image generation failed for ${listing.id}`, error);
+        });
+    }
+
     return {
       id: listing.id,
       listingSlug: listing.slug,
