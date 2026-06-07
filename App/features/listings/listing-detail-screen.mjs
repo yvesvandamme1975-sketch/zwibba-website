@@ -84,6 +84,31 @@ function buildEditListingButton(detail) {
   `;
 }
 
+function buildShareButton(detail, { compact = false } = {}) {
+  if (!detail.slug) {
+    return '';
+  }
+
+  const shareUrl = `/annonce/${detail.slug}/`;
+  const className = compact
+    ? 'app-flow__button app-flow__button--icon'
+    : 'app-flow__button app-flow__button--share';
+
+  return `
+    <button
+      class="${escapeAttribute(className)}"
+      type="button"
+      data-action="share-listing"
+      data-share-slug="${escapeAttribute(detail.slug)}"
+      data-share-title="${escapeAttribute(detail.title)}"
+      data-share-url="${escapeAttribute(shareUrl)}"
+      ${compact ? `aria-label="${escapeAttribute('Partager cette annonce')}"` : ''}
+    >
+      ${compact ? '<span aria-hidden="true">↗</span>' : 'Partager'}
+    </button>
+  `;
+}
+
 function buildActionMarkup(action, detail) {
   switch (action) {
     case 'message':
@@ -125,6 +150,10 @@ function renderOwnerLifecycleCard(detail) {
 
   if (detail.editDraft) {
     actions.push(buildEditListingButton(detail));
+
+    if (detail.slug) {
+      actions.push(buildShareButton(detail, { compact: false }));
+    }
   }
 
   if (detail.canPause) {
@@ -209,7 +238,7 @@ function renderOwnerLifecycleCard(detail) {
       }
       ${
         actions.length
-          ? `<div class="app-flow__actions app-flow__actions--stacked">${actions.join('')}</div>`
+          ? `<div class="app-flow__actions app-flow__actions--stacked app-flow__actions--row">${actions.join('')}</div>`
           : ''
       }
     </div>
@@ -453,6 +482,7 @@ export function renderListingDetailScreen({
                 )
                 .map((action) => buildActionMarkup(action, detail))
                 .join('')}
+              ${buildShareButton(detail, { compact: true })}
             </div>
           `
       }
