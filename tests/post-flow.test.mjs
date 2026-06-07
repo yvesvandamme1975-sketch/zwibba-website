@@ -9,6 +9,7 @@ import { sellerCategories } from '../App/demo-content.mjs';
 import {
   MAX_PRICE_CDF,
   addGuidedPhotoToDraft,
+  buildStoryShareText,
   createPostFlowController,
   createReadyDraft,
   getMissingRequiredPhotoPrompts,
@@ -1457,4 +1458,15 @@ test('guidance screen renders staged progress for guided uploads', () => {
   assert.match(html, /Ajout de la photo guidée/i);
   assert.match(html, /Terminé/i);
   assert.match(html, /Téléversement/i);
+});
+
+test('buildStoryShareText produces the share text with title and URL', () => {
+  const text = buildStoryShareText({
+    listingUrl: 'https://zwibba.example/annonce/radio-vintage-kinshasa/',
+    title: 'Radio vintage',
+  });
+
+  assert.match(text, /Je vends sur Zwibba/);
+  assert.match(text, /Radio vintage/);
+  assert.match(text, /\/annonce\/radio-vintage-kinshasa\//);
 });
