@@ -533,4 +533,11 @@ export class ListingsService {
       ...buildLifecyclePayload(updatedListing, now),
     };
   }
+
+  async incrementShareCount(slug: string): Promise<void> {
+    await this.prismaService.listing.update({
+      where: { slug },
+      data: { shareCount: { increment: 1 } },
+    });
+  }
 }
