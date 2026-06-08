@@ -312,6 +312,7 @@ function toListingDetail({
       categoryId: listing.categoryId,
       ownerPhoneNumber: listing.ownerPhoneNumber,
     }),
+    shareCount: listing.shareCount ?? 0,
     slug: listing.slug,
     storyImageUrl: listing.storyImageUrl ?? null,
     summary: listing.description,
