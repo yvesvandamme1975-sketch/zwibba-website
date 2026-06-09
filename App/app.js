@@ -88,6 +88,7 @@ import {
   shouldRetainDraftAfterPublish,
 } from './utils/post-publish-draft-state.mjs';
 import {
+  buildStoryShareText,
   canShareStoryImage,
   createPostFlowController,
   decidePublishGate,
@@ -1874,6 +1875,70 @@ if (appRoot) {
     });
   }
 
+  function recordListingShare(slug) {
+    if (!slug) {
+      return;
+    }
+
+    void window
+      .fetch(`${apiConfig.apiBaseUrl}/listings/${encodeURIComponent(slug)}/share`, {
+        method: 'POST',
+      })
+      .catch(() => {});
+  }
+
+  async function handleListingShare(trigger) {
+    const slug = trigger.dataset.shareSlug || '';
+    const title = trigger.dataset.shareTitle || '';
+    const shareUrl = trigger.dataset.shareUrl || (slug ? `/annonce/${slug}/` : '');
+    const absoluteUrl = new URL(shareUrl, window.location.origin).toString();
+    const shareText = buildStoryShareText({
+      listingUrl: absoluteUrl,
+      title,
+    });
+    const detail = buyerBrowseController.state.detail;
+
+    if (detail?.storyImageUrl && canShareStoryImage()) {
+      await shareStoryImageNative({
+        fetchFn: window.fetch.bind(window),
+        imageUrl: detail.primaryImageUrl,
+        listingUrl: absoluteUrl,
+        navigatorObject: navigator,
+        storyImageUrl: detail.storyImageUrl,
+        title,
+      });
+      recordListingShare(slug);
+      return;
+    }
+
+    if (navigator.share) {
+      await navigator.share({
+        text: shareText,
+        title: 'Je vends sur Zwibba !',
+        url: absoluteUrl,
+      });
+      recordListingShare(slug);
+      return;
+    }
+
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(absoluteUrl);
+    } else {
+      window.prompt('Copiez ce lien', absoluteUrl);
+    }
+
+    if (trigger instanceof HTMLElement) {
+      const originalHtml = trigger.innerHTML;
+
+      trigger.textContent = 'Lien copié';
+      window.setTimeout(() => {
+        trigger.innerHTML = originalHtml;
+      }, 2000);
+    }
+
+    recordListingShare(slug);
+  }
+
   async function handleFacebookShare(rawListingUrl, trigger) {
     const storyImageUrl = trigger?.dataset?.storyImageUrl || '';
     const imageUrl = trigger?.dataset?.shareImageUrl || '';
@@ -1992,6 +2057,11 @@ if (appRoot) {
 
     if (trigger.dataset.action === 'share-native') {
       await handleNativeStoryShare(trigger);
+      return;
+    }
+
+    if (trigger.dataset.action === 'share-listing') {
+      await handleListingShare(trigger);
       return;
     }
 

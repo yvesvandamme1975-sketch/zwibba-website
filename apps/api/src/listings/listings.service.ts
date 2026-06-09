@@ -312,6 +312,7 @@ function toListingDetail({
       categoryId: listing.categoryId,
       ownerPhoneNumber: listing.ownerPhoneNumber,
     }),
+    shareCount: listing.shareCount ?? 0,
     slug: listing.slug,
     storyImageUrl: listing.storyImageUrl ?? null,
     summary: listing.description,
@@ -532,5 +533,12 @@ export class ListingsService {
       title: updatedListing.title,
       ...buildLifecyclePayload(updatedListing, now),
     };
+  }
+
+  async incrementShareCount(slug: string): Promise<void> {
+    await this.prismaService.listing.update({
+      where: { slug },
+      data: { shareCount: { increment: 1 } },
+    });
   }
 }

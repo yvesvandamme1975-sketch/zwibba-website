@@ -380,3 +380,65 @@ test('listing detail screen renders an in-app error state', () => {
   assert.match(html, /Retour aux annonces/i);
   assert.match(html, /href="#buy"/);
 });
+
+test('listing detail screen renders a share button for non-owner viewers', () => {
+  const html = renderListingDetailScreen({
+    detail: {
+      categoryId: 'electronics',
+      categoryLabel: 'Électronique',
+      contactActions: ['message'],
+      id: 'listing_share_1',
+      locationLabel: 'Golf',
+      priceAmount: 250000,
+      priceCurrency: 'CDF',
+      primaryImageUrl: null,
+      safetyTips: [],
+      seller: {
+        name: 'Vendeur 0001',
+        responseTime: 'Répond en moyenne en 9 min',
+        role: 'Vendeur pro',
+      },
+      slug: 'radio-vintage-kinshasa',
+      summary: 'Radio vintage en bon état.',
+      title: 'Radio vintage',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /data-action="share-listing"/);
+  assert.match(html, /data-share-slug="radio-vintage-kinshasa"/);
+  assert.match(html, /data-share-url="\/annonce\/radio-vintage-kinshasa\/"/);
+});
+
+test('listing detail screen renders a share button inside the owner card when editDraft is present', () => {
+  const html = renderListingDetailScreen({
+    detail: {
+      categoryId: 'electronics',
+      categoryLabel: 'Électronique',
+      canPause: true,
+      contactActions: ['message'],
+      editDraft: { slug: 'radio-vintage-kinshasa' },
+      id: 'listing_owner_share_1',
+      locationLabel: 'Golf',
+      priceAmount: 250000,
+      priceCurrency: 'CDF',
+      primaryImageUrl: null,
+      safetyTips: [],
+      seller: {
+        name: 'Vendeur 0001',
+        responseTime: 'Répond en moyenne en 9 min',
+        role: 'Vendeur pro',
+      },
+      slug: 'radio-vintage-kinshasa',
+      summary: 'Radio vintage en bon état.',
+      title: 'Radio vintage',
+      viewerRole: 'owner',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /Modifier/);
+  assert.match(html, /data-action="share-listing"/);
+  assert.match(html, /Partager/);
+  assert.match(html, /data-share-slug="radio-vintage-kinshasa"/);
+});

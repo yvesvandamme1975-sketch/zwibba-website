@@ -26,7 +26,6 @@ export class ListingsController {
   listBrowseFeed() {
     return this.listingsService.listBrowseFeed();
   }
-
   @Get('mine')
   @UseGuards(SessionAuthGuard)
   listSellerListings(@CurrentSession() session: SessionRecord) {
@@ -52,6 +51,14 @@ export class ListingsController {
     });
   }
 
+  @Post(':slug/share')
+  @HttpCode(200)
+  async incrementShareCount(@Param('slug') slug: string) {
+    try {
+      await this.listingsService.incrementShareCount(slug);
+    } catch {}
+    return { ok: true };
+  }
   @Get(':slug')
   async getListingDetail(
     @Headers('authorization') authorization: string | undefined,

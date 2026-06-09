@@ -1423,6 +1423,33 @@
   grid-template-columns: 1fr;
 }
 
+.app-flow__actions--row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.app-flow__button--share {
+  background: linear-gradient(135deg, var(--green), #9aff8f);
+  color: #0f160f;
+  box-shadow: var(--shadow-green);
+}
+
+.app-flow__button--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  min-height: 48px;
+  padding: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font-size: 1.2rem;
+  box-shadow: none;
+}
+
 .app-detail__owner-card {
   display: grid;
   gap: 8px;
