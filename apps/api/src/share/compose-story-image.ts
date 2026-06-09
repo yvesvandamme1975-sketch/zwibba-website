@@ -29,8 +29,8 @@ export async function composeStoryImage(input: ComposeStoryImageInput): Promise<
 
   return canvas
     .composite([
-      { input: photo, top: 240, left: 54 },
-      { input: Buffer.from(headerSvg), top: 80, left: 0 },
+      { input: photo, top: 280, left: 54 },
+      { input: Buffer.from(headerSvg), top: 60, left: 0 },
       { input: Buffer.from(footerSvg), top: 1640, left: 0 },
     ])
     .png()
@@ -40,9 +40,9 @@ export async function composeStoryImage(input: ComposeStoryImageInput): Promise<
 function buildHeaderSvg(): string {
   const logoData = Buffer.from(ZWIBBA_LOGO_SVG).toString('base64');
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="140" viewBox="0 0 1080 140">
-    <text x="360" y="82" fill="#9aff8f" font-family="Manrope" font-size="36" font-weight="500">Je vends sur</text>
-    <image x="584" y="34" width="176" height="72" href="data:image/svg+xml;base64,${logoData}" preserveAspectRatio="xMidYMid meet"/>
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="200" viewBox="0 0 1080 200">
+    <text x="540" y="100" fill="#9aff8f" font-family="Manrope" font-size="56" font-weight="600" text-anchor="middle">Je vends sur</text>
+    <image x="330" y="110" width="420" height="80" href="data:image/svg+xml;base64,${logoData}" preserveAspectRatio="xMidYMid meet"/>
   </svg>`;
 }
 
