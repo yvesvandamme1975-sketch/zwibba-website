@@ -482,7 +482,7 @@ export function renderListingDetailScreen({
                 )
                 .map((action) => buildActionMarkup(action, detail))
                 .join('')}
-              ${buildShareButton(detail, { compact: true })}
+              ${buildShareButton(detail, { compact: false })}
             </div>
           `
       }
