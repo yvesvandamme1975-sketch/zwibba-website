@@ -5,17 +5,6 @@ import {
   formatListingPrice,
 } from '../../utils/rendering.mjs';
 
-function buildWhatsAppShareUrl({ draft, listingUrl }) {
-  const title = draft.details.title || 'Mon annonce Zwibba';
-  const absoluteUrl =
-    typeof window === 'undefined'
-      ? listingUrl
-      : new URL(listingUrl, window.location.origin).toString();
-  const text = `Je vends sur Zwibba ! ${title} — ${absoluteUrl}`;
-
-  return `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-}
-
 function resolveDraftPrimaryImage(draft) {
   const primaryPhoto = draft.photos.find((photo) => photo.kind === 'primary') ?? draft.photos[0];
 
@@ -70,7 +59,6 @@ export function renderSuccessScreen({
   }, { listingUrl });
   const primaryImageUrl = resolveDraftPrimaryImage(draft);
   const storyImageUrl = outcome?.storyImageUrl || '';
-  const shareImageUrl = storyImageUrl || primaryImageUrl;
   const storyImageAttribute = storyImageUrl
     ? ` data-story-image-url="${escapeAttribute(storyImageUrl)}"`
     : '';
@@ -140,63 +128,15 @@ export function renderSuccessScreen({
         ${
           content.showShareActions
             ? `
-              <a
+              <button
                 class="app-flow__button"
-                data-action="share-whatsapp-chat"
-                href="${escapeAttribute(buildWhatsAppShareUrl({ draft, listingUrl }))}"
-                rel="noreferrer"
-                target="_blank"
-              >
-                Partager sur WhatsApp
-              </a>
-              <button
-                class="app-flow__button app-flow__button--secondary"
                 type="button"
-                data-action="share-facebook"
-                data-listing-url="${escapeAttribute(listingUrl)}"
-                ${shareImageUrl ? `data-share-image-url="${escapeAttribute(shareImageUrl)}"` : ''}
-                ${storyImageUrl ? `data-story-image-url="${escapeAttribute(storyImageUrl)}"` : ''}
+                data-action="share-listing"
+                data-share-slug="${escapeAttribute(outcome?.listingSlug || '')}"
+                data-share-title="${escapeAttribute(draft.details.title || 'Annonce Zwibba')}"
+                data-share-url="${escapeAttribute(listingUrl)}"
               >
-                Partager sur Facebook
-              </button>
-              ${
-                shareImageUrl
-                  ? `
-                    <button
-                      class="app-flow__button app-flow__button--secondary"
-                      type="button"
-                      data-action="share-native"
-                      data-listing-url="${escapeAttribute(listingUrl)}"
-                      data-share-image-url="${escapeAttribute(shareImageUrl)}"
-                      ${storyImageUrl ? `data-story-image-url="${escapeAttribute(storyImageUrl)}"` : ''}
-                      data-share-title="${escapeAttribute(draft.details.title || 'Annonce Zwibba')}"
-                    >
-                      Partager en story
-                    </button>
-                  `
-                  : ''
-              }
-              ${
-                storyImageUrl
-                  ? `
-                    <button
-                      class="app-flow__button app-flow__button--secondary"
-                      type="button"
-                      data-action="download-story-image"
-                      data-story-image-url="${escapeAttribute(storyImageUrl)}"
-                    >
-                      Télécharger l'image
-                    </button>
-                  `
-                  : ''
-              }
-              <button
-                class="app-flow__button app-flow__button--secondary"
-                type="button"
-                data-action="copy-listing-link"
-                data-listing-url="${escapeAttribute(listingUrl)}"
-              >
-                Copier le lien
+                Partager mon annonce
               </button>
               <a
                 class="app-flow__button app-flow__button--secondary"
@@ -207,6 +147,14 @@ export function renderSuccessScreen({
               >
                 Voir mon annonce
               </a>
+              <button
+                class="app-flow__button app-flow__button--secondary"
+                type="button"
+                data-action="copy-listing-link"
+                data-listing-url="${escapeAttribute(listingUrl)}"
+              >
+                Copier le lien
+              </button>
               ${
                 outcome?.id
                   ? `
