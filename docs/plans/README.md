@@ -79,5 +79,7 @@ Current priority docs:
 - `2026-06-01-zwibba-story-image-primary-photo-fix-implementation.md`
 - `2026-06-07-zwibba-listing-detail-share-design.md`
 - `2026-06-07-zwibba-listing-detail-share-implementation.md`
+- `2026-06-09-zwibba-simplify-success-share-design.md`
+- `2026-06-09-zwibba-simplify-success-share-implementation.md`
 
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
