@@ -60,3 +60,34 @@ test('success screen omits story-image download when storyImageUrl is null', () 
   const html = renderSuccessScreen(buildApprovedContext({ storyImageUrl: null }));
   assert.doesNotMatch(html, /data-action="download-story-image"/);
 });
+
+test('success screen renders a single unified share button instead of per-platform buttons', () => {
+  const html = renderSuccessScreen({
+    draft: {
+      details: {
+        area: 'Lubumbashi Centre',
+        categoryId: 'electronics',
+        priceAmount: 250000,
+        priceCurrency: 'CDF',
+        title: 'Radio vintage',
+      },
+      photos: [],
+    },
+    listingRoute: '#listing/radio-vintage',
+    listingUrl: '/annonce/radio-vintage/',
+    outcome: {
+      id: 'listing_unified_share_1',
+      listingSlug: 'radio-vintage',
+      status: 'approved',
+      storyImageUrl: 'https://cdn.example/story.png',
+    },
+  });
+  assert.match(html, /data-action="share-listing"/);
+  assert.match(html, /Partager mon annonce/);
+  assert.match(html, /data-share-slug="radio-vintage"/);
+  assert.doesNotMatch(html, /data-action="share-whatsapp-chat"/);
+  assert.doesNotMatch(html, /data-action="share-facebook"/);
+  assert.doesNotMatch(html, /data-action="share-native"/);
+  assert.doesNotMatch(html, /data-action="download-story-image"/);
+  assert.match(html, /data-action="copy-listing-link"/);
+});
