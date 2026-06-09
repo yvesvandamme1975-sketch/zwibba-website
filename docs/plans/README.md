@@ -69,6 +69,14 @@ Current priority docs:
 - `2026-05-27-zwibba-mobile-photo-gallery-access-implementation.md`
 - `2026-05-27-zwibba-share-story-image-design.md`
 - `2026-05-27-zwibba-share-story-image-implementation.md`
+- `2026-05-31-zwibba-share-fb-whatsapp-fix-design.md`
+- `2026-05-31-zwibba-share-fb-whatsapp-fix-implementation.md`
+- `2026-05-31-zwibba-per-listing-share-og-design.md`
+- `2026-05-31-zwibba-per-listing-share-og-implementation.md`
+- `2026-05-31-zwibba-native-story-share-design.md`
+- `2026-05-31-zwibba-native-story-share-implementation.md`
+- `2026-06-01-zwibba-story-image-primary-photo-fix-design.md`
+- `2026-06-01-zwibba-story-image-primary-photo-fix-implementation.md`
 - `2026-06-07-zwibba-listing-detail-share-design.md`
 - `2026-06-07-zwibba-listing-detail-share-implementation.md`
 

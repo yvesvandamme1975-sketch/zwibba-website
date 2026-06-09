@@ -250,6 +250,19 @@ function renderAppPage() {
     <meta name="description" content="Bêta web Zwibba pour publier, découvrir et partager des annonces en direct." />
     <meta name="theme-color" content="#1E1E20" />
     <meta name="color-scheme" content="dark" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="${site.locale}" />
+    <meta property="og:site_name" content="${site.name}" />
+    <meta property="og:title" content="Zwibba App" />
+    <meta property="og:description" content="Bêta web Zwibba pour publier, découvrir et partager des annonces en direct." />
+    <meta property="og:url" content="${resolveUrl('/App/')}" />
+    <meta property="og:image" content="${resolveUrl('/assets/brand/og-default.png')}" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Zwibba App" />
+    <meta name="twitter:description" content="Bêta web Zwibba pour publier, découvrir et partager des annonces en direct." />
+    <meta name="twitter:image" content="${resolveUrl('/assets/brand/og-default.png')}" />
     <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1196,6 +1209,7 @@ function build() {
   }
 
   cpSync(path.join(repoRoot, 'Logo_zwibba.svg'), path.join(assetsDir, 'brand', 'logo-zwibba.svg'), { recursive: false });
+  cpSync(path.join(repoRoot, 'og-default.png'), path.join(assetsDir, 'brand', 'og-default.png'), { recursive: false });
   writeText(path.join(assetsDir, 'brand', 'favicon.svg'), renderFavicon());
   writeText(path.join(assetsDir, 'styles.css'), readFileSync(path.join(repoRoot, 'src/site/styles.css'), 'utf8'));
   writeText(path.join(assetsDir, 'app.js'), readFileSync(path.join(repoRoot, 'src/site/app.js'), 'utf8'));

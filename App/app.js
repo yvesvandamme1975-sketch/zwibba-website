@@ -267,6 +267,7 @@ if (appRoot) {
     walletStatus: 'idle',
   };
   let lastRenderedRouteKey = '';
+  let storyImagePollToken = 0;
 
   if (!window.location.hash) {
     window.location.hash = '#sell';
@@ -1602,18 +1603,68 @@ if (appRoot) {
       state.publishOutcome = result.outcome;
       state.publishedListingRoute = listingRoute;
       state.publishedListingUrl =
-        listingRoute ? `/App/${listingRoute}` : result.listingUrl || buildListingUrl(result.draft);
+        result.outcome?.listingSlug
+          ? `/annonce/${result.outcome.listingSlug}/`
+          : result.listingUrl || buildListingUrl(result.draft);
       state.sellerListingsStatus = 'idle';
       if (result.outcome?.status === 'approved') {
         buyerBrowseController.state.feedStatus = 'idle';
       }
       window.location.hash = '#success';
+      if (
+        result.outcome?.status === 'approved' &&
+        !result.outcome.storyImageUrl &&
+        result.outcome.listingSlug
+      ) {
+        startStoryImagePolling(result.outcome.listingSlug);
+      }
     } catch (error) {
       state.busyLabel = '';
       state.publishError =
         error instanceof Error ? error.message : "Impossible d'envoyer l'annonce.";
       renderApp();
     }
+  }
+
+  function startStoryImagePolling(listingSlug) {
+    const token = ++storyImagePollToken;
+    const maxAttempts = 5;
+    const intervalMs = 2000;
+
+    const poll = async (attempt) => {
+      if (token !== storyImagePollToken || getRoute().type !== 'success') {
+        return;
+      }
+
+      try {
+        const detail = await listingsService.getListingDetail(listingSlug, {
+          session: state.session,
+        });
+        const storyImageUrl = detail?.storyImageUrl || '';
+
+        if (storyImageUrl) {
+          if (state.publishOutcome?.listingSlug === listingSlug) {
+            state.publishOutcome = {
+              ...state.publishOutcome,
+              storyImageUrl,
+            };
+            renderApp();
+          }
+
+          return;
+        }
+      } catch {}
+
+      if (attempt < maxAttempts && token === storyImagePollToken && getRoute().type === 'success') {
+        window.setTimeout(() => {
+          void poll(attempt + 1);
+        }, intervalMs);
+      }
+    };
+
+    window.setTimeout(() => {
+      void poll(1);
+    }, intervalMs);
   }
 
   async function handleBoost(listingId) {
@@ -1811,10 +1862,12 @@ if (appRoot) {
 
   async function handleNativeStoryShare(trigger) {
     const storyImageUrl = trigger.dataset.storyImageUrl || '';
+    const imageUrl = trigger.dataset.shareImageUrl || '';
     const listingUrl = trigger.dataset.listingUrl || buildListingUrl(state.publishedDraft ?? state.draft);
 
     await shareStoryImageNative({
       fetchFn: window.fetch.bind(window),
+      imageUrl,
       listingUrl: new URL(listingUrl, window.location.origin).toString(),
       navigatorObject: navigator,
       storyImageUrl,
@@ -1886,9 +1939,27 @@ if (appRoot) {
     recordListingShare(slug);
   }
 
-  function handleFacebookShare(rawListingUrl) {
+  async function handleFacebookShare(rawListingUrl, trigger) {
+    const storyImageUrl = trigger?.dataset?.storyImageUrl || '';
+    const imageUrl = trigger?.dataset?.shareImageUrl || '';
+
+    if (canShareStoryImage() && (storyImageUrl || imageUrl)) {
+      await handleNativeStoryShare(trigger);
+      return;
+    }
+
     const absoluteUrl = new URL(rawListingUrl, window.location.origin).toString();
     const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(absoluteUrl)}`;
+
+    window.open(shareUrl, '_blank', 'noopener');
+  }
+
+  function handleWhatsAppShare(rawListingUrl) {
+    const absoluteUrl = new URL(rawListingUrl, window.location.origin).toString();
+    const title =
+      state.publishedDraft?.details?.title || state.draft?.details?.title || 'Mon annonce Zwibba';
+    const text = `Je vends sur Zwibba ! ${title} — ${absoluteUrl}`;
+    const shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
 
     window.open(shareUrl, '_blank', 'noopener');
   }
@@ -1995,7 +2066,12 @@ if (appRoot) {
     }
 
     if (trigger.dataset.action === 'share-facebook') {
-      handleFacebookShare(trigger.dataset.listingUrl || buildListingUrl(state.draft));
+      await handleFacebookShare(trigger.dataset.listingUrl || buildListingUrl(state.draft), trigger);
+      return;
+    }
+
+    if (trigger.dataset.action === 'share-whatsapp-chat') {
+      handleWhatsAppShare(trigger.dataset.listingUrl || buildListingUrl(state.draft));
       return;
     }
 
@@ -2264,6 +2340,9 @@ if (appRoot) {
   });
 
   window.addEventListener('hashchange', () => {
+    if (getRoute().type !== 'success') {
+      storyImagePollToken += 1;
+    }
     renderApp();
   });
 

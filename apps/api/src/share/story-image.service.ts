@@ -18,8 +18,17 @@ export class StoryImageService {
       throw new Error(`Listing ${listingId} not found`);
     }
 
+    const draft = await this.prismaService.draft.findUnique({
+      where: { id: listing.draftId },
+      include: { photos: true },
+    });
+    const primaryImageUrl = resolvePrimaryPhotoUrl(draft?.photos ?? []);
+    if (!primaryImageUrl) {
+      throw new Error(`No primary image for listing ${listingId}`);
+    }
+
     const fetchImpl = this.options.fetchImpl ?? fetch;
-    const photoResponse = await fetchImpl(listing.primaryImageUrl);
+    const photoResponse = await fetchImpl(primaryImageUrl);
     const photoBuffer = Buffer.from(await photoResponse.arrayBuffer());
 
     const pngBuffer = await composeStoryImage({
@@ -49,4 +58,25 @@ export class StoryImageService {
     const formatted = new Intl.NumberFormat('fr-CD').format(amount);
     return `${formatted} ${currency ?? 'CDF'}`;
   }
+}
+
+type DraftPhotoLike = {
+  publicUrl: string;
+  uploadStatus: string;
+  sourcePresetId?: string;
+  createdAt?: Date;
+};
+
+function resolvePrimaryPhotoUrl(photos: DraftPhotoLike[]): string | null {
+  const sorted = [...photos]
+    .filter((p) => p.uploadStatus === 'uploaded' && p.publicUrl)
+    .sort((a, b) => {
+      const ra = a.sourcePresetId === 'capture' ? 0 : 1;
+      const rb = b.sourcePresetId === 'capture' ? 0 : 1;
+      if (ra !== rb) return ra - rb;
+      const ta = a.createdAt instanceof Date ? a.createdAt.getTime() : 0;
+      const tb = b.createdAt instanceof Date ? b.createdAt.getTime() : 0;
+      return ta - tb;
+    });
+  return sorted[0]?.publicUrl ?? null;
 }

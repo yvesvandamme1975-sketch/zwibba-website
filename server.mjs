@@ -3,10 +3,13 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { buildListingOgTags } from './shared/listing-og.mjs';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.join(__dirname, 'dist');
 const port = Number(process.env.PORT || 3003);
 const publicDomain = process.env.RAILWAY_PUBLIC_DOMAIN || '';
+const apiBaseUrl = process.env.ZWIBBA_API_BASE_URL || 'https://api-production-b1b58.up.railway.app';
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -39,6 +42,69 @@ function send(response, statusCode, body, headers = {}) {
   }
 
   response.end();
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function resolveBaseUrl(requestUrl) {
+  if (publicDomain) {
+    return `https://${publicDomain.replace(/^https?:\/\//, '').replace(/\/+$/, '')}`;
+  }
+
+  return requestUrl.origin;
+}
+
+function buildFallbackListing(slug) {
+  return {
+    slug,
+    title: 'Annonce Zwibba',
+    priceAmount: null,
+    priceCurrency: 'CDF',
+    locationLabel: 'RDC',
+    primaryImageUrl: null,
+    storyImageUrl: null,
+  };
+}
+
+async function fetchListing(slug) {
+  const response = await fetch(`${apiBaseUrl}/listings/${encodeURIComponent(slug)}`, {
+    signal: AbortSignal.timeout(2500),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Listing API returned ${response.status}`);
+  }
+
+  return response.json();
+}
+
+function renderDynamicListingPage({ baseUrl, listing, slug }) {
+  const appRoute = `/App/#listing/${slug}`;
+  const ogTags = buildListingOgTags({ listing, baseUrl });
+  const canonicalUrl = new URL(`/annonce/${slug}/`, baseUrl).toString();
+  const title = `${listing.title || 'Annonce Zwibba'} | Zwibba`;
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${escapeHtml(title)}</title>
+    ${ogTags}
+    <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
+    <script>location.replace(${JSON.stringify(appRoute)});</script>
+  </head>
+  <body>
+    <noscript><a href="/App/">Ouvrir l'application Zwibba</a></noscript>
+  </body>
+</html>`;
 }
 
 function resolveFile(urlPath) {
@@ -82,10 +148,31 @@ function resolveFile(urlPath) {
   return null;
 }
 
-createServer((request, response) => {
+createServer(async (request, response) => {
   const url = new URL(request.url || '/', `http://${request.headers.host || 'localhost'}`);
   const resolvedFile = resolveFile(url.pathname);
   const filePath = resolvedFile?.filePath;
+  const dynamicListingMatch = url.pathname.match(/^\/annonce\/([^/]+)\/?$/);
+
+  if ((!filePath || !filePath.startsWith(distDir)) && dynamicListingMatch) {
+    const slug = decodeURIComponent(dynamicListingMatch[1]);
+    const baseUrl = resolveBaseUrl(url);
+    let listing = buildFallbackListing(slug);
+
+    try {
+      listing = await fetchListing(slug);
+    } catch (error) {
+      console.warn(`Zwibba listing OG fallback for ${slug}: ${error.message}`);
+    }
+
+    const body = renderDynamicListingPage({ baseUrl, listing: { ...listing, slug }, slug });
+    send(response, 200, body, {
+      'Cache-Control': 'no-cache',
+      'Content-Length': Buffer.byteLength(body),
+      'Content-Type': 'text/html; charset=utf-8',
+    });
+    return;
+  }
 
   if (!filePath || !filePath.startsWith(distDir)) {
     send(response, 404, 'Not Found', { 'Content-Type': 'text/plain; charset=utf-8' });
