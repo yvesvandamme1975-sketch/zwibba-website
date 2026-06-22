@@ -4,12 +4,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { buildListingOgTags } from './shared/listing-og.mjs';
+import { resolveApiBaseUrl } from './shared/api-base-url.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.join(__dirname, 'dist');
 const port = Number(process.env.PORT || 3003);
 const publicDomain = process.env.RAILWAY_PUBLIC_DOMAIN || '';
-const apiBaseUrl = process.env.ZWIBBA_API_BASE_URL || 'https://api-production-b1b58.up.railway.app';
+const apiBaseUrl = resolveApiBaseUrl(process.env);
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
