@@ -71,6 +71,7 @@ class _FakePrismaService {
   };
 
   readonly verificationAttempt = {
+    count: async () => 0,
     create: async ({
       data,
     }: {

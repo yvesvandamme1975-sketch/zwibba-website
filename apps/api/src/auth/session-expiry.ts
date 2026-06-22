@@ -5,8 +5,8 @@ export function computeSessionExpiry(now: Date = new Date()): Date {
 }
 
 export function isSessionExpired(
-  session: { expiresAt: Date | null },
+  session: { expiresAt?: Date | null },
   now: Date = new Date(),
 ): boolean {
-  return session.expiresAt !== null && session.expiresAt.getTime() <= now.getTime();
+  return session.expiresAt instanceof Date && session.expiresAt.getTime() <= now.getTime();
 }
