@@ -36,6 +36,7 @@ type PersistedListingRecord = {
   soldAt?: Date | null;
   soldChannel?: string | null;
   sourceType?: string | null;
+  shareCount?: number | null;
   storyImageUrl?: string | null;
   title: string;
   updatedAt?: Date;

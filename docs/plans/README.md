@@ -87,4 +87,7 @@ Current priority docs:
 - `2026-06-22-zwibba-prod-failclosed-hardening-design.md`
 - `2026-06-22-zwibba-prod-failclosed-hardening-implementation.md`
 
+- `2026-06-22-zwibba-api-runtime-security-design.md`
+- `2026-06-22-zwibba-api-runtime-security-implementation.md`
+
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
