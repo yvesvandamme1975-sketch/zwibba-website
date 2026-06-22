@@ -240,6 +240,31 @@ function renderFooter() {
   `;
 }
 
+function renderManifest() {
+  return JSON.stringify(
+    {
+      name: 'Zwibba',
+      short_name: 'Zwibba',
+      description:
+        'Publiez, découvrez et partagez des annonces à Lubumbashi, même hors connexion.',
+      lang: 'fr',
+      dir: 'ltr',
+      start_url: '/App/',
+      scope: '/App/',
+      display: 'standalone',
+      orientation: 'portrait',
+      background_color: '#1E1E20',
+      theme_color: '#1E1E20',
+      icons: [
+        { src: '/assets/brand/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+        { src: '/assets/brand/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+      ],
+    },
+    null,
+    2,
+  );
+}
+
 function renderAppPage() {
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -269,6 +294,8 @@ function renderAppPage() {
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/assets/styles.css" />
     <link rel="stylesheet" href="/assets/app/app.css" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/assets/brand/icon-192.png" />
   </head>
   <body class="app-route">
     <a class="skip-link" href="#main-content">Aller au contenu</a>
@@ -305,6 +332,15 @@ function renderAppPage() {
     </main>
     <script>window.ZWIBBA_API_BASE_URL = ${JSON.stringify(appApiBaseUrl)};</script>
     <script type="module" src="/assets/app/app.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker
+            .register('/App/sw.js', { scope: '/App/' })
+            .catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>`;
 }
@@ -1215,6 +1251,15 @@ function build() {
   writeText(path.join(assetsDir, 'app.js'), readFileSync(path.join(repoRoot, 'src/site/app.js'), 'utf8'));
   cpSync(path.join(repoRoot, 'App'), path.join(assetsDir, 'app'), { recursive: true });
   cpSync(path.join(repoRoot, 'shared'), path.join(assetsDir, 'shared'), { recursive: true });
+
+  writeText(path.join(distDir, 'manifest.webmanifest'), renderManifest());
+  writeText(
+    path.join(distDir, 'App', 'sw.js'),
+    readFileSync(path.join(repoRoot, 'src/site/service-worker.js'), 'utf8').replace(
+      '__ZWIBBA_BUILD__',
+      `zwibba-${Date.now()}`,
+    ),
+  );
 
   for (const listing of listings) {
     writeText(path.join(assetsDir, 'listings', `${listing.slug}.svg`), buildListingImage(listing));
