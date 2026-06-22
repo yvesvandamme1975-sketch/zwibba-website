@@ -22,3 +22,10 @@ test('falls back to the dev default outside production', () => {
     'https://api-production-b1b58.up.railway.app',
   );
 });
+
+test('throws on railway production when the url is missing', () => {
+  assert.throws(
+    () => resolveApiBaseUrl({ RAILWAY_ENVIRONMENT: 'production' }),
+    /ZWIBBA_API_BASE_URL/,
+  );
+});

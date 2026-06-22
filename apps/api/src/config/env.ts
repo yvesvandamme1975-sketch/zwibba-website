@@ -81,7 +81,10 @@ const defaultEnvValues = {
 } as const;
 
 function isProductionEnv(source: EnvSource) {
-  return (source.NODE_ENV ?? defaultEnvValues.NODE_ENV).trim() === 'production';
+  return (
+    (source.NODE_ENV ?? defaultEnvValues.NODE_ENV).trim() === 'production' ||
+    (source.RAILWAY_ENVIRONMENT ?? '').trim() === 'production'
+  );
 }
 
 function readRequiredString(source: EnvSource, key: keyof typeof defaultEnvValues) {

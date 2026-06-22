@@ -305,3 +305,25 @@ test('loadEnv rejects missing Twilio config in production when twilio provider i
     /Missing required env value: TWILIO_ACCOUNT_SID/,
   );
 });
+
+test('treats RAILWAY_ENVIRONMENT production as production', () => {
+  const source = {
+    AI_PROVIDER: 'stub',
+    DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
+    NODE_ENV: 'test',
+    OTP_PROVIDER: 'twilio',
+    PORT: '3200',
+    R2_ACCESS_KEY_ID: 'r2-access-key',
+    R2_ACCOUNT_ID: 'r2-account',
+    R2_BUCKET: 'zwibba-media',
+    R2_PUBLIC_BASE_URL: 'https://cdn.zwibba.example',
+    R2_S3_ENDPOINT: 'https://r2.example.com',
+    R2_SECRET_ACCESS_KEY: 'r2-secret',
+    RAILWAY_ENVIRONMENT: 'production',
+    TWILIO_ACCOUNT_SID: 'AC123',
+    TWILIO_AUTH_TOKEN: 'twilio-auth-token',
+    TWILIO_VERIFY_SERVICE_SID: 'VA123',
+    ZWIBBA_ADMIN_SHARED_SECRET: 'a-real-secret',
+  };
+  assert.throws(() => loadEnv(source), /Missing required env value/);
+});
