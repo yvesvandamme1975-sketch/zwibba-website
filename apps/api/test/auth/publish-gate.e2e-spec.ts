@@ -81,6 +81,7 @@ class _FakePrismaService {
   };
 
   readonly verificationAttempt = {
+    count: async () => 0,
     create: async () => ({ id: 'attempt_1' }),
     updateMany: async () => ({ count: 1 }),
   };
