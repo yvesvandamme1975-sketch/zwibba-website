@@ -10,6 +10,8 @@ Zwibba is a French-language classifieds platform for the Democratic Republic of 
 
 `main` only carries the public-facing Railway landing (4 files). The real application lives on `codex/website-vitrine-backup` — that branch is the source of truth for every directory described below.
 
+> Note (2026-06-22): this is intentional. `main` stays the landing; `codex/website-vitrine-backup` stays the application trunk. A *local* `main` may drift to an app snapshot if features were merged locally — that is local noise, not a change of convention. Do not treat `main` as the trunk or push application code to it.
+
 ## Repository shape
 
 The repo is a Node + Flutter monorepo with one root `package.json` that orchestrates child workspaces. Roughly:
