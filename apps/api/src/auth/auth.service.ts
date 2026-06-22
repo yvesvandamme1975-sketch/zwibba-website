@@ -9,6 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { loadEnv } from '../config/env';
 import { PrismaService } from '../database/prisma.service';
 import { TwilioVerifyService } from './twilio-verify.service';
+import { computeSessionExpiry, isSessionExpired } from './session-expiry';
 
 export type SessionRecord = {
   canSyncDrafts: true;
@@ -85,6 +86,7 @@ export class AuthService {
       data: {
         token: sessionToken,
         userId: user.id,
+        expiresAt: computeSessionExpiry(),
       },
     });
     await this.prismaService.verificationAttempt.updateMany({
@@ -162,6 +164,10 @@ export class AuthService {
     });
 
     if (!session) {
+      return null;
+    }
+
+    if (isSessionExpired(session)) {
       return null;
     }
 
