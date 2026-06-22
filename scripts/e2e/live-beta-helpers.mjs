@@ -1,8 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { chromium, devices } from 'playwright';
-
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 export const LIVE_APP_BASE_URL =
@@ -96,9 +94,13 @@ export function classifyUploadOutcome({
   };
 }
 
-function resolveDeviceContextOptions(deviceName = 'desktop') {
+async function loadPlaywright() {
+  return import('playwright');
+}
+
+function resolveDeviceContextOptions(deviceName = 'desktop', deviceCatalog = {}) {
   if (deviceName === 'iphone') {
-    return devices['iPhone 13'] || {
+    return deviceCatalog['iPhone 13'] || {
       hasTouch: true,
       isMobile: true,
       viewport: { width: 390, height: 844 },
@@ -108,8 +110,8 @@ function resolveDeviceContextOptions(deviceName = 'desktop') {
   }
 
   if (deviceName === 'android') {
-    return devices['Pixel 7'] ||
-      devices['Pixel 5'] || {
+    return deviceCatalog['Pixel 7'] ||
+      deviceCatalog['Pixel 5'] || {
         hasTouch: true,
         isMobile: true,
         viewport: { width: 412, height: 915 },
@@ -127,11 +129,12 @@ export async function openLiveApp({
   deviceName = 'desktop',
   hash = '#sell',
 } = {}) {
+  const { chromium, devices } = await loadPlaywright();
   const browser = await chromium.launch({
     headless: process.env.HEADLESS !== 'false',
   });
   const context = await browser.newContext({
-    ...resolveDeviceContextOptions(deviceName),
+    ...resolveDeviceContextOptions(deviceName, devices),
   });
   const page = await context.newPage();
   const failedRequests = [];
