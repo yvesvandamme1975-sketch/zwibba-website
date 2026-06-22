@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [codex/website-vitrine-backup, main]
+  push:
+    branches: [codex/website-vitrine-backup]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web-and-root:
+    name: web + root
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: npm run build
+      - run: npm test
+      - run: npm run smoke:monorepo
+      - run: npm run smoke:production-contracts
+      - name: Verify api/admin healthcheck stays on /healthz
+        run: |
+          node -e "const c=require(\"./apps/api/railway.json\");if(c.deploy.healthcheckPath!==\"/healthz\"){console.error(\"api healthcheckPath must be /healthz\");process.exit(1)}"
+          node -e "const c=require(\"./apps/admin/railway.json\");if(c.deploy.healthcheckPath!==\"/healthz\"){console.error(\"admin healthcheckPath must be /healthz\");process.exit(1)}"
+
+  api:
+    name: api (build gate + tests)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: zwibba
+          POSTGRES_PASSWORD: zwibba
+          POSTGRES_DB: zwibba
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://zwibba:zwibba@localhost:5432/zwibba
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -C apps/api prisma:generate
+      - name: Build + typecheck api (hard gate against silent build breaks)
+        run: pnpm -C apps/api build
+      - run: pnpm -C apps/api exec prisma migrate deploy
+      - name: API tests
+        run: pnpm -C apps/api test
+
+  admin:
+    name: admin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -C apps/admin build
+      - run: pnpm -C apps/admin test
