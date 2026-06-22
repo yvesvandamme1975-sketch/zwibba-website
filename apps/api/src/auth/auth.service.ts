@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  HttpException,
+  HttpStatus,
   Inject,
   Injectable,
   UnauthorizedException,
@@ -10,6 +12,7 @@ import { loadEnv } from '../config/env';
 import { PrismaService } from '../database/prisma.service';
 import { TwilioVerifyService } from './twilio-verify.service';
 import { computeSessionExpiry, isSessionExpired } from './session-expiry';
+import { isOtpRequestRateExceeded, resolveOtpRateWindowStart } from './otp-rate-limit';
 
 export type SessionRecord = {
   canSyncDrafts: true;
@@ -32,6 +35,20 @@ export class AuthService {
 
     if (!normalizedPhone.startsWith('+243')) {
       throw new BadRequestException('Le numéro doit commencer par +243.');
+    }
+
+    const recentAttemptCount = await this.prismaService.verificationAttempt.count({
+      where: {
+        phoneNumber: normalizedPhone,
+        createdAt: { gte: resolveOtpRateWindowStart() },
+      },
+    });
+
+    if (isOtpRequestRateExceeded(recentAttemptCount)) {
+      throw new HttpException(
+        'Trop de demandes de code pour ce numéro. Réessayez dans quelques minutes.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
 
     const verification = await this.twilioVerifyService.requestVerification(
