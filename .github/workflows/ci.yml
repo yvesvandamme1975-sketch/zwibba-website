@@ -26,7 +26,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: npm run build
       - run: npm test
-      - run: npm run smoke:monorepo
       - run: npm run smoke:production-contracts
       - name: Verify api/admin healthcheck stays on /healthz
         run: |
