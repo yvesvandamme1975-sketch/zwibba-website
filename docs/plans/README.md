@@ -93,4 +93,7 @@ Current priority docs:
 - `2026-06-22-zwibba-otp-rate-limit-design.md`
 - `2026-06-22-zwibba-otp-rate-limit-implementation.md`
 
+- `2026-06-22-zwibba-pwa-offline-design.md`
+- `2026-06-22-zwibba-pwa-offline-implementation.md`
+
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.

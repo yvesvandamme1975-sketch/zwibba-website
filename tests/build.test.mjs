@@ -142,6 +142,28 @@ test('app entry page bootstraps the live API base URL for the browser seller flo
   assert.match(appEntry, /https:\/\/api-production-b1b58\.up\.railway\.app/);
 });
 
+test('app ships an installable PWA manifest and an offline service worker', () => {
+  buildSite();
+
+  const manifest = JSON.parse(
+    readFileSync(path.join(distDir, 'manifest.webmanifest'), 'utf8'),
+  );
+  assert.equal(manifest.start_url, '/App/');
+  assert.equal(manifest.display, 'standalone');
+  assert.ok(manifest.icons.some((icon) => icon.sizes === '512x512'));
+
+  assert.equal(existsSync(path.join(distDir, 'assets', 'brand', 'icon-192.png')), true);
+  assert.equal(existsSync(path.join(distDir, 'assets', 'brand', 'icon-512.png')), true);
+
+  const sw = readFileSync(path.join(distDir, 'App', 'sw.js'), 'utf8');
+  assert.match(sw, /CACHE_VERSION = "zwibba-\d+"/);
+  assert.doesNotMatch(sw, /__ZWIBBA_BUILD__/);
+
+  const appEntry = readFileSync(path.join(distDir, 'App/index.html'), 'utf8');
+  assert.match(appEntry, /<link rel="manifest" href="\/manifest\.webmanifest"/);
+  assert.match(appEntry, /serviceWorker[\s\S]*register\('\/App\/sw\.js'/);
+});
+
 test('app shell exposes Open Graph tags with a raster default image', () => {
   buildSite();
 
