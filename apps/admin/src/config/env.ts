@@ -36,10 +36,39 @@ function readPort(source: EnvSource) {
   return parsedValue;
 }
 
+function isProductionEnv(source: EnvSource) {
+  return (
+    (source.NODE_ENV ?? '').trim() === 'production' ||
+    (source.RAILWAY_ENVIRONMENT ?? '').trim() === 'production'
+  );
+}
+
+function resolveSharedSecret(source: EnvSource) {
+  if (isProductionEnv(source)) {
+    const raw = source.ZWIBBA_ADMIN_SHARED_SECRET;
+
+    if (!raw || raw.trim().length === 0) {
+      throw new Error(
+        'Missing required admin env value in production: ZWIBBA_ADMIN_SHARED_SECRET',
+      );
+    }
+
+    if (raw.trim() === defaultEnvValues.ZWIBBA_ADMIN_SHARED_SECRET) {
+      throw new Error(
+        'Refusing to start with the insecure default ZWIBBA_ADMIN_SHARED_SECRET in production',
+      );
+    }
+
+    return raw.trim();
+  }
+
+  return readRequiredString(source, 'ZWIBBA_ADMIN_SHARED_SECRET');
+}
+
 export function loadAdminEnv(source: EnvSource = process.env): ZwibbaAdminEnv {
   return {
     apiBaseUrl: readRequiredString(source, 'ZWIBBA_API_BASE_URL'),
     port: readPort(source),
-    sharedSecret: readRequiredString(source, 'ZWIBBA_ADMIN_SHARED_SECRET'),
+    sharedSecret: resolveSharedSecret(source),
   };
 }
