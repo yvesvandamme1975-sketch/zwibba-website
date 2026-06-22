@@ -36,7 +36,7 @@ async function withServer(run, env = {}) {
   const port = 4311;
   const server = spawn('node', ['server.mjs'], {
     cwd: repoRoot,
-    env: { ...process.env, ...env, PORT: String(port) },
+    env: { ZWIBBA_API_BASE_URL: 'https://api.test', ...process.env, ...env, PORT: String(port) },
     stdio: 'ignore',
   });
 
