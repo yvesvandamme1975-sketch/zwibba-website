@@ -99,4 +99,7 @@ Current priority docs:
 - `2026-06-22-zwibba-security-e2e-coverage-design.md`
 - `2026-06-22-zwibba-security-e2e-coverage-implementation.md`
 
+- `2026-06-22-zwibba-boost-launch-flag-design.md`
+- `2026-06-22-zwibba-boost-launch-flag-implementation.md`
+
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.

@@ -31,6 +31,7 @@ test('loadEnv returns the validated production env contract', () => {
 
   assert.equal(env.appBaseUrl, 'https://zwibba.example');
   assert.equal(env.admin.sharedSecret, 'zwibba-admin-secret');
+  assert.equal(env.boost.enabled, true);
   assert.equal(env.databaseUrl, 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba');
   assert.equal(env.otp.provider, 'twilio');
   assert.equal(env.port, 3200);
