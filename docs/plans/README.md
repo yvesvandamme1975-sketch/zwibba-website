@@ -81,5 +81,7 @@ Current priority docs:
 - `2026-06-07-zwibba-listing-detail-share-implementation.md`
 - `2026-06-09-zwibba-simplify-success-share-design.md`
 - `2026-06-09-zwibba-simplify-success-share-implementation.md`
+- `2026-06-22-zwibba-website-api-base-url-failclosed-design.md`
+- `2026-06-22-zwibba-website-api-base-url-failclosed-implementation.md`
 
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
