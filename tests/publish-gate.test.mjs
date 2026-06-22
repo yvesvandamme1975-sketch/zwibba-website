@@ -105,7 +105,7 @@ test('success screen exposes the post-publish sharing actions', () => {
     },
   });
 
-  assert.match(html, /Partager sur WhatsApp/);
+  assert.match(html, /Partager mon annonce/);
   assert.match(html, /Copier le lien/);
   assert.match(html, /Voir mon annonce/);
   assert.match(html, /Lien public de l'annonce/i);
