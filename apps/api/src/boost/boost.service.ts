@@ -1,11 +1,14 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import type { SessionRecord } from '../auth/auth.service';
+import { loadEnv } from '../config/env';
 import { PrismaService } from '../database/prisma.service';
 
 @Injectable()
 export class BoostService {
+  private readonly env = loadEnv();
+
   constructor(
     @Inject(PrismaService) private readonly prismaService: PrismaService,
   ) {}
@@ -17,6 +20,10 @@ export class BoostService {
     listingId: string;
     session: SessionRecord;
   }) {
+    if (!this.env.boost.enabled) {
+      throw new ForbiddenException('Le boost est temporairement indisponible.');
+    }
+
     const user = await this.prismaService.user.findUnique({
       where: {
         phoneNumber: session.phoneNumber,

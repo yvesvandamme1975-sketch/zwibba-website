@@ -6,6 +6,9 @@ export type ZwibbaEnv = {
   admin: {
     sharedSecret: string;
   };
+  boost: {
+    enabled: boolean;
+  };
   ai: {
     anthropic?: {
       apiKey: string;
@@ -207,6 +210,9 @@ export function loadEnv(source: EnvSource = process.env): ZwibbaEnv {
   return {
     admin: {
       sharedSecret: readRequiredString(source, 'ZWIBBA_ADMIN_SHARED_SECRET'),
+    },
+    boost: {
+      enabled: (source.ZWIBBA_BOOST_ENABLED ?? 'true').trim() !== 'false',
     },
     ai: {
       anthropic: aiProvider === 'multi'

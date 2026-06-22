@@ -272,3 +272,43 @@ test('boost activation requires a session and persists both purchase and wallet 
     -15000,
   );
 });
+
+test('boost activation is refused with 403 when boost is disabled', async (t) => {
+  const previous = process.env.ZWIBBA_BOOST_ENABLED;
+  process.env.ZWIBBA_BOOST_ENABLED = 'false';
+  t.after(() => {
+    if (previous === undefined) {
+      delete process.env.ZWIBBA_BOOST_ENABLED;
+    } else {
+      process.env.ZWIBBA_BOOST_ENABLED = previous;
+    }
+  });
+
+  const prisma = new _FakePrismaService();
+  await prisma.user.upsert({
+    where: {
+      phoneNumber: '+243990000001',
+    },
+  });
+  prisma.seedListing({
+    id: 'listing_approved',
+    ownerPhoneNumber: '+243990000001',
+    title: 'Samsung Galaxy A54 128 Go',
+  });
+
+  const app = await createTestApp(prisma);
+  t.after(async () => {
+    await app.close();
+  });
+
+  const sessionToken = await createSellerSession(app, '+243990000001');
+  await request(app.getHttpServer())
+    .post('/boost')
+    .set('authorization', `Bearer ${sessionToken}`)
+    .send({
+      listingId: 'listing_approved',
+    })
+    .expect(403);
+
+  assert.equal(prisma.boostPurchases.size, 0);
+});
