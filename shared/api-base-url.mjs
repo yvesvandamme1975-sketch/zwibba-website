@@ -7,7 +7,7 @@ export function resolveApiBaseUrl(env = process.env) {
     return configuredUrl.replace(/\/+$/, '');
   }
 
-  if (env.NODE_ENV === 'production') {
+  if (env.NODE_ENV === 'production' || env.RAILWAY_ENVIRONMENT === 'production') {
     throw new Error('ZWIBBA_API_BASE_URL is required in production');
   }
 
