@@ -131,7 +131,16 @@ export class AuthService {
       return;
     }
 
-    const existingTransactionCount = await this.prismaService.walletTransaction.count({
+    const walletTransactionDelegate = this.prismaService.walletTransaction;
+    if (
+      !walletTransactionDelegate ||
+      typeof walletTransactionDelegate.count !== 'function' ||
+      typeof walletTransactionDelegate.create !== 'function'
+    ) {
+      return;
+    }
+
+    const existingTransactionCount = await walletTransactionDelegate.count({
       where: {
         userId,
       },
@@ -141,7 +150,7 @@ export class AuthService {
       return;
     }
 
-    await this.prismaService.walletTransaction.create({
+    await walletTransactionDelegate.create({
       data: {
         amountCdf: 30000,
         createdAtLabel: 'Aujourd’hui',
