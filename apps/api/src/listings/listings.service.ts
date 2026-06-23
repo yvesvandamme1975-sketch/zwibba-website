@@ -89,24 +89,24 @@ function getCategoryLabel(categoryId: string) {
   return categoryLabels[categoryId] ?? 'Annonces';
 }
 
-function buildSellerProfile({
-  categoryId,
+async function buildSellerProfile({
   ownerPhoneNumber,
+  prismaService,
 }: {
-  categoryId: string;
   ownerPhoneNumber: string;
+  prismaService: PrismaService;
 }) {
-  const lastDigits = ownerPhoneNumber.slice(-4);
-  const isProfessional =
-    categoryId === 'phones_tablets' || categoryId === 'vehicles';
+  const owner =
+    (await prismaService.user?.findUnique?.({
+      where: {
+        phoneNumber: ownerPhoneNumber,
+      },
+    })) ?? null;
 
   return {
-    name: isProfessional ? `Vendeur ${lastDigits}` : `Particulier ${lastDigits}`,
-    responseTime:
-      categoryId === 'vehicles'
-        ? 'Répond en moyenne en 22 min'
-        : 'Répond en moyenne en 9 min',
-    role: isProfessional ? 'Vendeur pro' : 'Particulier',
+    name: owner?.displayName ?? 'Vendeur Zwibba',
+    role: 'Vendeur',
+    sellerId: owner?.id ?? null,
   };
 }
 
@@ -256,20 +256,26 @@ function toListingSummary(
   };
 }
 
-function toListingDetail({
+async function toListingDetail({
   editDraft = null,
   images,
   listing,
   primaryImageUrl,
+  prismaService,
   viewerRole,
 }: {
   editDraft?: PersistedDraftRecord | null;
   images: string[];
   listing: PersistedListingRecord;
   primaryImageUrl: string | null;
+  prismaService: PrismaService;
   viewerRole: 'buyer' | 'owner';
 }) {
   const price = resolveListingPrice(listing);
+  const seller = await buildSellerProfile({
+    ownerPhoneNumber: listing.ownerPhoneNumber,
+    prismaService,
+  });
 
   return {
     attributesJson: normalizeListingAttributesJson(listing.attributesJson),
@@ -309,10 +315,7 @@ function toListingDetail({
     priceCurrency: price.priceCurrency,
     primaryImageUrl,
     safetyTips: buildSafetyTips(listing.categoryId),
-    seller: buildSellerProfile({
-      categoryId: listing.categoryId,
-      ownerPhoneNumber: listing.ownerPhoneNumber,
-    }),
+    seller,
     shareCount: listing.shareCount ?? 0,
     slug: listing.slug,
     storyImageUrl: listing.storyImageUrl ?? null,
@@ -419,11 +422,12 @@ export class ListingsService {
       this.resolveListingImages(persistedListing),
     ]);
 
-    return toListingDetail({
+    return await toListingDetail({
       editDraft: draft,
       images,
       listing: persistedListing,
       primaryImageUrl: images[0] ?? null,
+      prismaService: this.prismaService,
       viewerRole,
     });
   }
