@@ -351,6 +351,9 @@ export function renderProfileScreen({
   const displayName = String(profile?.displayName || '').trim();
   const identityName = displayName || 'Vendeur Zwibba';
   const memberSince = formatMemberSince(profile?.memberSince);
+  const sellerReviewsHref = profile?.id
+    ? `#seller/${encodeURIComponent(String(profile.id))}`
+    : '';
   const hasCityFeedback = citySuggestions.length > 0 || Boolean(profileMissingCityLabel);
 
   return `
@@ -393,6 +396,11 @@ export function renderProfileScreen({
           </label>
           <div class="app-flow__actions">
             <button class="app-flow__button" type="submit">Enregistrer mon nom</button>
+            ${
+              sellerReviewsHref
+                ? `<a class="app-flow__button app-flow__button--secondary" href="${escapeAttribute(sellerReviewsHref)}">Mes avis</a>`
+                : ''
+            }
             <button class="app-flow__button app-flow__button--secondary" type="button" data-action="logout">
               Déconnexion
             </button>
