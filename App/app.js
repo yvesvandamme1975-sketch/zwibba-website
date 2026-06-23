@@ -1484,6 +1484,52 @@ if (appRoot) {
     }
   }
 
+  function handleLogout() {
+    authService.clearSession();
+    state.session = null;
+    state.authIntent = null;
+    state.inboxItems = [];
+    state.inboxPromise = null;
+    state.inboxStatus = 'idle';
+    state.thread = null;
+    state.threadDraftMessage = '';
+    state.threadError = '';
+    state.threadPromise = null;
+    state.threadStatus = 'idle';
+    state.wallet = {
+      balanceCdf: 0,
+      transactions: [],
+    };
+    state.walletError = '';
+    state.walletPromise = null;
+    state.walletStatus = 'idle';
+    state.profile = null;
+    state.profileCityBusy = false;
+    state.profileCityInput = '';
+    state.profileCityOptions = [];
+    state.profileCityOptionsPromise = null;
+    state.profileCityOptionsStatus = 'idle';
+    state.profileError = '';
+    state.profileMessage = '';
+    state.profilePromise = null;
+    state.profileSaveBusy = false;
+    state.profileSelectedArea = '';
+    state.profileStatus = 'idle';
+    state.sellerListings = [];
+    state.sellerListingsError = '';
+    state.sellerListingsPromise = null;
+    state.sellerListingsStatus = 'idle';
+    state.listingLifecycleBusyId = '';
+    state.listingLifecycleMessage = '';
+    buyerBrowseController.state.detail = null;
+    buyerBrowseController.state.detailError = '';
+    buyerBrowseController.state.detailStatus = 'idle';
+    buyerBrowseController.state.feedItems = [];
+    buyerBrowseController.state.feedStatus = 'idle';
+    window.location.hash = '#auth-welcome';
+    renderApp();
+  }
+
   async function handleOtpSubmit(form) {
     const formData = new FormData(form);
 
@@ -2152,6 +2198,11 @@ if (appRoot) {
         returnRoute: trigger.dataset.returnRoute || '#sell',
         type: trigger.dataset.intent || 'profile',
       });
+      return;
+    }
+
+    if (trigger.dataset.action === 'logout') {
+      handleLogout();
       return;
     }
 
