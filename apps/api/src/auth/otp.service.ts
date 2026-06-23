@@ -2,37 +2,44 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Optional,
 } from '@nestjs/common';
 
 import { loadEnv } from '../config/env';
 import { PrismaService } from '../database/prisma.service';
 import { generateOtpCode, hashOtpCode, verifyOtpCode } from './otp-code';
+import { WHATSAPP_OTP_ENV, WhatsappOtpSender } from './whatsapp-otp.sender';
 
 type OtpVerificationResponse = {
   sid: string;
   status: string;
 };
 
-type WhatsappOtpSenderPort = {
-  sendAuthenticationCode(message: {
-    code: string;
-    phoneNumber: string;
-  }): Promise<void>;
+type OtpServiceEnv = {
+  otp: {
+    demoAllowlist: string[];
+    demoCode?: string;
+    provider: 'demo' | 'meta' | 'twilio';
+  };
 };
 
 const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_MAX_ATTEMPTS = 5;
-const WHATSAPP_OTP_SENDER_TOKEN = 'WhatsappOtpSender';
 
 @Injectable()
 export class OtpService {
-  private readonly env = loadEnv();
+  private readonly env: OtpServiceEnv;
 
   constructor(
     @Inject(PrismaService) private readonly prismaService: PrismaService,
-    @Inject(WHATSAPP_OTP_SENDER_TOKEN)
-    private readonly whatsappOtpSender: WhatsappOtpSenderPort,
-  ) {}
+    @Inject(WhatsappOtpSender)
+    private readonly whatsappOtpSender: WhatsappOtpSender,
+    @Optional()
+    @Inject(WHATSAPP_OTP_ENV)
+    env?: OtpServiceEnv,
+  ) {
+    this.env = env ?? (loadEnv() as unknown as OtpServiceEnv);
+  }
 
   async checkVerification({
     code,
@@ -129,11 +136,18 @@ export class OtpService {
 
     const challenge = await this.prismaService.otpChallenge.create({
       data: {
-        codeHash: hashOtpCode(code ?? ''),
+        codeHash: hashOtpCode(code),
         expiresAt: new Date(Date.now() + OTP_TTL_MS),
         phoneNumber,
       },
     });
+
+    if (this.env.otp.provider === 'meta') {
+      await this.whatsappOtpSender.sendAuthenticationCode({
+        code,
+        phoneNumber,
+      });
+    }
 
     return {
       sid: challenge.id,
