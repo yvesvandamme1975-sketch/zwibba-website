@@ -46,6 +46,7 @@ import { createImageCompressionService } from './services/image-compression.mjs'
 import { createListingsService } from './services/listings-service.mjs';
 import { createMediaService } from './services/media-service.mjs';
 import { createProfileService } from './services/profile-service.mjs';
+import { createReviewsService } from './services/reviews-service.mjs';
 import { createSellerListingsService } from './services/seller-listings-service.mjs';
 import { createWalletService } from './services/wallet-service.mjs';
 import { createLiveDraftService } from './services/live-draft-service.mjs';
@@ -115,6 +116,10 @@ if (appRoot) {
     storage: window.localStorage,
   });
   const listingsService = createListingsService({
+    apiBaseUrl: apiConfig.apiBaseUrl,
+    fetchFn: window.fetch.bind(window),
+  });
+  const reviewsService = createReviewsService({
     apiBaseUrl: apiConfig.apiBaseUrl,
     fetchFn: window.fetch.bind(window),
   });
@@ -1910,6 +1915,48 @@ if (appRoot) {
     }
   }
 
+  async function handleListingReviewSubmit(form) {
+    const formData = new FormData(form);
+    const slug = String(formData.get('slug') || state.currentListingSlug || '').trim();
+    const rating = Number(formData.get('rating'));
+    const comment = String(formData.get('comment') ?? '').trim();
+    const messageTarget = form.querySelector('[data-review-message]');
+
+    if (!slug) {
+      return;
+    }
+
+    if (!state.session) {
+      beginAuthIntent({
+        returnRoute: `#listing/${encodeURIComponent(slug)}`,
+        type: 'profile',
+      });
+      return;
+    }
+
+    if (messageTarget) {
+      messageTarget.textContent = 'Envoi de votre avis...';
+    }
+
+    try {
+      await reviewsService.submitReview({
+        comment,
+        rating,
+        session: state.session,
+        slug,
+      });
+
+      buyerBrowseController.state.detailStatus = 'idle';
+      await loadBuyerListing(slug);
+      renderApp();
+    } catch (error) {
+      if (messageTarget) {
+        messageTarget.textContent =
+          error instanceof Error ? error.message : 'Impossible d’envoyer votre avis.';
+      }
+    }
+  }
+
   async function handleSendThreadMessage(form) {
     if (!state.session) {
       return;
@@ -2376,6 +2423,11 @@ if (appRoot) {
 
     if (form.dataset.form === 'review-draft') {
       await handleReviewSubmit(form);
+      return;
+    }
+
+    if (form.dataset.action === 'submit-review') {
+      await handleListingReviewSubmit(form);
       return;
     }
 
