@@ -114,14 +114,15 @@ export class OtpService {
       ? this.env.otp.demoCode
       : generateOtpCode();
 
-    if (this.env.otp.provider === 'demo') {
-      if (!this.env.otp.demoAllowlist.includes(phoneNumber)) {
-        throw new ForbiddenException('Numéro non autorisé pour le mode demo.');
-      }
+    if (
+      this.env.otp.provider === 'demo' &&
+      !this.env.otp.demoAllowlist.includes(phoneNumber)
+    ) {
+      throw new ForbiddenException('Numéro non autorisé pour le mode demo.');
+    }
 
-      if (!code) {
-        throw new ForbiddenException('Code demo OTP manquant.');
-      }
+    if (!code) {
+      throw new ForbiddenException('Code OTP manquant.');
     }
 
     await this.prismaService.otpChallenge.updateMany({
