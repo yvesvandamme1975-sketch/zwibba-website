@@ -6,14 +6,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import request from 'supertest';
 
-import { TwilioVerifyService } from '../../src/auth/twilio-verify.service';
+import { OtpService } from '../../src/auth/otp.service';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/database/prisma.service';
 import { normalizeLocationLabel } from '../../src/locations/location-normalization';
 
 const SEEDED_USER_CREATED_AT = new Date('2026-06-23T12:00:00.000Z');
 
-class _FakeTwilioVerifyService {
+class _FakeOtpService {
   async checkVerification() {
     return {
       sid: 'VE243990000001',
@@ -272,8 +272,8 @@ async function createTestApp() {
   })
     .overrideProvider(PrismaService)
     .useValue(prisma)
-    .overrideProvider(TwilioVerifyService)
-    .useValue(new _FakeTwilioVerifyService())
+    .overrideProvider(OtpService)
+    .useValue(new _FakeOtpService())
     .compile();
 
   const app = moduleRef.createNestApplication();

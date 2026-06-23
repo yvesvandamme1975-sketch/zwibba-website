@@ -6,12 +6,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import request from 'supertest';
 
-import { TwilioVerifyService } from '../../src/auth/twilio-verify.service';
+import { OtpService } from '../../src/auth/otp.service';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/database/prisma.service';
 import { normalizeLocationLabel } from '../../src/locations/location-normalization';
 
-class _FakeTwilioVerifyService {}
+class _FakeOtpService {}
 
 class _FakePrismaService {
   readonly locationOptions = new Map<string, {
@@ -119,8 +119,8 @@ async function createTestApp() {
   })
     .overrideProvider(PrismaService)
     .useValue(prisma)
-    .overrideProvider(TwilioVerifyService)
-    .useValue(new _FakeTwilioVerifyService())
+    .overrideProvider(OtpService)
+    .useValue(new _FakeOtpService())
     .compile();
 
   const app = moduleRef.createNestApplication();

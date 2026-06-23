@@ -10,7 +10,7 @@ import { randomUUID } from 'node:crypto';
 
 import { loadEnv } from '../config/env';
 import { PrismaService } from '../database/prisma.service';
-import { TwilioVerifyService } from './twilio-verify.service';
+import { OtpService } from './otp.service';
 import { computeSessionExpiry, isSessionExpired } from './session-expiry';
 import { isOtpRequestRateExceeded, resolveOtpRateWindowStart } from './otp-rate-limit';
 
@@ -26,8 +26,8 @@ export class AuthService {
 
   constructor(
     @Inject(PrismaService) private readonly prismaService: PrismaService,
-    @Inject(TwilioVerifyService)
-    private readonly twilioVerifyService: TwilioVerifyService,
+    @Inject(OtpService)
+    private readonly otpService: OtpService,
   ) {}
 
   async requestOtp(phoneNumber: string) {
@@ -51,7 +51,7 @@ export class AuthService {
       );
     }
 
-    const verification = await this.twilioVerifyService.requestVerification(
+    const verification = await this.otpService.requestVerification(
       normalizedPhone,
     );
     await this.prismaService.verificationAttempt.create({
@@ -77,7 +77,7 @@ export class AuthService {
     phoneNumber: string;
   }) {
     const normalizedPhone = phoneNumber.trim();
-    const verification = await this.twilioVerifyService.checkVerification({
+    const verification = await this.otpService.checkVerification({
       code,
       phoneNumber: normalizedPhone,
     });

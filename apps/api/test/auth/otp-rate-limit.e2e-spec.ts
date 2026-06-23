@@ -8,7 +8,7 @@ import request from 'supertest';
 
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/database/prisma.service';
-import { TwilioVerifyService } from '../../src/auth/twilio-verify.service';
+import { OtpService } from '../../src/auth/otp.service';
 import { OTP_RATE_MAX_REQUESTS } from '../../src/auth/otp-rate-limit';
 
 type VerificationAttemptRecord = {
@@ -17,7 +17,7 @@ type VerificationAttemptRecord = {
   status: string;
 };
 
-class _FakeTwilioVerifyService {
+class _FakeOtpService {
   requestCalls = 0;
 
   async checkVerification() {
@@ -65,16 +65,16 @@ class _FakePrismaService {
 async function createTestApp(): Promise<{
   app: INestApplication;
   fakePrisma: _FakePrismaService;
-  fakeTwilio: _FakeTwilioVerifyService;
+  fakeTwilio: _FakeOtpService;
 }> {
   const fakePrisma = new _FakePrismaService();
-  const fakeTwilio = new _FakeTwilioVerifyService();
+  const fakeTwilio = new _FakeOtpService();
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
   })
     .overrideProvider(PrismaService)
     .useValue(fakePrisma)
-    .overrideProvider(TwilioVerifyService)
+    .overrideProvider(OtpService)
     .useValue(fakeTwilio)
     .compile();
 

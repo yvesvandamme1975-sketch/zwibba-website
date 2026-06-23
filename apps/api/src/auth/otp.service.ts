@@ -6,13 +6,13 @@ import {
 
 import { loadEnv } from '../config/env';
 
-type TwilioVerificationResponse = {
+type OtpVerificationResponse = {
   sid: string;
   status: string;
 };
 
 @Injectable()
-export class TwilioVerifyService {
+export class OtpService {
   private readonly env = loadEnv();
 
   async checkVerification({
@@ -21,7 +21,7 @@ export class TwilioVerifyService {
   }: {
     code: string;
     phoneNumber: string;
-  }): Promise<TwilioVerificationResponse> {
+  }): Promise<OtpVerificationResponse> {
     if (this.env.otp.provider === 'demo') {
       if (!this.env.otp.demoAllowlist.includes(phoneNumber)) {
         throw new ForbiddenException('Numéro non autorisé pour le mode demo.');
@@ -72,7 +72,7 @@ export class TwilioVerifyService {
 
   async requestVerification(
     phoneNumber: string,
-  ): Promise<TwilioVerificationResponse> {
+  ): Promise<OtpVerificationResponse> {
     if (this.env.otp.provider === 'demo') {
       if (!this.env.otp.demoAllowlist.includes(phoneNumber)) {
         throw new ForbiddenException('Numéro non autorisé pour le mode demo.');

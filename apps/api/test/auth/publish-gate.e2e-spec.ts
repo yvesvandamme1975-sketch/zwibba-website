@@ -8,9 +8,9 @@ import request from 'supertest';
 
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/database/prisma.service';
-import { TwilioVerifyService } from '../../src/auth/twilio-verify.service';
+import { OtpService } from '../../src/auth/otp.service';
 
-class _FakeTwilioVerifyService {
+class _FakeOtpService {
   async checkVerification({
     code,
   }: {
@@ -189,8 +189,8 @@ async function createTestApp(): Promise<{
   })
       .overrideProvider(PrismaService)
       .useValue(prisma)
-      .overrideProvider(TwilioVerifyService)
-      .useValue(new _FakeTwilioVerifyService())
+      .overrideProvider(OtpService)
+      .useValue(new _FakeOtpService())
       .compile();
 
   const app = moduleRef.createNestApplication();
