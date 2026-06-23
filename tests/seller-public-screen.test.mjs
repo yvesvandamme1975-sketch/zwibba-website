@@ -91,3 +91,65 @@ test('public seller screen renders neutral fallback identity and an empty state'
   assert.match(html, /Pas encore d&#39;avis/);
   assert.match(html, /Aucune annonce active/i);
 });
+
+test('public seller screen renders seller replies and owner reply forms', () => {
+  const reviews = [
+    {
+      buyer: {
+        displayName: 'Client sérieux',
+      },
+      comment: 'Livraison rapide.',
+      createdAt: '2026-06-22T14:00:00.000Z',
+      id: 'review_replied',
+      rating: 5,
+      sellerReply: 'Merci pour votre confiance.',
+      sellerReplyAt: '2026-06-22T18:30:00.000Z',
+    },
+    {
+      buyer: {
+        displayName: 'Acheteur Zwibba',
+      },
+      comment: 'Produit conforme.',
+      createdAt: '2026-06-21T14:00:00.000Z',
+      id: 'review_open',
+      rating: 4,
+      sellerReply: null,
+      sellerReplyAt: null,
+    },
+  ];
+
+  const ownerHtml = renderSellerPublicScreen({
+    isOwner: true,
+    listings: [],
+    seller: {
+      displayName: 'Boutique Katanga',
+      memberSince: '2026-06-01T09:30:00.000Z',
+      ratingAverage: 4.5,
+      ratingCount: 2,
+    },
+    reviews,
+    state: 'ready',
+  });
+
+  assert.match(ownerHtml, /Réponse du vendeur/);
+  assert.match(ownerHtml, /Merci pour votre confiance\./);
+  assert.match(ownerHtml, /22\/06\/2026/);
+  assert.match(ownerHtml, /data-action="submit-seller-reply"/);
+  assert.match(ownerHtml, /data-review-id="review_open"/);
+  assert.doesNotMatch(ownerHtml, /data-review-id="review_replied"[\s\S]*data-action="submit-seller-reply"/);
+
+  const visitorHtml = renderSellerPublicScreen({
+    isOwner: false,
+    listings: [],
+    seller: {
+      displayName: 'Boutique Katanga',
+      memberSince: '2026-06-01T09:30:00.000Z',
+      ratingAverage: 4.5,
+      ratingCount: 2,
+    },
+    reviews,
+    state: 'ready',
+  });
+
+  assert.doesNotMatch(visitorHtml, /data-action="submit-seller-reply"/);
+});
