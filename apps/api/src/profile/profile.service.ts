@@ -298,11 +298,13 @@ export class ProfileService {
     area: string | null;
     createdAt: Date;
     displayName: string | null;
+    id: string;
     phoneNumber: string;
   }) {
     return {
       area: user.area ?? '',
       displayName: user.displayName ?? null,
+      id: user.id,
       memberSince: user.createdAt,
       phoneNumber: user.phoneNumber,
     };

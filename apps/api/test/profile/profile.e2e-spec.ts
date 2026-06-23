@@ -307,6 +307,7 @@ test('profile endpoints return and persist the seller zone for the active sessio
     .expect(200);
 
   assert.equal(getBefore.body.phoneNumber, '+243990000001');
+  assert.equal(getBefore.body.id, 'user_243990000001');
   assert.equal(getBefore.body.area, '');
   assert.equal(getBefore.body.displayName, null);
   assert.equal(getBefore.body.memberSince, SEEDED_USER_CREATED_AT.toISOString());
