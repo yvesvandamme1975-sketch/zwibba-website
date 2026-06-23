@@ -2,6 +2,10 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 
 import { loadAdminEnv } from './config/env';
 import { renderModerationPage, type ModerationQueueItem } from './moderation/moderation-page';
+import {
+  renderReviewReportsPage,
+  type ReviewReportQueueItem,
+} from './moderation/review-reports-page';
 
 function isAuthorized(request: IncomingMessage, sharedSecret: string) {
   return request.headers['x-zwibba-admin-secret'] === sharedSecret;
@@ -41,6 +45,10 @@ function renderDocument(body: string) {
     <title>Zwibba Moderation</title>
   </head>
   <body>
+    <nav aria-label="Admin">
+      <a href="/moderation">Modération annonces</a>
+      <a href="/review-reports">Signalements d’avis</a>
+    </nav>
     ${body}
   </body>
 </html>`;
@@ -55,6 +63,18 @@ async function loadQueueFromApi(apiBaseUrl: string) {
 
   return (await response.json()) as {
     items: ModerationQueueItem[];
+  };
+}
+
+async function loadReviewReportsFromApi(apiBaseUrl: string) {
+  const response = await fetch(`${apiBaseUrl}/review-reports/queue`);
+
+  if (!response.ok) {
+    throw new Error(`Unable to load review reports queue (${response.status}).`);
+  }
+
+  return (await response.json()) as {
+    items: ReviewReportQueueItem[];
   };
 }
 
@@ -97,6 +117,24 @@ async function sendModerationAction({
   }
 }
 
+async function sendReviewReportAction({
+  action,
+  apiBaseUrl,
+  reportId,
+}: {
+  action: 'dismiss' | 'remove-review';
+  apiBaseUrl: string;
+  reportId: string;
+}) {
+  const response = await fetch(`${apiBaseUrl}/review-reports/${reportId}/${action}`, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    throw new Error(`Unable to apply review report action (${response.status}).`);
+  }
+}
+
 export function createModerationServer({
   apiBaseUrl,
   queueLoader,
@@ -108,6 +146,7 @@ export function createModerationServer({
 }) {
   const resolvedQueueLoader = queueLoader ??
     (() => loadQueueFromApi(apiBaseUrl ?? 'http://127.0.0.1:3200'));
+  const reviewReportsLoader = () => loadReviewReportsFromApi(apiBaseUrl ?? 'http://127.0.0.1:3200');
 
   return createServer(async (request, response) => {
     const requestUrl = new URL(request.url ?? '/', 'http://127.0.0.1');
@@ -123,6 +162,9 @@ export function createModerationServer({
     }
 
     const actionMatch = requestUrl.pathname.match(/^\/moderation\/([^/]+)\/(approve|block)$/);
+    const reviewReportActionMatch = requestUrl.pathname.match(
+      /^\/review-reports\/([^/]+)\/(dismiss|remove-review)$/,
+    );
 
     if (request.method === 'POST' && actionMatch) {
       try {
@@ -142,6 +184,39 @@ export function createModerationServer({
         const message = error instanceof Error
           ? error.message
           : 'Unknown moderation error.';
+        sendJson(response, 500, { error: message });
+      }
+      return;
+    }
+
+    if (request.method === 'POST' && reviewReportActionMatch) {
+      try {
+        const [, reportId, action] = reviewReportActionMatch;
+
+        await sendReviewReportAction({
+          action: action as 'dismiss' | 'remove-review',
+          apiBaseUrl: apiBaseUrl ?? 'http://127.0.0.1:3200',
+          reportId,
+        });
+        redirect(response, '/review-reports');
+      } catch (error) {
+        const message = error instanceof Error
+          ? error.message
+          : 'Unknown review report error.';
+        sendJson(response, 500, { error: message });
+      }
+      return;
+    }
+
+    if (requestUrl.pathname === '/review-reports') {
+      try {
+        const queue = await reviewReportsLoader();
+        const html = renderReviewReportsPage(queue);
+        sendHtml(response, 200, renderDocument(html));
+      } catch (error) {
+        const message = error instanceof Error
+          ? error.message
+          : 'Unknown review report error.';
         sendJson(response, 500, { error: message });
       }
       return;
