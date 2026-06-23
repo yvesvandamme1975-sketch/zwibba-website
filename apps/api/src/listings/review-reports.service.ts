@@ -15,6 +15,79 @@ const ALLOWED_REVIEW_REPORT_REASONS = new Set(['spam', 'offensive', 'fake', 'oth
 export class ReviewReportsService {
   constructor(@Inject(PrismaService) private readonly prismaService: PrismaService) {}
 
+  async listQueue() {
+    const reports = await this.prismaService.reviewReport?.findMany?.({
+      where: {
+        status: 'pending',
+      },
+      include: {
+        review: {
+          include: {
+            listing: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    return {
+      items: (reports ?? []).map((report) => this.toQueueItem(report)),
+    };
+  }
+
+  async dismiss(reportId: string) {
+    const report = await this.prismaService.reviewReport?.update?.({
+      where: {
+        id: reportId,
+      },
+      data: {
+        status: 'dismissed',
+      },
+    });
+
+    if (!report) {
+      throw new NotFoundException('Signalement introuvable.');
+    }
+
+    return {
+      id: report.id,
+      status: report.status,
+    };
+  }
+
+  async removeReview(reportId: string) {
+    const report = await this.prismaService.reviewReport?.findUnique?.({
+      where: {
+        id: reportId,
+      },
+      include: {
+        review: true,
+      },
+    });
+
+    if (!report) {
+      throw new NotFoundException('Signalement introuvable.');
+    }
+
+    const reviewId = report.review?.id ?? report.reviewId;
+    const deletedReview = await this.prismaService.review?.delete?.({
+      where: {
+        id: reviewId,
+      },
+    });
+
+    if (!deletedReview) {
+      throw new NotFoundException('Avis introuvable.');
+    }
+
+    return {
+      reviewId,
+      status: 'removed',
+    };
+  }
+
   async reportReview({
     reason,
     reviewId,
@@ -75,5 +148,49 @@ export class ReviewReportsService {
     });
 
     return persistedSession?.user?.id ?? null;
+  }
+
+  private toQueueItem(report: {
+    createdAt: Date | string;
+    id: string;
+    reason: string;
+    review?: {
+      comment?: string | null;
+      id?: string;
+      listing?: {
+        slug?: string | null;
+        title?: string | null;
+      } | null;
+      rating?: number;
+    } | null;
+    reviewId: string;
+  }) {
+    const review = report.review;
+    const listing = review?.listing;
+    const createdAt = report.createdAt instanceof Date
+      ? report.createdAt.toISOString()
+      : String(report.createdAt);
+
+    return {
+      commentExcerpt: this.toCommentExcerpt(review?.comment),
+      createdAt,
+      id: report.id,
+      rating: review?.rating ?? null,
+      reason: report.reason,
+      reviewId: review?.id ?? report.reviewId,
+      seller: {
+        listingSlug: listing?.slug ?? '',
+        listingTitle: listing?.title ?? '',
+      },
+    };
+  }
+
+  private toCommentExcerpt(comment?: string | null) {
+    const cleaned = comment?.trim() ?? '';
+    if (cleaned.length <= 140) {
+      return cleaned;
+    }
+
+    return `${cleaned.slice(0, 137).trim()}...`;
   }
 }

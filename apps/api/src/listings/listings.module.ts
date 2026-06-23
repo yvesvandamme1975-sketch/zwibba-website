@@ -4,6 +4,7 @@ import { AuthModule } from '../auth/auth.module';
 import { ListingsController } from './listings.controller';
 import { ListingsService } from './listings.service';
 import { ReviewRepliesController } from './review-replies.controller';
+import { ReviewReportsAdminController } from './review-reports-admin.controller';
 import { ReviewReportsController } from './review-reports.controller';
 import { ReviewReportsService } from './review-reports.service';
 import { ReviewsController } from './reviews.controller';
@@ -14,6 +15,7 @@ import { ReviewsService } from './reviews.service';
   controllers: [
     ListingsController,
     ReviewRepliesController,
+    ReviewReportsAdminController,
     ReviewReportsController,
     ReviewsController,
   ],
