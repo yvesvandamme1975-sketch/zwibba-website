@@ -4,6 +4,14 @@ import test from 'node:test';
 import { OtpService } from '../../src/auth/otp.service';
 import { verifyOtpCode } from '../../src/auth/otp-code';
 
+type TestOtpEnv = {
+  otp: {
+    demoAllowlist: string[];
+    demoCode?: string;
+    provider: 'demo' | 'meta';
+  };
+};
+
 type OtpChallengeRecord = {
   id: string;
   phoneNumber: string;
@@ -73,18 +81,38 @@ function withDemoEnv() {
   process.env.DEMO_OTP_CODE = '123456';
 }
 
-function createService() {
+function createService(env?: TestOtpEnv) {
   const prisma = new FakePrismaService();
   const sender = new FakeWhatsappOtpSender();
   const ServiceConstructor = OtpService as unknown as new (
     prismaService: FakePrismaService,
     whatsappOtpSender: FakeWhatsappOtpSender,
+    env?: TestOtpEnv,
   ) => OtpService;
 
   return {
     prisma,
     sender,
-    service: new ServiceConstructor(prisma, sender),
+    service: new ServiceConstructor(prisma, sender, env),
+  };
+}
+
+function createDemoEnv(): TestOtpEnv {
+  return {
+    otp: {
+      demoAllowlist: ['+243990000001'],
+      demoCode: '123456',
+      provider: 'demo',
+    },
+  };
+}
+
+function createMetaEnv(): TestOtpEnv {
+  return {
+    otp: {
+      demoAllowlist: [],
+      provider: 'meta',
+    },
   };
 }
 
@@ -161,4 +189,39 @@ test('checkVerification consumes the challenge after the attempt cap', async () 
   assert.notEqual(verification.status, 'approved');
   assert.equal(prisma.otpChallenge.records[0].attemptCount, 5);
   assert.ok(prisma.otpChallenge.records[0].consumedAt);
+});
+
+test('requestVerification in meta mode sends a random code and stores a hashed challenge', async () => {
+  withDemoEnv();
+  const { prisma, sender, service } = createService(createMetaEnv());
+
+  const verification = await service.requestVerification('+243990000001');
+
+  assert.equal(verification.status, 'pending');
+  assert.equal(sender.sent.length, 1);
+  assert.equal(sender.sent[0].phoneNumber, '+243990000001');
+  assert.match(sender.sent[0].code, /^\d{6}$/);
+  assert.notEqual(sender.sent[0].code, '123456');
+  assert.equal(prisma.otpChallenge.records.length, 1);
+  assert.equal(prisma.otpChallenge.records[0].id, verification.sid);
+  assert.notEqual(prisma.otpChallenge.records[0].codeHash, sender.sent[0].code);
+  assert.equal(
+    verifyOtpCode(sender.sent[0].code, prisma.otpChallenge.records[0].codeHash),
+    true,
+  );
+
+  const approved = await service.checkVerification({
+    code: sender.sent[0].code,
+    phoneNumber: '+243990000001',
+  });
+  assert.equal(approved.status, 'approved');
+});
+
+test('requestVerification in demo mode does not call the whatsapp sender', async () => {
+  withDemoEnv();
+  const { sender, service } = createService(createDemoEnv());
+
+  await service.requestVerification('+243990000001');
+
+  assert.equal(sender.sent.length, 0);
 });
