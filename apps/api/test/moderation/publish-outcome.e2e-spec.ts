@@ -8,9 +8,9 @@ import request from 'supertest';
 
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/database/prisma.service';
-import { TwilioVerifyService } from '../../src/auth/twilio-verify.service';
+import { OtpService } from '../../src/auth/otp.service';
 
-class _FakeTwilioVerifyService {
+class _FakeOtpService {
   async checkVerification({
     code,
   }: {
@@ -322,8 +322,8 @@ async function createTestApp(): Promise<INestApplication> {
   })
       .overrideProvider(PrismaService)
       .useValue(prisma)
-      .overrideProvider(TwilioVerifyService)
-      .useValue(new _FakeTwilioVerifyService())
+      .overrideProvider(OtpService)
+      .useValue(new _FakeOtpService())
       .compile();
 
   const app = moduleRef.createNestApplication();
@@ -416,8 +416,8 @@ test('publishing a synced phone draft persists the listing and moderation decisi
   })
       .overrideProvider(PrismaService)
       .useValue(prisma)
-      .overrideProvider(TwilioVerifyService)
-      .useValue(new _FakeTwilioVerifyService())
+      .overrideProvider(OtpService)
+      .useValue(new _FakeOtpService())
       .compile();
 
   const app = moduleRef.createNestApplication();
@@ -473,8 +473,8 @@ test('publishing ignores a spoofed owner phone number from the request body', as
   })
       .overrideProvider(PrismaService)
       .useValue(prisma)
-      .overrideProvider(TwilioVerifyService)
-      .useValue(new _FakeTwilioVerifyService())
+      .overrideProvider(OtpService)
+      .useValue(new _FakeOtpService())
       .compile();
 
   const app = moduleRef.createNestApplication();
@@ -518,8 +518,8 @@ test('publishing a complete synced vehicle draft auto-approves the listing', asy
   })
       .overrideProvider(PrismaService)
       .useValue(prisma)
-      .overrideProvider(TwilioVerifyService)
-      .useValue(new _FakeTwilioVerifyService())
+      .overrideProvider(OtpService)
+      .useValue(new _FakeOtpService())
       .compile();
 
   const app = moduleRef.createNestApplication();
@@ -620,8 +620,8 @@ test('publishing an incomplete synced vehicle draft blocks the listing with a cl
   })
       .overrideProvider(PrismaService)
       .useValue(prisma)
-      .overrideProvider(TwilioVerifyService)
-      .useValue(new _FakeTwilioVerifyService())
+      .overrideProvider(OtpService)
+      .useValue(new _FakeOtpService())
       .compile();
 
   const app = moduleRef.createNestApplication();
@@ -678,8 +678,8 @@ test('publishing a synced USD draft persists amount and currency on the listing'
   })
       .overrideProvider(PrismaService)
       .useValue(prisma)
-      .overrideProvider(TwilioVerifyService)
-      .useValue(new _FakeTwilioVerifyService())
+      .overrideProvider(OtpService)
+      .useValue(new _FakeOtpService())
       .compile();
 
   const app = moduleRef.createNestApplication();
@@ -720,8 +720,8 @@ test('publishing a synced free listing persists zero amount and selected currenc
   })
       .overrideProvider(PrismaService)
       .useValue(prisma)
-      .overrideProvider(TwilioVerifyService)
-      .useValue(new _FakeTwilioVerifyService())
+      .overrideProvider(OtpService)
+      .useValue(new _FakeOtpService())
       .compile();
 
   const app = moduleRef.createNestApplication();
@@ -762,8 +762,8 @@ test('publishing a synced draft with missing metadata persists a blocked moderat
   })
       .overrideProvider(PrismaService)
       .useValue(prisma)
-      .overrideProvider(TwilioVerifyService)
-      .useValue(new _FakeTwilioVerifyService())
+      .overrideProvider(OtpService)
+      .useValue(new _FakeOtpService())
       .compile();
 
   const app = moduleRef.createNestApplication();
@@ -813,8 +813,8 @@ test('publishing rejects prices above the 32-bit beta limit with a clear seller 
   })
       .overrideProvider(PrismaService)
       .useValue(prisma)
-      .overrideProvider(TwilioVerifyService)
-      .useValue(new _FakeTwilioVerifyService())
+      .overrideProvider(OtpService)
+      .useValue(new _FakeOtpService())
       .compile();
 
   const app = moduleRef.createNestApplication();

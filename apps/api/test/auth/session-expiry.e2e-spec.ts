@@ -8,7 +8,7 @@ import request from 'supertest';
 
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/database/prisma.service';
-import { TwilioVerifyService } from '../../src/auth/twilio-verify.service';
+import { OtpService } from '../../src/auth/otp.service';
 
 // Sessions are seeded directly into the fake so expiresAt is fully controlled.
 // Guarded endpoint under test: GET /profile (SessionAuthGuard).
@@ -18,7 +18,7 @@ const PHONE_NUMBER = '+243990000001';
 type SeededUser = { area: string; id: string; phoneNumber: string };
 type SeededSession = { expiresAt: Date | null; token: string; user: SeededUser };
 
-class _FakeTwilioVerifyService {
+class _FakeOtpService {
   async checkVerification() {
     return { sid: 'VE243990000001', status: 'approved' };
   }
@@ -102,8 +102,8 @@ async function createTestApp() {
   })
     .overrideProvider(PrismaService)
     .useValue(prisma)
-    .overrideProvider(TwilioVerifyService)
-    .useValue(new _FakeTwilioVerifyService())
+    .overrideProvider(OtpService)
+    .useValue(new _FakeOtpService())
     .compile();
 
   const app: INestApplication = moduleRef.createNestApplication();

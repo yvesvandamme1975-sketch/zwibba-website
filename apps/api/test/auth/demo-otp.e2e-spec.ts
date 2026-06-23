@@ -15,8 +15,19 @@ type VerificationAttemptRecord = {
   status: string;
 };
 
+type OtpChallengeRecord = {
+  id: string;
+  phoneNumber: string;
+  codeHash: string;
+  expiresAt: Date;
+  attemptCount: number;
+  consumedAt: Date | null;
+  createdAt: Date;
+};
+
 class _FakePrismaService {
   readonly verificationAttempts: VerificationAttemptRecord[] = [];
+  readonly otpChallenges: OtpChallengeRecord[] = [];
   readonly sessions = new Map<string, {
     token: string;
     user: {
@@ -106,6 +117,80 @@ class _FakePrismaService {
       }
 
       return { count };
+    },
+  };
+
+  readonly otpChallenge = {
+    updateMany: async ({
+      data,
+      where,
+    }: {
+      data: Partial<OtpChallengeRecord>;
+      where: {
+        consumedAt: null;
+        phoneNumber: string;
+      };
+    }) => {
+      const records = this.otpChallenges.filter((record) => (
+        record.consumedAt === where.consumedAt &&
+        record.phoneNumber === where.phoneNumber
+      ));
+      for (const record of records) {
+        Object.assign(record, data);
+      }
+      return { count: records.length };
+    },
+    create: async ({
+      data,
+    }: {
+      data: {
+        codeHash: string;
+        expiresAt: Date;
+        phoneNumber: string;
+      };
+    }) => {
+      const record = {
+        ...data,
+        id: `DEMO${data.phoneNumber.replaceAll('+', '')}`,
+        attemptCount: 0,
+        consumedAt: null,
+        createdAt: new Date(),
+      };
+      this.otpChallenges.push(record);
+      return record;
+    },
+    findFirst: async ({
+      where,
+    }: {
+      where: {
+        consumedAt: null;
+        phoneNumber: string;
+      };
+    }) => {
+      return this.otpChallenges
+        .filter((record) => (
+          record.consumedAt === where.consumedAt &&
+          record.phoneNumber === where.phoneNumber
+        ))
+        .sort((left, right) => {
+          return right.createdAt.getTime() - left.createdAt.getTime();
+        })[0] ?? null;
+    },
+    update: async ({
+      data,
+      where,
+    }: {
+      data: Partial<OtpChallengeRecord>;
+      where: {
+        id: string;
+      };
+    }) => {
+      const record = this.otpChallenges.find((candidate) => {
+        return candidate.id === where.id;
+      });
+      assert.ok(record);
+      Object.assign(record, data);
+      return record;
     },
   };
 

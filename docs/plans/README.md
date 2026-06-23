@@ -110,5 +110,7 @@ Current priority docs:
 - `2026-06-23-zwibba-seller-review-reply-implementation.md`
 - `2026-06-23-zwibba-seller-review-report-design.md`
 - `2026-06-23-zwibba-seller-review-report-implementation.md`
+- `2026-06-23-zwibba-auth-whatsapp-cloud-otp-design.md`
+- `2026-06-23-zwibba-auth-whatsapp-cloud-otp-implementation.md`
 
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.

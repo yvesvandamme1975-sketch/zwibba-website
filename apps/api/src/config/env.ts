@@ -1,5 +1,5 @@
 type EnvSource = NodeJS.ProcessEnv | Record<string, string | undefined>;
-type OtpProvider = 'demo' | 'twilio';
+type OtpProvider = 'demo' | 'meta';
 type AiProvider = 'stub' | 'multi' | 'mistral';
 
 export type ZwibbaEnv = {
@@ -37,6 +37,13 @@ export type ZwibbaEnv = {
     demoCode?: string;
     provider: OtpProvider;
   };
+  meta?: {
+    accessToken: string;
+    graphApiVersion: string;
+    phoneNumberId: string;
+    templateLang: string;
+    templateName: string;
+  };
   port: number;
   r2: {
     accessKeyId: string;
@@ -45,11 +52,6 @@ export type ZwibbaEnv = {
     publicBaseUrl: string;
     s3Endpoint: string;
     secretAccessKey: string;
-  };
-  twilio?: {
-    accountSid: string;
-    authToken: string;
-    verifyServiceSid: string;
   };
 };
 
@@ -66,10 +68,15 @@ const defaultEnvValues = {
   GEMINI_API_KEY: 'gemini-api-key',
   GEMINI_MODEL: 'gemini-2.5-flash-lite',
   AI_GOOGLE_VISION_ENRICHMENT_ENABLED: 'false',
+  META_GRAPH_API_VERSION: '20.0',
+  META_WHATSAPP_ACCESS_TOKEN: 'meta-access-token',
+  META_WHATSAPP_PHONE_NUMBER_ID: '1234567890',
+  META_WHATSAPP_TEMPLATE_LANG: 'fr',
+  META_WHATSAPP_TEMPLATE_NAME: 'zwibba_auth_code',
   MISTRAL_API_KEY: 'mistral-api-key',
   MISTRAL_MODEL: 'pixtral-12b-2409',
   NODE_ENV: 'development',
-  OTP_PROVIDER: 'twilio',
+  OTP_PROVIDER: 'demo',
   PORT: '3200',
   R2_ACCESS_KEY_ID: 'r2-access-key',
   R2_ACCOUNT_ID: 'r2-account-id',
@@ -77,9 +84,6 @@ const defaultEnvValues = {
   R2_PUBLIC_BASE_URL: 'https://cdn.zwibba.example',
   R2_S3_ENDPOINT: 'https://r2.zwibba.example',
   R2_SECRET_ACCESS_KEY: 'r2-secret-access-key',
-  TWILIO_ACCOUNT_SID: 'AC00000000000000000000000000000000',
-  TWILIO_AUTH_TOKEN: 'twilio-auth-token',
-  TWILIO_VERIFY_SERVICE_SID: 'VA00000000000000000000000000000000',
   ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
 } as const;
 
@@ -130,11 +134,11 @@ function readOtpProvider(source: EnvSource): OtpProvider {
     ? source.OTP_PROVIDER
     : (source.OTP_PROVIDER ?? defaultEnvValues.OTP_PROVIDER);
 
-  if (rawValue === 'demo' || rawValue === 'twilio') {
+  if (rawValue === 'demo' || rawValue === 'meta') {
     return rawValue;
   }
 
-  throw new Error('OTP_PROVIDER must be either "demo" or "twilio".');
+  throw new Error('OTP_PROVIDER must be either "demo" or "meta".');
 }
 
 function readAiProvider(source: EnvSource): AiProvider {
@@ -262,6 +266,15 @@ export function loadEnv(source: EnvSource = process.env): ZwibbaEnv {
         : readOptionalString(source, 'DEMO_OTP_CODE'),
       provider: otpProvider,
     },
+    meta: otpProvider === 'meta'
+      ? {
+          phoneNumberId: readRequiredString(source, 'META_WHATSAPP_PHONE_NUMBER_ID'),
+          accessToken: readRequiredString(source, 'META_WHATSAPP_ACCESS_TOKEN'),
+          templateName: readRequiredString(source, 'META_WHATSAPP_TEMPLATE_NAME'),
+          templateLang: readRequiredString(source, 'META_WHATSAPP_TEMPLATE_LANG'),
+          graphApiVersion: readRequiredString(source, 'META_GRAPH_API_VERSION'),
+        }
+      : undefined,
     port: readPort(source),
     r2: {
       accessKeyId: readRequiredString(source, 'R2_ACCESS_KEY_ID'),
@@ -271,12 +284,5 @@ export function loadEnv(source: EnvSource = process.env): ZwibbaEnv {
       s3Endpoint: readRequiredString(source, 'R2_S3_ENDPOINT'),
       secretAccessKey: readRequiredString(source, 'R2_SECRET_ACCESS_KEY'),
     },
-    twilio: otpProvider === 'twilio'
-      ? {
-          accountSid: readRequiredString(source, 'TWILIO_ACCOUNT_SID'),
-          authToken: readRequiredString(source, 'TWILIO_AUTH_TOKEN'),
-          verifyServiceSid: readRequiredString(source, 'TWILIO_VERIFY_SERVICE_SID'),
-        }
-      : undefined,
   };
 }

@@ -252,3 +252,15 @@ model VerificationAttempt {
 
   @@index([phoneNumber, status])
 }
+
+model OtpChallenge {
+  id           String    @id @default(cuid())
+  phoneNumber  String
+  codeHash     String
+  expiresAt    DateTime
+  attemptCount Int       @default(0)
+  consumedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([phoneNumber])
+}
