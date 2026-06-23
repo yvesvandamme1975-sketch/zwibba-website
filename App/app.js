@@ -873,7 +873,13 @@ if (appRoot) {
   }
 
   function primeBuyerRouteState(route) {
-    if (state.session && state.profileStatus === 'idle') {
+    if (
+      state.session &&
+      (
+        state.profileStatus === 'idle' ||
+        (route.type === 'seller' && !state.profile && state.profileStatus !== 'loading')
+      )
+    ) {
       void loadProfile();
     }
 
@@ -1010,9 +1016,12 @@ if (appRoot) {
       case 'seller':
         return renderSellerPublicScreen({
           isOwner: Boolean(
-            state.session?.phoneNumber &&
-              state.sellerPublic?.seller?.phoneNumber &&
-              state.session.phoneNumber === state.sellerPublic.seller.phoneNumber,
+            state.session &&
+              state.profile &&
+              state.profile.id &&
+              state.sellerPublic &&
+              state.sellerPublic.seller &&
+              state.profile.id === state.sellerPublic.seller.id,
           ),
           listings: state.sellerPublic?.listings ?? [],
           reviews: state.sellerPublic?.reviews ?? [],
