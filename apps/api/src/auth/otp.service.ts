@@ -19,7 +19,7 @@ type OtpServiceEnv = {
   otp: {
     demoAllowlist: string[];
     demoCode?: string;
-    provider: 'demo' | 'meta' | 'twilio';
+    provider: 'demo' | 'meta';
   };
 };
 
