@@ -139,6 +139,40 @@ test('profile screen shows a verification prompt when no session exists', () => 
   assert.match(html, /href="#auth-welcome"/);
 });
 
+test('profile screen links to seller reviews only when profile id exists', () => {
+  const html = renderProfileScreen({
+    listings: [],
+    profile: {
+      area: 'Lubumbashi',
+      id: 'seller_123',
+      phoneNumber: '+243990000001',
+    },
+    session: {
+      canSyncDrafts: true,
+      phoneNumber: '+243990000001',
+      sessionToken: 'zwibba_session_123',
+    },
+    state: 'ready',
+  });
+  const htmlWithoutId = renderProfileScreen({
+    listings: [],
+    profile: {
+      area: 'Lubumbashi',
+      phoneNumber: '+243990000001',
+    },
+    session: {
+      canSyncDrafts: true,
+      phoneNumber: '+243990000001',
+      sessionToken: 'zwibba_session_123',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /Mes avis/);
+  assert.match(html, /href="#seller\/seller_123"/);
+  assert.doesNotMatch(htmlWithoutId, /Mes avis/);
+});
+
 test('profile screen shows an explicit seller empty state when no listing exists yet', () => {
   const html = renderProfileScreen({
     listings: [],

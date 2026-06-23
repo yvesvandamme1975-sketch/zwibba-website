@@ -48,6 +48,7 @@ import { createMediaService } from './services/media-service.mjs';
 import { createProfileService } from './services/profile-service.mjs';
 import { createReviewsService } from './services/reviews-service.mjs';
 import { createSellerListingsService } from './services/seller-listings-service.mjs';
+import { createSellerRepliesService } from './services/seller-replies-service.mjs';
 import { createWalletService } from './services/wallet-service.mjs';
 import { createLiveDraftService } from './services/live-draft-service.mjs';
 import {
@@ -120,6 +121,10 @@ if (appRoot) {
     fetchFn: window.fetch.bind(window),
   });
   const reviewsService = createReviewsService({
+    apiBaseUrl: apiConfig.apiBaseUrl,
+    fetchFn: window.fetch.bind(window),
+  });
+  const sellerRepliesService = createSellerRepliesService({
     apiBaseUrl: apiConfig.apiBaseUrl,
     fetchFn: window.fetch.bind(window),
   });
@@ -868,7 +873,13 @@ if (appRoot) {
   }
 
   function primeBuyerRouteState(route) {
-    if (state.session && state.profileStatus === 'idle') {
+    if (
+      state.session &&
+      (
+        state.profileStatus === 'idle' ||
+        (route.type === 'seller' && !state.profile && state.profileStatus !== 'loading')
+      )
+    ) {
       void loadProfile();
     }
 
@@ -1004,7 +1015,16 @@ if (appRoot) {
         });
       case 'seller':
         return renderSellerPublicScreen({
+          isOwner: Boolean(
+            state.session &&
+              state.profile &&
+              state.profile.id &&
+              state.sellerPublic &&
+              state.sellerPublic.seller &&
+              state.profile.id === state.sellerPublic.seller.id,
+          ),
           listings: state.sellerPublic?.listings ?? [],
+          reviews: state.sellerPublic?.reviews ?? [],
           seller: state.sellerPublic?.seller ?? null,
           state: state.sellerPublicStatus,
         });
@@ -1957,6 +1977,60 @@ if (appRoot) {
     }
   }
 
+  async function handleSellerReplySubmit(form) {
+    if (!state.session) {
+      beginAuthIntent({
+        returnRoute: window.location.hash || '#buy',
+        type: 'profile',
+      });
+      return;
+    }
+
+    const formData = new FormData(form);
+    const reviewId = String(form.dataset.reviewId || '').trim();
+    const reply = String(formData.get('sellerReply') ?? '').trim();
+    const messageTarget = form.querySelector('[data-seller-reply-message]');
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    if (!reviewId) {
+      return;
+    }
+
+    if (messageTarget) {
+      messageTarget.textContent = 'Envoi de votre réponse...';
+    }
+
+    if (submitButton instanceof HTMLButtonElement) {
+      submitButton.disabled = true;
+    }
+
+    try {
+      await sellerRepliesService.submitSellerReply({
+        reply,
+        reviewId,
+        session: state.session,
+      });
+
+      state.sellerPublicError = '';
+      state.sellerPublicStatus = 'idle';
+      await loadPublicSeller(state.currentSellerId);
+      renderApp();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Impossible d’envoyer votre réponse.';
+
+      if (messageTarget) {
+        messageTarget.textContent = message;
+      } else {
+        window.alert(message);
+      }
+
+      if (submitButton instanceof HTMLButtonElement) {
+        submitButton.disabled = false;
+      }
+    }
+  }
+
   async function handleSendThreadMessage(form) {
     if (!state.session) {
       return;
@@ -2428,6 +2502,11 @@ if (appRoot) {
 
     if (form.dataset.action === 'submit-review') {
       await handleListingReviewSubmit(form);
+      return;
+    }
+
+    if (form.dataset.action === 'submit-seller-reply') {
+      await handleSellerReplySubmit(form);
       return;
     }
 

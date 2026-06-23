@@ -61,7 +61,37 @@ function formatReviewDate(value) {
   return date.toLocaleDateString('fr-FR');
 }
 
-function renderReviewCard(review = {}) {
+function renderSellerReply(review = {}) {
+  if (!review.sellerReply) {
+    return '';
+  }
+
+  return `
+    <div class="app-profile__seller-reply">
+      <strong>Réponse du vendeur</strong>
+      <span>${escapeHtml(formatReviewDate(review.sellerReplyAt))}</span>
+      <p>${escapeHtml(review.sellerReply)}</p>
+    </div>
+  `;
+}
+
+function renderSellerReplyForm(review = {}, { isOwner = false } = {}) {
+  if (!isOwner || review.sellerReply || !review.id) {
+    return '';
+  }
+
+  return `
+    <form class="app-profile__reply-form" data-action="submit-seller-reply" data-review-id="${escapeAttribute(review.id)}">
+      <label>
+        <span>Répondre à cet avis</span>
+        <textarea name="sellerReply" rows="3" maxlength="280" placeholder="Votre réponse publique"></textarea>
+      </label>
+      <button class="app-flow__button" type="submit">Publier la réponse</button>
+    </form>
+  `;
+}
+
+function renderReviewCard(review = {}, options = {}) {
   const displayName = String(review.buyer?.displayName || '').trim() || 'Acheteur Zwibba';
 
   return `
@@ -82,11 +112,13 @@ function renderReviewCard(review = {}) {
           ? `<p>${escapeHtml(review.comment)}</p>`
           : ''
       }
+      ${renderSellerReply(review)}
+      ${renderSellerReplyForm(review, options)}
     </article>
   `;
 }
 
-function renderReviewsSection(reviews = []) {
+function renderReviewsSection(reviews = [], options = {}) {
   return `
     <section class="app-home__section">
       <div class="app-home__section-head">
@@ -95,7 +127,7 @@ function renderReviewsSection(reviews = []) {
       </div>
       ${
         reviews.length
-          ? `<div class="app-profile__reviews">${reviews.map(renderReviewCard).join('')}</div>`
+          ? `<div class="app-profile__reviews">${reviews.map((review) => renderReviewCard(review, options)).join('')}</div>`
           : `
             <article class="app-empty-state">
               <strong>Pas encore d'avis</strong>
@@ -108,6 +140,7 @@ function renderReviewsSection(reviews = []) {
 }
 
 export function renderSellerPublicScreen({
+  isOwner = false,
   seller = null,
   listings = [],
   reviews = [],
@@ -177,7 +210,7 @@ export function renderSellerPublicScreen({
         </div>
       </section>
 
-      ${renderReviewsSection(reviews)}
+      ${renderReviewsSection(reviews, { isOwner })}
 
       <section class="app-home__section">
         <div class="app-home__section-head">

@@ -41,7 +41,10 @@ type PublicSellerReview = {
   } | null;
   comment: string | null;
   createdAt: Date;
+  id: string;
   rating: number;
+  sellerReply?: string | null;
+  sellerReplyAt?: Date | null;
 };
 
 const categoryLabels: Record<string, string> = {
@@ -252,7 +255,10 @@ export class ProfileService {
       },
       comment: review.comment,
       createdAt: review.createdAt,
+      id: review.id,
       rating: review.rating,
+      sellerReply: review.sellerReply ?? null,
+      sellerReplyAt: review.sellerReplyAt ?? null,
     }));
 
     return {
@@ -292,11 +298,13 @@ export class ProfileService {
     area: string | null;
     createdAt: Date;
     displayName: string | null;
+    id: string;
     phoneNumber: string;
   }) {
     return {
       area: user.area ?? '',
       displayName: user.displayName ?? null,
+      id: user.id,
       memberSince: user.createdAt,
       phoneNumber: user.phoneNumber,
     };
