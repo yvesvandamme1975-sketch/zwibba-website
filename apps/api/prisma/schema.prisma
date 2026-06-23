@@ -16,6 +16,7 @@ model User {
   displayName        String?
   createdAt          DateTime           @default(now())
   reviews            Review[]           @relation("BuyerReviews")
+  reports            ReviewReport[]     @relation("UserReviewReports")
   sessions           Session[]
   updatedAt          DateTime           @updatedAt
   walletTransactions WalletTransaction[]
@@ -133,10 +134,25 @@ model Review {
   sellerReply       String?
   sellerReplyAt     DateTime?
   createdAt         DateTime @default(now())
+  reports           ReviewReport[]
   updatedAt         DateTime @updatedAt
 
   @@unique([buyerUserId, listingId])
   @@index([sellerPhoneNumber])
+}
+
+model ReviewReport {
+  id             String   @id @default(cuid())
+  review         Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  reviewId       String
+  reporter       User     @relation("UserReviewReports", fields: [reporterUserId], references: [id], onDelete: Cascade)
+  reporterUserId String
+  reason         String
+  status         String   @default("pending")
+  createdAt      DateTime @default(now())
+
+  @@unique([reviewId, reporterUserId])
+  @@index([status])
 }
 
 model ListingLifecycleEvent {

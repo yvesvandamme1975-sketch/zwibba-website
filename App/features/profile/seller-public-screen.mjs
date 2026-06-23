@@ -91,6 +91,36 @@ function renderSellerReplyForm(review = {}, { isOwner = false } = {}) {
   `;
 }
 
+function renderReviewReportControl(review = {}, {
+  isOwner = false,
+  viewerUserId = null,
+} = {}) {
+  const reviewAuthorId = review.buyer?.id ?? null;
+  const canReport = Boolean(viewerUserId) &&
+    !isOwner &&
+    review.id &&
+    reviewAuthorId !== viewerUserId;
+
+  if (!canReport) {
+    return '';
+  }
+
+  return `
+    <form class="app-profile__report-form" data-action="report-review" data-review-id="${escapeAttribute(review.id)}">
+      <label>
+        <span>Signaler cet avis</span>
+        <select name="reason" aria-label="Motif du signalement">
+          <option value="fake">Avis faux</option>
+          <option value="offensive">Propos offensants</option>
+          <option value="spam">Spam</option>
+          <option value="other">Autre motif</option>
+        </select>
+      </label>
+      <button class="app-flow__button" type="submit">Signaler</button>
+    </form>
+  `;
+}
+
 function renderReviewCard(review = {}, options = {}) {
   const displayName = String(review.buyer?.displayName || '').trim() || 'Acheteur Zwibba';
 
@@ -114,6 +144,7 @@ function renderReviewCard(review = {}, options = {}) {
       }
       ${renderSellerReply(review)}
       ${renderSellerReplyForm(review, options)}
+      ${renderReviewReportControl(review, options)}
     </article>
   `;
 }
@@ -145,6 +176,7 @@ export function renderSellerPublicScreen({
   listings = [],
   reviews = [],
   state = 'loading',
+  viewerUserId = null,
 } = {}) {
   if (state === 'loading') {
     return `
@@ -210,7 +242,7 @@ export function renderSellerPublicScreen({
         </div>
       </section>
 
-      ${renderReviewsSection(reviews, { isOwner })}
+      ${renderReviewsSection(reviews, { isOwner, viewerUserId })}
 
       <section class="app-home__section">
         <div class="app-home__section-head">

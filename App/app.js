@@ -46,6 +46,7 @@ import { createImageCompressionService } from './services/image-compression.mjs'
 import { createListingsService } from './services/listings-service.mjs';
 import { createMediaService } from './services/media-service.mjs';
 import { createProfileService } from './services/profile-service.mjs';
+import { createReviewReportsService } from './services/review-reports-service.mjs';
 import { createReviewsService } from './services/reviews-service.mjs';
 import { createSellerListingsService } from './services/seller-listings-service.mjs';
 import { createSellerRepliesService } from './services/seller-replies-service.mjs';
@@ -121,6 +122,10 @@ if (appRoot) {
     fetchFn: window.fetch.bind(window),
   });
   const reviewsService = createReviewsService({
+    apiBaseUrl: apiConfig.apiBaseUrl,
+    fetchFn: window.fetch.bind(window),
+  });
+  const reviewReportsService = createReviewReportsService({
     apiBaseUrl: apiConfig.apiBaseUrl,
     fetchFn: window.fetch.bind(window),
   });
@@ -1027,6 +1032,7 @@ if (appRoot) {
           reviews: state.sellerPublic?.reviews ?? [],
           seller: state.sellerPublic?.seller ?? null,
           state: state.sellerPublicStatus,
+          viewerUserId: state.profile?.id ?? null,
         });
       case 'messages':
         return renderInboxScreen({
@@ -2031,6 +2037,51 @@ if (appRoot) {
     }
   }
 
+  async function handleReviewReportSubmit(form) {
+    if (!state.session) {
+      beginAuthIntent({
+        returnRoute: window.location.hash || '#buy',
+        type: 'profile',
+      });
+      return;
+    }
+
+    const formData = new FormData(form);
+    const reviewId = String(form.dataset.reviewId || '').trim();
+    const reason = String(formData.get('reason') ?? '').trim();
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    if (!reviewId) {
+      return;
+    }
+
+    if (submitButton instanceof HTMLButtonElement) {
+      submitButton.disabled = true;
+    }
+
+    try {
+      await reviewReportsService.reportReview({
+        reason,
+        reviewId,
+        session: state.session,
+      });
+
+      window.alert('Signalement envoyé. Merci pour votre aide.');
+      state.sellerPublicError = '';
+      state.sellerPublicStatus = 'idle';
+      await loadPublicSeller(state.currentSellerId);
+      renderApp();
+    } catch (error) {
+      window.alert(
+        error instanceof Error ? error.message : 'Impossible de signaler cet avis.',
+      );
+
+      if (submitButton instanceof HTMLButtonElement) {
+        submitButton.disabled = false;
+      }
+    }
+  }
+
   async function handleSendThreadMessage(form) {
     if (!state.session) {
       return;
@@ -2507,6 +2558,11 @@ if (appRoot) {
 
     if (form.dataset.action === 'submit-seller-reply') {
       await handleSellerReplySubmit(form);
+      return;
+    }
+
+    if (form.dataset.action === 'report-review') {
+      await handleReviewReportSubmit(form);
       return;
     }
 
