@@ -153,3 +153,72 @@ test('public seller screen renders seller replies and owner reply forms', () => 
 
   assert.doesNotMatch(visitorHtml, /data-action="submit-seller-reply"/);
 });
+
+test('public seller screen renders report controls for verified non-author visitors only', () => {
+  const reviews = [
+    {
+      buyer: {
+        displayName: 'Client sérieux',
+        id: 'buyer_other',
+      },
+      comment: 'Avis à vérifier.',
+      createdAt: '2026-06-22T14:00:00.000Z',
+      id: 'review_reportable',
+      rating: 2,
+      sellerReply: null,
+      sellerReplyAt: null,
+    },
+  ];
+
+  const visitorHtml = renderSellerPublicScreen({
+    isOwner: false,
+    listings: [],
+    seller: {
+      displayName: 'Boutique Katanga',
+      id: 'seller_1',
+      memberSince: '2026-06-01T09:30:00.000Z',
+      ratingAverage: 4.5,
+      ratingCount: 1,
+    },
+    reviews,
+    state: 'ready',
+    viewerUserId: 'viewer_verified',
+  });
+
+  assert.match(visitorHtml, /data-action="report-review"/);
+  assert.match(visitorHtml, /data-review-id="review_reportable"/);
+
+  const sellerHtml = renderSellerPublicScreen({
+    isOwner: true,
+    listings: [],
+    seller: {
+      displayName: 'Boutique Katanga',
+      id: 'seller_1',
+      memberSince: '2026-06-01T09:30:00.000Z',
+      ratingAverage: 4.5,
+      ratingCount: 1,
+    },
+    reviews,
+    state: 'ready',
+    viewerUserId: 'seller_1',
+  });
+
+  assert.doesNotMatch(sellerHtml, /data-action="report-review"/);
+
+  const authorHtml = renderSellerPublicScreen({
+    isOwner: false,
+    listings: [],
+    seller: {
+      displayName: 'Boutique Katanga',
+      id: 'seller_1',
+      memberSince: '2026-06-01T09:30:00.000Z',
+      ratingAverage: 4.5,
+      ratingCount: 1,
+    },
+    reviews,
+    state: 'ready',
+    viewerUserId: 'buyer_other',
+  });
+
+  assert.doesNotMatch(authorHtml, /data-action="report-review"/);
+});
