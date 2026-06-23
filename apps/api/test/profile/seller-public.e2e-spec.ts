@@ -20,6 +20,8 @@ class _FakePrismaService {
     listingId: string;
     rating: number;
     sellerPhoneNumber: string;
+    sellerReply: string | null;
+    sellerReplyAt: Date | null;
   }>();
   readonly users = new Map<string, {
     createdAt: Date;
@@ -214,6 +216,8 @@ class _FakePrismaService {
     listingId,
     rating,
     sellerPhoneNumber = '+243990000001',
+    sellerReply = null,
+    sellerReplyAt = null,
   }: {
     buyerUserId: string;
     comment?: string | null;
@@ -222,6 +226,8 @@ class _FakePrismaService {
     listingId: string;
     rating: number;
     sellerPhoneNumber?: string;
+    sellerReply?: string | null;
+    sellerReplyAt?: Date | null;
   }) {
     this.reviews.set(id, {
       buyerUserId,
@@ -231,6 +237,8 @@ class _FakePrismaService {
       listingId,
       rating,
       sellerPhoneNumber,
+      sellerReply,
+      sellerReplyAt,
     });
   }
 }
@@ -368,6 +376,8 @@ test('public seller endpoint exposes rating aggregate and public reviews without
     id: 'review_named',
     listingId: 'listing_active',
     rating: 5,
+    sellerReply: 'Merci pour votre confiance.',
+    sellerReplyAt: new Date('2026-06-22T18:30:00.000Z'),
   });
   harness.prisma.seedReview({
     buyerUserId: 'buyer_fallback',
@@ -391,7 +401,10 @@ test('public seller endpoint exposes rating aggregate and public reviews without
       },
       comment: 'Vendeur fiable et rapide.',
       createdAt: '2026-06-22T14:00:00.000Z',
+      id: 'review_named',
       rating: 5,
+      sellerReply: 'Merci pour votre confiance.',
+      sellerReplyAt: '2026-06-22T18:30:00.000Z',
     },
     {
       buyer: {
@@ -399,7 +412,10 @@ test('public seller endpoint exposes rating aggregate and public reviews without
       },
       comment: null,
       createdAt: '2026-06-21T14:00:00.000Z',
+      id: 'review_fallback',
       rating: 3,
+      sellerReply: null,
+      sellerReplyAt: null,
     },
   ]);
   assert.equal(response.body.reviews[0].buyer.phoneNumber, undefined);
