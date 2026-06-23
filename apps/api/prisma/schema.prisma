@@ -13,6 +13,7 @@ model User {
   id                 String             @id @default(cuid())
   phoneNumber        String             @unique
   area               String             @default("")
+  displayName        String?
   createdAt          DateTime           @default(now())
   sessions           Session[]
   updatedAt          DateTime           @updatedAt
