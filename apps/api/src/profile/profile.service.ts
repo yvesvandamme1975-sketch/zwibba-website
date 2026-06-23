@@ -35,6 +35,15 @@ type PublicSellerDraftPhoto = {
   uploadStatus: string;
 };
 
+type PublicSellerReview = {
+  buyer?: {
+    displayName?: string | null;
+  } | null;
+  comment: string | null;
+  createdAt: Date;
+  rating: number;
+};
+
 const categoryLabels: Record<string, string> = {
   agriculture: 'Agriculture',
   beauty: 'Beauté',
@@ -226,13 +235,56 @@ export class ProfileService {
       }),
     );
 
+    const rating = await this.getSellerRatingAggregate(user.phoneNumber);
+    const reviews = (((await this.prismaService.review?.findMany?.({
+      include: {
+        buyer: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      where: {
+        sellerPhoneNumber: user.phoneNumber,
+      },
+    })) ?? []) as PublicSellerReview[]).map((review) => ({
+      buyer: {
+        displayName: review.buyer?.displayName ?? 'Acheteur Zwibba',
+      },
+      comment: review.comment,
+      createdAt: review.createdAt,
+      rating: review.rating,
+    }));
+
     return {
       listings: items,
+      reviews,
       seller: {
         displayName: user.displayName ?? 'Vendeur Zwibba',
         id: user.id,
+        ...rating,
         memberSince: user.createdAt,
       },
+    };
+  }
+
+  private async getSellerRatingAggregate(sellerPhoneNumber: string) {
+    const aggregate = await this.prismaService.review?.aggregate?.({
+      _avg: {
+        rating: true,
+      },
+      _count: {
+        _all: true,
+      },
+      where: {
+        sellerPhoneNumber,
+      },
+    });
+
+    const ratingCount = aggregate?._count?._all ?? 0;
+
+    return {
+      ratingAverage: ratingCount > 0 ? aggregate?._avg?.rating ?? null : null,
+      ratingCount,
     };
   }
 
