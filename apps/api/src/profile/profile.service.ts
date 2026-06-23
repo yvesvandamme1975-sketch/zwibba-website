@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import type { SessionRecord } from '../auth/auth.service';
+import { normalizeDisplayName } from '../common/display-name';
 import { PrismaService } from '../database/prisma.service';
 import { normalizeLocationLabel } from '../locations/location-normalization';
 
@@ -24,12 +25,7 @@ export class ProfileService {
       throw new NotFoundException('Profil introuvable.');
     }
 
-    return {
-      area: user.area ?? '',
-      displayName: user.displayName ?? null,
-      memberSince: user.createdAt,
-      phoneNumber: user.phoneNumber,
-    };
+    return this.toProfileResponse(user);
   }
 
   async updateProfile({
@@ -70,6 +66,43 @@ export class ProfileService {
 
     return {
       area: user.area ?? '',
+      displayName: user.displayName ?? null,
+      memberSince: user.createdAt,
+      phoneNumber: user.phoneNumber,
+    };
+  }
+
+  async updateIdentity({
+    displayName,
+    session,
+  }: {
+    displayName: string;
+    session: SessionRecord;
+  }) {
+    const normalizedDisplayName = normalizeDisplayName(displayName);
+
+    const user = await this.prismaService.user.update({
+      where: {
+        phoneNumber: session.phoneNumber,
+      },
+      data: {
+        displayName: normalizedDisplayName,
+      },
+    });
+
+    return this.toProfileResponse(user);
+  }
+
+  private toProfileResponse(user: {
+    area: string | null;
+    createdAt: Date;
+    displayName: string | null;
+    phoneNumber: string;
+  }) {
+    return {
+      area: user.area ?? '',
+      displayName: user.displayName ?? null,
+      memberSince: user.createdAt,
       phoneNumber: user.phoneNumber,
     };
   }
