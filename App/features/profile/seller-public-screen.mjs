@@ -1,5 +1,6 @@
 import { escapeAttribute, escapeHtml, formatListingPrice } from '../../utils/rendering.mjs';
 import { sanitizeListingImageUrl } from '../../utils/image-fallbacks.mjs';
+import { renderRatingStars } from '../../utils/rating-stars.mjs';
 import { sellerMonogram } from '../../utils/seller-monogram.mjs';
 
 function formatMemberSince(value) {
@@ -46,9 +47,70 @@ function renderSellerListingCard(listing) {
   `;
 }
 
+function formatReviewDate(value) {
+  if (!value) {
+    return 'Date à confirmer';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleDateString('fr-FR');
+}
+
+function renderReviewCard(review = {}) {
+  const displayName = String(review.buyer?.displayName || '').trim() || 'Acheteur Zwibba';
+
+  return `
+    <article class="app-profile__review-card">
+      <div class="app-profile__review-head">
+        <div class="app-profile__monogram" aria-hidden="true">${escapeHtml(sellerMonogram(displayName))}</div>
+        <div>
+          <strong>${escapeHtml(displayName)}</strong>
+          <span>${escapeHtml(formatReviewDate(review.createdAt))}</span>
+        </div>
+      </div>
+      ${renderRatingStars({
+        average: review.rating,
+        count: 1,
+      })}
+      ${
+        review.comment
+          ? `<p>${escapeHtml(review.comment)}</p>`
+          : ''
+      }
+    </article>
+  `;
+}
+
+function renderReviewsSection(reviews = []) {
+  return `
+    <section class="app-home__section">
+      <div class="app-home__section-head">
+        <h3>Avis</h3>
+        <span>${escapeHtml(String(reviews.length))}</span>
+      </div>
+      ${
+        reviews.length
+          ? `<div class="app-profile__reviews">${reviews.map(renderReviewCard).join('')}</div>`
+          : `
+            <article class="app-empty-state">
+              <strong>Pas encore d'avis</strong>
+              <span>Les avis des acheteurs apparaîtront ici.</span>
+            </article>
+          `
+      }
+    </section>
+  `;
+}
+
 export function renderSellerPublicScreen({
   seller = null,
   listings = [],
+  reviews = [],
   state = 'loading',
 } = {}) {
   if (state === 'loading') {
@@ -107,9 +169,15 @@ export function renderSellerPublicScreen({
           <div>
             <h3>${escapeHtml(displayName)}</h3>
             <span>Membre depuis ${escapeHtml(formatMemberSince(seller?.memberSince))}</span>
+            ${renderRatingStars({
+              average: seller?.ratingAverage,
+              count: seller?.ratingCount,
+            })}
           </div>
         </div>
       </section>
+
+      ${renderReviewsSection(reviews)}
 
       <section class="app-home__section">
         <div class="app-home__section-head">

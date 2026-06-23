@@ -8,6 +8,7 @@ import {
   buildImageFallbackHandler,
   sanitizeListingImageUrl,
 } from '../../utils/image-fallbacks.mjs';
+import { renderRatingStars } from '../../utils/rating-stars.mjs';
 import {
   getFashionAttributes,
   getFashionItemTypeLabel,
@@ -392,6 +393,10 @@ function renderSellerBlock(seller = {}) {
   const sellerContent = `
     <strong>${escapeHtml(sellerName)}</strong>
     <span>${escapeHtml(sellerRole)}</span>
+    ${renderRatingStars({
+      average: seller.ratingAverage,
+      count: seller.ratingCount,
+    })}
   `;
 
   if (!sellerId) {
@@ -406,6 +411,36 @@ function renderSellerBlock(seller = {}) {
     <a class="app-publish__status is-verified app-detail__seller-link" href="#seller/${escapeAttribute(sellerId)}">
       ${sellerContent}
     </a>
+  `;
+}
+
+function renderReviewForm(detail) {
+  if (detail.viewerRole === 'owner') {
+    return '';
+  }
+
+  return `
+    <form class="app-auth__card app-detail__review-form" data-action="submit-review">
+      <input type="hidden" name="slug" value="${escapeAttribute(detail.slug)}" />
+      <strong>Votre avis</strong>
+      <label class="app-detail__review-field">
+        <span>Note</span>
+        <select name="rating" required>
+          <option value="">Choisir</option>
+          <option value="5">5 étoiles</option>
+          <option value="4">4 étoiles</option>
+          <option value="3">3 étoiles</option>
+          <option value="2">2 étoiles</option>
+          <option value="1">1 étoile</option>
+        </select>
+      </label>
+      <label class="app-detail__review-field">
+        <span>Commentaire</span>
+        <textarea name="comment" rows="3" maxlength="280" placeholder="Optionnel"></textarea>
+      </label>
+      <button class="app-flow__button" type="submit">Envoyer l’avis</button>
+      <p class="app-detail__review-message" data-review-message></p>
+    </form>
   `;
 }
 
@@ -487,6 +522,8 @@ export function renderListingDetailScreen({
       ${renderAttributeDetails(detail)}
 
       ${renderSellerBlock(detail.seller)}
+
+      ${renderReviewForm(detail)}
 
       ${renderSafetyCard(detail)}
 

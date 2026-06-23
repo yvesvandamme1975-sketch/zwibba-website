@@ -12,6 +12,15 @@ import { PrismaService } from '../../src/database/prisma.service';
 class _FakePrismaService {
   readonly draftPhotosByDraftId = new Map<string, Array<Record<string, unknown>>>();
   readonly listings = new Map<string, Record<string, unknown>>();
+  readonly reviews = new Map<string, {
+    buyerUserId: string;
+    comment: string | null;
+    createdAt: Date;
+    id: string;
+    listingId: string;
+    rating: number;
+    sellerPhoneNumber: string;
+  }>();
   readonly users = new Map<string, {
     createdAt: Date;
     displayName: string | null;
@@ -58,6 +67,58 @@ class _FakePrismaService {
           ? this.draftPhotosByDraftId.get(where.id) ?? []
           : undefined,
       };
+    },
+  };
+
+  readonly review = {
+    aggregate: async ({
+      where,
+    }: {
+      where: {
+        sellerPhoneNumber: string;
+      };
+    }) => {
+      const matching = Array.from(this.reviews.values()).filter(
+        (review) => review.sellerPhoneNumber === where.sellerPhoneNumber,
+      );
+
+      return {
+        _avg: {
+          rating: matching.length > 0
+            ? matching.reduce((sum, review) => sum + review.rating, 0) / matching.length
+            : null,
+        },
+        _count: {
+          _all: matching.length,
+        },
+      };
+    },
+    findMany: async ({
+      include,
+      orderBy,
+      where,
+    }: {
+      include?: {
+        buyer?: boolean;
+      };
+      orderBy?: {
+        createdAt: 'asc' | 'desc';
+      };
+      where: {
+        sellerPhoneNumber: string;
+      };
+    }) => {
+      const matching = Array.from(this.reviews.values())
+        .filter((review) => review.sellerPhoneNumber === where.sellerPhoneNumber)
+        .sort((left, right) => {
+          const direction = orderBy?.createdAt === 'asc' ? 1 : -1;
+          return direction * (left.createdAt.getTime() - right.createdAt.getTime());
+        });
+
+      return matching.map((review) => ({
+        ...review,
+        buyer: include?.buyer ? this.users.get(review.buyerUserId) ?? null : undefined,
+      }));
     },
   };
 
@@ -143,6 +204,34 @@ class _FakePrismaService {
         uploadStatus: 'uploaded',
       },
     ]);
+  }
+
+  seedReview({
+    buyerUserId,
+    comment = null,
+    createdAt = new Date('2026-06-20T10:00:00.000Z'),
+    id,
+    listingId,
+    rating,
+    sellerPhoneNumber = '+243990000001',
+  }: {
+    buyerUserId: string;
+    comment?: string | null;
+    createdAt?: Date;
+    id: string;
+    listingId: string;
+    rating: number;
+    sellerPhoneNumber?: string;
+  }) {
+    this.reviews.set(id, {
+      buyerUserId,
+      comment,
+      createdAt,
+      id,
+      listingId,
+      rating,
+      sellerPhoneNumber,
+    });
   }
 }
 
@@ -240,6 +329,83 @@ test('public seller endpoint returns identity and active approved listings only'
   assert.equal(response.body.listings[0].privateNote, undefined);
 });
 
+test('public seller endpoint exposes rating aggregate and public reviews without phone numbers', async (t) => {
+  const harness = await createTestApp();
+  t.after(async () => {
+    await harness.app.close();
+  });
+
+  harness.prisma.seedUser({
+    displayName: 'Boutique Katanga',
+    id: 'user_public_1',
+    phoneNumber: '+243990000001',
+  });
+  harness.prisma.seedUser({
+    displayName: 'Client sérieux',
+    id: 'buyer_named',
+    phoneNumber: '+243990000010',
+  });
+  harness.prisma.seedUser({
+    id: 'buyer_fallback',
+    phoneNumber: '+243990000011',
+  });
+  harness.prisma.seedListing({
+    draftId: 'draft_active',
+    id: 'listing_active',
+    slug: 'samsung-a54',
+    title: 'Samsung A54',
+  });
+  harness.prisma.seedListing({
+    draftId: 'draft_second',
+    id: 'listing_second',
+    slug: 'iphone-13',
+    title: 'iPhone 13',
+  });
+  harness.prisma.seedReview({
+    buyerUserId: 'buyer_named',
+    comment: 'Vendeur fiable et rapide.',
+    createdAt: new Date('2026-06-22T14:00:00.000Z'),
+    id: 'review_named',
+    listingId: 'listing_active',
+    rating: 5,
+  });
+  harness.prisma.seedReview({
+    buyerUserId: 'buyer_fallback',
+    comment: null,
+    createdAt: new Date('2026-06-21T14:00:00.000Z'),
+    id: 'review_fallback',
+    listingId: 'listing_second',
+    rating: 3,
+  });
+
+  const response = await request(harness.app.getHttpServer())
+    .get('/sellers/user_public_1')
+    .expect(200);
+
+  assert.equal(response.body.seller.ratingAverage, 4);
+  assert.equal(response.body.seller.ratingCount, 2);
+  assert.deepEqual(response.body.reviews, [
+    {
+      buyer: {
+        displayName: 'Client sérieux',
+      },
+      comment: 'Vendeur fiable et rapide.',
+      createdAt: '2026-06-22T14:00:00.000Z',
+      rating: 5,
+    },
+    {
+      buyer: {
+        displayName: 'Acheteur Zwibba',
+      },
+      comment: null,
+      createdAt: '2026-06-21T14:00:00.000Z',
+      rating: 3,
+    },
+  ]);
+  assert.equal(response.body.reviews[0].buyer.phoneNumber, undefined);
+  assert.equal(response.body.reviews[0].phoneNumber, undefined);
+});
+
 test('public seller endpoint uses fallback identity and returns empty listings', async (t) => {
   const harness = await createTestApp();
   t.after(async () => {
@@ -257,6 +423,9 @@ test('public seller endpoint uses fallback identity and returns empty listings',
 
   assert.equal(response.body.seller.displayName, 'Vendeur Zwibba');
   assert.equal(response.body.seller.memberSince, '2026-06-01T09:30:00.000Z');
+  assert.equal(response.body.seller.ratingAverage, null);
+  assert.equal(response.body.seller.ratingCount, 0);
+  assert.deepEqual(response.body.reviews, []);
   assert.deepEqual(response.body.listings, []);
 });
 

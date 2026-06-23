@@ -104,5 +104,7 @@ Current priority docs:
 
 - `2026-06-23-zwibba-profile-identity-design.md`
 - `2026-06-23-zwibba-profile-identity-implementation.md`
+- `2026-06-23-zwibba-seller-reviews-design.md`
+- `2026-06-23-zwibba-seller-reviews-implementation.md`
 
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.

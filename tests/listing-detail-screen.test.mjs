@@ -24,6 +24,8 @@ test('listing detail screen renders the buyer detail state inside /App', () => {
       ],
       seller: {
         name: 'Vendeur 0001',
+        ratingAverage: 4.4,
+        ratingCount: 12,
         responseTime: 'Répond en moyenne en 9 min',
         role: 'Vendeur pro',
         sellerId: 'user_0001',
@@ -40,6 +42,8 @@ test('listing detail screen renders the buyer detail state inside /App', () => {
   assert.match(html, /Samsung Galaxy A54/);
   assert.match(html, /450\u202f000 CDF|450 000 CDF/);
   assert.match(html, /Vendeur 0001/);
+  assert.match(html, /Note 4,4 sur 5, 12 avis/);
+  assert.match(html, /★★★★☆/);
   assert.match(html, /href="#seller\/user_0001"/);
   assert.match(html, /Conseils de sécurité/);
   assert.match(html, /Attention/);
@@ -48,6 +52,9 @@ test('listing detail screen renders the buyer detail state inside /App', () => {
   assert.match(html, /data-listing-id="listing_1"/);
   assert.match(html, /Appeler/);
   assert.match(html, /href="tel:\+243990000001"/);
+  assert.match(html, /data-action="submit-review"/);
+  assert.match(html, /name="rating"/);
+  assert.match(html, /Votre avis/);
   assert.match(html, /href="#buy"/);
   assert.match(html, /<img[^>]+class="app-detail__image"[^>]+src="\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.jpg"/);
   assert.match(html, /class="app-detail__thumbstrip"/);
@@ -377,6 +384,8 @@ test('listing detail screen replaces buyer contact actions with owner lifecycle 
       safetyTips: ['Évitez les paiements anticipés.'],
       seller: {
         name: 'Particulier 0001',
+        ratingAverage: null,
+        ratingCount: 0,
         responseTime: 'Répond en moyenne en 9 min',
         role: 'Particulier',
       },
@@ -399,6 +408,7 @@ test('listing detail screen replaces buyer contact actions with owner lifecycle 
   assert.match(html, /data-action="listing-lifecycle"/);
   assert.doesNotMatch(html, /Envoyer un message/);
   assert.doesNotMatch(html, /href="tel:/);
+  assert.doesNotMatch(html, /data-action="submit-review"/);
 });
 
 test('listing detail screen renders an in-app error state', () => {

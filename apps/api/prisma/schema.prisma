@@ -15,6 +15,7 @@ model User {
   area               String             @default("")
   displayName        String?
   createdAt          DateTime           @default(now())
+  reviews            Review[]           @relation("BuyerReviews")
   sessions           Session[]
   updatedAt          DateTime           @updatedAt
   walletTransactions WalletTransaction[]
@@ -106,6 +107,7 @@ model Listing {
   priceCurrency      String              @default("CDF")
   previousLifecycleStatusBeforeDelete String?
   publishedAt        DateTime?
+  reviews            Review[]
   slug               String              @unique
   shareCount         Int                 @default(0)
   soldAt             DateTime?
@@ -117,6 +119,22 @@ model Listing {
   @@index([lifecycleStatus])
   @@index([moderationStatus])
   @@index([ownerPhoneNumber])
+}
+
+model Review {
+  id                String   @id @default(cuid())
+  listing           Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId         String
+  buyer             User     @relation("BuyerReviews", fields: [buyerUserId], references: [id], onDelete: Cascade)
+  buyerUserId       String
+  sellerPhoneNumber String
+  rating            Int
+  comment           String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([buyerUserId, listingId])
+  @@index([sellerPhoneNumber])
 }
 
 model ListingLifecycleEvent {
