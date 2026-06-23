@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
@@ -13,6 +14,41 @@ import { PrismaService } from '../database/prisma.service';
 @Injectable()
 export class ReviewsService {
   constructor(@Inject(PrismaService) private readonly prismaService: PrismaService) {}
+
+  async replyToReview({
+    reply,
+    reviewId,
+    session,
+  }: {
+    reply?: string | null;
+    reviewId: string;
+    session: SessionRecord;
+  }) {
+    const review = await this.prismaService.review?.findUnique?.({
+      where: {
+        id: reviewId,
+      },
+    });
+
+    if (!review) {
+      throw new NotFoundException('Avis introuvable.');
+    }
+
+    if (review.sellerPhoneNumber !== session.phoneNumber) {
+      throw new ForbiddenException('Seul le vendeur concerné peut répondre à cet avis.');
+    }
+
+    const normalizedReply = normalizeReviewComment(reply);
+    return this.prismaService.review.update({
+      where: {
+        id: review.id,
+      },
+      data: {
+        sellerReply: normalizedReply,
+        sellerReplyAt: normalizedReply ? new Date() : null,
+      },
+    });
+  }
 
   async submitReview({
     comment,
