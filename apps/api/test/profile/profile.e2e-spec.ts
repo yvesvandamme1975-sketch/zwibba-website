@@ -11,6 +11,8 @@ import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/database/prisma.service';
 import { normalizeLocationLabel } from '../../src/locations/location-normalization';
 
+const SEEDED_USER_CREATED_AT = new Date('2026-06-23T12:00:00.000Z');
+
 class _FakeTwilioVerifyService {
   async checkVerification() {
     return {
@@ -41,12 +43,16 @@ class _FakePrismaService {
     token: string;
     user: {
       area: string;
+      createdAt: Date;
+      displayName: string | null;
       id: string;
       phoneNumber: string;
     };
   }>();
   users = new Map<string, {
     area: string;
+    createdAt: Date;
+    displayName: string | null;
     id: string;
     phoneNumber: string;
   }>();
@@ -62,6 +68,8 @@ class _FakePrismaService {
     }) => {
       const user = this.users.get(data.userId) ?? {
         area: '',
+        createdAt: SEEDED_USER_CREATED_AT,
+        displayName: null,
         id: data.userId,
         phoneNumber: '+243990000001',
       };
@@ -146,6 +154,8 @@ class _FakePrismaService {
 
       const user = {
         area: '',
+        createdAt: SEEDED_USER_CREATED_AT,
+        displayName: null,
         id,
         phoneNumber: where.phoneNumber,
       };
@@ -296,6 +306,8 @@ test('profile endpoints return and persist the seller zone for the active sessio
 
   assert.equal(getBefore.body.phoneNumber, '+243990000001');
   assert.equal(getBefore.body.area, '');
+  assert.equal(getBefore.body.displayName, null);
+  assert.equal(getBefore.body.memberSince, SEEDED_USER_CREATED_AT.toISOString());
 
   const saveResponse = await request(harness.app.getHttpServer())
     .post('/profile')
