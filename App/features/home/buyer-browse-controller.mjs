@@ -69,6 +69,17 @@ export function parseAppRoute(hash = '') {
     }
   }
 
+  if (normalizedHash.startsWith('#seller/')) {
+    const sellerId = normalizedHash.slice('#seller/'.length).trim();
+
+    if (sellerId) {
+      return {
+        sellerId,
+        type: 'seller',
+      };
+    }
+  }
+
   if (staticRoutes.has(normalizedHash)) {
     if (normalizedHash === '#home') {
       return {
@@ -84,6 +95,19 @@ export function parseAppRoute(hash = '') {
   return {
     type: 'sell',
   };
+}
+
+export function getRenderableRouteKey(route = {}) {
+  switch (route.type) {
+    case 'listing':
+      return `listing:${route.slug || ''}`;
+    case 'thread':
+      return `thread:${route.threadId || ''}`;
+    case 'seller':
+      return `seller:${route.sellerId || ''}`;
+    default:
+      return route.type;
+  }
 }
 
 export function createBuyerBrowseController({

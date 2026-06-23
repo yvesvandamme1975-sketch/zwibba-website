@@ -12,6 +12,7 @@ import { renderThreadScreen } from './features/chat/thread-screen.mjs';
 import { renderBuyScreen } from './features/home/buy-screen.mjs';
 import {
   createBuyerBrowseController,
+  getRenderableRouteKey,
   parseAppRoute,
 } from './features/home/buyer-browse-controller.mjs';
 import { renderHomeScreen } from './features/home/home-screen.mjs';
@@ -275,17 +276,6 @@ if (appRoot) {
 
   function getRoute() {
     return parseAppRoute(window.location.hash || '#sell');
-  }
-
-  function getRenderableRouteKey(route) {
-    switch (route.type) {
-      case 'listing':
-        return `listing:${route.slug || ''}`;
-      case 'thread':
-        return `thread:${route.threadId || ''}`;
-      default:
-        return route.type;
-    }
   }
 
   function syncReviewPriceUi(form) {
