@@ -26,6 +26,8 @@ export class ProfileService {
 
     return {
       area: user.area ?? '',
+      displayName: user.displayName ?? null,
+      memberSince: user.createdAt,
       phoneNumber: user.phoneNumber,
     };
   }
