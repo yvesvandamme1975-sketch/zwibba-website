@@ -28,6 +28,7 @@ import {
   renderProfileCityFeedback,
   renderProfileScreen,
 } from './features/profile/profile-screen.mjs';
+import { renderSellerPublicScreen } from './features/profile/seller-public-screen.mjs';
 import { renderWalletScreen } from './features/wallet/wallet-screen.mjs';
 import { submitLivePublish } from './features/post/live-publish-flow.mjs';
 import { getCategoryGuidance } from './models/category-guidance.mjs';
@@ -248,10 +249,15 @@ if (appRoot) {
     publishedListingUrl: '',
     reviewErrors: [],
     selectedListingImageIndex: 0,
+    currentSellerId: '',
     sellerListings: [],
     sellerListingsError: '',
     sellerListingsPromise: null,
     sellerListingsStatus: 'idle',
+    sellerPublic: null,
+    sellerPublicError: '',
+    sellerPublicPromise: null,
+    sellerPublicStatus: 'idle',
     session: authService.loadSession(),
     thread: null,
     threadDraftMessage: '',
@@ -471,6 +477,7 @@ if (appRoot) {
     switch (route.type) {
       case 'buy':
       case 'listing':
+      case 'seller':
         return 'buy';
       case 'messages':
       case 'thread':
@@ -578,6 +585,47 @@ if (appRoot) {
       });
 
     return state.buyerListingPromise;
+  }
+
+  async function loadPublicSeller(sellerId) {
+    if (!sellerId) {
+      return null;
+    }
+
+    if (state.sellerPublicPromise && state.currentSellerId === sellerId) {
+      return state.sellerPublicPromise;
+    }
+
+    if (state.currentSellerId !== sellerId) {
+      state.sellerPublic = null;
+      state.sellerPublicError = '';
+      state.sellerPublicStatus = 'idle';
+    }
+
+    state.currentSellerId = sellerId;
+    state.sellerPublicStatus = 'loading';
+    state.sellerPublicPromise = profileService
+      .fetchPublicSeller({
+        sellerId,
+      })
+      .then((payload) => {
+        state.sellerPublic = payload;
+        state.sellerPublicStatus = 'ready';
+        return payload;
+      })
+      .catch((error) => {
+        state.sellerPublic = null;
+        state.sellerPublicStatus = 'error';
+        state.sellerPublicError =
+          error instanceof Error ? error.message : 'Impossible de charger ce vendeur.';
+        return null;
+      })
+      .finally(() => {
+        state.sellerPublicPromise = null;
+        renderApp();
+      });
+
+    return state.sellerPublicPromise;
   }
 
   async function loadInbox() {
@@ -832,6 +880,15 @@ if (appRoot) {
       void loadBuyerListing(route.slug);
     }
 
+    if (
+      route.type === 'seller' &&
+      (!state.sellerPublic ||
+        state.currentSellerId !== route.sellerId ||
+        state.sellerPublicStatus === 'idle')
+    ) {
+      void loadPublicSeller(route.sellerId);
+    }
+
     if (route.type === 'messages' && state.session && state.inboxStatus === 'idle') {
       void loadInbox();
     }
@@ -939,6 +996,12 @@ if (appRoot) {
           errorMessage: buyerBrowseController.state.detailError,
           selectedImageIndex: state.selectedListingImageIndex,
           state: buyerBrowseController.state.detailStatus,
+        });
+      case 'seller':
+        return renderSellerPublicScreen({
+          listings: state.sellerPublic?.listings ?? [],
+          seller: state.sellerPublic?.seller ?? null,
+          state: state.sellerPublicStatus,
         });
       case 'messages':
         return renderInboxScreen({

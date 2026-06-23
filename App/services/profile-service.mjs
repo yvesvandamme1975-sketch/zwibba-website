@@ -96,6 +96,20 @@ export function createProfileService({
       return response.json();
     },
 
+    async fetchPublicSeller({
+      sellerId,
+    }) {
+      const response = await fetchFn(`${apiBaseUrl}/sellers/${encodeURIComponent(sellerId)}`, {
+        method: 'GET',
+      });
+
+      if (!response.ok) {
+        throw await parseError(response, 'Impossible de charger ce vendeur.');
+      }
+
+      return response.json();
+    },
+
     async listCities({
       countryCode,
     }) {
