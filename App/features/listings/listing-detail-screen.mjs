@@ -385,6 +385,30 @@ function renderSafetyCard(detail) {
   `;
 }
 
+function renderSellerBlock(seller = {}) {
+  const sellerName = seller.name || 'Vendeur Zwibba';
+  const sellerRole = seller.role || 'Vendeur';
+  const sellerId = String(seller.sellerId || '').trim();
+  const sellerContent = `
+    <strong>${escapeHtml(sellerName)}</strong>
+    <span>${escapeHtml(sellerRole)}</span>
+  `;
+
+  if (!sellerId) {
+    return `
+      <div class="app-publish__status is-verified">
+        ${sellerContent}
+      </div>
+    `;
+  }
+
+  return `
+    <a class="app-publish__status is-verified app-detail__seller-link" href="#seller/${escapeAttribute(sellerId)}">
+      ${sellerContent}
+    </a>
+  `;
+}
+
 export function renderListingDetailScreen({
   detail = null,
   errorMessage = '',
@@ -462,10 +486,7 @@ export function renderListingDetailScreen({
 
       ${renderAttributeDetails(detail)}
 
-      <div class="app-publish__status is-verified">
-        <strong>${escapeHtml(detail.seller.name)}</strong>
-        <span>${escapeHtml(detail.seller.role)} · ${escapeHtml(detail.seller.responseTime)}</span>
-      </div>
+      ${renderSellerBlock(detail.seller)}
 
       ${renderSafetyCard(detail)}
 

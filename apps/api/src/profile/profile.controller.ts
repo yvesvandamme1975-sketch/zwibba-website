@@ -28,4 +28,18 @@ export class ProfileController {
       session,
     });
   }
+
+  @Post('identity')
+  @UseGuards(SessionAuthGuard)
+  updateIdentity(
+    @CurrentSession() session: SessionRecord,
+    @Body() body: {
+      displayName?: string;
+    },
+  ) {
+    return this.profileService.updateIdentity({
+      displayName: body.displayName ?? '',
+      session,
+    });
+  }
 }

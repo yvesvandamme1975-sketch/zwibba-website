@@ -2,6 +2,7 @@ import { renderInAppBrand } from '../../components/in-app-brand.mjs';
 import { escapeAttribute, escapeHtml, formatListingPrice } from '../../utils/rendering.mjs';
 import { sanitizeListingImageUrl } from '../../utils/image-fallbacks.mjs';
 import { normalizeLocationValueForMatch } from '../../utils/location-search.mjs';
+import { sellerMonogram } from '../../utils/seller-monogram.mjs';
 
 function buildCounts(listings) {
   return {
@@ -136,6 +137,20 @@ function formatRestoreUntil(value) {
   }
 
   return restoreDate.toLocaleDateString('fr-FR');
+}
+
+function formatMemberSince(value) {
+  if (!value) {
+    return 'À confirmer';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleDateString('fr-FR');
 }
 
 function renderListingCard(listing) {
@@ -333,6 +348,9 @@ export function renderProfileScreen({
     selectedProfileArea || (searchMatchesProfile ? profileArea : ''),
   ).trim();
   const profilePhoneNumber = profile?.phoneNumber || session.phoneNumber;
+  const displayName = String(profile?.displayName || '').trim();
+  const identityName = displayName || 'Vendeur Zwibba';
+  const memberSince = formatMemberSince(profile?.memberSince);
   const hasCityFeedback = citySuggestions.length > 0 || Boolean(profileMissingCityLabel);
 
   return `
@@ -351,6 +369,36 @@ export function renderProfileScreen({
         <strong>${escapeHtml(profilePhoneNumber)}</strong>
         <span>Session vérifiée</span>
       </div>
+
+      <section class="app-home__section app-profile__identity-card">
+        <div class="app-profile__identity-head">
+          <div class="app-profile__monogram" aria-hidden="true">${escapeHtml(sellerMonogram(identityName))}</div>
+          <div>
+            <h3>${escapeHtml(identityName)}</h3>
+            <span>Membre depuis ${escapeHtml(memberSince)}</span>
+          </div>
+        </div>
+
+        <form class="app-profile__identity-form" data-form="profile-identity">
+          <label class="app-review__field app-review__field--full">
+            <span>Nom public</span>
+            <input
+              name="displayName"
+              type="text"
+              value="${escapeAttribute(displayName)}"
+              placeholder="Ex. Boutique Katanga"
+              autocomplete="name"
+              autocapitalize="words"
+            />
+          </label>
+          <div class="app-flow__actions">
+            <button class="app-flow__button" type="submit">Enregistrer mon nom</button>
+            <button class="app-flow__button app-flow__button--secondary" type="button" data-action="logout">
+              Déconnexion
+            </button>
+          </div>
+        </form>
+      </section>
 
       <section class="app-home__section app-profile__zone-card">
         <div class="app-home__section-head">

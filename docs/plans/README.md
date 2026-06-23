@@ -102,4 +102,7 @@ Current priority docs:
 - `2026-06-22-zwibba-boost-launch-flag-design.md`
 - `2026-06-22-zwibba-boost-launch-flag-implementation.md`
 
+- `2026-06-23-zwibba-profile-identity-design.md`
+- `2026-06-23-zwibba-profile-identity-implementation.md`
+
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.

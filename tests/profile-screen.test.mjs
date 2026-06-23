@@ -34,6 +34,12 @@ test('profile screen renders verified session details and seller listing actions
         title: 'Appartement 2 chambres',
       },
     ],
+    profile: {
+      area: 'Lubumbashi',
+      displayName: 'Boutique Katanga',
+      memberSince: '2026-06-01T09:30:00.000Z',
+      phoneNumber: '+243990000001',
+    },
     session: {
       canSyncDrafts: true,
       phoneNumber: '+243990000001',
@@ -54,6 +60,13 @@ test('profile screen renders verified session details and seller listing actions
   assert.match(html, /data-action="activate-boost"/);
   assert.match(html, /data-action="edit-listing"/);
   assert.match(html, /href="#listing\/samsung-galaxy-a54-128-go"/);
+  assert.match(html, /name="displayName"/);
+  assert.match(html, /Boutique Katanga/);
+  assert.match(html, /app-profile__monogram/);
+  assert.match(html, /BK/);
+  assert.match(html, /Membre depuis/);
+  assert.match(html, /01\/06\/2026/);
+  assert.match(html, /data-action="logout"/);
 });
 
 test('profile screen renders mixed listing currencies per announcement', () => {

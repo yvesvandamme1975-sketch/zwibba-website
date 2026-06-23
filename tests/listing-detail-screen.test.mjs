@@ -26,6 +26,7 @@ test('listing detail screen renders the buyer detail state inside /App', () => {
         name: 'Vendeur 0001',
         responseTime: 'Répond en moyenne en 9 min',
         role: 'Vendeur pro',
+        sellerId: 'user_0001',
       },
       slug: 'samsung-galaxy-a54',
       summary: 'Téléphone complet, prêt à être récupéré.',
@@ -39,6 +40,7 @@ test('listing detail screen renders the buyer detail state inside /App', () => {
   assert.match(html, /Samsung Galaxy A54/);
   assert.match(html, /450\u202f000 CDF|450 000 CDF/);
   assert.match(html, /Vendeur 0001/);
+  assert.match(html, /href="#seller\/user_0001"/);
   assert.match(html, /Conseils de sécurité/);
   assert.match(html, /Attention/);
   assert.match(html, /Envoyer un message/);
@@ -58,6 +60,35 @@ test('listing detail screen renders the buyer detail state inside /App', () => {
     html,
     /onerror="this\.onerror=null;this\.src=&#39;\/assets\/listings\/samsung-galaxy-a54-neuf-lubumbashi\.jpg&#39;;"/,
   );
+  assert.doesNotMatch(html, /Répond en moyenne/);
+});
+
+test('listing detail screen renders an orphan seller block without a profile link', () => {
+  const html = renderListingDetailScreen({
+    detail: {
+      categoryLabel: 'Maison',
+      contactActions: ['message'],
+      id: 'listing_orphan',
+      locationLabel: 'Kenya',
+      priceCdf: 25000,
+      primaryImageUrl: null,
+      safetyTips: ['Rencontrez le vendeur dans un lieu public.'],
+      seller: {
+        name: 'Vendeur Zwibba',
+        responseTime: 'Répond en moyenne en 9 min',
+        role: 'Vendeur',
+        sellerId: null,
+      },
+      slug: 'chaise-simple',
+      summary: 'Chaise simple.',
+      title: 'Chaise simple',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /Vendeur Zwibba/);
+  assert.doesNotMatch(html, /href="#seller\//);
+  assert.doesNotMatch(html, /Répond en moyenne/);
 });
 
 test('listing detail screen renders USD listing prices when provided', () => {

@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   createBuyerBrowseController,
+  getRenderableRouteKey,
   parseAppRoute,
 } from '../App/features/home/buyer-browse-controller.mjs';
 
@@ -27,6 +28,21 @@ test('parseAppRoute maps the browser beta shell tabs and thread routes', () => {
     threadId: 'thread_1',
     type: 'thread',
   });
+});
+
+test('parseAppRoute recognizes public seller routes', () => {
+  assert.deepEqual(parseAppRoute('#seller/user_123'), {
+    sellerId: 'user_123',
+    type: 'seller',
+  });
+});
+
+test('getRenderableRouteKey preserves dynamic route identity', () => {
+  assert.equal(getRenderableRouteKey({ slug: 'a54', type: 'listing' }), 'listing:a54');
+  assert.equal(getRenderableRouteKey({ threadId: 'thread_1', type: 'thread' }), 'thread:thread_1');
+  assert.equal(getRenderableRouteKey({ sellerId: 'user_a', type: 'seller' }), 'seller:user_a');
+  assert.equal(getRenderableRouteKey({ sellerId: 'user_b', type: 'seller' }), 'seller:user_b');
+  assert.equal(getRenderableRouteKey({ type: 'profile' }), 'profile');
 });
 
 test('parseAppRoute falls back to home for unknown hashes', () => {

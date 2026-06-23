@@ -11,6 +11,8 @@ import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/database/prisma.service';
 import { normalizeLocationLabel } from '../../src/locations/location-normalization';
 
+const SEEDED_USER_CREATED_AT = new Date('2026-06-23T12:00:00.000Z');
+
 class _FakeTwilioVerifyService {
   async checkVerification() {
     return {
@@ -41,12 +43,16 @@ class _FakePrismaService {
     token: string;
     user: {
       area: string;
+      createdAt: Date;
+      displayName: string | null;
       id: string;
       phoneNumber: string;
     };
   }>();
   users = new Map<string, {
     area: string;
+    createdAt: Date;
+    displayName: string | null;
     id: string;
     phoneNumber: string;
   }>();
@@ -62,6 +68,8 @@ class _FakePrismaService {
     }) => {
       const user = this.users.get(data.userId) ?? {
         area: '',
+        createdAt: SEEDED_USER_CREATED_AT,
+        displayName: null,
         id: data.userId,
         phoneNumber: '+243990000001',
       };
@@ -101,7 +109,8 @@ class _FakePrismaService {
       where,
     }: {
       data: {
-        area: string;
+        area?: string;
+        displayName?: string;
       };
       where: {
         phoneNumber: string;
@@ -115,7 +124,8 @@ class _FakePrismaService {
 
       const nextUser = {
         ...currentUser,
-        area: data.area,
+        area: data.area ?? currentUser.area,
+        displayName: data.displayName ?? currentUser.displayName,
       };
       this.users.set(nextUser.id, nextUser);
 
@@ -146,6 +156,8 @@ class _FakePrismaService {
 
       const user = {
         area: '',
+        createdAt: SEEDED_USER_CREATED_AT,
+        displayName: null,
         id,
         phoneNumber: where.phoneNumber,
       };
@@ -296,6 +308,8 @@ test('profile endpoints return and persist the seller zone for the active sessio
 
   assert.equal(getBefore.body.phoneNumber, '+243990000001');
   assert.equal(getBefore.body.area, '');
+  assert.equal(getBefore.body.displayName, null);
+  assert.equal(getBefore.body.memberSince, SEEDED_USER_CREATED_AT.toISOString());
 
   const saveResponse = await request(harness.app.getHttpServer())
     .post('/profile')
@@ -350,4 +364,77 @@ test('profile save accepts a newly suggested city after it is added through loca
     .expect(201);
 
   assert.equal(saveResponse.body.area, 'Kasumbalesa');
+});
+
+test('profile identity endpoint requires a session', async (t) => {
+  const harness = await createTestApp();
+  t.after(async () => {
+    await harness.app.close();
+  });
+
+  await request(harness.app.getHttpServer())
+    .post('/profile/identity')
+    .send({
+      displayName: 'Maison Kivu',
+    })
+    .expect(401);
+});
+
+test('profile identity endpoint persists the cleaned display name', async (t) => {
+  const harness = await createTestApp();
+  t.after(async () => {
+    await harness.app.close();
+  });
+
+  const verifyResponse = await request(harness.app.getHttpServer())
+    .post('/auth/verify-otp')
+    .send({
+      code: '123456',
+      phoneNumber: '+243990000001',
+    })
+    .expect(201);
+
+  const sessionToken = verifyResponse.body.sessionToken;
+
+  const saveResponse = await request(harness.app.getHttpServer())
+    .post('/profile/identity')
+    .set('authorization', `Bearer ${sessionToken}`)
+    .send({
+      displayName: '  Maison Kivu  ',
+    })
+    .expect(201);
+
+  assert.equal(saveResponse.body.displayName, 'Maison Kivu');
+  assert.equal(saveResponse.body.phoneNumber, '+243990000001');
+  assert.equal(saveResponse.body.memberSince, SEEDED_USER_CREATED_AT.toISOString());
+
+  const getAfter = await request(harness.app.getHttpServer())
+    .get('/profile')
+    .set('authorization', `Bearer ${sessionToken}`)
+    .expect(200);
+
+  assert.equal(getAfter.body.displayName, 'Maison Kivu');
+});
+
+test('profile identity endpoint rejects reserved display names', async (t) => {
+  const harness = await createTestApp();
+  t.after(async () => {
+    await harness.app.close();
+  });
+
+  const verifyResponse = await request(harness.app.getHttpServer())
+    .post('/auth/verify-otp')
+    .send({
+      code: '123456',
+      phoneNumber: '+243990000001',
+    })
+    .expect(201);
+
+  await request(harness.app.getHttpServer())
+    .post('/profile/identity')
+    .set('authorization', `Bearer ${verifyResponse.body.sessionToken}`)
+    .send({
+      displayName: 'Zwibba Officiel',
+    })
+    .expect(400);
 });

@@ -12,6 +12,7 @@ import { renderThreadScreen } from './features/chat/thread-screen.mjs';
 import { renderBuyScreen } from './features/home/buy-screen.mjs';
 import {
   createBuyerBrowseController,
+  getRenderableRouteKey,
   parseAppRoute,
 } from './features/home/buyer-browse-controller.mjs';
 import { renderHomeScreen } from './features/home/home-screen.mjs';
@@ -27,6 +28,7 @@ import {
   renderProfileCityFeedback,
   renderProfileScreen,
 } from './features/profile/profile-screen.mjs';
+import { renderSellerPublicScreen } from './features/profile/seller-public-screen.mjs';
 import { renderWalletScreen } from './features/wallet/wallet-screen.mjs';
 import { submitLivePublish } from './features/post/live-publish-flow.mjs';
 import { getCategoryGuidance } from './models/category-guidance.mjs';
@@ -247,10 +249,15 @@ if (appRoot) {
     publishedListingUrl: '',
     reviewErrors: [],
     selectedListingImageIndex: 0,
+    currentSellerId: '',
     sellerListings: [],
     sellerListingsError: '',
     sellerListingsPromise: null,
     sellerListingsStatus: 'idle',
+    sellerPublic: null,
+    sellerPublicError: '',
+    sellerPublicPromise: null,
+    sellerPublicStatus: 'idle',
     session: authService.loadSession(),
     thread: null,
     threadDraftMessage: '',
@@ -275,17 +282,6 @@ if (appRoot) {
 
   function getRoute() {
     return parseAppRoute(window.location.hash || '#sell');
-  }
-
-  function getRenderableRouteKey(route) {
-    switch (route.type) {
-      case 'listing':
-        return `listing:${route.slug || ''}`;
-      case 'thread':
-        return `thread:${route.threadId || ''}`;
-      default:
-        return route.type;
-    }
   }
 
   function syncReviewPriceUi(form) {
@@ -481,6 +477,7 @@ if (appRoot) {
     switch (route.type) {
       case 'buy':
       case 'listing':
+      case 'seller':
         return 'buy';
       case 'messages':
       case 'thread':
@@ -588,6 +585,47 @@ if (appRoot) {
       });
 
     return state.buyerListingPromise;
+  }
+
+  async function loadPublicSeller(sellerId) {
+    if (!sellerId) {
+      return null;
+    }
+
+    if (state.sellerPublicPromise && state.currentSellerId === sellerId) {
+      return state.sellerPublicPromise;
+    }
+
+    if (state.currentSellerId !== sellerId) {
+      state.sellerPublic = null;
+      state.sellerPublicError = '';
+      state.sellerPublicStatus = 'idle';
+    }
+
+    state.currentSellerId = sellerId;
+    state.sellerPublicStatus = 'loading';
+    state.sellerPublicPromise = profileService
+      .fetchPublicSeller({
+        sellerId,
+      })
+      .then((payload) => {
+        state.sellerPublic = payload;
+        state.sellerPublicStatus = 'ready';
+        return payload;
+      })
+      .catch((error) => {
+        state.sellerPublic = null;
+        state.sellerPublicStatus = 'error';
+        state.sellerPublicError =
+          error instanceof Error ? error.message : 'Impossible de charger ce vendeur.';
+        return null;
+      })
+      .finally(() => {
+        state.sellerPublicPromise = null;
+        renderApp();
+      });
+
+    return state.sellerPublicPromise;
   }
 
   async function loadInbox() {
@@ -842,6 +880,15 @@ if (appRoot) {
       void loadBuyerListing(route.slug);
     }
 
+    if (
+      route.type === 'seller' &&
+      (!state.sellerPublic ||
+        state.currentSellerId !== route.sellerId ||
+        state.sellerPublicStatus === 'idle')
+    ) {
+      void loadPublicSeller(route.sellerId);
+    }
+
     if (route.type === 'messages' && state.session && state.inboxStatus === 'idle') {
       void loadInbox();
     }
@@ -949,6 +996,12 @@ if (appRoot) {
           errorMessage: buyerBrowseController.state.detailError,
           selectedImageIndex: state.selectedListingImageIndex,
           state: buyerBrowseController.state.detailStatus,
+        });
+      case 'seller':
+        return renderSellerPublicScreen({
+          listings: state.sellerPublic?.listings ?? [],
+          seller: state.sellerPublic?.seller ?? null,
+          state: state.sellerPublicStatus,
         });
       case 'messages':
         return renderInboxScreen({
@@ -1429,6 +1482,52 @@ if (appRoot) {
     if (listingSlug) {
       state.currentListingSlug = listingSlug;
     }
+  }
+
+  function handleLogout() {
+    authService.clearSession();
+    state.session = null;
+    state.authIntent = null;
+    state.inboxItems = [];
+    state.inboxPromise = null;
+    state.inboxStatus = 'idle';
+    state.thread = null;
+    state.threadDraftMessage = '';
+    state.threadError = '';
+    state.threadPromise = null;
+    state.threadStatus = 'idle';
+    state.wallet = {
+      balanceCdf: 0,
+      transactions: [],
+    };
+    state.walletError = '';
+    state.walletPromise = null;
+    state.walletStatus = 'idle';
+    state.profile = null;
+    state.profileCityBusy = false;
+    state.profileCityInput = '';
+    state.profileCityOptions = [];
+    state.profileCityOptionsPromise = null;
+    state.profileCityOptionsStatus = 'idle';
+    state.profileError = '';
+    state.profileMessage = '';
+    state.profilePromise = null;
+    state.profileSaveBusy = false;
+    state.profileSelectedArea = '';
+    state.profileStatus = 'idle';
+    state.sellerListings = [];
+    state.sellerListingsError = '';
+    state.sellerListingsPromise = null;
+    state.sellerListingsStatus = 'idle';
+    state.listingLifecycleBusyId = '';
+    state.listingLifecycleMessage = '';
+    buyerBrowseController.state.detail = null;
+    buyerBrowseController.state.detailError = '';
+    buyerBrowseController.state.detailStatus = 'idle';
+    buyerBrowseController.state.feedItems = [];
+    buyerBrowseController.state.feedStatus = 'idle';
+    window.location.hash = '#auth-welcome';
+    renderApp();
   }
 
   async function handleOtpSubmit(form) {
@@ -2099,6 +2198,11 @@ if (appRoot) {
         returnRoute: trigger.dataset.returnRoute || '#sell',
         type: trigger.dataset.intent || 'profile',
       });
+      return;
+    }
+
+    if (trigger.dataset.action === 'logout') {
+      handleLogout();
       return;
     }
 
