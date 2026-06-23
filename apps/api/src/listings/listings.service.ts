@@ -102,9 +102,23 @@ async function buildSellerProfile({
         phoneNumber: ownerPhoneNumber,
       },
     })) ?? null;
+  const aggregate = await prismaService.review?.aggregate?.({
+    _avg: {
+      rating: true,
+    },
+    _count: {
+      _all: true,
+    },
+    where: {
+      sellerPhoneNumber: ownerPhoneNumber,
+    },
+  });
+  const ratingCount = aggregate?._count?._all ?? 0;
 
   return {
     name: owner?.displayName ?? 'Vendeur Zwibba',
+    ratingAverage: ratingCount > 0 ? aggregate?._avg?.rating ?? null : null,
+    ratingCount,
     role: 'Vendeur',
     sellerId: owner?.id ?? null,
   };
