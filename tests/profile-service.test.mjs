@@ -18,6 +18,8 @@ test('profile service fetches the seller profile with the active session', async
         async json() {
           return {
             area: 'Golf',
+            displayName: 'Maison Kivu',
+            memberSince: '2026-06-23T12:00:00.000Z',
             phoneNumber: '+243990000001',
           };
         },
@@ -33,6 +35,8 @@ test('profile service fetches the seller profile with the active session', async
 
   assert.deepEqual(profile, {
     area: 'Golf',
+    displayName: 'Maison Kivu',
+    memberSince: '2026-06-23T12:00:00.000Z',
     phoneNumber: '+243990000001',
   });
   assert.equal(requests[0].url, 'https://api.example.test/profile');
@@ -75,6 +79,46 @@ test('profile service saves the seller zone with the active session', async () =
   assert.equal(requests[0].options.headers.authorization, 'Bearer zwibba_session_123');
   assert.deepEqual(JSON.parse(requests[0].options.body), {
     area: 'Lubumbashi Centre',
+  });
+});
+
+test('profile service saves the seller display identity with the active session', async () => {
+  const requests = [];
+  const service = createProfileService({
+    apiBaseUrl: 'https://api.example.test',
+    fetchFn: async (url, options) => {
+      requests.push({
+        options,
+        url,
+      });
+
+      return {
+        ok: true,
+        async json() {
+          return {
+            area: 'Golf',
+            displayName: 'Maison Kivu',
+            memberSince: '2026-06-23T12:00:00.000Z',
+            phoneNumber: '+243990000001',
+          };
+        },
+      };
+    },
+  });
+
+  const profile = await service.saveIdentity({
+    displayName: 'Maison Kivu',
+    session: {
+      sessionToken: 'zwibba_session_123',
+    },
+  });
+
+  assert.equal(profile.displayName, 'Maison Kivu');
+  assert.equal(requests[0].url, 'https://api.example.test/profile/identity');
+  assert.equal(requests[0].options.method, 'POST');
+  assert.equal(requests[0].options.headers.authorization, 'Bearer zwibba_session_123');
+  assert.deepEqual(JSON.parse(requests[0].options.body), {
+    displayName: 'Maison Kivu',
   });
 });
 
