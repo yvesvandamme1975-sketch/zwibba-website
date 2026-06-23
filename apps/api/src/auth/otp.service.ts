@@ -1,19 +1,38 @@
 import {
   ForbiddenException,
+  Inject,
   Injectable,
-  UnauthorizedException,
 } from '@nestjs/common';
 
 import { loadEnv } from '../config/env';
+import { PrismaService } from '../database/prisma.service';
+import { generateOtpCode, hashOtpCode, verifyOtpCode } from './otp-code';
 
 type OtpVerificationResponse = {
   sid: string;
   status: string;
 };
 
+type WhatsappOtpSenderPort = {
+  sendAuthenticationCode(message: {
+    code: string;
+    phoneNumber: string;
+  }): Promise<void>;
+};
+
+const OTP_TTL_MS = 5 * 60 * 1000;
+const OTP_MAX_ATTEMPTS = 5;
+const WHATSAPP_OTP_SENDER_TOKEN = 'WhatsappOtpSender';
+
 @Injectable()
 export class OtpService {
   private readonly env = loadEnv();
+
+  constructor(
+    @Inject(PrismaService) private readonly prismaService: PrismaService,
+    @Inject(WHATSAPP_OTP_SENDER_TOKEN)
+    private readonly whatsappOtpSender: WhatsappOtpSenderPort,
+  ) {}
 
   async checkVerification({
     code,
@@ -26,112 +45,99 @@ export class OtpService {
       if (!this.env.otp.demoAllowlist.includes(phoneNumber)) {
         throw new ForbiddenException('Numéro non autorisé pour le mode demo.');
       }
+    }
 
+    const challenge = await this.prismaService.otpChallenge.findFirst({
+      where: {
+        consumedAt: null,
+        phoneNumber,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (!challenge) {
       return {
-        sid: `DEMO${phoneNumber.replaceAll('+', '')}`,
-        status: code === this.env.otp.demoCode ? 'approved' : 'pending',
+        sid: '',
+        status: 'pending',
       };
     }
 
-    const body = new URLSearchParams({
-      Code: code,
-      To: phoneNumber,
-    });
-    const twilio = this.env.twilio;
-
-    if (!twilio) {
-      throw new UnauthorizedException('Twilio Verify n’est pas configuré.');
-    }
-
-    const response = await fetch(
-      `https://verify.twilio.com/v2/Services/${twilio.verifyServiceSid}/VerificationCheck`,
-      {
-        method: 'POST',
-        headers: {
-          authorization: this.buildAuthorizationHeader(),
-          'content-type': 'application/x-www-form-urlencoded',
+    if (challenge.expiresAt.getTime() <= Date.now()) {
+      await this.prismaService.otpChallenge.update({
+        data: {
+          consumedAt: new Date(),
         },
-        body,
-      },
-    );
+        where: {
+          id: challenge.id,
+        },
+      });
 
-    if (!response.ok) {
-      throw new UnauthorizedException('Code OTP invalide.');
+      return {
+        sid: challenge.id,
+        status: 'expired',
+      };
     }
 
-    const json = (await response.json()) as {
-      sid: string;
-      status: string;
-    };
+    const nextAttemptCount = challenge.attemptCount + 1;
+    const isApproved = verifyOtpCode(code, challenge.codeHash);
+    const shouldConsume = isApproved || nextAttemptCount >= OTP_MAX_ATTEMPTS;
+
+    await this.prismaService.otpChallenge.update({
+      data: {
+        attemptCount: nextAttemptCount,
+        consumedAt: shouldConsume ? new Date() : null,
+      },
+      where: {
+        id: challenge.id,
+      },
+    });
 
     return {
-      sid: json.sid,
-      status: json.status,
+      sid: challenge.id,
+      status: isApproved ? 'approved' : 'pending',
     };
   }
 
   async requestVerification(
     phoneNumber: string,
   ): Promise<OtpVerificationResponse> {
+    const code = this.env.otp.provider === 'demo'
+      ? this.env.otp.demoCode
+      : generateOtpCode();
+
     if (this.env.otp.provider === 'demo') {
       if (!this.env.otp.demoAllowlist.includes(phoneNumber)) {
         throw new ForbiddenException('Numéro non autorisé pour le mode demo.');
       }
 
-      return {
-        sid: `DEMO${phoneNumber.replaceAll('+', '')}`,
-        status: 'pending',
-      };
+      if (!code) {
+        throw new ForbiddenException('Code demo OTP manquant.');
+      }
     }
 
-    const body = new URLSearchParams({
-      Channel: 'sms',
-      To: phoneNumber,
-    });
-    const twilio = this.env.twilio;
-
-    if (!twilio) {
-      throw new UnauthorizedException('Twilio Verify n’est pas configuré.');
-    }
-
-    const response = await fetch(
-      `https://verify.twilio.com/v2/Services/${twilio.verifyServiceSid}/Verifications`,
-      {
-        method: 'POST',
-        headers: {
-          authorization: this.buildAuthorizationHeader(),
-          'content-type': 'application/x-www-form-urlencoded',
-        },
-        body,
+    await this.prismaService.otpChallenge.updateMany({
+      data: {
+        consumedAt: new Date(),
       },
-    );
+      where: {
+        consumedAt: null,
+        phoneNumber,
+      },
+    });
 
-    if (!response.ok) {
-      throw new UnauthorizedException('Impossible d’envoyer le code OTP.');
-    }
-
-    const json = (await response.json()) as {
-      sid: string;
-      status: string;
-    };
+    const challenge = await this.prismaService.otpChallenge.create({
+      data: {
+        codeHash: hashOtpCode(code ?? ''),
+        expiresAt: new Date(Date.now() + OTP_TTL_MS),
+        phoneNumber,
+      },
+    });
 
     return {
-      sid: json.sid,
-      status: json.status,
+      sid: challenge.id,
+      status: 'pending',
     };
-  }
-
-  private buildAuthorizationHeader() {
-    const twilio = this.env.twilio;
-
-    if (!twilio) {
-      throw new UnauthorizedException('Twilio Verify n’est pas configuré.');
-    }
-
-    const credentials = Buffer.from(
-      `${twilio.accountSid}:${twilio.authToken}`,
-    ).toString('base64');
-
-    return `Basic ${credentials}`;
   }
 }
