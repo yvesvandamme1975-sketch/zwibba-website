@@ -74,6 +74,28 @@ export function createProfileService({
       return response.json();
     },
 
+    async saveIdentity({
+      displayName,
+      session,
+    }) {
+      const response = await fetchFn(`${apiBaseUrl}/profile/identity`, {
+        method: 'POST',
+        headers: {
+          ...sessionHeaders(session),
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          displayName,
+        }),
+      });
+
+      if (!response.ok) {
+        throw await parseError(response, 'Impossible de sauvegarder votre identité.');
+      }
+
+      return response.json();
+    },
+
     async listCities({
       countryCode,
     }) {
