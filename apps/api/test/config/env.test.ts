@@ -15,7 +15,7 @@ test('loadEnv returns the validated production env contract', () => {
     MISTRAL_API_KEY: 'mistral-test',
     MISTRAL_MODEL: 'pixtral-12b-2409',
     NODE_ENV: 'test',
-    OTP_PROVIDER: 'twilio',
+    OTP_PROVIDER: 'meta',
     PORT: '3200',
     R2_ACCESS_KEY_ID: 'r2-access-key',
     R2_ACCOUNT_ID: 'r2-account',
@@ -23,9 +23,11 @@ test('loadEnv returns the validated production env contract', () => {
     R2_PUBLIC_BASE_URL: 'https://cdn.zwibba.example',
     R2_S3_ENDPOINT: 'https://r2.example.com',
     R2_SECRET_ACCESS_KEY: 'r2-secret',
-    TWILIO_ACCOUNT_SID: 'AC123456789',
-    TWILIO_AUTH_TOKEN: 'twilio-auth-token',
-    TWILIO_VERIFY_SERVICE_SID: 'VA123456789',
+    META_GRAPH_API_VERSION: '20.0',
+    META_WHATSAPP_ACCESS_TOKEN: 'meta-access-token',
+    META_WHATSAPP_PHONE_NUMBER_ID: '1234567890',
+    META_WHATSAPP_TEMPLATE_LANG: 'fr',
+    META_WHATSAPP_TEMPLATE_NAME: 'zwibba_auth_code',
     ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
   });
 
@@ -33,7 +35,7 @@ test('loadEnv returns the validated production env contract', () => {
   assert.equal(env.admin.sharedSecret, 'zwibba-admin-secret');
   assert.equal(env.boost.enabled, true);
   assert.equal(env.databaseUrl, 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba');
-  assert.equal(env.otp.provider, 'twilio');
+  assert.equal(env.otp.provider, 'meta');
   assert.equal(env.port, 3200);
   assert.equal(env.r2.bucket, 'zwibba-media');
   assert.equal(env.ai.provider, 'multi');
@@ -43,11 +45,15 @@ test('loadEnv returns the validated production env contract', () => {
   assert.equal(env.ai.anthropic.model, 'claude-3-5-haiku-latest');
   assert.ok(env.ai.mistral);
   assert.equal(env.ai.mistral.model, 'pixtral-12b-2409');
-  assert.ok(env.twilio);
-  assert.equal(env.twilio.verifyServiceSid, 'VA123456789');
+  assert.ok(env.meta);
+  assert.equal(env.meta.phoneNumberId, '1234567890');
+  assert.equal(env.meta.accessToken, 'meta-access-token');
+  assert.equal(env.meta.templateName, 'zwibba_auth_code');
+  assert.equal(env.meta.templateLang, 'fr');
+  assert.equal(env.meta.graphApiVersion, '20.0');
 });
 
-test('loadEnv returns the demo otp contract in production without Twilio vars', () => {
+test('loadEnv returns the demo otp contract in production without Meta vars', () => {
   const env = loadEnv({
     AI_PROVIDER: 'stub',
     APP_BASE_URL: 'https://zwibba.example',
@@ -73,7 +79,15 @@ test('loadEnv returns the demo otp contract in production without Twilio vars', 
   assert.equal(env.ai.gemini, undefined);
   assert.equal(env.ai.anthropic, undefined);
   assert.equal(env.ai.mistral, undefined);
-  assert.equal(env.twilio, undefined);
+  assert.equal(env.meta, undefined);
+});
+
+test('loadEnv defaults OTP_PROVIDER to demo', () => {
+  const env = loadEnv({});
+
+  assert.equal(env.otp.provider, 'demo');
+  assert.deepEqual(env.otp.demoAllowlist, ['+243990000001']);
+  assert.equal(env.otp.demoCode, '123456');
 });
 
 test('loadEnv supports a mistral-only ai provider mode', () => {
@@ -285,7 +299,7 @@ test('loadEnv rejects missing demo otp config in production', () => {
   );
 });
 
-test('loadEnv rejects missing Twilio config in production when twilio provider is selected', () => {
+test('loadEnv requires Meta config in production when meta provider is selected', () => {
   assert.throws(
     () =>
       loadEnv({
@@ -293,7 +307,7 @@ test('loadEnv rejects missing Twilio config in production when twilio provider i
         APP_BASE_URL: 'https://zwibba.example',
         DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
         NODE_ENV: 'production',
-        OTP_PROVIDER: 'twilio',
+        OTP_PROVIDER: 'meta',
         PORT: '3200',
         R2_ACCESS_KEY_ID: 'r2-access-key',
         R2_ACCOUNT_ID: 'r2-account',
@@ -303,7 +317,17 @@ test('loadEnv rejects missing Twilio config in production when twilio provider i
         R2_SECRET_ACCESS_KEY: 'r2-secret',
         ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
       }),
-    /Missing required env value: TWILIO_ACCOUNT_SID/,
+    /Missing required env value: META_WHATSAPP_PHONE_NUMBER_ID/,
+  );
+});
+
+test('loadEnv rejects twilio as an OTP provider', () => {
+  assert.throws(
+    () =>
+      loadEnv({
+        OTP_PROVIDER: 'twilio',
+      }),
+    /OTP_PROVIDER must be either "demo" or "meta"/,
   );
 });
 
@@ -312,7 +336,9 @@ test('treats RAILWAY_ENVIRONMENT production as production', () => {
     AI_PROVIDER: 'stub',
     DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
     NODE_ENV: 'test',
-    OTP_PROVIDER: 'twilio',
+    DEMO_OTP_ALLOWLIST: '+243990000001',
+    DEMO_OTP_CODE: '123456',
+    OTP_PROVIDER: 'demo',
     PORT: '3200',
     R2_ACCESS_KEY_ID: 'r2-access-key',
     R2_ACCOUNT_ID: 'r2-account',
@@ -321,9 +347,6 @@ test('treats RAILWAY_ENVIRONMENT production as production', () => {
     R2_S3_ENDPOINT: 'https://r2.example.com',
     R2_SECRET_ACCESS_KEY: 'r2-secret',
     RAILWAY_ENVIRONMENT: 'production',
-    TWILIO_ACCOUNT_SID: 'AC123',
-    TWILIO_AUTH_TOKEN: 'twilio-auth-token',
-    TWILIO_VERIFY_SERVICE_SID: 'VA123',
     ZWIBBA_ADMIN_SHARED_SECRET: 'a-real-secret',
   };
   assert.throws(() => loadEnv(source), /Missing required env value/);
