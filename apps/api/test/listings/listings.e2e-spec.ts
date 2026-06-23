@@ -42,7 +42,12 @@ class _FakePrismaService {
       phoneNumber: string;
     };
   }>();
-  readonly users = new Map<string, string>();
+  readonly users = new Map<string, {
+    createdAt: Date;
+    displayName: string | null;
+    id: string;
+    phoneNumber: string;
+  }>();
 
   readonly $transaction = async <T>(
     callback: (transaction: _FakePrismaService) => Promise<T>,
@@ -59,7 +64,7 @@ class _FakePrismaService {
         userId: string;
       };
     }) => {
-      const phoneNumber = this.users.get(data.userId) ?? '+243990000001';
+      const phoneNumber = this.users.get(data.userId)?.phoneNumber ?? '+243990000001';
       const session = {
         token: data.token,
         user: {
@@ -82,6 +87,24 @@ class _FakePrismaService {
   };
 
   readonly user = {
+    findUnique: async ({
+      where,
+    }: {
+      where: {
+        id?: string;
+        phoneNumber?: string;
+      };
+    }) => {
+      if (where.id) {
+        return this.users.get(where.id) ?? null;
+      }
+
+      if (where.phoneNumber) {
+        return Array.from(this.users.values()).find((user) => user.phoneNumber === where.phoneNumber) ?? null;
+      }
+
+      return null;
+    },
     upsert: async ({
       where,
     }: {
@@ -90,12 +113,16 @@ class _FakePrismaService {
       };
     }) => {
       const userId = `user_${where.phoneNumber.replaceAll('+', '')}`;
-      this.users.set(userId, where.phoneNumber);
-
-      return {
+      const existingUser = this.users.get(userId);
+      const user = existingUser ?? {
+        createdAt: new Date('2026-06-23T12:00:00.000Z'),
+        displayName: null,
         id: userId,
         phoneNumber: where.phoneNumber,
       };
+      this.users.set(userId, user);
+
+      return user;
     },
   };
 
@@ -510,6 +537,7 @@ test('listings feed includes approved active system seed listings from the same 
 test('listing detail returns a database-backed published listing with seller metadata', async (t) => {
   const {
     app,
+    prisma,
   } = await createTestContext();
   t.after(async () => {
     await app.close();
@@ -528,6 +556,14 @@ test('listing detail returns a database-backed published listing with seller met
     phoneNumber: '+243990000001',
     priceCdf: 4256000,
     title: 'Samsung Galaxy A54 128 Go',
+  });
+  const ownerUser = Array.from(prisma.users.values()).find(
+    (user) => user.phoneNumber === '+243990000001',
+  );
+  assert.ok(ownerUser);
+  prisma.users.set(ownerUser.id, {
+    ...ownerUser,
+    displayName: 'Boutique A54',
   });
 
   const response = await request(app.getHttpServer())
@@ -551,8 +587,9 @@ test('listing detail returns a database-backed published listing with seller met
   ]);
   assert.equal(response.body.contactPhoneNumber, '+243990000001');
   assert.ok(Array.isArray(response.body.safetyTips));
-  assert.match(response.body.seller.name, /\S+/);
-  assert.match(response.body.seller.responseTime, /\S+/);
+  assert.equal(response.body.seller.name, 'Boutique A54');
+  assert.equal(response.body.seller.sellerId, ownerUser.id);
+  assert.equal(response.body.seller.responseTime, undefined);
   assert.equal(
     response.body.primaryImageUrl,
     'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
@@ -560,6 +597,63 @@ test('listing detail returns a database-backed published listing with seller met
   assert.deepEqual(response.body.images, [
     'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
   ]);
+
+  await publishListing(app, {
+    area: 'Bel Air',
+    categoryId: 'home_garden',
+    description: 'Table solide pour la maison.',
+    phoneNumber: '+243990000002',
+    priceCdf: 150000,
+    title: 'Table basse bois',
+  });
+
+  const fallbackResponse = await request(app.getHttpServer())
+    .get('/listings/table-basse-bois')
+    .expect(200);
+
+  const fallbackUser = Array.from(prisma.users.values()).find(
+    (user) => user.phoneNumber === '+243990000002',
+  );
+  assert.ok(fallbackUser);
+  assert.equal(fallbackResponse.body.seller.name, 'Vendeur Zwibba');
+  assert.equal(fallbackResponse.body.seller.sellerId, fallbackUser.id);
+  assert.equal(fallbackResponse.body.seller.name.startsWith('Particulier '), false);
+  assert.equal(fallbackResponse.body.seller.responseTime, undefined);
+
+  prisma.drafts.set('draft_orphan_listing', {
+    area: 'Katuba',
+    categoryId: 'electronics',
+    condition: 'used_good',
+    description: 'Radio propre.',
+    id: 'draft_orphan_listing',
+    ownerPhoneNumber: '+243990009999',
+    priceCdf: 60000,
+    syncStatus: 'synced',
+    title: 'Radio portable',
+  });
+  prisma.listings.set('listing_orphan_listing', {
+    area: 'Katuba',
+    categoryId: 'electronics',
+    description: 'Radio propre.',
+    draftId: 'draft_orphan_listing',
+    id: 'listing_orphan_listing',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+243990009999',
+    priceCdf: 60000,
+    publishedAt: new Date('2026-06-23T13:00:00.000Z'),
+    slug: 'radio-portable',
+    sourceType: 'seller',
+    title: 'Radio portable',
+    updatedAt: new Date('2026-06-23T13:00:00.000Z'),
+  });
+
+  const orphanResponse = await request(app.getHttpServer())
+    .get('/listings/radio-portable')
+    .expect(200);
+
+  assert.equal(orphanResponse.body.seller.name, 'Vendeur Zwibba');
+  assert.equal(orphanResponse.body.seller.sellerId, null);
+  assert.equal(orphanResponse.body.seller.responseTime, undefined);
 });
 
 test('listings feed and detail return USD listing prices when a seller publishes in dollars', async (t) => {
