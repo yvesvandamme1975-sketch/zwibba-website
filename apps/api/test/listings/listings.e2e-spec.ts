@@ -36,6 +36,15 @@ class _FakePrismaService {
   readonly drafts = new Map<string, Record<string, unknown>>();
   readonly listings = new Map<string, Record<string, unknown>>();
   readonly moderationDecisions = new Map<string, Record<string, unknown>>();
+  readonly reviews = new Map<string, {
+    buyerUserId: string;
+    comment: string | null;
+    createdAt: Date;
+    id: string;
+    listingId: string;
+    rating: number;
+    sellerPhoneNumber: string;
+  }>();
   readonly sessions = new Map<string, {
     token: string;
     user: {
@@ -288,6 +297,31 @@ class _FakePrismaService {
       };
       this.listings.set(listingId, nextListing);
       return nextListing;
+    },
+  };
+
+  readonly review = {
+    aggregate: async ({
+      where,
+    }: {
+      where: {
+        sellerPhoneNumber: string;
+      };
+    }) => {
+      const matching = Array.from(this.reviews.values()).filter(
+        (review) => review.sellerPhoneNumber === where.sellerPhoneNumber,
+      );
+
+      return {
+        _avg: {
+          rating: matching.length > 0
+            ? matching.reduce((sum, review) => sum + review.rating, 0) / matching.length
+            : null,
+        },
+        _count: {
+          _all: matching.length,
+        },
+      };
     },
   };
 
@@ -565,6 +599,28 @@ test('listing detail returns a database-backed published listing with seller met
     ...ownerUser,
     displayName: 'Boutique A54',
   });
+  const primaryListing = Array.from(prisma.listings.values()).find(
+    (listing) => listing.slug === 'samsung-galaxy-a54-128-go',
+  );
+  assert.ok(primaryListing);
+  prisma.reviews.set('review_1', {
+    buyerUserId: 'buyer_1',
+    comment: 'Très bon vendeur.',
+    createdAt: new Date('2026-06-22T09:00:00.000Z'),
+    id: 'review_1',
+    listingId: primaryListing.id as string,
+    rating: 5,
+    sellerPhoneNumber: '+243990000001',
+  });
+  prisma.reviews.set('review_2', {
+    buyerUserId: 'buyer_2',
+    comment: null,
+    createdAt: new Date('2026-06-22T10:00:00.000Z'),
+    id: 'review_2',
+    listingId: primaryListing.id as string,
+    rating: 4,
+    sellerPhoneNumber: '+243990000001',
+  });
 
   const response = await request(app.getHttpServer())
     .get('/listings/samsung-galaxy-a54-128-go')
@@ -588,6 +644,8 @@ test('listing detail returns a database-backed published listing with seller met
   assert.equal(response.body.contactPhoneNumber, '+243990000001');
   assert.ok(Array.isArray(response.body.safetyTips));
   assert.equal(response.body.seller.name, 'Boutique A54');
+  assert.equal(response.body.seller.ratingAverage, 4.5);
+  assert.equal(response.body.seller.ratingCount, 2);
   assert.equal(response.body.seller.sellerId, ownerUser.id);
   assert.equal(response.body.seller.responseTime, undefined);
   assert.equal(
@@ -616,6 +674,8 @@ test('listing detail returns a database-backed published listing with seller met
   );
   assert.ok(fallbackUser);
   assert.equal(fallbackResponse.body.seller.name, 'Vendeur Zwibba');
+  assert.equal(fallbackResponse.body.seller.ratingAverage, null);
+  assert.equal(fallbackResponse.body.seller.ratingCount, 0);
   assert.equal(fallbackResponse.body.seller.sellerId, fallbackUser.id);
   assert.equal(fallbackResponse.body.seller.name.startsWith('Particulier '), false);
   assert.equal(fallbackResponse.body.seller.responseTime, undefined);
@@ -652,6 +712,8 @@ test('listing detail returns a database-backed published listing with seller met
     .expect(200);
 
   assert.equal(orphanResponse.body.seller.name, 'Vendeur Zwibba');
+  assert.equal(orphanResponse.body.seller.ratingAverage, null);
+  assert.equal(orphanResponse.body.seller.ratingCount, 0);
   assert.equal(orphanResponse.body.seller.sellerId, null);
   assert.equal(orphanResponse.body.seller.responseTime, undefined);
 });
