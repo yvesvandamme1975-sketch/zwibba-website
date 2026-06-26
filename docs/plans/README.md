@@ -116,4 +116,7 @@ Current priority docs:
 - `2026-06-26-zwibba-story-brand-lockup-design.md`
 - `2026-06-26-zwibba-story-brand-lockup-implementation.md`
 
+- `2026-06-26-zwibba-story-rounded-photo-design.md`
+- `2026-06-26-zwibba-story-rounded-photo-implementation.md`
+
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
