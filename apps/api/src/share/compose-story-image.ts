@@ -21,6 +21,7 @@ export interface ComposeStoryImageInput {
 const CANVAS_WIDTH = 1080;
 const PHOTO_TOP = 96;
 const PHOTO_SIZE = 972;
+const PHOTO_RADIUS = 48;
 const FOOTER_TOP = 1640;
 const LOGO_WIDTH = 560;
 const LABEL_HEIGHT = 104;
@@ -31,8 +32,13 @@ export async function composeStoryImage(input: ComposeStoryImageInput): Promise<
     create: { width: CANVAS_WIDTH, height: 1920, channels: 4, background: '#0f160f' },
   }).png();
 
+  // Clip the photo to rounded corners (mask kept where the rounded rect is opaque).
+  const photoMask = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${PHOTO_SIZE}" height="${PHOTO_SIZE}"><rect width="${PHOTO_SIZE}" height="${PHOTO_SIZE}" rx="${PHOTO_RADIUS}" ry="${PHOTO_RADIUS}" fill="#ffffff"/></svg>`,
+  );
   const photo = await sharp(input.photoBuffer)
     .resize(PHOTO_SIZE, PHOTO_SIZE, { fit: 'cover' })
+    .composite([{ input: photoMask, blend: 'dest-in' }])
     .png()
     .toBuffer();
 
