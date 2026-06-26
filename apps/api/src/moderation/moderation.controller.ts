@@ -73,6 +73,15 @@ export class ModerationController {
     return this.moderationService.approve(listingId);
   }
 
+  @Post(':listingId/regenerate-story')
+  regenerateStory(
+    @Headers('x-zwibba-admin-secret') adminSecret: string,
+    @Param('listingId') listingId: string,
+  ) {
+    this.requireAdminSecret(adminSecret);
+    return this.moderationService.regenerateStory(listingId);
+  }
+
   @Post(':listingId/block')
   block(
     @Headers('x-zwibba-admin-secret') adminSecret: string,

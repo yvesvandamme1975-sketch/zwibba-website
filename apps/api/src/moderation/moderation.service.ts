@@ -410,6 +410,35 @@ export class ModerationService {
     };
   }
 
+  async regenerateStory(listingId: string) {
+    const listing = await this.prismaService.listing.findUnique({
+      where: { id: listingId },
+      select: { id: true, updatedAt: true },
+    });
+
+    if (!listing) {
+      throw new NotFoundException('Annonce introuvable.');
+    }
+
+    try {
+      await this.storyImageService.generateAndStoreForListing(listingId);
+    } catch (error) {
+      return {
+        id: listingId,
+        reason: error instanceof Error ? error.message : 'unknown',
+        status: 'skipped' as const,
+      };
+    }
+
+    // generateAndStoreForListing writes storyImageUrl, which bumps updatedAt.
+    // Restore the original updatedAt so a bulk regeneration does not reorder
+    // the browse feed (which is sorted by updatedAt desc).
+    await this.prismaService
+      .$executeRaw`UPDATE "Listing" SET "updatedAt" = ${listing.updatedAt} WHERE id = ${listingId}`;
+
+    return { id: listingId, status: 'regenerated' as const };
+  }
+
   async block(listingId: string, rawReasonSummary: string) {
     const listing = await this.prismaService.listing.findUnique({
       where: {
