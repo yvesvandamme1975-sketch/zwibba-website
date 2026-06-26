@@ -18,31 +18,55 @@ export interface ComposeStoryImageInput {
   priceLabel: string;
 }
 
+const CANVAS_WIDTH = 1080;
+const PHOTO_TOP = 96;
+const PHOTO_SIZE = 972;
+const FOOTER_TOP = 1640;
+const LOGO_WIDTH = 560;
+const LABEL_HEIGHT = 104;
+const LABEL_TO_LOGO_GAP = 26;
+
 export async function composeStoryImage(input: ComposeStoryImageInput): Promise<Buffer> {
   const canvas = sharp({
-    create: { width: 1080, height: 1920, channels: 4, background: '#0f160f' },
+    create: { width: CANVAS_WIDTH, height: 1920, channels: 4, background: '#0f160f' },
   }).png();
 
-  const photo = await sharp(input.photoBuffer).resize(972, 972, { fit: 'cover' }).png().toBuffer();
-  const headerSvg = buildHeaderSvg();
+  const photo = await sharp(input.photoBuffer)
+    .resize(PHOTO_SIZE, PHOTO_SIZE, { fit: 'cover' })
+    .png()
+    .toBuffer();
+
+  // Render the brand logo to its real content bounds (trim the SVG's internal
+  // padding) so the lockup can be positioned to the pixel.
+  const logo = await sharp(Buffer.from(ZWIBBA_LOGO_SVG), { density: 320 })
+    .trim()
+    .resize({ width: LOGO_WIDTH })
+    .png()
+    .toBuffer();
+  const logoHeight = (await sharp(logo).metadata()).height ?? 320;
+
+  // Centre the "Je vends sur" + logo lockup in the gap between photo and footer.
+  const labelSvg = buildLabelSvg();
   const footerSvg = buildFooterSvg(input);
+  const blockHeight = LABEL_HEIGHT + LABEL_TO_LOGO_GAP + logoHeight;
+  const gapTop = PHOTO_TOP + PHOTO_SIZE;
+  const blockTop = Math.round(gapTop + (FOOTER_TOP - gapTop - blockHeight) / 2);
+  const logoLeft = Math.round((CANVAS_WIDTH - LOGO_WIDTH) / 2);
 
   return canvas
     .composite([
-      { input: photo, top: 280, left: 54 },
-      { input: Buffer.from(headerSvg), top: 60, left: 0 },
-      { input: Buffer.from(footerSvg), top: 1640, left: 0 },
+      { input: photo, top: PHOTO_TOP, left: 54 },
+      { input: Buffer.from(labelSvg), top: blockTop, left: 0 },
+      { input: logo, top: blockTop + LABEL_HEIGHT + LABEL_TO_LOGO_GAP, left: logoLeft },
+      { input: Buffer.from(footerSvg), top: FOOTER_TOP, left: 0 },
     ])
     .png()
     .toBuffer();
 }
 
-function buildHeaderSvg(): string {
-  const logoData = Buffer.from(ZWIBBA_LOGO_SVG).toString('base64');
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="200" viewBox="0 0 1080 200">
-    <text x="540" y="100" fill="#9aff8f" font-family="Manrope" font-size="56" font-weight="600" text-anchor="middle">Je vends sur</text>
-    <image x="330" y="110" width="420" height="80" href="data:image/svg+xml;base64,${logoData}" preserveAspectRatio="xMidYMid meet"/>
+function buildLabelSvg(): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS_WIDTH}" height="${LABEL_HEIGHT}" viewBox="0 0 ${CANVAS_WIDTH} ${LABEL_HEIGHT}">
+    <text x="540" y="76" fill="#9aff8f" font-family="Manrope" font-size="72" font-weight="700" letter-spacing="0.5" text-anchor="middle">Je vends sur</text>
   </svg>`;
 }
 

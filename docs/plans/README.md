@@ -113,4 +113,7 @@ Current priority docs:
 - `2026-06-23-zwibba-auth-whatsapp-cloud-otp-design.md`
 - `2026-06-23-zwibba-auth-whatsapp-cloud-otp-implementation.md`
 
+- `2026-06-26-zwibba-story-brand-lockup-design.md`
+- `2026-06-26-zwibba-story-brand-lockup-implementation.md`
+
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
