@@ -21,7 +21,7 @@ function buildApprovedContext({
 
 test('success screen renders unified share button when listing is approved', () => {
   const html = renderSuccessScreen(buildApprovedContext());
-  assert.match(html, /data-action="share-listing"/);
+  assert.match(html, /data-action="open-share-menu"/);
   assert.match(html, /Partager mon annonce/);
   assert.doesNotMatch(html, /data-action="share-whatsapp-chat"/);
   assert.doesNotMatch(html, /data-action="share-facebook"/);
@@ -35,7 +35,7 @@ test('success screen unified share button points to the public /annonce/ url', (
 
 test('success screen share URL does not use hash fragment', () => {
   const html = renderSuccessScreen(buildApprovedContext({ listingUrl: '/annonce/mon-annonce/' }));
-  const shareButton = html.match(/<button[^>]*data-action="share-listing"[^>]*>/s)?.[0] ?? '';
+  const shareButton = html.match(/<button[^>]*data-action="open-share-menu"[^>]*>/s)?.[0] ?? '';
   assert.doesNotMatch(shareButton, /#listing\//);
 });
 
@@ -46,7 +46,7 @@ test('success screen embeds the story image URL when present', () => {
 
 test('success screen renders unified share button even without a story image', () => {
   const html = renderSuccessScreen(buildApprovedContext({ storyImageUrl: '' }));
-  assert.match(html, /data-action="share-listing"/);
+  assert.match(html, /data-action="open-share-menu"/);
   assert.match(html, /Partager mon annonce/);
   assert.doesNotMatch(html, /data-action="share-native"/);
   assert.doesNotMatch(html, /data-action="download-story-image"/);
@@ -78,7 +78,7 @@ test('success screen renders a single unified share button instead of per-platfo
       storyImageUrl: 'https://cdn.example/story.png',
     },
   });
-  assert.match(html, /data-action="share-listing"/);
+  assert.match(html, /data-action="open-share-menu"/);
   assert.match(html, /Partager mon annonce/);
   assert.match(html, /data-share-slug="radio-vintage"/);
   assert.doesNotMatch(html, /data-action="share-whatsapp-chat"/);

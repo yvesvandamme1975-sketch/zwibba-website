@@ -122,4 +122,7 @@ Current priority docs:
 - `2026-06-26-zwibba-story-regenerate-endpoint-design.md`
 - `2026-06-26-zwibba-story-regenerate-endpoint-implementation.md`
 
+- `2026-06-26-zwibba-share-menu-design.md`
+- `2026-06-26-zwibba-share-menu-implementation.md`
+
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
