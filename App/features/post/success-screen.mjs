@@ -131,10 +131,10 @@ export function renderSuccessScreen({
               <button
                 class="app-flow__button"
                 type="button"
-                data-action="share-listing"
+                data-action="open-share-menu"
                 data-share-slug="${escapeAttribute(outcome?.listingSlug || '')}"
                 data-share-title="${escapeAttribute(draft.details.title || 'Annonce Zwibba')}"
-                data-share-url="${escapeAttribute(listingUrl)}"
+                data-share-url="${escapeAttribute(listingUrl)}"${storyImageAttribute}
               >
                 Partager mon annonce
               </button>

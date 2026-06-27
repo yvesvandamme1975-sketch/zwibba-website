@@ -446,7 +446,7 @@ test('listing detail screen renders a share button for non-owner viewers', () =>
     state: 'ready',
   });
 
-  assert.match(html, /data-action="share-listing"/);
+  assert.match(html, /data-action="open-share-menu"/);
   assert.match(html, /data-share-slug="radio-vintage-kinshasa"/);
   assert.match(html, /data-share-url="\/annonce\/radio-vintage-kinshasa\/"/);
 });
@@ -479,7 +479,7 @@ test('listing detail screen renders a share button inside the owner card when ed
   });
 
   assert.match(html, /Modifier/);
-  assert.match(html, /data-action="share-listing"/);
+  assert.match(html, /data-action="open-share-menu"/);
   assert.match(html, /Partager/);
   assert.match(html, /data-share-slug="radio-vintage-kinshasa"/);
 });

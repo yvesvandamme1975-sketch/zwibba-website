@@ -99,10 +99,11 @@ function buildShareButton(detail, { compact = false } = {}) {
     <button
       class="${escapeAttribute(className)}"
       type="button"
-      data-action="share-listing"
+      data-action="open-share-menu"
       data-share-slug="${escapeAttribute(detail.slug)}"
       data-share-title="${escapeAttribute(detail.title)}"
       data-share-url="${escapeAttribute(shareUrl)}"
+      ${detail.storyImageUrl ? `data-story-image-url="${escapeAttribute(detail.storyImageUrl)}"` : ''}
       ${compact ? `aria-label="${escapeAttribute('Partager cette annonce')}"` : ''}
     >
       ${compact ? '<span aria-hidden="true">↗</span>' : 'Partager'}

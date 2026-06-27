@@ -102,6 +102,7 @@ import {
   shareStoryImageNative,
   validateDraftForPublish,
 } from './features/post/post-flow-controller.mjs';
+import { renderShareMenu } from './components/share-menu.mjs';
 
 const appRoot = document.querySelector('[data-app-root]');
 
@@ -246,6 +247,7 @@ if (appRoot) {
     phoneError: '',
     phoneNumber: authService.getPendingChallenge()?.phoneNumber ?? '+243',
     profile: null,
+    shareMenu: null,
     profileCityBusy: false,
     profileCityInput: '',
     profileCityOptions: [],
@@ -1184,11 +1186,12 @@ if (appRoot) {
       route,
       session: state.session,
     });
-    appRoot.innerHTML = renderAppTabShell({
-      activeTab: getActiveTab(route),
-      content: renderRoute(route),
-      unreadMessagesCount: getTotalUnreadMessages(),
-    });
+    appRoot.innerHTML =
+      renderAppTabShell({
+        activeTab: getActiveTab(route),
+        content: renderRoute(route),
+        unreadMessagesCount: getTotalUnreadMessages(),
+      }) + renderShareMenu(state.shareMenu);
     if (!canShareStoryImage()) {
       const nativeStoryShareButton = appRoot.querySelector('[data-action="share-native"]');
 
@@ -2249,6 +2252,43 @@ if (appRoot) {
     link.remove();
   }
 
+  function openShareMenu(trigger) {
+    state.shareMenu = {
+      slug: trigger.dataset.shareSlug || '',
+      storyImageUrl:
+        trigger.dataset.storyImageUrl ||
+        buyerBrowseController.state.detail?.storyImageUrl ||
+        '',
+      title: trigger.dataset.shareTitle || '',
+      url:
+        trigger.dataset.shareUrl ||
+        trigger.dataset.listingUrl ||
+        buildListingUrl(state.draft),
+    };
+    renderApp();
+  }
+
+  function closeShareMenu() {
+    if (state.shareMenu) {
+      state.shareMenu = null;
+      renderApp();
+    }
+  }
+
+  function handleInstagramShare(storyImageUrl, listingUrl) {
+    if (storyImageUrl) {
+      handleStoryImageDownload(storyImageUrl);
+    } else if (listingUrl && navigator.clipboard?.writeText) {
+      void navigator.clipboard.writeText(
+        new URL(listingUrl, window.location.origin).toString(),
+      );
+    }
+
+    // Instagram has no web share-intent for links: we download the story image
+    // (above) and open Instagram so the seller can post it to a story or feed.
+    window.open('https://www.instagram.com/', '_blank', 'noopener');
+  }
+
   appRoot.addEventListener('click', async (event) => {
     const scrollTopTrigger = event.target.closest('[data-scroll-top-target]');
 
@@ -2321,8 +2361,33 @@ if (appRoot) {
       return;
     }
 
+    if (trigger.dataset.action === 'open-share-menu') {
+      openShareMenu(trigger);
+      return;
+    }
+
+    if (trigger.dataset.action === 'close-share-menu') {
+      closeShareMenu();
+      return;
+    }
+
+    if (trigger.dataset.action === 'share-menu-sheet') {
+      return;
+    }
+
+    if (trigger.dataset.action === 'share-instagram') {
+      handleInstagramShare(
+        trigger.dataset.storyImageUrl || '',
+        trigger.dataset.listingUrl || buildListingUrl(state.draft),
+      );
+      recordListingShare(trigger.dataset.shareSlug || '');
+      closeShareMenu();
+      return;
+    }
+
     if (trigger.dataset.action === 'copy-listing-link') {
       await handleListingLinkCopy(trigger.dataset.listingUrl || buildListingUrl(state.draft));
+      closeShareMenu();
       return;
     }
 
@@ -2337,12 +2402,16 @@ if (appRoot) {
     }
 
     if (trigger.dataset.action === 'share-facebook') {
-      await handleFacebookShare(trigger.dataset.listingUrl || buildListingUrl(state.draft), trigger);
+      handleFacebookShare(trigger.dataset.listingUrl || buildListingUrl(state.draft));
+      recordListingShare(trigger.dataset.shareSlug || '');
+      closeShareMenu();
       return;
     }
 
     if (trigger.dataset.action === 'share-whatsapp-chat') {
       handleWhatsAppShare(trigger.dataset.listingUrl || buildListingUrl(state.draft));
+      recordListingShare(trigger.dataset.shareSlug || '');
+      closeShareMenu();
       return;
     }
 
