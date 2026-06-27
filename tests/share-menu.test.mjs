@@ -29,3 +29,14 @@ test('renderShareMenu renders WhatsApp, Facebook, Instagram and copy options', (
   assert.match(html, />WhatsApp</);
   assert.match(html, />Instagram</);
 });
+
+test('renderShareMenu exposes a post/story mode toggle', () => {
+  const post = renderShareMenu({ url: '/annonce/x/', mode: 'post' });
+  assert.match(post, /data-action="share-mode-post"/);
+  assert.match(post, /data-action="share-mode-story"/);
+  assert.match(post, /share-mode-post"[^>]*aria-pressed="true"/);
+
+  const story = renderShareMenu({ url: '/annonce/x/', mode: 'story' });
+  assert.match(story, /share-mode-story"[^>]*aria-pressed="true"/);
+  assert.match(story, /story|statut/i);
+});

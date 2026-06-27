@@ -1861,3 +1861,36 @@
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
+
+.app-share-menu__segmented {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+}
+
+.app-share-menu__seg {
+  flex: 1;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: rgba(244, 246, 244, 0.7);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.app-share-menu__seg--active {
+  background: #39a935;
+  color: #ffffff;
+}
+
+.app-share-menu__hint {
+  margin: 10px 2px 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: rgba(244, 246, 244, 0.55);
+}

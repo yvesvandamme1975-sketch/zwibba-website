@@ -2254,6 +2254,7 @@ if (appRoot) {
 
   function openShareMenu(trigger) {
     state.shareMenu = {
+      mode: 'post',
       slug: trigger.dataset.shareSlug || '',
       storyImageUrl:
         trigger.dataset.storyImageUrl ||
@@ -2266,6 +2267,38 @@ if (appRoot) {
         buildListingUrl(state.draft),
     };
     renderApp();
+  }
+
+  function setShareMode(mode) {
+    if (state.shareMenu && state.shareMenu.mode !== mode) {
+      state.shareMenu.mode = mode;
+      renderApp();
+    }
+  }
+
+  async function shareAsStory({ appUrl, listingUrl, storyImageUrl, title }) {
+    if (storyImageUrl && canShareStoryImage()) {
+      try {
+        await shareStoryImageNative({
+          fetchFn: window.fetch.bind(window),
+          listingUrl: new URL(listingUrl, window.location.origin).toString(),
+          navigatorObject: navigator,
+          storyImageUrl,
+          title,
+        });
+        return;
+      } catch {
+        // Native share unavailable or cancelled: fall back to download + open app.
+      }
+    }
+
+    if (storyImageUrl) {
+      handleStoryImageDownload(storyImageUrl);
+    }
+
+    if (appUrl) {
+      window.open(appUrl, '_blank', 'noopener');
+    }
   }
 
   function closeShareMenu() {
@@ -2375,11 +2408,23 @@ if (appRoot) {
       return;
     }
 
+    if (trigger.dataset.action === 'share-mode-post') {
+      setShareMode('post');
+      return;
+    }
+
+    if (trigger.dataset.action === 'share-mode-story') {
+      setShareMode('story');
+      return;
+    }
+
     if (trigger.dataset.action === 'share-instagram') {
-      handleInstagramShare(
-        trigger.dataset.storyImageUrl || '',
-        trigger.dataset.listingUrl || buildListingUrl(state.draft),
-      );
+      await shareAsStory({
+        appUrl: 'https://www.instagram.com/',
+        listingUrl: trigger.dataset.listingUrl || buildListingUrl(state.draft),
+        storyImageUrl: trigger.dataset.storyImageUrl || '',
+        title: trigger.dataset.shareTitle || '',
+      });
       recordListingShare(trigger.dataset.shareSlug || '');
       closeShareMenu();
       return;
@@ -2402,14 +2447,34 @@ if (appRoot) {
     }
 
     if (trigger.dataset.action === 'share-facebook') {
-      handleFacebookShare(trigger.dataset.listingUrl || buildListingUrl(state.draft));
+      const listingUrl = trigger.dataset.listingUrl || buildListingUrl(state.draft);
+      if (state.shareMenu?.mode === 'story') {
+        await shareAsStory({
+          appUrl: 'https://www.facebook.com/',
+          listingUrl,
+          storyImageUrl: trigger.dataset.storyImageUrl || '',
+          title: trigger.dataset.shareTitle || '',
+        });
+      } else {
+        handleFacebookShare(listingUrl);
+      }
       recordListingShare(trigger.dataset.shareSlug || '');
       closeShareMenu();
       return;
     }
 
     if (trigger.dataset.action === 'share-whatsapp-chat') {
-      handleWhatsAppShare(trigger.dataset.listingUrl || buildListingUrl(state.draft));
+      const listingUrl = trigger.dataset.listingUrl || buildListingUrl(state.draft);
+      if (state.shareMenu?.mode === 'story') {
+        await shareAsStory({
+          appUrl: 'https://wa.me/',
+          listingUrl,
+          storyImageUrl: trigger.dataset.storyImageUrl || '',
+          title: trigger.dataset.shareTitle || '',
+        });
+      } else {
+        handleWhatsAppShare(listingUrl);
+      }
       recordListingShare(trigger.dataset.shareSlug || '');
       closeShareMenu();
       return;
