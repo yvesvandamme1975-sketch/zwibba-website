@@ -9,6 +9,7 @@ import request from 'supertest';
 import { OtpService } from '../../src/auth/otp.service';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/database/prisma.service';
+import { ListingsService } from '../../src/listings/listings.service';
 
 class _FakeOtpService {
   async checkVerification({
@@ -237,15 +238,24 @@ class _FakePrismaService {
       where,
     }: {
       where?: {
+        countryCode?: string;
         moderationStatus?: string;
       };
     } = {}) => {
       return Array.from(this.listings.values()).filter((listing) => {
-        if (!where?.moderationStatus) {
-          return true;
+        if (where?.moderationStatus && listing.moderationStatus !== where.moderationStatus) {
+          return false;
         }
 
-        return listing.moderationStatus === where.moderationStatus;
+        if (where?.countryCode) {
+          const listingCountryCode = (listing.countryCode as string | undefined) ?? 'CD';
+
+          if (listingCountryCode !== where.countryCode) {
+            return false;
+          }
+        }
+
+        return true;
       });
     },
     findUnique: async ({
@@ -499,6 +509,152 @@ test('listings feed returns newly approved database-backed listings only', async
     response.body.items[0].primaryImageUrl,
     'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
   );
+});
+
+test('listBrowseFeed service method filters by country code directly', async () => {
+  const prisma = new _FakePrismaService();
+  const service = new ListingsService(prisma as unknown as PrismaService);
+
+  prisma.drafts.set('draft_cd_direct', {
+    area: 'Lubumbashi Centre',
+    categoryId: 'electronics',
+    condition: 'used_good',
+    description: 'Radio en bon état.',
+    id: 'draft_cd_direct',
+    ownerPhoneNumber: '+243990000060',
+    priceCdf: 45000,
+    syncStatus: 'synced',
+    title: 'Radio CD',
+  });
+  prisma.listings.set('listing_cd_direct', {
+    area: 'Lubumbashi Centre',
+    categoryId: 'electronics',
+    countryCode: 'CD',
+    description: 'Radio en bon état.',
+    draftId: 'draft_cd_direct',
+    id: 'listing_cd_direct',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+243990000060',
+    priceCdf: 45000,
+    slug: 'radio-cd',
+    title: 'Radio CD',
+    updatedAt: new Date('2026-05-01T10:00:00.000Z'),
+  });
+
+  prisma.drafts.set('draft_be_direct', {
+    area: 'Bruxelles',
+    categoryId: 'electronics',
+    condition: 'used_good',
+    description: 'Radio en bon état.',
+    id: 'draft_be_direct',
+    ownerPhoneNumber: '+32470000060',
+    priceCdf: 45000,
+    syncStatus: 'synced',
+    title: 'Radio BE',
+  });
+  prisma.listings.set('listing_be_direct', {
+    area: 'Bruxelles',
+    categoryId: 'electronics',
+    countryCode: 'BE',
+    description: 'Radio en bon état.',
+    draftId: 'draft_be_direct',
+    id: 'listing_be_direct',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+32470000060',
+    priceCdf: 45000,
+    slug: 'radio-be',
+    title: 'Radio BE',
+    updatedAt: new Date('2026-05-01T10:00:00.000Z'),
+  });
+
+  const beResult = await service.listBrowseFeed({ countryCode: 'BE' });
+  assert.deepEqual(beResult.items.map((item) => item.slug), ['radio-be']);
+
+  const defaultResult = await service.listBrowseFeed();
+  assert.deepEqual(defaultResult.items.map((item) => item.slug), ['radio-cd']);
+});
+
+test('listings feed filters by country code over HTTP and falls back to CD for missing or invalid values', async (t) => {
+  const {
+    app,
+    prisma,
+  } = await createTestContext();
+  t.after(async () => {
+    await app.close();
+  });
+
+  prisma.drafts.set('draft_cd_http', {
+    area: 'Lubumbashi Centre',
+    categoryId: 'electronics',
+    condition: 'used_good',
+    description: 'Enceinte en bon état.',
+    id: 'draft_cd_http',
+    ownerPhoneNumber: '+243990000061',
+    priceCdf: 60000,
+    syncStatus: 'synced',
+    title: 'Enceinte CD',
+  });
+  prisma.listings.set('listing_cd_http', {
+    area: 'Lubumbashi Centre',
+    categoryId: 'electronics',
+    countryCode: 'CD',
+    description: 'Enceinte en bon état.',
+    draftId: 'draft_cd_http',
+    id: 'listing_cd_http',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+243990000061',
+    priceCdf: 60000,
+    slug: 'enceinte-cd',
+    title: 'Enceinte CD',
+    updatedAt: new Date('2026-05-01T10:00:00.000Z'),
+  });
+
+  prisma.drafts.set('draft_be_http', {
+    area: 'Bruxelles',
+    categoryId: 'electronics',
+    condition: 'used_good',
+    description: 'Enceinte en bon état.',
+    id: 'draft_be_http',
+    ownerPhoneNumber: '+32470000061',
+    priceCdf: 60000,
+    syncStatus: 'synced',
+    title: 'Enceinte BE',
+  });
+  prisma.listings.set('listing_be_http', {
+    area: 'Bruxelles',
+    categoryId: 'electronics',
+    countryCode: 'BE',
+    description: 'Enceinte en bon état.',
+    draftId: 'draft_be_http',
+    id: 'listing_be_http',
+    moderationStatus: 'approved',
+    ownerPhoneNumber: '+32470000061',
+    priceCdf: 60000,
+    slug: 'enceinte-be',
+    title: 'Enceinte BE',
+    updatedAt: new Date('2026-05-01T10:00:00.000Z'),
+  });
+
+  const defaultResponse = await request(app.getHttpServer())
+    .get('/listings')
+    .expect(200);
+  assert.deepEqual(defaultResponse.body.items.map((item: { slug: string }) => item.slug), [
+    'enceinte-cd',
+  ]);
+
+  const beResponse = await request(app.getHttpServer())
+    .get('/listings?countryCode=BE')
+    .expect(200);
+  assert.deepEqual(beResponse.body.items.map((item: { slug: string }) => item.slug), [
+    'enceinte-be',
+  ]);
+
+  const invalidResponse = await request(app.getHttpServer())
+    .get('/listings?countryCode=fr')
+    .expect(200);
+  assert.deepEqual(invalidResponse.body.items.map((item: { slug: string }) => item.slug), [
+    'enceinte-cd',
+  ]);
 });
 
 test('listings feed includes approved active system seed listings from the same database feed', async (t) => {
