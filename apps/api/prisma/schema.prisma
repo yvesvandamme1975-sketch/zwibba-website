@@ -10,6 +10,7 @@ datasource db {
 model User {
   boostPurchases     BoostPurchase[]
   chatThreadsAsBuyer ChatThread[]       @relation("BuyerThreads")
+  countryCode        String             @default("CD")
   id                 String             @id @default(cuid())
   phoneNumber        String             @unique
   area               String             @default("")
@@ -43,6 +44,7 @@ model Draft {
   attributesJson   Json?
   categoryId       String
   condition        String      @default("")
+  countryCode      String      @default("CD")
   createdAt        DateTime    @default(now())
   description      String
   listing          Listing?
@@ -90,6 +92,7 @@ model Listing {
   boostPurchases     BoostPurchase[]
   categoryId         String
   chatThreads        ChatThread[]
+  countryCode        String              @default("CD")
   createdAt          DateTime            @default(now())
   deletedBySellerAt  DateTime?
   deletedReason      String?
@@ -117,6 +120,7 @@ model Listing {
   title              String
   updatedAt          DateTime            @updatedAt
 
+  @@index([countryCode])
   @@index([lifecycleStatus])
   @@index([moderationStatus])
   @@index([ownerPhoneNumber])
