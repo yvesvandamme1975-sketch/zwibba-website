@@ -11,6 +11,7 @@ import { randomUUID } from 'node:crypto';
 import { loadEnv } from '../config/env';
 import { PrismaService } from '../database/prisma.service';
 import { OtpService } from './otp.service';
+import { resolvePhoneCountry } from './phone-country';
 import { computeSessionExpiry, isSessionExpired } from './session-expiry';
 import { isOtpRequestRateExceeded, resolveOtpRateWindowStart } from './otp-rate-limit';
 
@@ -33,8 +34,8 @@ export class AuthService {
   async requestOtp(phoneNumber: string) {
     const normalizedPhone = phoneNumber.trim();
 
-    if (!normalizedPhone.startsWith('+243')) {
-      throw new BadRequestException('Le numéro doit commencer par +243.');
+    if (!resolvePhoneCountry(normalizedPhone)) {
+      throw new BadRequestException('Le numéro doit commencer par +243 ou +32.');
     }
 
     const recentAttemptCount = await this.prismaService.verificationAttempt.count({
@@ -86,14 +87,13 @@ export class AuthService {
       throw new UnauthorizedException('Code OTP invalide.');
     }
 
+    const phoneCountry = resolvePhoneCountry(normalizedPhone) ?? 'CD';
     const user = await this.prismaService.user.upsert({
       where: {
         phoneNumber: normalizedPhone,
       },
-      update: {},
-      create: {
-        phoneNumber: normalizedPhone,
-      },
+      update: { countryCode: phoneCountry },
+      create: { phoneNumber: normalizedPhone, countryCode: phoneCountry },
     });
 
     await this.seedDemoWalletIfNeeded(user.id);
