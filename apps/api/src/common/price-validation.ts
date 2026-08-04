@@ -53,7 +53,8 @@ export function resolveSubmittedListingPrice({
   if (
     Number.isInteger(priceCdf) &&
     priceCdf != null &&
-    (normalizedCurrency !== 'USD' || !Number.isInteger(priceAmount))
+    ((normalizedCurrency !== 'USD' && normalizedCurrency !== 'EUR') ||
+      !Number.isInteger(priceAmount))
   ) {
     return assertSupportedListingPrice({
       priceAmount: priceCdf,
