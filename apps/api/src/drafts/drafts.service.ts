@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 
+import { resolvePhoneCountry } from '../auth/phone-country';
 import {
   ListingPriceCurrency,
   resolveSubmittedListingPrice,
@@ -32,6 +33,7 @@ export type SyncedDraftRecord = {
   attributesJson: ListingAttributesJson;
   categoryId: string;
   condition: string;
+  countryCode: string;
   description: string;
   draftId: string;
   ownerPhoneNumber: string;
@@ -84,6 +86,7 @@ export class DraftsService {
       priceCdf,
       priceCurrency,
     });
+    const resolvedCountryCode = resolvePhoneCountry(phoneNumber) ?? 'CD';
     const resolvedArea = (await this.resolveProfileArea(phoneNumber, area)) ?? '';
     const normalizedAttributesJson = normalizeListingAttributesJson(attributesJson);
     const existingDraft = draftId
@@ -124,6 +127,7 @@ export class DraftsService {
             attributesJson: toPrismaListingAttributesJson(normalizedAttributesJson),
             categoryId,
             condition: condition ?? existingDraft.condition,
+            countryCode: resolvedCountryCode,
             description,
             ownerPhoneNumber: phoneNumber,
             priceAmount: supportedPrice.priceAmount,
@@ -138,6 +142,7 @@ export class DraftsService {
             attributesJson: toPrismaListingAttributesJson(normalizedAttributesJson),
             categoryId,
             condition: condition ?? '',
+            countryCode: resolvedCountryCode,
             description,
             id: generatedDraftId,
             ownerPhoneNumber: phoneNumber,
@@ -168,6 +173,7 @@ export class DraftsService {
       attributesJson: normalizedAttributesJson,
       categoryId,
       condition: persistedDraft.condition ?? condition ?? '',
+      countryCode: (persistedDraft as { countryCode?: string }).countryCode ?? resolvedCountryCode,
       description,
       draftId: persistedDraft.id,
       ownerPhoneNumber: phoneNumber,
@@ -215,6 +221,7 @@ export class DraftsService {
       attributesJson: normalizeListingAttributesJson((draft as { attributesJson?: unknown }).attributesJson),
       categoryId: draft.categoryId,
       condition: draft.condition,
+      countryCode: (draft as { countryCode?: string }).countryCode ?? 'CD',
       description: draft.description,
       draftId: draft.id,
       ownerPhoneNumber: draft.ownerPhoneNumber,

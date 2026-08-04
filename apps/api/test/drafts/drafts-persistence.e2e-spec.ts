@@ -31,6 +31,7 @@ class _FakePrismaService {
   draftPhotosByDraftId = new Map<string, Array<Record<string, unknown>>>();
   drafts = new Map<string, Record<string, unknown>>();
   listingsByDraftId = new Map<string, Record<string, unknown>>();
+  phoneNumbersByUserId = new Map<string, string>();
   sessions = new Map<string, {
     token: string;
     user: {
@@ -47,10 +48,12 @@ class _FakePrismaService {
         userId: string;
       };
     }) => {
+      const phoneNumber =
+        this.phoneNumbersByUserId.get(data.userId) ?? '+243990000001';
       const session = {
         token: data.token,
         user: {
-          phoneNumber: '+243990000001',
+          phoneNumber,
         },
       };
       this.sessions.set(session.token, session);
@@ -71,10 +74,19 @@ class _FakePrismaService {
   };
 
   readonly user = {
-    upsert: async () => {
+    upsert: async ({
+      where,
+    }: {
+      where: {
+        phoneNumber: string;
+      };
+    }) => {
+      const userId = `user_${where.phoneNumber.replaceAll('+', '')}`;
+      this.phoneNumbersByUserId.set(userId, where.phoneNumber);
+
       return {
-        id: 'user_243990000001',
-        phoneNumber: '+243990000001',
+        id: userId,
+        phoneNumber: where.phoneNumber,
       };
     },
   };
@@ -440,6 +452,157 @@ test('draft sync rejects prices above the 32-bit beta limit with a clear seller 
     .expect(400);
 
   assert.match(syncResponse.body.message, /2.?147.?483.?647 CDF/i);
+});
+
+test('draft sync persists countryCode BE for a belgian phone number on create', async (t) => {
+  const harness = await createTestApp();
+  t.after(async () => {
+    await harness.app.close();
+  });
+
+  await request(harness.app.getHttpServer())
+    .post('/auth/request-otp')
+    .send({ phoneNumber: '+32470123456' })
+    .expect(201);
+
+  const verifyResponse = await request(harness.app.getHttpServer())
+    .post('/auth/verify-otp')
+    .send({
+      phoneNumber: '+32470123456',
+      code: '123456',
+    })
+    .expect(201);
+
+  await request(harness.app.getHttpServer())
+    .post('/drafts/sync')
+    .set('authorization', `Bearer ${verifyResponse.body.sessionToken}`)
+    .send({
+      area: 'Bruxelles Centre',
+      categoryId: 'phones_tablets',
+      description: 'Téléphone en bon état.',
+      priceAmount: 200,
+      priceCurrency: 'EUR',
+      title: 'iPhone 12',
+      photos: [
+        {
+          objectKey: 'draft-photos/iphone-front.jpg',
+          publicUrl: 'https://cdn.zwibba.example/draft-photos/iphone-front.jpg',
+          sourcePresetId: 'phone-front',
+          uploadStatus: 'uploaded',
+        },
+      ],
+    })
+    .expect(201);
+
+  const persistedDraft = Array.from(harness.prisma.drafts.values())[0] as Record<string, unknown>;
+  assert.equal(persistedDraft.countryCode, 'BE');
+});
+
+test('draft sync persists countryCode CD for a DRC phone number on create', async (t) => {
+  const harness = await createTestApp();
+  t.after(async () => {
+    await harness.app.close();
+  });
+
+  await request(harness.app.getHttpServer())
+    .post('/auth/request-otp')
+    .send({ phoneNumber: '+243990000001' })
+    .expect(201);
+
+  const verifyResponse = await request(harness.app.getHttpServer())
+    .post('/auth/verify-otp')
+    .send({
+      phoneNumber: '+243990000001',
+      code: '123456',
+    })
+    .expect(201);
+
+  const syncResponse = await request(harness.app.getHttpServer())
+    .post('/drafts/sync')
+    .set('authorization', `Bearer ${verifyResponse.body.sessionToken}`)
+    .send({
+      area: 'Lubumbashi Centre',
+      categoryId: 'phones_tablets',
+      description: 'Téléphone propre, batterie stable.',
+      priceCdf: 4256000,
+      title: 'Samsung Galaxy A54',
+      photos: [
+        {
+          objectKey: 'draft-photos/phone-front.jpg',
+          publicUrl: 'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
+          sourcePresetId: 'phone-front',
+          uploadStatus: 'uploaded',
+        },
+      ],
+    })
+    .expect(201);
+
+  const persistedDraftAfterCreate = harness.prisma.drafts.get(
+    syncResponse.body.draftId,
+  ) as Record<string, unknown>;
+  assert.equal(persistedDraftAfterCreate.countryCode, 'CD');
+});
+
+test('draft sync re-resolves countryCode from the phone number on the update branch', async (t) => {
+  const harness = await createTestApp();
+  t.after(async () => {
+    await harness.app.close();
+  });
+
+  await request(harness.app.getHttpServer())
+    .post('/auth/request-otp')
+    .send({ phoneNumber: '+243990000001' })
+    .expect(201);
+
+  const verifyResponse = await request(harness.app.getHttpServer())
+    .post('/auth/verify-otp')
+    .send({
+      phoneNumber: '+243990000001',
+      code: '123456',
+    })
+    .expect(201);
+
+  // Seed an existing draft with a deliberately wrong countryCode so the
+  // update branch is the only thing that can correct it.
+  harness.prisma.drafts.set('draft_existing_1', {
+    area: 'Lubumbashi Centre',
+    categoryId: 'phones_tablets',
+    condition: 'used_good',
+    countryCode: 'BE',
+    description: 'Téléphone propre, batterie stable.',
+    id: 'draft_existing_1',
+    ownerPhoneNumber: '+243990000001',
+    priceAmount: 4256000,
+    priceCdf: 4256000,
+    priceCurrency: 'CDF',
+    title: 'Samsung Galaxy A54',
+  });
+
+  await request(harness.app.getHttpServer())
+    .post('/drafts/sync')
+    .set('authorization', `Bearer ${verifyResponse.body.sessionToken}`)
+    .send({
+      area: 'Lubumbashi Centre',
+      categoryId: 'phones_tablets',
+      description: 'Téléphone propre, batterie stable, vendu avec chargeur.',
+      draftId: 'draft_existing_1',
+      priceCdf: 4300000,
+      title: 'Samsung Galaxy A54 128 Go',
+      photos: [
+        {
+          objectKey: 'draft-photos/phone-front.jpg',
+          publicUrl: 'https://cdn.zwibba.example/draft-photos/phone-front.jpg',
+          sourcePresetId: 'phone-front',
+          uploadStatus: 'uploaded',
+        },
+      ],
+    })
+    .expect(201);
+
+  const persistedDraftAfterUpdate = harness.prisma.drafts.get(
+    'draft_existing_1',
+  ) as Record<string, unknown>;
+  assert.equal(persistedDraftAfterUpdate.countryCode, 'CD');
 });
 
 test('draft delete removes the seller draft and uploaded photo objects', async (t) => {
