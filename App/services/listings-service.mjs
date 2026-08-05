@@ -50,8 +50,11 @@ export function createListingsService({
       return response.json();
     },
 
-    async listBrowseFeed() {
-      const response = await fetchFn(`${apiBaseUrl}/listings`, {
+    async listBrowseFeed({ countryCode } = {}) {
+      const feedUrl = countryCode
+        ? `${apiBaseUrl}/listings?countryCode=${encodeURIComponent(countryCode)}`
+        : `${apiBaseUrl}/listings`;
+      const response = await fetchFn(feedUrl, {
         method: 'GET',
       });
 

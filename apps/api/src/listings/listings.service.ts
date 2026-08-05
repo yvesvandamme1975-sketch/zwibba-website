@@ -1,6 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import type { SessionRecord } from '../auth/auth.service';
+import type { MarketCountryCode } from '../auth/phone-country';
 import { normalizeListingAttributesJson } from '../common/listing-attributes';
 import type { ListingPriceCurrency } from '../common/price-validation';
 import { PrismaService } from '../database/prisma.service';
@@ -378,10 +379,15 @@ export class ListingsService {
     return draft as PersistedDraftRecord;
   }
 
-  async listBrowseFeed() {
+  async listBrowseFeed({
+    countryCode = 'CD',
+  }: {
+    countryCode?: MarketCountryCode;
+  } = {}) {
     const listings = await this.prismaService.listing.findMany({
       where: {
         moderationStatus: 'approved',
+        countryCode,
       },
     });
 

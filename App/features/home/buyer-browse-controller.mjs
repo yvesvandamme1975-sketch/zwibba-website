@@ -130,11 +130,11 @@ export function createBuyerBrowseController({
   return {
     state,
 
-    async loadFeed() {
+    async loadFeed({ countryCode } = {}) {
       state.feedStatus = 'loading';
 
       try {
-        const response = await listingsService.listBrowseFeed();
+        const response = await listingsService.listBrowseFeed({ countryCode });
 
         state.feedItems = (response.items ?? []).map((item) => ({
           ...item,

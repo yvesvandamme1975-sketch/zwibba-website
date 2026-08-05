@@ -61,6 +61,7 @@ import {
   restoreBuyerCategoryScrollRenderState,
 } from './utils/buyer-category-scroll-render-state.mjs';
 import { resolveDiscardDraftRoute } from './utils/draft-discard-navigation.mjs';
+import { resolvePhoneCountry } from './utils/phone-country.mjs';
 import {
   captureReviewDraftRenderState,
   restoreReviewDraftRenderState,
@@ -568,7 +569,9 @@ if (appRoot) {
     }
 
     state.buyerFeedPromise = buyerBrowseController
-      .loadFeed()
+      .loadFeed({
+        countryCode: resolvePhoneCountry(state.session?.phoneNumber),
+      })
       .catch(() => undefined)
       .finally(() => {
         state.buyerFeedPromise = null;
@@ -857,7 +860,7 @@ if (appRoot) {
     state.profileCityOptionsStatus = 'loading';
     state.profileCityOptionsPromise = profileService
       .listCities({
-        countryCode: 'CD',
+        countryCode: resolvePhoneCountry(state.session?.phoneNumber),
       })
       .then((items) => {
         state.profileCityOptions = items;
@@ -967,6 +970,7 @@ if (appRoot) {
           conditionOptions,
           draft: state.draft,
           profileArea: state.profile?.area ?? state.draft?.details.area ?? '',
+          sellerCountryCode: resolvePhoneCountry(state.session?.phoneNumber),
           validationErrors: state.reviewErrors,
         });
       case 'auth-welcome':
@@ -1686,7 +1690,7 @@ if (appRoot) {
 
     try {
       const city = await profileService.suggestCity({
-        countryCode: 'CD',
+        countryCode: resolvePhoneCountry(state.session?.phoneNumber),
         label,
       });
 

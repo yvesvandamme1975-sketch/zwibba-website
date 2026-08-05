@@ -50,6 +50,35 @@ test('live listings service loads the browse feed from the live API', async () =
   ]);
 });
 
+test('live listings service scopes the browse feed to the requested market country', async () => {
+  const requests = [];
+  const service = createListingsService({
+    apiBaseUrl: 'https://api.example.test',
+    fetchFn: async (url, options = {}) => {
+      requests.push({
+        url,
+        ...options,
+      });
+
+      return createJsonResponse(200, { items: [] });
+    },
+  });
+
+  await service.listBrowseFeed({ countryCode: 'BE' });
+  await service.listBrowseFeed({ countryCode: 'CD' });
+
+  assert.deepEqual(requests, [
+    {
+      url: 'https://api.example.test/listings?countryCode=BE',
+      method: 'GET',
+    },
+    {
+      url: 'https://api.example.test/listings?countryCode=CD',
+      method: 'GET',
+    },
+  ]);
+});
+
 test('live listings service loads a listing detail from the live API', async () => {
   const service = createListingsService({
     apiBaseUrl: 'https://api.example.test',

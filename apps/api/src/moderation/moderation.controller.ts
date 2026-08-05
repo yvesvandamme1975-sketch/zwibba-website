@@ -6,12 +6,14 @@ import {
   Inject,
   Param,
   Post,
+  Query,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 
 import type { SessionRecord } from '../auth/auth.service';
 import { CurrentSession } from '../auth/current-session.decorator';
+import { normalizeMarketCountryCode } from '../auth/phone-country';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { loadEnv } from '../config/env';
 import { ModerationService } from './moderation.service';
@@ -59,9 +61,14 @@ export class ModerationController {
   }
 
   @Get('queue')
-  queue(@Headers('x-zwibba-admin-secret') adminSecret: string) {
+  queue(
+    @Headers('x-zwibba-admin-secret') adminSecret: string,
+    @Query('countryCode') countryCode?: string,
+  ) {
     this.requireAdminSecret(adminSecret);
-    return this.moderationService.listQueue();
+    return this.moderationService.listQueue({
+      countryCode: normalizeMarketCountryCode(countryCode),
+    });
   }
 
   @Post(':listingId/approve')

@@ -1,4 +1,6 @@
 import { normalizeListingAttributesJson } from '../utils/fashion-attributes.mjs';
+import { resolvePhoneCountry } from '../utils/phone-country.mjs';
+import { listingCurrenciesForCountry, normalizePriceCurrency } from '../utils/price-input.mjs';
 
 export const draftSyncStates = {
   localOnly: 'local_only',
@@ -30,14 +32,6 @@ function normalizeEditablePhoto(photo = {}, index = 0, hasCapturePhoto = false) 
   };
 }
 
-function normalizePriceCurrency(rawValue) {
-  if (rawValue === 'CDF' || rawValue === 'USD') {
-    return rawValue;
-  }
-
-  return '';
-}
-
 function normalizePriceAmount(details = {}) {
   if (details.priceAmount === null || details.priceAmount === undefined || details.priceAmount === '') {
     return details.priceCdf ?? null;
@@ -59,10 +53,11 @@ function createEmptyDetails() {
   };
 }
 
-function normalizeDetails(details = {}) {
+function normalizeDetails(details = {}, { phoneNumber = '' } = {}) {
   const priceAmount = normalizePriceAmount(details);
+  const defaultCurrency = listingCurrenciesForCountry(resolvePhoneCountry(phoneNumber))[0];
   const priceCurrency =
-    normalizePriceCurrency(details.priceCurrency) || (priceAmount != null ? 'CDF' : '');
+    normalizePriceCurrency(details.priceCurrency) || (priceAmount != null ? defaultCurrency : '');
 
   return {
     title: details.title ?? '',
@@ -175,15 +170,16 @@ function buildDraftShape(draft) {
   const photos = Array.isArray(draft.photos)
     ? draft.photos.map((photo, index) => normalizePhoto(photo, index))
     : [];
+  const phoneNumber = draft.auth?.phoneNumber ?? '';
 
   return {
     ...draft,
     photos,
     auth: {
-      phoneNumber: draft.auth?.phoneNumber ?? '',
+      phoneNumber,
       otpVerified: Boolean(draft.auth?.otpVerified),
     },
-    details: normalizeDetails(draft.details),
+    details: normalizeDetails(draft.details, { phoneNumber }),
     ai: {
       ...createEmptyAiState(),
       ...draft.ai,
@@ -252,9 +248,7 @@ export function createEditableListingDraft(
       condition: editableDraft?.condition ?? '',
       attributesJson: normalizeListingAttributesJson(editableDraft?.attributesJson),
       priceAmount: editableDraft?.priceAmount ?? editableDraft?.priceCdf ?? null,
-      priceCurrency:
-        normalizePriceCurrency(editableDraft?.priceCurrency) ||
-        ((editableDraft?.priceAmount ?? editableDraft?.priceCdf) != null ? 'CDF' : ''),
+      priceCurrency: normalizePriceCurrency(editableDraft?.priceCurrency),
       description: editableDraft?.description ?? '',
       area: editableDraft?.area ?? '',
     },

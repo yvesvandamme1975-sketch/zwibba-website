@@ -1,8 +1,10 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { normalizeMarketCountryCode, type MarketCountryCode } from '../auth/phone-country';
 import {
   ListingPriceCurrency,
+  listingCurrenciesForCountry,
   resolveSubmittedListingPrice,
 } from '../common/price-validation';
 import { toPrismaListingAttributesJson } from '../common/listing-attributes';
@@ -226,6 +228,16 @@ export class ModerationService {
       };
     }
 
+    const draftCountry = normalizeMarketCountryCode(syncedDraft.countryCode);
+
+    if (
+      !listingCurrenciesForCountry(draftCountry).includes(
+        supportedPrice.priceCurrency,
+      )
+    ) {
+      throw new BadRequestException('Devise non disponible pour ce marché.');
+    }
+
     const normalizedTitle = title.trim();
     const normalizedDescription = description.trim();
     const normalizedCategoryId = categoryId.trim() || syncedDraft.categoryId;
@@ -258,6 +270,7 @@ export class ModerationService {
           area: syncedDraft.area,
           attributesJson: toPrismaListingAttributesJson(syncedDraft.attributesJson),
           categoryId: normalizedCategoryId,
+          countryCode: draftCountry,
           description: normalizedDescription,
           draftId: syncedDraft.draftId,
           moderationStatus: status,
@@ -273,6 +286,7 @@ export class ModerationService {
           area: syncedDraft.area,
           attributesJson: toPrismaListingAttributesJson(syncedDraft.attributesJson),
           categoryId: normalizedCategoryId,
+          countryCode: draftCountry,
           description: normalizedDescription,
           moderationStatus: status,
           ownerPhoneNumber,
@@ -325,10 +339,11 @@ export class ModerationService {
     };
   }
 
-  async listQueue() {
+  async listQueue({ countryCode }: { countryCode: MarketCountryCode }) {
     const decisions = await this.prismaService.moderationDecision.findMany({
       where: {
         status: 'pending_manual_review',
+        listing: { countryCode },
       },
       include: {
         listing: true,

@@ -10,7 +10,9 @@ import {
 } from '../../utils/rendering.mjs';
 import {
   formatPricePreview,
+  getCurrencyLabel,
   getPriceInputPlaceholder,
+  listingCurrenciesForCountry,
   normalizePriceCurrency,
 } from '../../utils/price-input.mjs';
 import {
@@ -98,6 +100,7 @@ export function renderReviewFormScreen({
   conditionOptions,
   draft,
   profileArea = '',
+  sellerCountryCode = 'CD',
   validationErrors = [],
 }) {
   const missingPrompts = getMissingRequiredPhotoPrompts(draft);
@@ -109,11 +112,14 @@ export function renderReviewFormScreen({
     : 'app-review__summary';
   const summaryMessage = draft.ai.message || "L'IA prépare les bases du brouillon.";
   const resolvedProfileArea = String(profileArea || draft.details.area || '').trim();
-  const priceCurrency = normalizePriceCurrency(draft.details.priceCurrency);
-  const currencyOptions = [
-    { value: 'CDF', label: 'CDF' },
-    { value: 'USD', label: 'US$' },
-  ];
+  const allowedCurrencies = listingCurrenciesForCountry(sellerCountryCode);
+  const currencyOptions = allowedCurrencies.map((currency) => ({
+    value: currency,
+    label: getCurrencyLabel(currency),
+  }));
+  const priceCurrency =
+    normalizePriceCurrency(draft.details.priceCurrency) ||
+    (allowedCurrencies.length === 1 ? allowedCurrencies[0] : '');
   const priceInputValue =
     draft.details.priceAmount === null || draft.details.priceAmount === undefined
       ? ''

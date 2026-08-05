@@ -1,11 +1,19 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 
 import { loadAdminEnv } from './config/env';
-import { renderModerationPage, type ModerationQueueItem } from './moderation/moderation-page';
+import {
+  renderModerationPage,
+  type ModerationMarketCountryCode,
+  type ModerationQueueItem,
+} from './moderation/moderation-page';
 import {
   renderReviewReportsPage,
   type ReviewReportQueueItem,
 } from './moderation/review-reports-page';
+
+function normalizeModerationCountryCode(value: string | null): ModerationMarketCountryCode {
+  return value === 'BE' ? 'BE' : 'CD';
+}
 
 function isAuthorized(request: IncomingMessage, sharedSecret: string) {
   return request.headers['x-zwibba-admin-secret'] === sharedSecret;
@@ -54,8 +62,11 @@ function renderDocument(body: string) {
 </html>`;
 }
 
-async function loadQueueFromApi(apiBaseUrl: string) {
-  const response = await fetch(`${apiBaseUrl}/moderation/queue`);
+async function loadQueueFromApi(
+  apiBaseUrl: string,
+  countryCode: ModerationMarketCountryCode,
+) {
+  const response = await fetch(`${apiBaseUrl}/moderation/queue?countryCode=${countryCode}`);
 
   if (!response.ok) {
     throw new Error(`Unable to load moderation queue (${response.status}).`);
@@ -141,11 +152,14 @@ export function createModerationServer({
   sharedSecret,
 }: {
   apiBaseUrl?: string;
-  queueLoader?: () => Promise<{ items: ModerationQueueItem[] }>;
+  queueLoader?: (
+    countryCode: ModerationMarketCountryCode,
+  ) => Promise<{ items: ModerationQueueItem[] }>;
   sharedSecret: string;
 }) {
   const resolvedQueueLoader = queueLoader ??
-    (() => loadQueueFromApi(apiBaseUrl ?? 'http://127.0.0.1:3200'));
+    ((countryCode: ModerationMarketCountryCode) =>
+      loadQueueFromApi(apiBaseUrl ?? 'http://127.0.0.1:3200', countryCode));
   const reviewReportsLoader = () => loadReviewReportsFromApi(apiBaseUrl ?? 'http://127.0.0.1:3200');
 
   return createServer(async (request, response) => {
@@ -228,8 +242,11 @@ export function createModerationServer({
     }
 
     try {
-      const queue = await resolvedQueueLoader();
-      const html = renderModerationPage(queue);
+      const countryCode = normalizeModerationCountryCode(
+        requestUrl.searchParams.get('countryCode'),
+      );
+      const queue = await resolvedQueueLoader(countryCode);
+      const html = renderModerationPage(queue, countryCode);
       sendHtml(response, 200, renderDocument(html));
     } catch (error) {
       const message = error instanceof Error

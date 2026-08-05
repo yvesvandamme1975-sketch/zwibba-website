@@ -197,6 +197,9 @@ class _FakePrismaService {
     },
   };
 
+  lastListingUpsertCreate: Record<string, unknown> | null = null;
+  lastListingUpsertUpdate: Record<string, unknown> | null = null;
+
   readonly listing = {
     findMany: async ({
       where,
@@ -249,6 +252,8 @@ class _FakePrismaService {
         draftId: string;
       };
     }) => {
+      this.lastListingUpsertCreate = create;
+      this.lastListingUpsertUpdate = update;
       const existingListing = Array.from(this.listings.values()).find(
         (listing) => listing.draftId === where.draftId,
       );
@@ -841,4 +846,140 @@ test('publishing rejects prices above the 32-bit beta limit with a clear seller 
     .expect(400);
 
   assert.match(publishResponse.body.message, /2.?147.?483.?647 CDF/i);
+});
+
+test('publishing a synced belgian draft propagates countryCode BE to the listing on create and update', async (t) => {
+  const prisma = new _FakePrismaService();
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule],
+  })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .overrideProvider(OtpService)
+      .useValue(new _FakeOtpService())
+      .compile();
+
+  const app = moduleRef.createNestApplication();
+  await app.init();
+  t.after(async () => {
+    await app.close();
+  });
+
+  const sessionToken = await createSellerSession(app, '+32470123456');
+  const syncedDraft = await syncDraft(app, sessionToken, {
+    title: 'iPhone 12',
+    categoryId: 'phones_tablets',
+    area: 'Bruxelles Centre',
+    priceAmount: 200,
+    priceCurrency: 'EUR',
+  });
+
+  await request(app.getHttpServer())
+    .post('/moderation/publish')
+    .set('authorization', `Bearer ${sessionToken}`)
+    .send({
+      categoryId: syncedDraft.categoryId,
+      description: 'Téléphone en bon état, vendu avec chargeur.',
+      draftId: syncedDraft.draftId,
+      priceAmount: syncedDraft.priceAmount,
+      priceCurrency: syncedDraft.priceCurrency,
+      title: syncedDraft.title,
+    })
+    .expect(201);
+
+  assert.equal(prisma.lastListingUpsertCreate?.countryCode, 'BE');
+
+  await request(app.getHttpServer())
+    .post('/moderation/publish')
+    .set('authorization', `Bearer ${sessionToken}`)
+    .send({
+      categoryId: syncedDraft.categoryId,
+      description: 'Téléphone en bon état, vendu avec chargeur et facture.',
+      draftId: syncedDraft.draftId,
+      priceAmount: syncedDraft.priceAmount,
+      priceCurrency: syncedDraft.priceCurrency,
+      title: syncedDraft.title,
+    })
+    .expect(201);
+
+  assert.equal(prisma.lastListingUpsertUpdate?.countryCode, 'BE');
+});
+
+test('publishing a belgian draft priced in CDF is rejected as an unsupported market currency', async (t) => {
+  const prisma = new _FakePrismaService();
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule],
+  })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .overrideProvider(OtpService)
+      .useValue(new _FakeOtpService())
+      .compile();
+
+  const app = moduleRef.createNestApplication();
+  await app.init();
+  t.after(async () => {
+    await app.close();
+  });
+
+  const sessionToken = await createSellerSession(app, '+32470123457');
+  const syncedDraft = await syncDraft(app, sessionToken, {
+    title: 'Chaussures de sport',
+    categoryId: 'fashion',
+    area: 'Bruxelles Centre',
+    priceCdf: 15000,
+  });
+
+  const publishResponse = await request(app.getHttpServer())
+    .post('/moderation/publish')
+    .set('authorization', `Bearer ${sessionToken}`)
+    .send({
+      ...syncedDraft,
+      description: 'Chaussures peu portées, très bon état.',
+    })
+    .expect(400);
+
+  assert.equal(
+    publishResponse.body.message,
+    'Devise non disponible pour ce marché.',
+  );
+  assert.equal(prisma.listings.size, 0);
+});
+
+test('publishing a DRC draft priced in CDF still publishes fine', async (t) => {
+  const prisma = new _FakePrismaService();
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule],
+  })
+      .overrideProvider(PrismaService)
+      .useValue(prisma)
+      .overrideProvider(OtpService)
+      .useValue(new _FakeOtpService())
+      .compile();
+
+  const app = moduleRef.createNestApplication();
+  await app.init();
+  t.after(async () => {
+    await app.close();
+  });
+
+  const sessionToken = await createSellerSession(app, '+243990000010');
+  const syncedDraft = await syncDraft(app, sessionToken, {
+    title: 'Chaussures de sport',
+    categoryId: 'fashion',
+    area: 'Lubumbashi Centre',
+    priceCdf: 15000,
+  });
+
+  const publishResponse = await request(app.getHttpServer())
+    .post('/moderation/publish')
+    .set('authorization', `Bearer ${sessionToken}`)
+    .send({
+      ...syncedDraft,
+      description: 'Chaussures peu portées, très bon état.',
+    })
+    .expect(201);
+
+  assert.equal(publishResponse.body.status, 'approved');
+  assert.equal(prisma.lastListingUpsertCreate?.countryCode, 'CD');
 });

@@ -7,11 +7,13 @@ import {
   Inject,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 
 import { AuthService, type SessionRecord } from '../auth/auth.service';
 import { CurrentSession } from '../auth/current-session.decorator';
+import { normalizeMarketCountryCode } from '../auth/phone-country';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { ListingsService } from './listings.service';
 
@@ -23,8 +25,10 @@ export class ListingsController {
   ) {}
 
   @Get()
-  listBrowseFeed() {
-    return this.listingsService.listBrowseFeed();
+  listBrowseFeed(@Query('countryCode') countryCode?: string) {
+    return this.listingsService.listBrowseFeed({
+      countryCode: normalizeMarketCountryCode(countryCode),
+    });
   }
   @Get('mine')
   @UseGuards(SessionAuthGuard)

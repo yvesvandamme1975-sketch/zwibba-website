@@ -1,17 +1,25 @@
 import { BadRequestException } from '@nestjs/common';
 
+import type { MarketCountryCode } from '../auth/phone-country';
+
 export const MAX_PRICE_CDF = 2_147_483_647;
 export const MAX_LISTING_PRICE_AMOUNT = MAX_PRICE_CDF;
-export type ListingPriceCurrency = 'CDF' | 'USD';
+export type ListingPriceCurrency = 'CDF' | 'USD' | 'EUR';
 
 export function normalizeListingPriceCurrency(
   currency: unknown,
 ): ListingPriceCurrency | null {
-  if (currency === 'CDF' || currency === 'USD') {
+  if (currency === 'CDF' || currency === 'USD' || currency === 'EUR') {
     return currency;
   }
 
   return null;
+}
+
+export function listingCurrenciesForCountry(
+  countryCode: MarketCountryCode,
+): ListingPriceCurrency[] {
+  return countryCode === 'BE' ? ['EUR'] : ['CDF', 'USD'];
 }
 
 export function formatListingPrice({
@@ -21,7 +29,8 @@ export function formatListingPrice({
   priceAmount: number;
   priceCurrency: ListingPriceCurrency;
 }) {
-  const suffix = priceCurrency === 'USD' ? 'US$' : 'CDF';
+  const suffix =
+    priceCurrency === 'USD' ? 'US$' : priceCurrency === 'EUR' ? '€' : 'CDF';
 
   if (priceAmount === 0) {
     return 'À donner';
@@ -44,7 +53,8 @@ export function resolveSubmittedListingPrice({
   if (
     Number.isInteger(priceCdf) &&
     priceCdf != null &&
-    (normalizedCurrency !== 'USD' || !Number.isInteger(priceAmount))
+    ((normalizedCurrency !== 'USD' && normalizedCurrency !== 'EUR') ||
+      !Number.isInteger(priceAmount))
   ) {
     return assertSupportedListingPrice({
       priceAmount: priceCdf,

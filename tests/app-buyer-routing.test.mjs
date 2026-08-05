@@ -108,6 +108,26 @@ test('buyer browse controller loads the live feed and filters it by search plus 
   assert.equal(unfiltered.featuredListings.length, 2);
 });
 
+test('buyer browse controller forwards the session market country to the listings service', async () => {
+  const requestedCountryCodes = [];
+  const controller = createBuyerBrowseController({
+    listingsService: {
+      async listBrowseFeed({ countryCode } = {}) {
+        requestedCountryCodes.push(countryCode);
+        return { items: [] };
+      },
+      async getListingDetail(slug) {
+        return { slug };
+      },
+    },
+  });
+
+  await controller.loadFeed({ countryCode: 'BE' });
+  await controller.loadFeed({ countryCode: 'CD' });
+
+  assert.deepEqual(requestedCountryCodes, ['BE', 'CD']);
+});
+
 test('buyer browse controller loads a listing detail and captures errors', async () => {
   const controller = createBuyerBrowseController({
     listingsService: {
