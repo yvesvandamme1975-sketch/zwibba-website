@@ -385,3 +385,13 @@ META_GRAPH_API_VERSION=v21.0
 (Reprendre les noms/valeurs par défaut exacts de `apps/api/src/config/env.ts` — ne rien inventer.)
 2. Vérification finale complète : `cd apps/api && npm test`, puis à la racine `npm run build`, `npm run smoke:monorepo` → tout PASS, citer les sorties.
 3. Commit : `git commit -m "chore(api): refresh env example for meta otp provider"`
+
+---
+
+### Task 12 (revue finale): devises du marché dans le formulaire de prix (App)
+
+Correctif issu de la revue finale : `normalizePriceCurrency` accepte EUR, options de devise dérivées du pays de session (BE → EUR seul, CD → CDF/USD), fallback du modèle de brouillon sans corruption BE. Commit `feat(app): offer market currencies in the price form`.
+
+### Task 13 (revue finale): feed scopé par pays de session (App)
+
+Correctif issu de la revue finale : `listBrowseFeed({ countryCode })` ajoute `?countryCode=` et le contrôleur d'accueil transmet le pays dérivé du numéro de session. Commit `feat(app): scope browse feed by session country`.

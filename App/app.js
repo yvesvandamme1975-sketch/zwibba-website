@@ -569,7 +569,9 @@ if (appRoot) {
     }
 
     state.buyerFeedPromise = buyerBrowseController
-      .loadFeed()
+      .loadFeed({
+        countryCode: resolvePhoneCountry(state.session?.phoneNumber),
+      })
       .catch(() => undefined)
       .finally(() => {
         state.buyerFeedPromise = null;
