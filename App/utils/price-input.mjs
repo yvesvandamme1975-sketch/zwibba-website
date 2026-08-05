@@ -3,11 +3,15 @@ function normalizePriceDigits(rawValue) {
 }
 
 export function normalizePriceCurrency(rawValue) {
-  if (rawValue === 'CDF' || rawValue === 'USD') {
+  if (rawValue === 'CDF' || rawValue === 'USD' || rawValue === 'EUR') {
     return rawValue;
   }
 
   return '';
+}
+
+export function listingCurrenciesForCountry(countryCode) {
+  return countryCode === 'BE' ? ['EUR'] : ['CDF', 'USD'];
 }
 
 function formatGroupedAmount(value) {
@@ -16,8 +20,16 @@ function formatGroupedAmount(value) {
     .replaceAll(/\s/gu, ' ');
 }
 
-function getCurrencyLabel(currency) {
-  return currency === 'USD' ? 'US$' : 'CDF';
+export function getCurrencyLabel(currency) {
+  if (currency === 'USD') {
+    return 'US$';
+  }
+
+  if (currency === 'EUR') {
+    return '€';
+  }
+
+  return 'CDF';
 }
 
 export function parsePriceInput(rawValue) {
@@ -33,7 +45,9 @@ export function parsePriceInput(rawValue) {
 }
 
 export function getPriceInputPlaceholder(currency) {
-  return normalizePriceCurrency(currency) === 'USD' ? 'Ex: 350' : 'Ex: 450000';
+  const normalizedCurrency = normalizePriceCurrency(currency);
+
+  return normalizedCurrency === 'USD' || normalizedCurrency === 'EUR' ? 'Ex: 350' : 'Ex: 450000';
 }
 
 export function formatPricePreview(rawValue, currency) {

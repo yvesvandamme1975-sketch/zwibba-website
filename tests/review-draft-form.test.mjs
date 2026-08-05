@@ -156,6 +156,53 @@ test('review form omits the Taille select for jewelry subtypes without a size gr
   assert.doesNotMatch(html, /name="fashionSize"/);
 });
 
+test('review form offers only EUR for a Belgian seller country and preselects it', () => {
+  const html = renderReviewFormScreen({
+    categories: sellerCategories,
+    conditionOptions: [{ value: 'used_good', label: 'Bon état' }],
+    draft: createReadyDraft({
+      area: 'Bruxelles',
+      priceAmount: null,
+      priceCurrency: '',
+    }),
+    profileArea: 'Bruxelles',
+    sellerCountryCode: 'BE',
+    validationErrors: [],
+  });
+
+  const currencyOptionMatches = [...html.matchAll(/<option value="(CDF|USD|EUR)"[^>]*>/g)];
+
+  assert.deepEqual(
+    currencyOptionMatches.map((match) => match[1]),
+    ['EUR'],
+  );
+  assert.match(html, /<option value="EUR" selected>€<\/option>/);
+});
+
+test('review form keeps CDF and USD currency options for a CD seller country', () => {
+  const html = renderReviewFormScreen({
+    categories: sellerCategories,
+    conditionOptions: [{ value: 'used_good', label: 'Bon état' }],
+    draft: createReadyDraft({
+      area: 'Gombe',
+      priceAmount: 450000,
+      priceCurrency: 'CDF',
+    }),
+    profileArea: 'Gombe',
+    sellerCountryCode: 'CD',
+    validationErrors: [],
+  });
+
+  const currencyOptionMatches = [...html.matchAll(/<option value="(CDF|USD|EUR)"[^>]*>/g)];
+
+  assert.deepEqual(
+    currencyOptionMatches.map((match) => match[1]),
+    ['CDF', 'USD'],
+  );
+  assert.match(html, /<option value="CDF" selected>CDF<\/option>/);
+  assert.match(html, /<option value="USD">US\$<\/option>/);
+});
+
 test('review form keeps the Taille select for jewelry_ring', () => {
   const html = renderReviewFormScreen({
     categories: sellerCategories,

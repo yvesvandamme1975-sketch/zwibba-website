@@ -968,6 +968,7 @@ if (appRoot) {
           conditionOptions,
           draft: state.draft,
           profileArea: state.profile?.area ?? state.draft?.details.area ?? '',
+          sellerCountryCode: resolvePhoneCountry(state.session?.phoneNumber),
           validationErrors: state.reviewErrors,
         });
       case 'auth-welcome':
