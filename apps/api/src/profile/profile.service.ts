@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import type { SessionRecord } from '../auth/auth.service';
+import { resolvePhoneCountry } from '../auth/phone-country';
 import { normalizeDisplayName } from '../common/display-name';
 import { PrismaService } from '../database/prisma.service';
 import { normalizeLocationLabel } from '../locations/location-normalization';
@@ -130,7 +131,7 @@ export class ProfileService {
     const location = await this.prismaService.locationOption.findUnique({
       where: {
         countryCode_type_normalizedLabel: {
-          countryCode: 'CD',
+          countryCode: resolvePhoneCountry(session.phoneNumber) ?? 'CD',
           normalizedLabel: normalizedArea,
           type: 'city',
         },

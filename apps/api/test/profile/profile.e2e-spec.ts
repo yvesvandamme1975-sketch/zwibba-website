@@ -250,11 +250,11 @@ class _FakePrismaService {
     create: async () => ({ id: 'wallet_tx_1' }),
   };
 
-  seedCity(label: string) {
+  seedCity(label: string, countryCode = 'CD') {
     const normalizedLabel = normalizeLocationLabel(label);
-    this.locationOptions.set(`CD:city:${normalizedLabel}`, {
-      countryCode: 'CD',
-      id: `loc_${normalizedLabel}`,
+    this.locationOptions.set(`${countryCode}:city:${normalizedLabel}`, {
+      countryCode,
+      id: `loc_${countryCode}_${normalizedLabel}`,
       label,
       normalizedLabel,
       sourceType: 'system_seed',
@@ -415,6 +415,60 @@ test('profile identity endpoint persists the cleaned display name', async (t) =>
     .expect(200);
 
   assert.equal(getAfter.body.displayName, 'Maison Kivu');
+});
+
+test('profile save validates the area against BE cities for a Belgian session phone', async (t) => {
+  const harness = await createTestApp();
+  t.after(async () => {
+    await harness.app.close();
+  });
+
+  harness.prisma.seedCity('Bruxelles', 'BE');
+
+  const verifyResponse = await request(harness.app.getHttpServer())
+    .post('/auth/verify-otp')
+    .send({
+      code: '123456',
+      phoneNumber: '+32470000001',
+    })
+    .expect(201);
+
+  const sessionToken = verifyResponse.body.sessionToken;
+
+  const saveResponse = await request(harness.app.getHttpServer())
+    .post('/profile')
+    .set('authorization', `Bearer ${sessionToken}`)
+    .send({
+      area: 'Bruxelles',
+    })
+    .expect(201);
+
+  assert.equal(saveResponse.body.area, 'Bruxelles');
+});
+
+test('profile save rejects a BE-only city label for a Congolese session phone', async (t) => {
+  const harness = await createTestApp();
+  t.after(async () => {
+    await harness.app.close();
+  });
+
+  const verifyResponse = await request(harness.app.getHttpServer())
+    .post('/auth/verify-otp')
+    .send({
+      code: '123456',
+      phoneNumber: '+243990000001',
+    })
+    .expect(201);
+
+  const sessionToken = verifyResponse.body.sessionToken;
+
+  await request(harness.app.getHttpServer())
+    .post('/profile')
+    .set('authorization', `Bearer ${sessionToken}`)
+    .send({
+      area: 'Bruxelles',
+    })
+    .expect(400);
 });
 
 test('profile identity endpoint rejects reserved display names', async (t) => {

@@ -27,15 +27,43 @@ const rawCongoCities = [
   'Uvira',
 ];
 
-export function buildSystemSeededCities(): SeededCityRecord[] {
-  return rawCongoCities.map((label) => ({
-    countryCode: 'CD',
+const rawBelgianCities = [
+  'Bruxelles',
+  'Anvers',
+  'Gand',
+  'Charleroi',
+  'Liège',
+  'Bruges',
+  'Namur',
+  'Louvain',
+  'Mons',
+  'Malines',
+  'La Louvière',
+  'Courtrai',
+  'Hasselt',
+  'Ostende',
+  'Tournai',
+];
+
+function buildSeededCityRecords(
+  countryCode: string,
+  labels: string[],
+): SeededCityRecord[] {
+  return labels.map((label) => ({
+    countryCode,
     label,
     normalizedLabel: normalizeLocationLabel(label),
     sourceType: 'system_seed',
     status: 'active',
     type: 'city',
   }));
+}
+
+export function buildSystemSeededCities(): SeededCityRecord[] {
+  return [
+    ...buildSeededCityRecords('CD', rawCongoCities),
+    ...buildSeededCityRecords('BE', rawBelgianCities),
+  ];
 }
 
 type LocationSeedPersistenceClient = {
