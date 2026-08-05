@@ -61,6 +61,7 @@ import {
   restoreBuyerCategoryScrollRenderState,
 } from './utils/buyer-category-scroll-render-state.mjs';
 import { resolveDiscardDraftRoute } from './utils/draft-discard-navigation.mjs';
+import { resolvePhoneCountry } from './utils/phone-country.mjs';
 import {
   captureReviewDraftRenderState,
   restoreReviewDraftRenderState,
@@ -857,7 +858,7 @@ if (appRoot) {
     state.profileCityOptionsStatus = 'loading';
     state.profileCityOptionsPromise = profileService
       .listCities({
-        countryCode: 'CD',
+        countryCode: resolvePhoneCountry(state.session?.phoneNumber),
       })
       .then((items) => {
         state.profileCityOptions = items;
@@ -1686,7 +1687,7 @@ if (appRoot) {
 
     try {
       const city = await profileService.suggestCity({
-        countryCode: 'CD',
+        countryCode: resolvePhoneCountry(state.session?.phoneNumber),
         label,
       });
 
