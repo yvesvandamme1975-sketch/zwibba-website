@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net';
 import test from 'node:test';
 
 import * as adminMain from '../src/main';
+import { renderModerationPage } from '../src/moderation/moderation-page';
 
 test('admin moderation shell renders api-shaped queue items with outcome labels', async () => {
   const html = await adminMain.renderModerationShell(async () => {
@@ -35,6 +36,32 @@ test('admin moderation shell renders api-shaped queue items with outcome labels'
   assert.match(html, /Approuver/);
   assert.match(html, /Bloquer/);
   assert.match(html, /name="reasonSummary"/);
+});
+
+test('renderModerationPage renders CD and BE market tabs with the active one marked', () => {
+  const cdHtml = renderModerationPage({ items: [] }, 'CD');
+
+  assert.match(cdHtml, /RDC/);
+  assert.match(cdHtml, /Belgique/);
+  assert.match(cdHtml, /href="\/moderation\?countryCode=CD"/);
+  assert.match(cdHtml, /href="\/moderation\?countryCode=BE"/);
+
+  const beHtml = renderModerationPage({ items: [] }, 'BE');
+
+  assert.match(beHtml, /RDC/);
+  assert.match(beHtml, /Belgique/);
+  assert.match(beHtml, /href="\/moderation\?countryCode=CD"/);
+  assert.match(beHtml, /href="\/moderation\?countryCode=BE"/);
+
+  // The active tab must be visually distinguishable from the inactive one.
+  assert.notEqual(
+    cdHtml.match(/<a[^>]*href="\/moderation\?countryCode=CD"[^>]*>/)?.[0],
+    beHtml.match(/<a[^>]*href="\/moderation\?countryCode=CD"[^>]*>/)?.[0],
+  );
+  assert.notEqual(
+    cdHtml.match(/<a[^>]*href="\/moderation\?countryCode=BE"[^>]*>/)?.[0],
+    beHtml.match(/<a[^>]*href="\/moderation\?countryCode=BE"[^>]*>/)?.[0],
+  );
 });
 
 test('admin service serves a protected moderation page over http', async (t) => {
@@ -223,5 +250,108 @@ test('admin service forwards approve and block actions to the API with the share
       return request.url.endsWith('/moderation/listing-1/block');
     }),
     true,
+  );
+});
+
+test('admin moderation page propagates the selected countryCode to the API queue fetch and marks the active tab', async (t) => {
+  const apiRequests: Array<{ url: string }> = [];
+  const originalFetch = globalThis.fetch;
+  // Only intercept calls to the mocked API base; anything else (in particular
+  // the test's own client request to the local admin server) must go over
+  // the real network, otherwise the server-side forwarding never happens.
+  globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+    const urlString = String(url);
+
+    if (urlString.startsWith('https://api.example.test')) {
+      apiRequests.push({ url: urlString });
+
+      return new Response(
+        JSON.stringify({ items: [] }),
+        {
+          status: 200,
+          headers: {
+            'content-type': 'application/json; charset=utf-8',
+          },
+        },
+      );
+    }
+
+    return originalFetch(url as string, init);
+  }) as typeof fetch;
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const createModerationServer = (adminMain as Record<string, unknown>)[
+    'createModerationServer'
+  ];
+
+  assert.equal(typeof createModerationServer, 'function');
+
+  if (typeof createModerationServer != 'function') {
+    return;
+  }
+
+  const server = createModerationServer({
+    apiBaseUrl: 'https://api.example.test',
+    sharedSecret: 'zwibba-admin-secret',
+  }) as {
+    close(callback: () => void): void;
+    listen(port: number, host: string, callback: () => void): void;
+    address(): AddressInfo | null;
+  };
+
+  t.after(async () => {
+    await new Promise<void>((resolve) => {
+      server.close(resolve);
+    });
+  });
+
+  await new Promise<void>((resolve) => {
+    server.listen(0, '127.0.0.1', resolve);
+  });
+
+  const address = server.address();
+  assert.ok(address);
+
+  const beResponse = await fetch(
+    `http://127.0.0.1:${address.port}/moderation?countryCode=BE`,
+    {
+      headers: {
+        'x-zwibba-admin-secret': 'zwibba-admin-secret',
+      },
+    },
+  );
+  assert.equal(beResponse.status, 200);
+  const beHtml = await beResponse.text();
+
+  assert.equal(
+    apiRequests.some((request) => request.url === 'https://api.example.test/moderation/queue?countryCode=BE'),
+    true,
+  );
+  assert.match(beHtml, /href="\/moderation\?countryCode=CD"/);
+  assert.match(beHtml, /href="\/moderation\?countryCode=BE"/);
+
+  const cdResponse = await fetch(
+    `http://127.0.0.1:${address.port}/moderation`,
+    {
+      headers: {
+        'x-zwibba-admin-secret': 'zwibba-admin-secret',
+      },
+    },
+  );
+  assert.equal(cdResponse.status, 200);
+  const cdHtml = await cdResponse.text();
+
+  assert.equal(
+    apiRequests.some((request) => request.url === 'https://api.example.test/moderation/queue?countryCode=CD'),
+    true,
+  );
+
+  // The active tab markup should differ between the CD default view and the BE view.
+  assert.notEqual(
+    cdHtml.match(/<a[^>]*href="\/moderation\?countryCode=BE"[^>]*>/)?.[0],
+    beHtml.match(/<a[^>]*href="\/moderation\?countryCode=BE"[^>]*>/)?.[0],
   );
 });

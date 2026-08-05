@@ -11,6 +11,7 @@ import { PrismaService } from '../../src/database/prisma.service';
 
 class _FakePrismaService {
   readonly listings = new Map<string, {
+    countryCode: string;
     id: string;
     moderationStatus: string;
     ownerPhoneNumber: string;
@@ -25,13 +26,21 @@ class _FakePrismaService {
   }>();
 
   seedListing(listing: {
+    countryCode?: string;
     id: string;
     moderationStatus: string;
     ownerPhoneNumber: string;
     slug: string;
     title: string;
   }) {
-    this.listings.set(listing.id, listing);
+    this.listings.set(listing.id, {
+      countryCode: listing.countryCode ?? 'CD',
+      id: listing.id,
+      moderationStatus: listing.moderationStatus,
+      ownerPhoneNumber: listing.ownerPhoneNumber,
+      slug: listing.slug,
+      title: listing.title,
+    });
   }
 
   seedDecision(decision: {
@@ -107,16 +116,25 @@ class _FakePrismaService {
       where,
     }: {
       where?: {
+        listing?: { countryCode?: string };
         status?: string;
       };
     } = {}) => {
       return Array.from(this.moderationDecisions.values())
         .filter((decision) => {
-          if (!where?.status) {
-            return true;
+          if (where?.status && decision.status !== where.status) {
+            return false;
           }
 
-          return decision.status === where.status;
+          if (where?.listing?.countryCode) {
+            const listing = this.listings.get(decision.listingId);
+
+            if ((listing?.countryCode ?? 'CD') !== where.listing.countryCode) {
+              return false;
+            }
+          }
+
+          return true;
         })
         .map((decision) => ({
           ...decision,
@@ -274,4 +292,108 @@ test('moderation actions require the admin secret and update listing state', asy
     prisma.moderationDecisions.get('listing_block_me')?.reasonSummary,
     'Photos insuffisantes pour publier.',
   );
+});
+
+test('moderation queue is fully separated per market country', async (t) => {
+  const snapshot = { ...process.env };
+  process.env.APP_BASE_URL = 'https://zwibba.example';
+  process.env.AI_PROVIDER = 'stub';
+  process.env.DATABASE_URL = 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba';
+  process.env.DEMO_OTP_ALLOWLIST = '+243990000001';
+  process.env.DEMO_OTP_CODE = '123456';
+  process.env.NODE_ENV = 'production';
+  process.env.OTP_PROVIDER = 'demo';
+  process.env.PORT = '3200';
+  process.env.R2_ACCESS_KEY_ID = 'r2-access-key';
+  process.env.R2_ACCOUNT_ID = 'r2-account';
+  process.env.R2_BUCKET = 'zwibba-media';
+  process.env.R2_PUBLIC_BASE_URL = 'https://cdn.zwibba.example';
+  process.env.R2_S3_ENDPOINT = 'https://r2.example.com';
+  process.env.R2_SECRET_ACCESS_KEY = 'r2-secret';
+  process.env.ZWIBBA_ADMIN_SHARED_SECRET = 'zwibba-admin-secret';
+  t.after(() => {
+    for (const key of Object.keys(process.env)) {
+      if (!(key in snapshot)) {
+        delete process.env[key];
+      }
+    }
+    for (const [key, value] of Object.entries(snapshot)) {
+      if (value === undefined) {
+        delete process.env[key];
+        continue;
+      }
+      process.env[key] = value;
+    }
+  });
+
+  const prisma = new _FakePrismaService();
+  prisma.seedListing({
+    countryCode: 'CD',
+    id: 'listing_cd',
+    moderationStatus: 'pending_manual_review',
+    ownerPhoneNumber: '+243990000001',
+    slug: 'annonce-cd',
+    title: 'Annonce RDC',
+  });
+  prisma.seedDecision({
+    actorLabel: 'system',
+    listingId: 'listing_cd',
+    reasonSummary: 'Annonce envoyée en revue manuelle',
+    status: 'pending_manual_review',
+  });
+
+  prisma.seedListing({
+    countryCode: 'BE',
+    id: 'listing_be',
+    moderationStatus: 'pending_manual_review',
+    ownerPhoneNumber: '+32470000001',
+    slug: 'annonce-be',
+    title: 'Annonce Belgique',
+  });
+  prisma.seedDecision({
+    actorLabel: 'system',
+    listingId: 'listing_be',
+    reasonSummary: 'Annonce envoyée en revue manuelle',
+    status: 'pending_manual_review',
+  });
+
+  const app = await createTestApp(prisma);
+  t.after(async () => {
+    await app.close();
+  });
+
+  const cdResponse = await request(app.getHttpServer())
+    .get('/moderation/queue')
+    .query({ countryCode: 'CD' })
+    .set('x-zwibba-admin-secret', 'zwibba-admin-secret')
+    .expect(200);
+
+  assert.equal(cdResponse.body.items.length, 1);
+  assert.equal(cdResponse.body.items[0].id, 'listing_cd');
+
+  const beResponse = await request(app.getHttpServer())
+    .get('/moderation/queue')
+    .query({ countryCode: 'BE' })
+    .set('x-zwibba-admin-secret', 'zwibba-admin-secret')
+    .expect(200);
+
+  assert.equal(beResponse.body.items.length, 1);
+  assert.equal(beResponse.body.items[0].id, 'listing_be');
+
+  const missingCountryResponse = await request(app.getHttpServer())
+    .get('/moderation/queue')
+    .set('x-zwibba-admin-secret', 'zwibba-admin-secret')
+    .expect(200);
+
+  assert.equal(missingCountryResponse.body.items.length, 1);
+  assert.equal(missingCountryResponse.body.items[0].id, 'listing_cd');
+
+  const invalidCountryResponse = await request(app.getHttpServer())
+    .get('/moderation/queue')
+    .query({ countryCode: 'FR' })
+    .set('x-zwibba-admin-secret', 'zwibba-admin-secret')
+    .expect(200);
+
+  assert.equal(invalidCountryResponse.body.items.length, 1);
+  assert.equal(invalidCountryResponse.body.items[0].id, 'listing_cd');
 });

@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
-import { normalizeMarketCountryCode } from '../auth/phone-country';
+import { normalizeMarketCountryCode, type MarketCountryCode } from '../auth/phone-country';
 import {
   ListingPriceCurrency,
   listingCurrenciesForCountry,
@@ -339,10 +339,11 @@ export class ModerationService {
     };
   }
 
-  async listQueue() {
+  async listQueue({ countryCode }: { countryCode: MarketCountryCode }) {
     const decisions = await this.prismaService.moderationDecision.findMany({
       where: {
         status: 'pending_manual_review',
+        listing: { countryCode },
       },
       include: {
         listing: true,

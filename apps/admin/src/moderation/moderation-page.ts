@@ -3,6 +3,8 @@ export type ModerationStatus =
   | 'blocked_needs_fix'
   | 'pending_manual_review';
 
+export type ModerationMarketCountryCode = 'BE' | 'CD';
+
 export type ModerationQueueItem = {
   id: string;
   listingTitle: string;
@@ -10,6 +12,11 @@ export type ModerationQueueItem = {
   sellerPhoneNumber: string;
   status: ModerationStatus;
 };
+
+const marketTabs: Array<{ countryCode: ModerationMarketCountryCode; label: string }> = [
+  { countryCode: 'CD', label: 'RDC' },
+  { countryCode: 'BE', label: 'Belgique' },
+];
 
 function escapeHtml(value: string) {
   return value
@@ -45,11 +52,33 @@ function renderQueueItem(item: ModerationQueueItem) {
   `;
 }
 
-export function renderModerationPage({
-  items,
-}: {
-  items: ModerationQueueItem[];
-}) {
+function renderMarketTabs(activeCountryCode: ModerationMarketCountryCode) {
+  const tabsMarkup = marketTabs
+    .map(({ countryCode, label }) => {
+      const isActive = countryCode === activeCountryCode;
+      const style = isActive
+        ? 'font-weight: bold; text-decoration: underline;'
+        : 'font-weight: normal; text-decoration: none;';
+
+      return `<a href="/moderation?countryCode=${countryCode}" aria-current="${isActive ? 'page' : 'false'}" style="${style}">${label}</a>`;
+    })
+    .join('\n        ');
+
+  return `
+      <nav aria-label="Marchés">
+        ${tabsMarkup}
+      </nav>
+  `;
+}
+
+export function renderModerationPage(
+  {
+    items,
+  }: {
+    items: ModerationQueueItem[];
+  },
+  countryCode: ModerationMarketCountryCode = 'CD',
+) {
   const queueMarkup =
     items.length === 0
       ? '<li>Aucune annonce en revue pour le moment.</li>'
@@ -60,6 +89,7 @@ export function renderModerationPage({
       <header>
         <p>Zwibba moderation</p>
         <h1>Pending moderation queue</h1>
+        ${renderMarketTabs(countryCode)}
       </header>
       <ul>
         ${queueMarkup}
