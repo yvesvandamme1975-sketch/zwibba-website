@@ -126,6 +126,24 @@ function resolveUrl(currentSite, relativePath) {
   return new URL(localeHref(currentSite, relativePath), currentSite.baseUrl).toString();
 }
 
+const alternateLocaleSites = [
+  { hreflang: 'fr', site: frCd.site },
+  { hreflang: 'fr-BE', site: frBe.site },
+  { hreflang: 'nl-BE', site: nlBe.site },
+];
+
+function renderAlternateLinks(logicalPath) {
+  const links = alternateLocaleSites.map(
+    ({ hreflang, site: altSite }) =>
+      `<link rel="alternate" hreflang="${hreflang}" href="${resolveUrl(altSite, logicalPath)}" />`,
+  );
+  links.push(
+    `<link rel="alternate" hreflang="x-default" href="${resolveUrl(frCd.site, logicalPath)}" />`,
+  );
+
+  return links.join('\n    ');
+}
+
 function icon(name, className = '') {
   const markup = iconPaths[name.toLowerCase()] || iconPaths.spark;
   const classAttr = className ? ` class="${className}"` : '';
@@ -373,6 +391,7 @@ function renderLayout(content, {
   productPriceCurrency = '',
   schema,
   bodyClass = '',
+  alternates = true,
 }) {
   const { site, ui } = content;
   const canonicalUrl = resolveUrl(site, canonicalPath);
@@ -383,6 +402,7 @@ function renderLayout(content, {
   const analyticsMarkup = plausibleDomain
     ? `<script defer data-domain="${escapeHtml(plausibleDomain)}" src="${escapeHtml(plausibleSrc)}"></script>`
     : '';
+  const alternateMarkup = alternates ? renderAlternateLinks(currentPath) : '';
 
   return `<!DOCTYPE html>
 <html lang="${site.htmlLang}">
@@ -409,6 +429,7 @@ function renderLayout(content, {
     <meta name="twitter:description" content="${escapeHtml(description)}" />
     <meta name="twitter:image" content="${resolveUrl(site, ogImage)}" />
     <link rel="canonical" href="${canonicalUrl}" />
+    ${alternateMarkup}
     <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml" />
     <style>
       .skip-link {
@@ -943,6 +964,7 @@ function renderListingPage(content, listing) {
     body: detailBody,
     schema,
     bodyClass: 'page-listing',
+    alternates: false,
   });
 }
 
@@ -1361,12 +1383,14 @@ function build() {
     ),
   );
 
-  const [rootResult] = [frCd, frBe, nlBe].map((localeModule) => buildLocale(localeModule));
+  const localeResults = [frCd, frBe, nlBe].map((localeModule) => buildLocale(localeModule));
+  const [rootResult] = localeResults;
 
-  writeText(
-    path.join(distDir, 'sitemap.xml'),
-    buildSitemap(rootResult.pages.map((page) => resolveUrl(rootResult.content.site, page.path))),
+  const sitemapUrls = localeResults.flatMap((result) =>
+    result.pages.map((page) => resolveUrl(result.content.site, page.path)),
   );
+
+  writeText(path.join(distDir, 'sitemap.xml'), buildSitemap(sitemapUrls));
   writeText(path.join(distDir, 'robots.txt'), buildRobots(rootResult.content));
 }
 

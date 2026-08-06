@@ -89,3 +89,47 @@ test('root fr-CD tree is unaffected by the belgian locale emission', () => {
   const landing = readFileSync(path.join(distDir, 'index.html'), 'utf8');
   assert.match(landing, /Lubumbashi/);
 });
+
+test('dist/index.html carries the four hreflang alternates for the root path', () => {
+  buildSite();
+
+  const html = readFileSync(path.join(distDir, 'index.html'), 'utf8');
+  assert.match(html, /<link rel="alternate" hreflang="fr" href="https:\/\/zwibba\.com\/" \/>/);
+  assert.match(html, /<link rel="alternate" hreflang="fr-BE" href="https:\/\/zwibba\.com\/be\/" \/>/);
+  assert.match(html, /<link rel="alternate" hreflang="nl-BE" href="https:\/\/zwibba\.com\/be\/nl\/" \/>/);
+  assert.match(html, /<link rel="alternate" hreflang="x-default" href="https:\/\/zwibba\.com\/" \/>/);
+});
+
+test('dist/be/nl/annonces/index.html carries the alternates for the /annonces/ logical path', () => {
+  buildSite();
+
+  const html = readFileSync(path.join(distDir, 'be', 'nl', 'annonces', 'index.html'), 'utf8');
+  assert.match(html, /<link rel="alternate" hreflang="fr" href="https:\/\/zwibba\.com\/annonces\/" \/>/);
+  assert.match(html, /<link rel="alternate" hreflang="fr-BE" href="https:\/\/zwibba\.com\/be\/annonces\/" \/>/);
+  assert.match(html, /<link rel="alternate" hreflang="nl-BE" href="https:\/\/zwibba\.com\/be\/nl\/annonces\/" \/>/);
+  assert.match(html, /<link rel="alternate" hreflang="x-default" href="https:\/\/zwibba\.com\/annonces\/" \/>/);
+});
+
+test('static fr-CD listing pages emit no hreflang alternates', () => {
+  buildSite();
+
+  const listingRoot = path.join(distDir, 'annonce');
+  const [firstSlug] = readdirSync(listingRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
+
+  const html = readFileSync(path.join(listingRoot, firstSlug, 'index.html'), 'utf8');
+  assert.doesNotMatch(html, /rel="alternate"/);
+});
+
+test('dist/sitemap.xml aggregates all three locale trees into the single root sitemap', () => {
+  buildSite();
+
+  assert.equal(existsSync(path.join(distDir, 'sitemap.xml')), true, 'dist/sitemap.xml should exist');
+  assert.equal(existsSync(path.join(distDir, 'be', 'sitemap.xml')), false, 'dist/be/sitemap.xml should not exist');
+
+  const xml = readFileSync(path.join(distDir, 'sitemap.xml'), 'utf8');
+  assert.match(xml, /<loc>https:\/\/zwibba\.com\/be\/<\/loc>/);
+  assert.match(xml, /<loc>https:\/\/zwibba\.com\/be\/nl\/annonces\/<\/loc>/);
+  assert.doesNotMatch(xml, /\/be\/annonce\//);
+});
