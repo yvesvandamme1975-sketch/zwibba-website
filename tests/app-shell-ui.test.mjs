@@ -82,3 +82,29 @@ test('mobile footer keeps wallet on one line for narrow Android widths', () => {
     /@media \(max-width: 640px\) \{[\s\S]*?\.app-tab-shell__nav-label\s*\{[\s\S]*?white-space:\s*nowrap;[\s\S]*?overflow-wrap:\s*normal;[\s\S]*?word-break:\s*normal;[\s\S]*?\}/i,
   );
 });
+
+test('desktop widens the shell and constrains screens to a readable column', () => {
+  assert.match(
+    appStyles,
+    /@media \(min-width: 920px\) \{[\s\S]*?\.app-shell\s*\{[\s\S]*?width:\s*min\(100%,\s*1080px\);/,
+  );
+  assert.match(
+    appStyles,
+    /@media \(min-width: 920px\) \{[\s\S]*?\.app-screen,\s*\.app-flow\s*\{[\s\S]*?max-width:\s*640px;[\s\S]*?margin-inline:\s*auto;/,
+  );
+  assert.match(
+    appStyles,
+    /@media \(min-width: 920px\) \{[\s\S]*?\.app-screen--home\s*\{[\s\S]*?max-width:\s*none;/,
+  );
+  assert.match(
+    appStyles,
+    /@media \(min-width: 920px\) \{[\s\S]*?\.app-flow--detail\s*\{[\s\S]*?max-width:\s*760px;/,
+  );
+});
+
+test('desktop keeps the tab nav compact and centered', () => {
+  assert.match(
+    appStyles,
+    /@media \(min-width: 920px\) \{[\s\S]*?\.app-tab-shell__nav\s*\{[\s\S]*?grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*110px\)\);[\s\S]*?justify-content:\s*center;/,
+  );
+});

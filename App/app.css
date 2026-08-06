@@ -1853,3 +1853,29 @@
   background: var(--green, #6be66b);
   color: #071607;
 }
+
+@media (min-width: 920px) {
+  .app-shell {
+    width: min(100%, 1080px);
+  }
+
+  .app-screen,
+  .app-flow {
+    width: 100%;
+    max-width: 640px;
+    margin-inline: auto;
+  }
+
+  .app-screen--home {
+    max-width: none;
+  }
+
+  .app-flow--detail {
+    max-width: 760px;
+  }
+
+  .app-tab-shell__nav {
+    grid-template-columns: repeat(5, minmax(0, 110px));
+    justify-content: center;
+  }
+}
