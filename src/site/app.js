@@ -3,6 +3,17 @@ const menuToggle = document.querySelector('.menu-toggle');
 const siteNav = document.querySelector('.site-nav');
 const announcer = document.querySelector('#site-announcer');
 
+// Duplicated locally from scripts/build.mjs (no bundler to share code between
+// the Node build step and this browser-loaded script).
+function conditionCode(label) {
+  return String(label)
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 function announce(message) {
   if (!announcer) {
     return;
@@ -160,7 +171,7 @@ function initBrowseFilters() {
 
     const searchMatch = !searchValue || title.includes(searchValue);
     const categoryMatch = categoryValue === 'all' || cardCategory === categoryValue;
-    const conditionMatch = conditionValue === 'all' || cardCondition === conditionValue;
+    const conditionMatch = conditionValue === 'all' || cardCondition === conditionCode(conditionValue);
 
     let priceMatch = true;
     if (priceValue !== 'all') {

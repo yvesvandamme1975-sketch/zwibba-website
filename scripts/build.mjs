@@ -41,13 +41,14 @@ function whatsappDigits(phoneNumber) {
   return typeof phoneNumber === 'string' ? phoneNumber.replace(/\D/g, '') : '';
 }
 
-const safetyTips = [
-  "Évitez de payer à l'avance, même pour la livraison.",
-  'Rencontrez le vendeur dans un lieu public sûr.',
-  "Inspectez l'article avant de payer.",
-  "Assurez-vous que l'article emballé est bien celui que vous avez vérifié.",
-  'Ne payez que si vous êtes satisfait.',
-];
+function conditionCode(label) {
+  return String(label)
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 
 const iconPaths = {
   menu:
@@ -535,7 +536,7 @@ function renderListingCard(listing, options = {}) {
   const listingImageAsset = resolveListingImageAsset(listing);
   return `
     <article class="listing-card" data-listing-card data-category="${listing.category}" data-condition="${escapeHtml(
-      listing.condition.toLowerCase(),
+      conditionCode(listing.condition),
     )}" data-price="${listing.priceCdf}" data-title="${escapeHtml(listing.title.toLowerCase())}" data-published="${escapeHtml(
       listing.publishedAt,
     )}">
@@ -560,7 +561,7 @@ function renderListingCard(listing, options = {}) {
   `;
 }
 
-function renderSafetyTips() {
+function renderSafetyTips(safetyTips) {
   return safetyTips.map((tip) => `<li>${escapeHtml(tip)}</li>`).join('');
 }
 
@@ -686,12 +687,13 @@ function renderLandingPage(content) {
 }
 
 function renderBrowsePage(content) {
-  const { site, listings, categories } = content;
-  const featured = listings.filter((item) => item.isFeatured).map((listing) => renderListingCard(listing, { highlightLabel: 'Top Ad' })).join('');
+  const { site, listings, categories, ui } = content;
+  const browse = ui.browse;
+  const featured = listings.filter((item) => item.isFeatured).map((listing) => renderListingCard(listing, { highlightLabel: browse.featuredBadge })).join('');
   const cards = listings.map((listing) => renderListingCard(listing, { highlightLabel: listing.transactionType })).join('');
   const chips = ['all', ...categories.map((category) => category.slug)]
     .map((value) => {
-      const label = value === 'all' ? 'Tout' : categories.find((item) => item.slug === value).label;
+      const label = value === 'all' ? browse.chipAllLabel : categories.find((item) => item.slug === value).label;
       return `<button class="chip${value === 'all' ? ' is-active' : ''}" type="button" data-chip="${value}">${escapeHtml(label)}</button>`;
     })
     .join('');
@@ -699,9 +701,8 @@ function renderBrowsePage(content) {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: 'Annonces Zwibba',
-    description:
-      "Parcourez les annonces Zwibba : catégories, filtres, prix en CDF et fiches d'annonce faciles à partager.",
+    name: browse.pageTitle,
+    description: browse.pageDescription,
     url: resolveUrl(site, '/annonces/'),
     mainEntity: {
       '@type': 'ItemList',
@@ -718,9 +719,9 @@ function renderBrowsePage(content) {
     <main id="main-content">
       <section class="page-hero page-hero--compact">
         <div>
-          <p class="eyebrow">Petites annonces</p>
-          <h1>Explorez les annonces Zwibba avant d'ouvrir l'application.</h1>
-          <p>Recherche, catégories, tri et repères utiles : le site reste simple, rapide et facile à partager.</p>
+          <p class="eyebrow">${browse.hero.eyebrow}</p>
+          <h1>${browse.hero.title}</h1>
+          <p>${browse.hero.copy}</p>
         </div>
       </section>
 
@@ -733,46 +734,42 @@ function renderBrowsePage(content) {
       <section class="section browse-section">
         <aside class="filter-panel">
           <div class="field">
-            <label for="browse-search">Recherche</label>
-            <input id="browse-search" type="search" placeholder="Ex: Galaxy, terrain, plomberie..." autocomplete="off" />
+            <label for="browse-search">${browse.filters.searchLabel}</label>
+            <input id="browse-search" type="search" placeholder="${escapeHtml(browse.filters.searchPlaceholder)}" autocomplete="off" />
           </div>
           <div class="field">
-            <label for="browse-category">Catégorie</label>
+            <label for="browse-category">${browse.filters.categoryLabel}</label>
             <select id="browse-category">
-              <option value="all">Toutes</option>
+              <option value="all">${browse.filters.categoryAllLabel}</option>
               ${categories
                 .map((category) => `<option value="${category.slug}">${escapeHtml(category.label)}</option>`)
                 .join('')}
             </select>
           </div>
           <div class="field">
-            <label for="browse-condition">État</label>
+            <label for="browse-condition">${browse.filters.conditionLabel}</label>
             <select id="browse-condition">
-              <option value="all">Toutes</option>
-              <option value="neuf">Neuf</option>
-              <option value="bon état">Bon état</option>
-              <option value="très bon état">Très bon état</option>
-              <option value="service">Service</option>
-              <option value="frais">Frais</option>
+              <option value="all">${browse.filters.conditionAllLabel}</option>
+              ${browse.conditions
+                .map((condition) => `<option value="${condition.code}">${escapeHtml(condition.label)}</option>`)
+                .join('\n              ')}
             </select>
           </div>
           <div class="field">
-            <label for="browse-price">Prix</label>
+            <label for="browse-price">${browse.filters.priceLabel}</label>
             <select id="browse-price">
-              <option value="all">Tous les prix</option>
-              <option value="0-100000">0 - 100 000 CDF</option>
-              <option value="100001-500000">100 001 - 500 000 CDF</option>
-              <option value="500001-2000000">500 001 - 2 000 000 CDF</option>
-              <option value="2000001-999999999">2 000 001 CDF ou plus</option>
+              <option value="all">${browse.filters.priceAllLabel}</option>
+              ${browse.filters.priceOptions
+                .map((option) => `<option value="${option.value}">${escapeHtml(option.label)}</option>`)
+                .join('\n              ')}
             </select>
           </div>
           <div class="field">
-            <label for="browse-sort">Tri</label>
+            <label for="browse-sort">${browse.filters.sortLabel}</label>
             <select id="browse-sort">
-              <option value="recent">Plus récents</option>
-              <option value="cheap">Prix croissant</option>
-              <option value="expensive">Prix décroissant</option>
-              <option value="featured">Boostées d'abord</option>
+              ${browse.filters.sortOptions
+                .map((option) => `<option value="${option.value}">${option.label}</option>`)
+                .join('\n              ')}
             </select>
           </div>
         </aside>
@@ -781,10 +778,10 @@ function renderBrowsePage(content) {
           <div class="chip-row">${chips}</div>
           <div class="browse-results__header">
             <div>
-              <p class="eyebrow">10 catégories</p>
-              <h2 id="results-summary" aria-live="polite">8 annonces visibles</h2>
+              <p class="eyebrow">${browse.categoriesEyebrow}</p>
+              <h2 id="results-summary" aria-live="polite">${browse.resultsFallback}</h2>
             </div>
-            <a class="button button--ghost" href="/ambassadeur/">Devenir ambassadeur</a>
+            <a class="button button--ghost" href="/ambassadeur/">${browse.ambassadorCta}</a>
           </div>
           <div class="listing-grid" id="browse-results-grid">${cards}</div>
         </div>
@@ -794,16 +791,16 @@ function renderBrowsePage(content) {
 
   return renderLayout(content, {
     currentPath: '/annonces/',
-    title: `Annonces Zwibba | ${site.marketLabel}`,
-    description:
-      "Parcourez les annonces Zwibba : catégories, filtres, prix en CDF et fiches d'annonce faciles à partager.",
+    title: `${browse.pageTitle} | ${site.marketLabel}`,
+    description: browse.pageDescription,
     body,
     schema,
   });
 }
 
 function renderListingPage(content, listing) {
-  const { site, listings } = content;
+  const { site, listings, ui } = content;
+  const listingUi = ui.listing;
   const listingImageAsset = resolveListingImageAsset(listing);
   const hasStoryImage = Boolean(listing.storyImageUrl);
   const ogImage = hasStoryImage ? listing.storyImageUrl : listingImageAsset;
@@ -813,7 +810,7 @@ function renderListingPage(content, listing) {
   const similar = listings
     .filter((item) => item.slug !== listing.slug && item.category === listing.category)
     .slice(0, 2)
-    .map((item) => renderListingCard(item, { highlightLabel: 'Similaire' }))
+    .map((item) => renderListingCard(item, { highlightLabel: listingUi.similarBadge }))
     .join('');
 
   const schema = {
@@ -851,25 +848,25 @@ function renderListingPage(content, listing) {
           <p class="listing-hero__price">${escapeHtml(formatCdf(listing.priceCdf))}</p>
           <p class="listing-hero__summary">${escapeHtml(listing.summary)}</p>
           <div class="detail-actions">
-            <button class="button button--primary" type="button" data-gated="call">${icon('phone')} Appeler</button>
-            <button class="button button--ghost" type="button" data-gated="whatsapp">WhatsApp</button>
-            <button class="button button--ghost" type="button" data-gated="sms">SMS</button>
+            <button class="button button--primary" type="button" data-gated="call">${icon('phone')} ${listingUi.call}</button>
+            <button class="button button--ghost" type="button" data-gated="whatsapp">${listingUi.whatsapp}</button>
+            <button class="button button--ghost" type="button" data-gated="sms">${listingUi.sms}</button>
             <button class="button button--ghost" type="button" data-share-button data-share-title="${escapeHtml(
               listing.title,
-            )}" data-share-url="${resolveUrl(site, `/annonce/${listing.slug}/`)}">${icon('share')} Partager</button>
+            )}" data-share-url="${resolveUrl(site, `/annonce/${listing.slug}/`)}">${icon('share')} ${listingUi.share}</button>
           </div>
-          <p class="detail-note">${icon('shield')} Ouvrez l'application pour voir les coordonnées complètes et contacter le vendeur en sécurité.</p>
+          <p class="detail-note">${icon('shield')} ${listingUi.detailNote}</p>
         </div>
       </section>
 
       <section class="section listing-detail-layout">
         <div class="listing-story">
           <article class="detail-card">
-            <p class="eyebrow">Description</p>
+            <p class="eyebrow">${listingUi.descriptionEyebrow}</p>
             ${listing.description.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join('')}
           </article>
           <article class="detail-card">
-            <p class="eyebrow">Caractéristiques</p>
+            <p class="eyebrow">${listingUi.specsEyebrow}</p>
             <dl class="spec-grid">
               ${listing.specs
                 .map(
@@ -884,14 +881,14 @@ function renderListingPage(content, listing) {
             </dl>
           </article>
           <article class="detail-card detail-card--warning">
-            <p class="eyebrow">Conseils de sécurité</p>
-            <ul class="safety-list">${renderSafetyTips()}</ul>
+            <p class="eyebrow">${listingUi.safetyEyebrow}</p>
+            <ul class="safety-list">${renderSafetyTips(content.safetyTips)}</ul>
           </article>
         </div>
 
         <aside class="listing-sidebar">
           <article class="detail-card">
-            <p class="eyebrow">Vendeur</p>
+            <p class="eyebrow">${listingUi.sellerEyebrow}</p>
             <h2>${escapeHtml(listing.seller.name)}</h2>
             <p>${escapeHtml(listing.seller.role)}</p>
             <ul class="seller-facts">
@@ -900,22 +897,22 @@ function renderListingPage(content, listing) {
               <li>${escapeHtml(listing.seller.responseTime)}</li>
               <li>${escapeHtml(listing.neighborhood)}, ${escapeHtml(listing.city)}</li>
             </ul>
-            <button class="button button--primary button--block" type="button" data-gated="seller-profile">Voir dans l'application</button>
+            <button class="button button--primary button--block" type="button" data-gated="seller-profile">${listingUi.viewInApp}</button>
           </article>
           <article class="detail-card">
-            <p class="eyebrow">Partage</p>
-            <p>Cette page est faite pour être claire et facile à partager. Pour les actions sensibles, passez par l'application.</p>
+            <p class="eyebrow">${listingUi.shareEyebrow}</p>
+            <p>${listingUi.shareCopy}</p>
             <button class="button button--ghost button--block" type="button" data-share-button data-share-title="${escapeHtml(
               listing.title,
-            )}" data-share-url="${resolveUrl(site, `/annonce/${listing.slug}/`)}">Copier le lien</button>
+            )}" data-share-url="${resolveUrl(site, `/annonce/${listing.slug}/`)}">${listingUi.copyLink}</button>
           </article>
         </aside>
       </section>
 
       <section class="section section--dense">
         <div class="section__heading">
-          <p class="eyebrow">Dans la même catégorie</p>
-          <h2>Autres annonces ${escapeHtml(listing.categoryLabel.toLowerCase())}</h2>
+          <p class="eyebrow">${listingUi.sameCategoryEyebrow}</p>
+          <h2>${listingUi.sameCategoryTitlePrefix} ${escapeHtml(listing.categoryLabel.toLowerCase())}</h2>
         </div>
         <div class="listing-grid">${similar}</div>
       </section>
@@ -1112,7 +1109,8 @@ function renderAboutPage(content) {
 }
 
 function renderContactPage(content) {
-  const { site, supportTopics, faqs } = content;
+  const { site, supportTopics, faqs, ui } = content;
+  const contact = ui.contact;
   const topics = supportTopics
     .map(
       (item) => `
@@ -1128,14 +1126,14 @@ function renderContactPage(content) {
     .join('');
 
   const supportWhatsAppMarkets = [
-    { label: 'RDC', number: supportWhatsAppCd },
-    { label: 'Belgique', number: supportWhatsAppBe },
+    { label: contact.whatsapp.cd, number: supportWhatsAppCd },
+    { label: contact.whatsapp.be, number: supportWhatsAppBe },
   ].filter((market) => whatsappDigits(market.number));
 
   const supportWhatsAppBlock = supportWhatsAppMarkets.length
     ? `
       <article class="detail-card">
-        <p class="eyebrow">WhatsApp</p>
+        <p class="eyebrow">${contact.whatsapp.eyebrow}</p>
         <ul class="seller-facts">
           ${supportWhatsAppMarkets
             .map(
@@ -1156,8 +1154,8 @@ function renderContactPage(content) {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'ContactPage',
-    name: 'Contact Zwibba',
-    description: 'Contactez Zwibba pour le support, les partenariats ou le lancement du produit.',
+    name: contact.pageTitle,
+    description: contact.pageDescription,
     url: resolveUrl(site, '/contact/'),
   };
 
@@ -1165,9 +1163,9 @@ function renderContactPage(content) {
     <main id="main-content">
       <section class="page-hero">
         <div>
-          <p class="eyebrow">Contact</p>
-          <h1>Besoin de parler lancement, support ou partenariat ?</h1>
-          <p>Le site reste volontairement léger. Pour une demande précise, envoyez un message clair et nous vous répondrons rapidement.</p>
+          <p class="eyebrow">${contact.hero.eyebrow}</p>
+          <h1>${contact.hero.title}</h1>
+          <p>${contact.hero.copy}</p>
         </div>
       </section>
 
@@ -1178,35 +1176,35 @@ function renderContactPage(content) {
       <section class="section section--accent">
         <div class="contact-layout">
           <article class="detail-card">
-            <p class="eyebrow">Formulaire direct</p>
+            <p class="eyebrow">${contact.form.eyebrow}</p>
             <form id="contact-form" class="contact-form">
               <label>
-                Nom
-                <input type="text" name="name" placeholder="Votre nom" autocomplete="name" required />
+                ${contact.form.nameLabel}
+                <input type="text" name="name" placeholder="${escapeHtml(contact.form.namePlaceholder)}" autocomplete="name" required />
               </label>
               <label>
-                Email
-                <input type="email" name="email" placeholder="vous@exemple.com" autocomplete="email" required />
+                ${contact.form.emailLabel}
+                <input type="email" name="email" placeholder="${escapeHtml(contact.form.emailPlaceholder)}" autocomplete="email" required />
               </label>
               <label>
-                Sujet
-                <input type="text" name="topic" placeholder="Partenariat, support, lancement..." autocomplete="organization-title" required />
+                ${contact.form.topicLabel}
+                <input type="text" name="topic" placeholder="${escapeHtml(contact.form.topicPlaceholder)}" autocomplete="organization-title" required />
               </label>
               <label>
-                Message
-                <textarea name="message" rows="6" placeholder="Expliquez simplement votre besoin." required></textarea>
+                ${contact.form.messageLabel}
+                <textarea name="message" rows="6" placeholder="${escapeHtml(contact.form.messagePlaceholder)}" required></textarea>
               </label>
-              <button class="button button--primary" type="submit">Envoyer par e-mail</button>
+              <button class="button button--primary" type="submit">${contact.form.submit}</button>
             </form>
           </article>
           <article class="detail-card">
-            <p class="eyebrow">Coordonnées</p>
+            <p class="eyebrow">${contact.coordinates.eyebrow}</p>
             <h2>${escapeHtml(site.supportEmail)}</h2>
-            <p>Pour l'instant, le support principal passe par e-mail pour garder les demandes claires.</p>
+            <p>${contact.coordinates.copy}</p>
             <ul class="seller-facts">
               <li>${escapeHtml(site.marketLabel)}</li>
-              <li>Réponse sous 48h ouvrées</li>
-              <li>Support produit, partenariats, lancement</li>
+              <li>${contact.coordinates.responseTime}</li>
+              <li>${contact.coordinates.scope}</li>
             </ul>
             <div class="faq-stack">${renderFaqs(faqs.slice(0, 2))}</div>
           </article>
@@ -1218,8 +1216,8 @@ function renderContactPage(content) {
 
   return renderLayout(content, {
     currentPath: '/contact/',
-    title: 'Contact Zwibba',
-    description: 'Contactez Zwibba pour le support, les partenariats ou le lancement du produit.',
+    title: contact.pageTitle,
+    description: contact.pageDescription,
     body,
     schema,
   });
@@ -1299,6 +1297,7 @@ function build() {
     supportTopics: frCd.supportTopics,
     ambassadorChannels: frCd.ambassadorChannels,
     listings: frCd.listings,
+    safetyTips: frCd.ui.safetyTips,
   };
 
   rmSync(distDir, { recursive: true, force: true });
