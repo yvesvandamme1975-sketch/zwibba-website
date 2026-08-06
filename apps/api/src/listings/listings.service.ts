@@ -296,7 +296,7 @@ async function toListingDetail({
     attributesJson: normalizeListingAttributesJson(listing.attributesJson),
     categoryId: listing.categoryId,
     categoryLabel: getCategoryLabel(listing.categoryId),
-    contactActions: viewerRole === 'owner' ? [] : ['message', 'call'],
+    contactActions: viewerRole === 'owner' ? [] : ['message', 'whatsapp', 'call'],
     contactPhoneNumber:
       viewerRole === 'owner' ? '' : listing.ownerPhoneNumber,
     editDraft:

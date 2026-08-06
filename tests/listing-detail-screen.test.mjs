@@ -394,6 +394,41 @@ test('listing detail screen renders a whatsapp link for a buyer when the seller 
   assert.match(html, />\s*WhatsApp\s*</);
 });
 
+test('listing detail screen renders a whatsapp link using the live API contactActions shape (message, whatsapp, call)', () => {
+  // Regression test: apps/api/src/listings/listings.service.ts toListingDetail()
+  // builds contactActions as viewerRole === 'owner' ? [] : ['message', 'whatsapp', 'call']
+  // for buyers. This mirrors that exact array shape so the whatsapp button can
+  // never silently go unreachable again if the API's array changes.
+  const html = renderListingDetailScreen({
+    detail: {
+      categoryId: 'phones_tablets',
+      categoryLabel: 'Téléphones & Tablettes',
+      contactActions: ['message', 'whatsapp', 'call'],
+      contactPhoneNumber: '+243990000001',
+      id: 'listing_api_shape_1',
+      locationLabel: 'Lubumbashi Centre',
+      priceAmount: 4256000,
+      priceCurrency: 'CDF',
+      primaryImageUrl: null,
+      safetyTips: ['Rencontrez le vendeur dans un lieu public.'],
+      seller: {
+        name: 'Boutique A54',
+        ratingAverage: 4.5,
+        ratingCount: 2,
+        role: 'Vendeur pro',
+        sellerId: 'user_owner_1',
+      },
+      slug: 'samsung-galaxy-a54-128-go',
+      summary: 'Téléphone complet.',
+      title: 'Samsung Galaxy A54 128 Go',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /href="https:\/\/wa\.me\/243990000001\?text=/);
+  assert.match(html, />\s*WhatsApp\s*</);
+});
+
 test('listing detail screen omits the whatsapp link for an owner viewing their own listing', () => {
   const html = renderListingDetailScreen({
     detail: {
