@@ -33,6 +33,12 @@ const appApiBaseUrl =
   process.env.ZWIBBA_API_BASE_URL || 'https://api-production-b1b58.up.railway.app';
 const plausibleDomain = process.env.PLAUSIBLE_DOMAIN || '';
 const plausibleSrc = process.env.PLAUSIBLE_SRC || 'https://plausible.io/js/script.js';
+const supportWhatsAppCd = process.env.ZWIBBA_SUPPORT_WHATSAPP_CD ?? '';
+const supportWhatsAppBe = process.env.ZWIBBA_SUPPORT_WHATSAPP_BE ?? '';
+
+function whatsappDigits(phoneNumber) {
+  return typeof phoneNumber === 'string' ? phoneNumber.replace(/\D/g, '') : '';
+}
 
 const safetyTips = [
   "Évitez de payer à l'avance, même pour la livraison.",
@@ -330,7 +336,8 @@ function renderAppPage() {
         </div>
       </section>
     </main>
-    <script>window.ZWIBBA_API_BASE_URL = ${JSON.stringify(appApiBaseUrl)};</script>
+    <script>window.ZWIBBA_API_BASE_URL = ${JSON.stringify(appApiBaseUrl)};
+window.ZWIBBA_SUPPORT_WHATSAPP = ${JSON.stringify({ CD: supportWhatsAppCd, BE: supportWhatsAppBe })};</script>
     <script type="module" src="/assets/app/app.js"></script>
     <script>
       if ('serviceWorker' in navigator) {
@@ -1107,6 +1114,32 @@ function renderContactPage() {
     )
     .join('');
 
+  const supportWhatsAppMarkets = [
+    { label: 'RDC', number: supportWhatsAppCd },
+    { label: 'Belgique', number: supportWhatsAppBe },
+  ].filter((market) => whatsappDigits(market.number));
+
+  const supportWhatsAppBlock = supportWhatsAppMarkets.length
+    ? `
+      <article class="detail-card">
+        <p class="eyebrow">WhatsApp</p>
+        <ul class="seller-facts">
+          ${supportWhatsAppMarkets
+            .map(
+              (market) => `
+                <li>
+                  <a href="https://wa.me/${whatsappDigits(market.number)}" target="_blank" rel="noreferrer">${escapeHtml(
+                    market.label,
+                  )}</a>
+                </li>
+              `,
+            )
+            .join('')}
+        </ul>
+      </article>
+    `
+    : '';
+
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'ContactPage',
@@ -1164,6 +1197,7 @@ function renderContactPage() {
             </ul>
             <div class="faq-stack">${renderFaqs(faqs.slice(0, 2))}</div>
           </article>
+          ${supportWhatsAppBlock}
         </div>
       </section>
     </main>

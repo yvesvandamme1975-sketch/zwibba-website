@@ -795,6 +795,7 @@ test('listing detail returns a database-backed published listing with seller met
   assert.ok(Array.isArray(response.body.contactActions));
   assert.deepEqual(response.body.contactActions, [
     'message',
+    'whatsapp',
     'call',
   ]);
   assert.equal(response.body.contactPhoneNumber, '+243990000001');

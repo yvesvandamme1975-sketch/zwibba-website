@@ -358,6 +358,119 @@ test('listing detail screen renders a loading state', () => {
   assert.match(html, /Chargement de l'annonce/i);
 });
 
+test('listing detail screen renders a whatsapp link for a buyer when the seller has a contact phone number', () => {
+  const html = renderListingDetailScreen({
+    detail: {
+      categoryLabel: 'Sports et loisirs',
+      contactActions: ['message', 'whatsapp', 'call'],
+      contactPhoneNumber: '+243990000001',
+      id: 'listing_velo_1',
+      locationLabel: 'Golf',
+      priceCdf: 150000,
+      primaryImageUrl: null,
+      safetyTips: ['Rencontrez le vendeur dans un lieu public.'],
+      seller: {
+        name: 'Vendeur 0001',
+        responseTime: 'Répond en moyenne en 9 min',
+        role: 'Vendeur pro',
+      },
+      slug: 'velo',
+      summary: 'Vélo en bon état.',
+      title: 'Vélo',
+    },
+    state: 'ready',
+  });
+
+  const expectedText = encodeURIComponent(
+    'Bonjour, votre annonce « Vélo » sur Zwibba m\'intéresse.',
+  ).replace(/'/g, '&#39;');
+  const expectedHref = `href="https://wa.me/243990000001?text=${expectedText}"`;
+
+  assert.ok(
+    html.includes(expectedHref),
+    `expected html to include ${expectedHref}`,
+  );
+  assert.match(html, /class="app-flow__button app-flow__button--secondary"[^>]*href="https:\/\/wa\.me\/243990000001/);
+  assert.match(html, />\s*WhatsApp\s*</);
+});
+
+test('listing detail screen renders a whatsapp link using the live API contactActions shape (message, whatsapp, call)', () => {
+  // Regression test: apps/api/src/listings/listings.service.ts toListingDetail()
+  // builds contactActions as viewerRole === 'owner' ? [] : ['message', 'whatsapp', 'call']
+  // for buyers. This mirrors that exact array shape so the whatsapp button can
+  // never silently go unreachable again if the API's array changes.
+  const html = renderListingDetailScreen({
+    detail: {
+      categoryId: 'phones_tablets',
+      categoryLabel: 'Téléphones & Tablettes',
+      contactActions: ['message', 'whatsapp', 'call'],
+      contactPhoneNumber: '+243990000001',
+      id: 'listing_api_shape_1',
+      locationLabel: 'Lubumbashi Centre',
+      priceAmount: 4256000,
+      priceCurrency: 'CDF',
+      primaryImageUrl: null,
+      safetyTips: ['Rencontrez le vendeur dans un lieu public.'],
+      seller: {
+        name: 'Boutique A54',
+        ratingAverage: 4.5,
+        ratingCount: 2,
+        role: 'Vendeur pro',
+        sellerId: 'user_owner_1',
+      },
+      slug: 'samsung-galaxy-a54-128-go',
+      summary: 'Téléphone complet.',
+      title: 'Samsung Galaxy A54 128 Go',
+    },
+    state: 'ready',
+  });
+
+  assert.match(html, /href="https:\/\/wa\.me\/243990000001\?text=/);
+  assert.match(html, />\s*WhatsApp\s*</);
+});
+
+test('listing detail screen omits the whatsapp link for an owner viewing their own listing', () => {
+  const html = renderListingDetailScreen({
+    detail: {
+      canDelete: false,
+      editDraft: {
+        draftId: 'draft_owner_2',
+        photos: [],
+      },
+      canMarkSold: true,
+      canPause: true,
+      canRelist: false,
+      canRestore: false,
+      categoryId: 'sports_leisure',
+      categoryLabel: 'Sports et loisirs',
+      contactActions: [],
+      contactPhoneNumber: '',
+      deletedReason: null,
+      id: 'listing_velo_owner_1',
+      lifecycleStatus: 'active',
+      lifecycleStatusLabel: 'Active',
+      locationLabel: 'Golf',
+      priceCdf: 150000,
+      primaryImageUrl: null,
+      restoreUntil: null,
+      safetyTips: ['Rencontrez le vendeur dans un lieu public.'],
+      seller: {
+        name: 'Vendeur 0001',
+        responseTime: 'Répond en moyenne en 9 min',
+        role: 'Vendeur pro',
+      },
+      slug: 'velo-owner',
+      soldChannel: null,
+      summary: 'Vélo en bon état.',
+      title: 'Vélo',
+      viewerRole: 'owner',
+    },
+    state: 'ready',
+  });
+
+  assert.doesNotMatch(html, /wa\.me/);
+});
+
 test('listing detail screen replaces buyer contact actions with owner lifecycle actions', () => {
   const html = renderListingDetailScreen({
     detail: {
