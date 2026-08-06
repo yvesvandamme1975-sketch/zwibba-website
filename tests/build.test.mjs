@@ -1,20 +1,26 @@
 import { execFileSync, spawn } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import test from 'node:test';
+import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { setTimeout as delay } from 'node:timers/promises';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const distDir = path.join(repoRoot, 'dist');
+// Isolated dist dir so parallel test files never wipe each other's build output.
+const distDir = mkdtempSync(path.join(tmpdir(), 'zwibba-build-test-dist-'));
 const contentPath = path.join(repoRoot, 'src/site/locales/fr-cd.mjs');
+
+after(() => {
+  rmSync(distDir, { force: true, recursive: true });
+});
 
 function buildSite(env = {}) {
   execFileSync('node', ['scripts/build.mjs'], {
     cwd: repoRoot,
-    env: { ...process.env, ...env },
+    env: { ...process.env, ZWIBBA_DIST_DIR: distDir, ...env },
     stdio: 'pipe',
   });
 }
@@ -36,7 +42,13 @@ async function withServer(run, env = {}) {
   const port = 4311;
   const server = spawn('node', ['server.mjs'], {
     cwd: repoRoot,
-    env: { ZWIBBA_API_BASE_URL: 'https://api.test', ...process.env, ...env, PORT: String(port) },
+    env: {
+      ZWIBBA_API_BASE_URL: 'https://api.test',
+      ...process.env,
+      ...env,
+      PORT: String(port),
+      ZWIBBA_DIST_DIR: distDir,
+    },
     stdio: 'ignore',
   });
 
