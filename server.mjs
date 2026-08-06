@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 import { buildListingOgTags } from './shared/listing-og.mjs';
 import { resolveApiBaseUrl } from './shared/api-base-url.mjs';
+import { resolveGeoCountry, buildGeoCookie } from './shared/geo-country.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.join(__dirname, 'dist');
@@ -154,6 +155,7 @@ createServer(async (request, response) => {
   const resolvedFile = resolveFile(url.pathname);
   const filePath = resolvedFile?.filePath;
   const dynamicListingMatch = url.pathname.match(/^\/annonce\/([^/]+)\/?$/);
+  const geoCountry = resolveGeoCountry(request.headers);
 
   if ((!filePath || !filePath.startsWith(distDir)) && dynamicListingMatch) {
     const slug = decodeURIComponent(dynamicListingMatch[1]);
@@ -167,6 +169,11 @@ createServer(async (request, response) => {
     }
 
     const body = renderDynamicListingPage({ baseUrl, listing: { ...listing, slug }, slug });
+
+    if (geoCountry) {
+      response.setHeader('Set-Cookie', buildGeoCookie(geoCountry));
+    }
+
     send(response, 200, body, {
       'Cache-Control': 'no-cache',
       'Content-Length': Buffer.byteLength(body),
@@ -185,6 +192,10 @@ createServer(async (request, response) => {
     const extension = path.extname(filePath);
     const contentType = contentTypes[extension] || 'application/octet-stream';
     const cacheControl = noCacheExtensions.has(extension) ? 'no-cache' : 'public, max-age=86400';
+
+    if (extension === '.html' && geoCountry) {
+      response.setHeader('Set-Cookie', buildGeoCookie(geoCountry));
+    }
 
     send(response, 200, body, {
       'Cache-Control': cacheControl,

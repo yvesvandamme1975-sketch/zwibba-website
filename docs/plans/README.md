@@ -128,4 +128,7 @@ Current priority docs:
 - `2026-08-04-zwibba-market-foundation-design.md`
 - `2026-08-04-zwibba-market-foundation-implementation.md`
 
+- `2026-08-06-zwibba-geo-country-suggestion-design.md`
+- `2026-08-06-zwibba-geo-country-suggestion-implementation.md`
+
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.

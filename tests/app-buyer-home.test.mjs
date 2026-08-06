@@ -206,6 +206,57 @@ test('buy screen exposes a clear-all category chip when a category filter is act
   );
 });
 
+test('buy screen shows the market selector without a session, marking RDC active by default', () => {
+  const html = renderBuyScreen({
+    categories,
+    featuredListings: [],
+    feedStatus: 'ready',
+    recentListings: [],
+  });
+
+  assert.match(html, /data-action="set-browse-country"/);
+  assert.match(
+    html,
+    /data-action="set-browse-country"[^>]*data-country="CD"[^>]*aria-pressed="true"/,
+  );
+  assert.match(html, /data-action="set-browse-country"[^>]*data-country="BE"/);
+  assert.doesNotMatch(
+    html,
+    /data-action="set-browse-country"[^>]*data-country="BE"[^>]*aria-pressed="true"/,
+  );
+});
+
+test('buy screen marks Belgique active when the active browse country is BE', () => {
+  const html = renderBuyScreen({
+    activeCountry: 'BE',
+    categories,
+    featuredListings: [],
+    feedStatus: 'ready',
+    recentListings: [],
+  });
+
+  assert.match(
+    html,
+    /data-action="set-browse-country"[^>]*data-country="BE"[^>]*aria-pressed="true"/,
+  );
+  assert.doesNotMatch(
+    html,
+    /data-action="set-browse-country"[^>]*data-country="CD"[^>]*aria-pressed="true"/,
+  );
+});
+
+test('buy screen hides the market selector once a session exists', () => {
+  const html = renderBuyScreen({
+    categories,
+    featuredListings: [],
+    feedStatus: 'ready',
+    hasSession: true,
+    recentListings: [],
+  });
+
+  assert.doesNotMatch(html, /data-action="set-browse-country"/);
+});
+
 test('buyer listing cards keep the media placeholder when no image is available', () => {
   const html = renderHomeScreen({
     categories,
