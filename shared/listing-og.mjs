@@ -16,6 +16,16 @@ function formatPrice(amount, currency) {
     return currency || '';
   }
 
+  if (currency === 'EUR') {
+    const formattedAmount = new Intl.NumberFormat('fr-BE').format(Number(amount));
+    return `${formattedAmount} €`;
+  }
+
+  if (currency === 'USD') {
+    const formattedAmount = new Intl.NumberFormat('fr-FR').format(Number(amount));
+    return `${formattedAmount} US$`;
+  }
+
   const formattedAmount = new Intl.NumberFormat('fr-FR').format(Number(amount));
   return currency ? `${formattedAmount} ${currency}` : formattedAmount;
 }

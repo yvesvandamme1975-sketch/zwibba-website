@@ -22,7 +22,11 @@ import {
   supportTopics,
   testimonials,
 } from '../src/site/content.mjs';
+import * as frCd from '../src/site/locales/fr-cd.mjs';
+import * as frBe from '../src/site/locales/fr-be.mjs';
+import * as nlBe from '../src/site/locales/nl-be.mjs';
 import { resolveSeededListingImage } from '../shared/listing-images.mjs';
+import { localeHref } from '../src/site/locale-href.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
@@ -40,13 +44,14 @@ function whatsappDigits(phoneNumber) {
   return typeof phoneNumber === 'string' ? phoneNumber.replace(/\D/g, '') : '';
 }
 
-const safetyTips = [
-  "Évitez de payer à l'avance, même pour la livraison.",
-  'Rencontrez le vendeur dans un lieu public sûr.',
-  "Inspectez l'article avant de payer.",
-  "Assurez-vous que l'article emballé est bien celui que vous avez vérifié.",
-  'Ne payez que si vous êtes satisfait.',
-];
+function conditionCode(label) {
+  return String(label)
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 
 const iconPaths = {
   menu:
@@ -113,12 +118,33 @@ function serializeJson(value) {
   return JSON.stringify(value).replaceAll('<', '\\u003c');
 }
 
-function formatCdf(value) {
-  return `${new Intl.NumberFormat('fr-FR').format(value)} CDF`;
+function formatPrice(currentSite, value) {
+  return `${new Intl.NumberFormat(currentSite.priceLocale).format(value)} ${currentSite.currency}`;
 }
 
-function resolveUrl(relativePath) {
-  return new URL(relativePath, site.baseUrl).toString();
+function resolveUrl(currentSite, relativePath) {
+  const isRootAbsoluteAsset =
+    relativePath.startsWith('/assets/') || relativePath.startsWith('/App/');
+  const href = isRootAbsoluteAsset ? relativePath : localeHref(currentSite, relativePath);
+  return new URL(href, currentSite.baseUrl).toString();
+}
+
+const alternateLocaleSites = [
+  { hreflang: 'fr', site: frCd.site },
+  { hreflang: 'fr-BE', site: frBe.site },
+  { hreflang: 'nl-BE', site: nlBe.site },
+];
+
+function renderAlternateLinks(logicalPath) {
+  const links = alternateLocaleSites.map(
+    ({ hreflang, site: altSite }) =>
+      `<link rel="alternate" hreflang="${hreflang}" href="${resolveUrl(altSite, logicalPath)}" />`,
+  );
+  links.push(
+    `<link rel="alternate" hreflang="x-default" href="${resolveUrl(frCd.site, logicalPath)}" />`,
+  );
+
+  return links.join('\n    ');
 }
 
 function icon(name, className = '') {
@@ -127,7 +153,7 @@ function icon(name, className = '') {
   return `<svg${classAttr} viewBox="0 0 24 24" aria-hidden="true">${markup}</svg>`;
 }
 
-function buildListingImage(listing) {
+function buildListingImage(currentSite, listing) {
   const [primary, secondary] = listing.accent;
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -157,7 +183,7 @@ function buildListingImage(listing) {
     listing.categoryLabel,
   )} · ${escapeHtml(listing.neighborhood)}, ${escapeHtml(listing.city)}</text>
   <text x="84" y="432" font-family="Arial, sans-serif" font-size="60" font-weight="700" fill="#E9FFE9">${escapeHtml(
-    formatCdf(listing.priceCdf),
+    formatPrice(currentSite, listing.priceCdf),
   )}</text>
   <rect x="84" y="512" width="420" height="160" rx="28" fill="rgba(17,18,20,0.22)"/>
   <text x="116" y="572" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#FFFFFF">Vendez en un clic</text>
@@ -174,8 +200,8 @@ function resolveListingImageAsset(listing) {
   return resolveSeededListingImage(listing.slug)?.src || `/assets/listings/${listing.slug}.svg`;
 }
 
-function renderStoreButtons(extraClass = '') {
-  return site.stores
+function renderStoreButtons(currentSite, extraClass = '') {
+  return currentSite.stores
     .map(
       (store) => `
         <a class="store-button ${extraClass}" href="${store.href}" target="_blank" rel="noreferrer" data-store-link>
@@ -188,39 +214,68 @@ function renderStoreButtons(extraClass = '') {
     .join('');
 }
 
-function renderNav(currentPath) {
+function renderNav(content, currentPath) {
+  const { site, ui } = content;
   const links = site.nav
     .map(({ href, label }) => {
       const isActive = currentPath === href || (href !== '/' && currentPath.startsWith(href));
-      return `<a class="nav-link${isActive ? ' is-active' : ''}" href="${href}">${escapeHtml(label)}</a>`;
+      return `<a class="nav-link${isActive ? ' is-active' : ''}" href="${localeHref(site, href)}">${escapeHtml(label)}</a>`;
     })
     .join('');
 
   return `
     <header class="site-header">
       <div class="site-header__inner">
-        <a class="brandmark" href="/" aria-label="Zwibba accueil">
+        <a class="brandmark" href="${localeHref(site, '/')}" aria-label="${ui.nav.homeAriaLabel}">
           <img src="/assets/brand/logo-zwibba.svg" alt="Zwibba" width="160" height="113" />
         </a>
         <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
           <span class="menu-toggle__icon menu-toggle__icon--open">${icon('menu')}</span>
           <span class="menu-toggle__icon menu-toggle__icon--close">${icon('close')}</span>
-          <span class="sr-only">Menu</span>
+          <span class="sr-only">${ui.nav.menuLabel}</span>
         </button>
         <nav class="site-nav" id="site-nav" data-open="false">
           ${links}
-          <a class="button button--ghost" href="/annonces/">Explorer</a>
-          <a class="button button--primary" href="/ambassadeur/">Télécharger</a>
+          <a class="button button--ghost" href="${localeHref(site, '/annonces/')}">${ui.nav.explore}</a>
+          <a class="button button--primary" href="${localeHref(site, '/ambassadeur/')}">${ui.nav.download}</a>
         </nav>
       </div>
     </header>
   `;
 }
 
-function renderFooter() {
-  const footerLinks = site.nav
-    .map((item) => `<a href="${item.href}">${escapeHtml(item.label)}</a>`)
+function localeCode(currentSite) {
+  return `${currentSite.language}-${currentSite.market}`;
+}
+
+function renderLocaleSwitchLinks(content, logicalPath) {
+  const { options } = content.ui.nav.localeSwitch;
+
+  return alternateLocaleSites
+    .map(({ site: altSite }) => {
+      const code = localeCode(altSite);
+      const option = options.find((item) => item.code === code);
+      const label = option ? option.label : code;
+      const isCurrent = altSite.urlPrefix === content.site.urlPrefix;
+
+      if (isCurrent) {
+        return `<span class="locale-switch__link locale-switch__link--current" aria-current="true">${escapeHtml(label)}</span>`;
+      }
+
+      return `<a class="locale-switch__link" href="${localeHref(altSite, logicalPath)}">${escapeHtml(label)}</a>`;
+    })
     .join('');
+}
+
+function renderFooter(content, currentPath, alternates = true) {
+  const { site, ui } = content;
+  const footerLinks = site.nav
+    .map((item) => `<a href="${localeHref(site, item.href)}">${escapeHtml(item.label)}</a>`)
+    .join('');
+  // Pages without cross-locale equivalents (e.g. fr-CD static listing pages)
+  // fall back to the browse page so the switcher never links to a 404.
+  const localeSwitchPath = alternates ? currentPath : '/annonces/';
+  const localeSwitchLinks = renderLocaleSwitchLinks(content, localeSwitchPath);
 
   return `
     <footer class="site-footer">
@@ -230,17 +285,21 @@ function renderFooter() {
           <p class="site-footer__copy">${escapeHtml(site.description)}</p>
         </div>
         <div>
-          <h2 class="site-footer__title">Navigation</h2>
+          <h2 class="site-footer__title">${ui.nav.footerNavTitle}</h2>
           <div class="site-footer__links">${footerLinks}</div>
         </div>
         <div>
-          <h2 class="site-footer__title">Disponible bientôt</h2>
-          <div class="store-row store-row--footer">${renderStoreButtons('store-button--compact')}</div>
+          <h2 class="site-footer__title">${escapeHtml(ui.nav.localeSwitch.heading)}</h2>
+          <div class="locale-switch__links">${localeSwitchLinks}</div>
+        </div>
+        <div>
+          <h2 class="site-footer__title">${ui.nav.footerStoresTitle}</h2>
+          <div class="store-row store-row--footer">${renderStoreButtons(site, 'store-button--compact')}</div>
         </div>
       </div>
       <div class="site-footer__meta">
-        <span>${escapeHtml(site.market)}</span>
-        <span>Simple · Rapide · Mobile</span>
+        <span>${escapeHtml(site.marketLabel)}</span>
+        <span>${ui.nav.footerTagline}</span>
       </div>
     </footer>
   `;
@@ -286,14 +345,14 @@ function renderAppPage() {
     <meta property="og:site_name" content="${site.name}" />
     <meta property="og:title" content="Zwibba App" />
     <meta property="og:description" content="Bêta web Zwibba pour publier, découvrir et partager des annonces en direct." />
-    <meta property="og:url" content="${resolveUrl('/App/')}" />
-    <meta property="og:image" content="${resolveUrl('/assets/brand/og-default.png')}" />
+    <meta property="og:url" content="${resolveUrl(site, '/App/')}" />
+    <meta property="og:image" content="${resolveUrl(site, '/assets/brand/og-default.png')}" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Zwibba App" />
     <meta name="twitter:description" content="Bêta web Zwibba pour publier, découvrir et partager des annonces en direct." />
-    <meta name="twitter:image" content="${resolveUrl('/assets/brand/og-default.png')}" />
+    <meta name="twitter:image" content="${resolveUrl(site, '/assets/brand/og-default.png')}" />
     <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -352,7 +411,7 @@ window.ZWIBBA_SUPPORT_WHATSAPP = ${JSON.stringify({ CD: supportWhatsAppCd, BE: s
 </html>`;
 }
 
-function renderLayout({
+function renderLayout(content, {
   currentPath,
   title,
   description,
@@ -366,8 +425,10 @@ function renderLayout({
   productPriceCurrency = '',
   schema,
   bodyClass = '',
+  alternates = true,
 }) {
-  const canonicalUrl = resolveUrl(canonicalPath);
+  const { site, ui } = content;
+  const canonicalUrl = resolveUrl(site, canonicalPath);
   const schemas = Array.isArray(schema) ? schema : schema ? [schema] : [];
   const schemaMarkup = schemas
     .map((item) => `<script type="application/ld+json">${serializeJson(item)}</script>`)
@@ -375,9 +436,10 @@ function renderLayout({
   const analyticsMarkup = plausibleDomain
     ? `<script defer data-domain="${escapeHtml(plausibleDomain)}" src="${escapeHtml(plausibleSrc)}"></script>`
     : '';
+  const alternateMarkup = alternates ? renderAlternateLinks(currentPath) : '';
 
   return `<!DOCTYPE html>
-<html lang="fr">
+<html lang="${site.htmlLang}">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -391,7 +453,7 @@ function renderLayout({
     <meta property="og:title" content="${escapeHtml(ogTitle)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:url" content="${canonicalUrl}" />
-    <meta property="og:image" content="${resolveUrl(ogImage)}" />
+    <meta property="og:image" content="${resolveUrl(site, ogImage)}" />
     ${ogImageWidth ? `<meta property="og:image:width" content="${escapeHtml(ogImageWidth)}" />` : ''}
     ${ogImageHeight ? `<meta property="og:image:height" content="${escapeHtml(ogImageHeight)}" />` : ''}
     ${productPriceAmount !== '' ? `<meta property="product:price:amount" content="${escapeHtml(productPriceAmount)}" />` : ''}
@@ -399,8 +461,9 @@ function renderLayout({
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escapeHtml(ogTitle)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
-    <meta name="twitter:image" content="${resolveUrl(ogImage)}" />
+    <meta name="twitter:image" content="${resolveUrl(site, ogImage)}" />
     <link rel="canonical" href="${canonicalUrl}" />
+    ${alternateMarkup}
     <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml" />
     <style>
       .skip-link {
@@ -424,28 +487,29 @@ function renderLayout({
   </head>
   <body class="${bodyClass}">
     <div class="site-shell">
-      <a class="skip-link" href="#main-content">Aller au contenu</a>
-      ${renderNav(currentPath)}
+      <a class="skip-link" href="#main-content">${ui.nav.skipLink}</a>
+      ${renderNav(content, currentPath)}
       <p class="sr-only" id="site-announcer" aria-live="polite"></p>
       ${body}
-      ${renderFooter()}
+      ${renderFooter(content, currentPath, alternates)}
       <dialog class="download-gate" id="download-gate">
         <div class="download-gate__panel">
-          <button class="download-gate__close" type="button" data-close-gate aria-label="Fermer">${icon('close')}</button>
-          <p class="eyebrow">Action réservée à l'application</p>
-          <h2>Ouvrez Zwibba pour continuer</h2>
-          <p>Le site sert à découvrir et à partager. Pour publier, enregistrer ou contacter un vendeur, passez par l'application Zwibba.</p>
-          <div class="store-row">${renderStoreButtons()}</div>
+          <button class="download-gate__close" type="button" data-close-gate aria-label="${ui.gate.closeLabel}">${icon('close')}</button>
+          <p class="eyebrow">${ui.gate.eyebrow}</p>
+          <h2>${ui.gate.title}</h2>
+          <p>${ui.gate.body}</p>
+          <div class="store-row">${renderStoreButtons(site)}</div>
         </div>
       </dialog>
     </div>
+    <script>window.ZWIBBA_UI_STRINGS = ${serializeJson(ui.client)};</script>
     <script src="/assets/app.js" defer></script>
   </body>
 </html>`;
 }
 
-function renderHeroStats() {
-  return site.socialProof
+function renderHeroStats(content) {
+  return content.site.socialProof
     .map(
       (item) => `
         <article class="metric-card">
@@ -457,8 +521,8 @@ function renderHeroStats() {
     .join('');
 }
 
-function renderCategoryCards() {
-  return categories
+function renderCategoryCards(content) {
+  return content.categories
     .map(
       (category) => `
         <article class="category-card">
@@ -471,8 +535,8 @@ function renderCategoryCards() {
     .join('');
 }
 
-function renderFeatureSteps() {
-  return featureSteps
+function renderFeatureSteps(content) {
+  return content.featureSteps
     .map(
       (step) => `
         <article class="step-card">
@@ -485,8 +549,8 @@ function renderFeatureSteps() {
     .join('');
 }
 
-function renderHighlights() {
-  return platformHighlights
+function renderHighlights(content) {
+  return content.platformHighlights
     .map(
       (item) => `
         <article class="highlight-card">
@@ -498,8 +562,8 @@ function renderHighlights() {
     .join('');
 }
 
-function renderTestimonials() {
-  return testimonials
+function renderTestimonials(content) {
+  return content.testimonials
     .map(
       (item) => `
         <article class="testimonial-card">
@@ -525,17 +589,17 @@ function renderFaqs(items) {
     .join('');
 }
 
-function renderListingCard(listing, options = {}) {
+function renderListingCard(site, listing, options = {}) {
   const featuredBadge = listing.isFeatured ? '<span class="listing-card__badge">Booste</span>' : '';
   const highlight = options.highlightLabel ? `<span class="listing-card__meta-tag">${escapeHtml(options.highlightLabel)}</span>` : '';
   const listingImageAsset = resolveListingImageAsset(listing);
   return `
     <article class="listing-card" data-listing-card data-category="${listing.category}" data-condition="${escapeHtml(
-      listing.condition.toLowerCase(),
+      conditionCode(listing.condition),
     )}" data-price="${listing.priceCdf}" data-title="${escapeHtml(listing.title.toLowerCase())}" data-published="${escapeHtml(
       listing.publishedAt,
     )}">
-      <a class="listing-card__media" href="/annonce/${listing.slug}/">
+      <a class="listing-card__media" href="${localeHref(site, `/annonce/${listing.slug}/`)}">
         <img src="${escapeHtml(listingImageAsset)}" alt="${escapeHtml(listing.title)}" loading="lazy" width="600" height="400" />
         ${featuredBadge}
       </a>
@@ -545,10 +609,10 @@ function renderListingCard(listing, options = {}) {
           <span>${escapeHtml(listing.neighborhood)}</span>
           ${highlight}
         </div>
-        <h3><a href="/annonce/${listing.slug}/">${escapeHtml(listing.title)}</a></h3>
+        <h3><a href="${localeHref(site, `/annonce/${listing.slug}/`)}">${escapeHtml(listing.title)}</a></h3>
         <p>${escapeHtml(listing.summary)}</p>
         <div class="listing-card__footer">
-          <strong>${escapeHtml(formatCdf(listing.priceCdf))}</strong>
+          <strong>${escapeHtml(formatPrice(site, listing.priceCdf))}</strong>
           <span>${escapeHtml(listing.publishedAt)}</span>
         </div>
       </div>
@@ -556,12 +620,29 @@ function renderListingCard(listing, options = {}) {
   `;
 }
 
-function renderSafetyTips() {
+function renderSafetyTips(safetyTips) {
   return safetyTips.map((tip) => `<li>${escapeHtml(tip)}</li>`).join('');
 }
 
-function renderLandingPage() {
-  const highlightedListings = listings.slice(0, 4).map((listing) => renderListingCard(listing, { highlightLabel: listing.transactionType })).join('');
+function renderLandingPage(content) {
+  const { site, listings, ui } = content;
+  const landing = ui.landing;
+  const hasListings = listings.length > 0;
+  const highlightedListings = hasListings
+    ? listings.slice(0, 4).map((listing) => renderListingCard(site, listing, { highlightLabel: listing.transactionType })).join('')
+    : '';
+  const listingsSection = hasListings
+    ? `
+      <section class="section">
+        <div class="section__heading">
+          <p class="eyebrow">${landing.listings.eyebrow}</p>
+          <h2>${landing.listings.title}</h2>
+          <p>${landing.listings.copy}</p>
+        </div>
+        <div class="listing-grid">${highlightedListings}</div>
+      </section>
+`
+    : '';
 
   const schema = [
     {
@@ -580,10 +661,10 @@ function renderLandingPage() {
       offers: {
         '@type': 'Offer',
         price: '0',
-        priceCurrency: 'CDF',
+        priceCurrency: site.currency,
       },
       description: site.description,
-      areaServed: site.market,
+      areaServed: site.marketLabel,
     },
   ];
 
@@ -591,86 +672,77 @@ function renderLandingPage() {
     <main id="main-content">
       <section class="hero">
         <div class="hero__copy">
-          <p class="eyebrow">${escapeHtml(site.market)} · Petites annonces pour mobile</p>
-          <h1>La place de marché qui transforme une photo en annonce prête à publier.</h1>
+          <p class="eyebrow">${escapeHtml(site.marketLabel)} ${landing.heroEyebrowSuffix}</p>
+          <h1>${landing.heroTitle}</h1>
           <p class="hero__lede">${escapeHtml(site.description)}</p>
-          <div class="store-row">${renderStoreButtons()}</div>
-          <div class="metric-grid">${renderHeroStats()}</div>
+          <div class="store-row">${renderStoreButtons(site)}</div>
+          <div class="metric-grid">${renderHeroStats(content)}</div>
         </div>
         <div class="hero__stage">
           <div class="hero-stage-card hero-stage-card--wide">
-            <span class="hero-stage-card__label">${icon('spark')} Zwibba IA</span>
-            <h2>Photo → analyse → prix conseillé → publication</h2>
-            <p>L'application prend vos photos, trouve la catégorie et propose une description et un prix en CDF.</p>
+            <span class="hero-stage-card__label">${icon('spark')} ${landing.heroStage.aiLabel}</span>
+            <h2>${landing.heroStage.aiTitle}</h2>
+            <p>${landing.heroStage.aiCopy}</p>
           </div>
           <div class="hero-stage-card">
-            <span class="hero-stage-card__label">${icon('chat')} Accès protégé</span>
-            <p>Le site aide à découvrir les annonces. L'application sert ensuite à contacter, enregistrer et publier.</p>
+            <span class="hero-stage-card__label">${icon('chat')} ${landing.heroStage.accessLabel}</span>
+            <p>${landing.heroStage.accessCopy}</p>
           </div>
           <div class="hero-stage-card">
-            <span class="hero-stage-card__label">${icon('shield')} Léger sur 3G</span>
-            <p>Peu de chargement et des images légères pour garder une navigation fluide sur un réseau lent.</p>
+            <span class="hero-stage-card__label">${icon('shield')} ${landing.heroStage.lightLabel}</span>
+            <p>${landing.heroStage.lightCopy}</p>
           </div>
         </div>
       </section>
 
       <section class="section">
         <div class="section__heading">
-          <p class="eyebrow">Flux central</p>
-          <h2>Publier une annonce doit être très simple.</h2>
-          <p>Le parcours doit rester court, clair et pensé pour le mobile. Le site reprend cette idée et mène vers les bons points d'entrée.</p>
+          <p class="eyebrow">${landing.flow.eyebrow}</p>
+          <h2>${landing.flow.title}</h2>
+          <p>${landing.flow.copy}</p>
         </div>
-        <div class="step-grid">${renderFeatureSteps()}</div>
+        <div class="step-grid">${renderFeatureSteps(content)}</div>
       </section>
 
       <section class="section section--accent">
         <div class="section__heading">
-          <p class="eyebrow">Catégories</p>
-          <h2>Dix univers clés pour le marché de Lubumbashi.</h2>
-          <p>Téléphones, immobilier, services, alimentation ou agriculture : les catégories suivent les usages du terrain.</p>
+          <p class="eyebrow">${landing.categories.eyebrow}</p>
+          <h2>${landing.categories.title}</h2>
+          <p>${landing.categories.copy}</p>
         </div>
-        <div class="category-grid">${renderCategoryCards()}</div>
+        <div class="category-grid">${renderCategoryCards(content)}</div>
       </section>
 
       <section class="section">
         <div class="section__heading">
-          <p class="eyebrow">Pourquoi ça marche</p>
-          <h2>Un site simple qui travaille avec l'application.</h2>
+          <p class="eyebrow">${landing.why.eyebrow}</p>
+          <h2>${landing.why.title}</h2>
         </div>
-        <div class="highlight-grid">${renderHighlights()}</div>
+        <div class="highlight-grid">${renderHighlights(content)}</div>
       </section>
-
-      <section class="section">
-        <div class="section__heading">
-          <p class="eyebrow">Annonces en avant</p>
-          <h2>Une vitrine web légère, claire et facile à partager.</h2>
-          <p>Les fiches d'annonce sont prêtes pour le partage sur WhatsApp et Facebook, tout en gardant les actions sensibles dans l'application.</p>
-        </div>
-        <div class="listing-grid">${highlightedListings}</div>
-      </section>
-
+${listingsSection}
       <section class="section section--dense">
         <div class="section__heading">
-          <p class="eyebrow">Voix du terrain</p>
-          <h2>Une plateforme faite pour des usages locaux, pas pour une démo générique.</h2>
+          <p class="eyebrow">${landing.testimonials.eyebrow}</p>
+          <h2>${landing.testimonials.title}</h2>
         </div>
-        <div class="testimonial-grid">${renderTestimonials()}</div>
+        <div class="testimonial-grid">${renderTestimonials(content)}</div>
       </section>
 
       <section class="section section--cta">
         <div class="cta-panel">
           <div>
-            <p class="eyebrow">Prêt pour le lancement</p>
-            <h2>Téléchargez Zwibba, ouvrez votre appareil photo et publiez.</h2>
-            <p>Le site s'occupe de la découverte et du partage. L'application garde le contact et la confiance.</p>
+            <p class="eyebrow">${landing.cta.eyebrow}</p>
+            <h2>${landing.cta.title}</h2>
+            <p>${landing.cta.copy}</p>
           </div>
-          <div class="store-row">${renderStoreButtons()}</div>
+          <div class="store-row">${renderStoreButtons(site)}</div>
         </div>
       </section>
     </main>
   `;
 
-  return renderLayout({
+  return renderLayout(content, {
     currentPath: '/',
     title: `${site.name} | ${site.tagline}`,
     description: site.description,
@@ -679,12 +751,14 @@ function renderLandingPage() {
   });
 }
 
-function renderBrowsePage() {
-  const featured = listings.filter((item) => item.isFeatured).map((listing) => renderListingCard(listing, { highlightLabel: 'Top Ad' })).join('');
-  const cards = listings.map((listing) => renderListingCard(listing, { highlightLabel: listing.transactionType })).join('');
+function renderBrowsePage(content) {
+  const { site, listings, categories, ui } = content;
+  const browse = ui.browse;
+  const featured = listings.filter((item) => item.isFeatured).map((listing) => renderListingCard(site, listing, { highlightLabel: browse.featuredBadge })).join('');
+  const cards = listings.map((listing) => renderListingCard(site, listing, { highlightLabel: listing.transactionType })).join('');
   const chips = ['all', ...categories.map((category) => category.slug)]
     .map((value) => {
-      const label = value === 'all' ? 'Tout' : categories.find((item) => item.slug === value).label;
+      const label = value === 'all' ? browse.chipAllLabel : categories.find((item) => item.slug === value).label;
       return `<button class="chip${value === 'all' ? ' is-active' : ''}" type="button" data-chip="${value}">${escapeHtml(label)}</button>`;
     })
     .join('');
@@ -692,16 +766,15 @@ function renderBrowsePage() {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: 'Annonces Zwibba',
-    description:
-      "Parcourez les annonces Zwibba : catégories, filtres, prix en CDF et fiches d'annonce faciles à partager.",
-    url: resolveUrl('/annonces/'),
+    name: browse.pageTitle,
+    description: browse.pageDescription,
+    url: resolveUrl(site, '/annonces/'),
     mainEntity: {
       '@type': 'ItemList',
       itemListElement: listings.map((listing, index) => ({
         '@type': 'ListItem',
         position: index + 1,
-        url: resolveUrl(`/annonce/${listing.slug}/`),
+        url: resolveUrl(site, `/annonce/${listing.slug}/`),
         name: listing.title,
       })),
     },
@@ -711,9 +784,9 @@ function renderBrowsePage() {
     <main id="main-content">
       <section class="page-hero page-hero--compact">
         <div>
-          <p class="eyebrow">Petites annonces</p>
-          <h1>Explorez les annonces Zwibba avant d'ouvrir l'application.</h1>
-          <p>Recherche, catégories, tri et repères utiles : le site reste simple, rapide et facile à partager.</p>
+          <p class="eyebrow">${browse.hero.eyebrow}</p>
+          <h1>${browse.hero.title}</h1>
+          <p>${browse.hero.copy}</p>
         </div>
       </section>
 
@@ -726,46 +799,42 @@ function renderBrowsePage() {
       <section class="section browse-section">
         <aside class="filter-panel">
           <div class="field">
-            <label for="browse-search">Recherche</label>
-            <input id="browse-search" type="search" placeholder="Ex: Galaxy, terrain, plomberie..." autocomplete="off" />
+            <label for="browse-search">${browse.filters.searchLabel}</label>
+            <input id="browse-search" type="search" placeholder="${escapeHtml(browse.filters.searchPlaceholder)}" autocomplete="off" />
           </div>
           <div class="field">
-            <label for="browse-category">Catégorie</label>
+            <label for="browse-category">${browse.filters.categoryLabel}</label>
             <select id="browse-category">
-              <option value="all">Toutes</option>
+              <option value="all">${browse.filters.categoryAllLabel}</option>
               ${categories
                 .map((category) => `<option value="${category.slug}">${escapeHtml(category.label)}</option>`)
                 .join('')}
             </select>
           </div>
           <div class="field">
-            <label for="browse-condition">État</label>
+            <label for="browse-condition">${browse.filters.conditionLabel}</label>
             <select id="browse-condition">
-              <option value="all">Toutes</option>
-              <option value="neuf">Neuf</option>
-              <option value="bon état">Bon état</option>
-              <option value="très bon état">Très bon état</option>
-              <option value="service">Service</option>
-              <option value="frais">Frais</option>
+              <option value="all">${browse.filters.conditionAllLabel}</option>
+              ${browse.conditions
+                .map((condition) => `<option value="${condition.code}">${escapeHtml(condition.label)}</option>`)
+                .join('\n              ')}
             </select>
           </div>
           <div class="field">
-            <label for="browse-price">Prix</label>
+            <label for="browse-price">${browse.filters.priceLabel}</label>
             <select id="browse-price">
-              <option value="all">Tous les prix</option>
-              <option value="0-100000">0 - 100 000 CDF</option>
-              <option value="100001-500000">100 001 - 500 000 CDF</option>
-              <option value="500001-2000000">500 001 - 2 000 000 CDF</option>
-              <option value="2000001-999999999">2 000 001 CDF ou plus</option>
+              <option value="all">${browse.filters.priceAllLabel}</option>
+              ${browse.filters.priceOptions
+                .map((option) => `<option value="${option.value}">${escapeHtml(option.label)}</option>`)
+                .join('\n              ')}
             </select>
           </div>
           <div class="field">
-            <label for="browse-sort">Tri</label>
+            <label for="browse-sort">${browse.filters.sortLabel}</label>
             <select id="browse-sort">
-              <option value="recent">Plus récents</option>
-              <option value="cheap">Prix croissant</option>
-              <option value="expensive">Prix décroissant</option>
-              <option value="featured">Boostées d'abord</option>
+              ${browse.filters.sortOptions
+                .map((option) => `<option value="${option.value}">${option.label}</option>`)
+                .join('\n              ')}
             </select>
           </div>
         </aside>
@@ -774,10 +843,10 @@ function renderBrowsePage() {
           <div class="chip-row">${chips}</div>
           <div class="browse-results__header">
             <div>
-              <p class="eyebrow">10 catégories</p>
-              <h2 id="results-summary" aria-live="polite">8 annonces visibles</h2>
+              <p class="eyebrow">${browse.categoriesEyebrow}</p>
+              <h2 id="results-summary" aria-live="polite">${browse.resultsFallback}</h2>
             </div>
-            <a class="button button--ghost" href="/ambassadeur/">Devenir ambassadeur</a>
+            <a class="button button--ghost" href="${localeHref(site, '/ambassadeur/')}">${browse.ambassadorCta}</a>
           </div>
           <div class="listing-grid" id="browse-results-grid">${cards}</div>
         </div>
@@ -785,17 +854,18 @@ function renderBrowsePage() {
     </main>
   `;
 
-  return renderLayout({
+  return renderLayout(content, {
     currentPath: '/annonces/',
-    title: `Annonces Zwibba | ${site.market}`,
-    description:
-      "Parcourez les annonces Zwibba : catégories, filtres, prix en CDF et fiches d'annonce faciles à partager.",
+    title: `${browse.pageTitle} | ${site.marketLabel}`,
+    description: browse.pageDescription,
     body,
     schema,
   });
 }
 
-function renderListingPage(listing) {
+function renderListingPage(content, listing) {
+  const { site, listings, ui } = content;
+  const listingUi = ui.listing;
   const listingImageAsset = resolveListingImageAsset(listing);
   const hasStoryImage = Boolean(listing.storyImageUrl);
   const ogImage = hasStoryImage ? listing.storyImageUrl : listingImageAsset;
@@ -805,7 +875,7 @@ function renderListingPage(listing) {
   const similar = listings
     .filter((item) => item.slug !== listing.slug && item.category === listing.category)
     .slice(0, 2)
-    .map((item) => renderListingCard(item, { highlightLabel: 'Similaire' }))
+    .map((item) => renderListingCard(site, item, { highlightLabel: listingUi.similarBadge }))
     .join('');
 
   const schema = {
@@ -813,10 +883,10 @@ function renderListingPage(listing) {
     '@type': listing.listingType === 'Service' ? 'Service' : 'Product',
     name: listing.title,
     description: listing.summary,
-    image: resolveUrl(listingImageAsset),
+    image: resolveUrl(site, listingImageAsset),
     offers: {
       '@type': 'Offer',
-      priceCurrency: 'CDF',
+      priceCurrency: site.currency,
       price: listing.priceCdf,
       availability: 'https://schema.org/InStock',
     },
@@ -840,28 +910,28 @@ function renderListingPage(listing) {
             <span class="meta-pill">${escapeHtml(listing.condition)}</span>
           </div>
           <h1>${escapeHtml(listing.title)}</h1>
-          <p class="listing-hero__price">${escapeHtml(formatCdf(listing.priceCdf))}</p>
+          <p class="listing-hero__price">${escapeHtml(formatPrice(site, listing.priceCdf))}</p>
           <p class="listing-hero__summary">${escapeHtml(listing.summary)}</p>
           <div class="detail-actions">
-            <button class="button button--primary" type="button" data-gated="call">${icon('phone')} Appeler</button>
-            <button class="button button--ghost" type="button" data-gated="whatsapp">WhatsApp</button>
-            <button class="button button--ghost" type="button" data-gated="sms">SMS</button>
+            <button class="button button--primary" type="button" data-gated="call">${icon('phone')} ${listingUi.call}</button>
+            <button class="button button--ghost" type="button" data-gated="whatsapp">${listingUi.whatsapp}</button>
+            <button class="button button--ghost" type="button" data-gated="sms">${listingUi.sms}</button>
             <button class="button button--ghost" type="button" data-share-button data-share-title="${escapeHtml(
               listing.title,
-            )}" data-share-url="${resolveUrl(`/annonce/${listing.slug}/`)}">${icon('share')} Partager</button>
+            )}" data-share-url="${resolveUrl(site, `/annonce/${listing.slug}/`)}">${icon('share')} ${listingUi.share}</button>
           </div>
-          <p class="detail-note">${icon('shield')} Ouvrez l'application pour voir les coordonnées complètes et contacter le vendeur en sécurité.</p>
+          <p class="detail-note">${icon('shield')} ${listingUi.detailNote}</p>
         </div>
       </section>
 
       <section class="section listing-detail-layout">
         <div class="listing-story">
           <article class="detail-card">
-            <p class="eyebrow">Description</p>
+            <p class="eyebrow">${listingUi.descriptionEyebrow}</p>
             ${listing.description.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join('')}
           </article>
           <article class="detail-card">
-            <p class="eyebrow">Caractéristiques</p>
+            <p class="eyebrow">${listingUi.specsEyebrow}</p>
             <dl class="spec-grid">
               ${listing.specs
                 .map(
@@ -876,14 +946,14 @@ function renderListingPage(listing) {
             </dl>
           </article>
           <article class="detail-card detail-card--warning">
-            <p class="eyebrow">Conseils de sécurité</p>
-            <ul class="safety-list">${renderSafetyTips()}</ul>
+            <p class="eyebrow">${listingUi.safetyEyebrow}</p>
+            <ul class="safety-list">${renderSafetyTips(content.safetyTips)}</ul>
           </article>
         </div>
 
         <aside class="listing-sidebar">
           <article class="detail-card">
-            <p class="eyebrow">Vendeur</p>
+            <p class="eyebrow">${listingUi.sellerEyebrow}</p>
             <h2>${escapeHtml(listing.seller.name)}</h2>
             <p>${escapeHtml(listing.seller.role)}</p>
             <ul class="seller-facts">
@@ -892,29 +962,29 @@ function renderListingPage(listing) {
               <li>${escapeHtml(listing.seller.responseTime)}</li>
               <li>${escapeHtml(listing.neighborhood)}, ${escapeHtml(listing.city)}</li>
             </ul>
-            <button class="button button--primary button--block" type="button" data-gated="seller-profile">Voir dans l'application</button>
+            <button class="button button--primary button--block" type="button" data-gated="seller-profile">${listingUi.viewInApp}</button>
           </article>
           <article class="detail-card">
-            <p class="eyebrow">Partage</p>
-            <p>Cette page est faite pour être claire et facile à partager. Pour les actions sensibles, passez par l'application.</p>
+            <p class="eyebrow">${listingUi.shareEyebrow}</p>
+            <p>${listingUi.shareCopy}</p>
             <button class="button button--ghost button--block" type="button" data-share-button data-share-title="${escapeHtml(
               listing.title,
-            )}" data-share-url="${resolveUrl(`/annonce/${listing.slug}/`)}">Copier le lien</button>
+            )}" data-share-url="${resolveUrl(site, `/annonce/${listing.slug}/`)}">${listingUi.copyLink}</button>
           </article>
         </aside>
       </section>
 
       <section class="section section--dense">
         <div class="section__heading">
-          <p class="eyebrow">Dans la même catégorie</p>
-          <h2>Autres annonces ${escapeHtml(listing.categoryLabel.toLowerCase())}</h2>
+          <p class="eyebrow">${listingUi.sameCategoryEyebrow}</p>
+          <h2>${listingUi.sameCategoryTitlePrefix} ${escapeHtml(listing.categoryLabel.toLowerCase())}</h2>
         </div>
         <div class="listing-grid">${similar}</div>
       </section>
     </main>
   `;
 
-  return renderLayout({
+  return renderLayout(content, {
     currentPath: `/annonce/${listing.slug}/`,
     canonicalPath: `/annonce/${listing.slug}/`,
     title: `${listing.title} | Zwibba`,
@@ -928,10 +998,13 @@ function renderListingPage(listing) {
     body: detailBody,
     schema,
     bodyClass: 'page-listing',
+    alternates: false,
   });
 }
 
-function renderAmbassadorPage() {
+function renderAmbassadorPage(content) {
+  const { site, ambassadorChannels, ui } = content;
+  const ambassador = ui.ambassador;
   const channels = ambassadorChannels
     .map(
       (channel) => `
@@ -943,64 +1016,65 @@ function renderAmbassadorPage() {
     )
     .join('');
 
+  const [ambassadorStep1, ambassadorStep2, ambassadorStep3] = ambassador.steps.items;
+
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
-    name: 'Programme ambassadeur Zwibba',
-    description:
-      "Expliquez le programme ambassadeur Zwibba, récupérez un code de parrainage et poussez l'installation dans l'application.",
-    url: resolveUrl('/ambassadeur/'),
+    name: ambassador.pageTitle,
+    description: ambassador.pageDescription,
+    url: resolveUrl(site, '/ambassadeur/'),
   };
 
   const body = `
     <main id="main-content">
       <section class="page-hero">
         <div>
-          <p class="eyebrow">Programme ambassadeur</p>
-          <h1>Chaque groupe de 10 parrainages validés débloque un nouveau boost.</h1>
-          <p>Le site explique le programme, récupère le code de parrainage et renvoie ensuite vers l'application pour le suivi.</p>
+          <p class="eyebrow">${ambassador.hero.eyebrow}</p>
+          <h1>${ambassador.hero.title}</h1>
+          <p>${ambassador.hero.copy}</p>
         </div>
         <div class="referral-panel">
-          <p class="referral-panel__label">Code actuel</p>
-          <strong id="referral-code-output">ZWIB-A3K9</strong>
-          <p>Partagez un lien simple, puis laissez l'application confirmer les inscriptions et les annonces validées.</p>
+          <p class="referral-panel__label">${ambassador.panel.label}</p>
+          <strong id="referral-code-output">${ambassador.panel.code}</strong>
+          <p>${ambassador.panel.copy}</p>
           <div class="referral-input-group">
-            <label for="referral-code-input">Code de parrainage</label>
-            <input id="referral-code-input" type="text" placeholder="ZWIB-A3K9" autocomplete="off" spellcheck="false" />
+            <label for="referral-code-input">${ambassador.panel.inputLabel}</label>
+            <input id="referral-code-input" type="text" placeholder="${ambassador.panel.code}" autocomplete="off" spellcheck="false" />
           </div>
-          <div class="store-row store-row--stacked">${renderStoreButtons()}</div>
-          <button class="button button--ghost button--block" type="button" data-copy-referral>Copier mon lien</button>
+          <div class="store-row store-row--stacked">${renderStoreButtons(site)}</div>
+          <button class="button button--ghost button--block" type="button" data-copy-referral>${ambassador.panel.copyButton}</button>
         </div>
       </section>
 
       <section class="section">
         <div class="section__heading">
-          <p class="eyebrow">Comment ça marche</p>
-          <h2>Un parcours simple, clair et adapté aux canaux locaux.</h2>
+          <p class="eyebrow">${ambassador.steps.eyebrow}</p>
+          <h2>${ambassador.steps.title}</h2>
         </div>
         <div class="step-grid">
           <article class="step-card">
-            <span class="step-card__index">01</span>
-            <h3>Créez un compte vendeur</h3>
-            <p>Un numéro vérifié et une première annonce publiée suffisent pour commencer.</p>
+            <span class="step-card__index">${ambassadorStep1.step}</span>
+            <h3>${ambassadorStep1.title}</h3>
+            <p>${ambassadorStep1.copy}</p>
           </article>
           <article class="step-card">
-            <span class="step-card__index">02</span>
-            <h3>Partagez votre lien</h3>
-            <p>WhatsApp passe en premier, mais Facebook, Instagram et TikTok ont aussi leur place.</p>
+            <span class="step-card__index">${ambassadorStep2.step}</span>
+            <h3>${ambassadorStep2.title}</h3>
+            <p>${ambassadorStep2.copy}</p>
           </article>
           <article class="step-card">
-            <span class="step-card__index">03</span>
-            <h3>Débloquez les récompenses</h3>
-            <p>Toutes les 10 inscriptions validées, un avantage ambassadeur arrive automatiquement.</p>
+            <span class="step-card__index">${ambassadorStep3.step}</span>
+            <h3>${ambassadorStep3.title}</h3>
+            <p>${ambassadorStep3.copy}</p>
           </article>
         </div>
       </section>
 
       <section class="section section--accent">
         <div class="section__heading">
-          <p class="eyebrow">Canaux de partage</p>
-          <h2>Conçu pour les habitudes de partage locales.</h2>
+          <p class="eyebrow">${ambassador.channels.eyebrow}</p>
+          <h2>${ambassador.channels.title}</h2>
         </div>
         <div class="channel-grid">${channels}</div>
       </section>
@@ -1008,26 +1082,28 @@ function renderAmbassadorPage() {
       <section class="section section--dense">
         <div class="cta-panel">
           <div>
-            <p class="eyebrow">Parrainage</p>
-            <h2>Le site récupère le code. L'application gère ensuite le suivi et les récompenses.</h2>
+            <p class="eyebrow">${ambassador.cta.eyebrow}</p>
+            <h2>${ambassador.cta.title}</h2>
           </div>
-          <div class="store-row">${renderStoreButtons()}</div>
+          <div class="store-row">${renderStoreButtons(site)}</div>
         </div>
       </section>
     </main>
   `;
 
-  return renderLayout({
+  return renderLayout(content, {
     currentPath: '/ambassadeur/',
-    title: 'Programme ambassadeur Zwibba',
-    description:
-      "Expliquez le programme ambassadeur Zwibba, récupérez un code de parrainage et poussez l'installation dans l'application.",
+    title: ambassador.pageTitle,
+    description: ambassador.pageDescription,
     body,
     schema,
   });
 }
 
-function renderAboutPage() {
+function renderAboutPage(content) {
+  const { site, aboutValues, ui } = content;
+  const about = ui.about;
+  const [aboutNote1, aboutNote2, aboutNote3] = about.context.notes;
   const values = aboutValues
     .map(
       (item) => `
@@ -1042,64 +1118,65 @@ function renderAboutPage() {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'AboutPage',
-    name: 'À propos de Zwibba',
-    description:
-      'Découvrez la vision de Zwibba, une place de marché pensée pour Lubumbashi et pour les usages réels du marché congolais.',
-    url: resolveUrl('/a-propos/'),
+    name: about.pageTitle,
+    description: about.pageDescription,
+    url: resolveUrl(site, '/a-propos/'),
   };
 
   const body = `
     <main id="main-content">
       <section class="page-hero">
         <div>
-          <p class="eyebrow">À propos</p>
-          <h1>Zwibba construit un marché local, mobile et utile dès le premier usage.</h1>
-          <p>Le produit est pensé pour Lubumbashi. Il aide à vendre vite, reste simple à comprendre et fonctionne bien même sur un réseau lent.</p>
+          <p class="eyebrow">${about.hero.eyebrow}</p>
+          <h1>${about.hero.title}</h1>
+          <p>${about.hero.copy}</p>
         </div>
       </section>
 
       <section class="section">
         <div class="section__heading">
-          <p class="eyebrow">Trois principes</p>
-          <h2>Ce qui tient la marque et le produit ensemble.</h2>
+          <p class="eyebrow">${about.values.eyebrow}</p>
+          <h2>${about.values.title}</h2>
         </div>
         <div class="highlight-grid">${values}</div>
       </section>
 
       <section class="section section--accent">
         <div class="section__heading">
-          <p class="eyebrow">Contexte</p>
-          <h2>Lubumbashi d'abord, Congo ensuite.</h2>
-          <p>Prix en CDF, catégories claires, quartier comme filtre et partage WhatsApp par défaut : le site montre le vrai contexte local.</p>
+          <p class="eyebrow">${about.context.eyebrow}</p>
+          <h2>${about.context.title}</h2>
+          <p>${about.context.copy}</p>
         </div>
         <div class="note-card-grid">
           <article class="note-card">
-            <h3>IA utile</h3>
-            <p>Titre, description, catégorie et prix conseillé doivent vraiment faire gagner du temps.</p>
+            <h3>${aboutNote1.title}</h3>
+            <p>${aboutNote1.copy}</p>
           </article>
           <article class="note-card">
-            <h3>Prévu pour les réseaux lents</h3>
-            <p>Le site garde des pages légères et reste utile même quand la connexion est faible.</p>
+            <h3>${aboutNote2.title}</h3>
+            <p>${aboutNote2.copy}</p>
           </article>
           <article class="note-card">
-            <h3>Confiance par couches</h3>
-            <p>Le site aide à découvrir. L'application protège les échanges et le contact.</p>
+            <h3>${aboutNote3.title}</h3>
+            <p>${aboutNote3.copy}</p>
           </article>
         </div>
       </section>
     </main>
   `;
 
-  return renderLayout({
+  return renderLayout(content, {
     currentPath: '/a-propos/',
-    title: 'À propos de Zwibba',
-    description: 'Découvrez la vision de Zwibba, une place de marché pensée pour Lubumbashi et pour les usages réels du marché congolais.',
+    title: about.pageTitle,
+    description: about.pageDescription,
     body,
     schema,
   });
 }
 
-function renderContactPage() {
+function renderContactPage(content) {
+  const { site, supportTopics, faqs, ui } = content;
+  const contact = ui.contact;
   const topics = supportTopics
     .map(
       (item) => `
@@ -1115,14 +1192,14 @@ function renderContactPage() {
     .join('');
 
   const supportWhatsAppMarkets = [
-    { label: 'RDC', number: supportWhatsAppCd },
-    { label: 'Belgique', number: supportWhatsAppBe },
+    { label: contact.whatsapp.cd, number: supportWhatsAppCd },
+    { label: contact.whatsapp.be, number: supportWhatsAppBe },
   ].filter((market) => whatsappDigits(market.number));
 
   const supportWhatsAppBlock = supportWhatsAppMarkets.length
     ? `
       <article class="detail-card">
-        <p class="eyebrow">WhatsApp</p>
+        <p class="eyebrow">${contact.whatsapp.eyebrow}</p>
         <ul class="seller-facts">
           ${supportWhatsAppMarkets
             .map(
@@ -1143,18 +1220,18 @@ function renderContactPage() {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'ContactPage',
-    name: 'Contact Zwibba',
-    description: 'Contactez Zwibba pour le support, les partenariats ou le lancement du produit.',
-    url: resolveUrl('/contact/'),
+    name: contact.pageTitle,
+    description: contact.pageDescription,
+    url: resolveUrl(site, '/contact/'),
   };
 
   const body = `
     <main id="main-content">
       <section class="page-hero">
         <div>
-          <p class="eyebrow">Contact</p>
-          <h1>Besoin de parler lancement, support ou partenariat ?</h1>
-          <p>Le site reste volontairement léger. Pour une demande précise, envoyez un message clair et nous vous répondrons rapidement.</p>
+          <p class="eyebrow">${contact.hero.eyebrow}</p>
+          <h1>${contact.hero.title}</h1>
+          <p>${contact.hero.copy}</p>
         </div>
       </section>
 
@@ -1165,35 +1242,35 @@ function renderContactPage() {
       <section class="section section--accent">
         <div class="contact-layout">
           <article class="detail-card">
-            <p class="eyebrow">Formulaire direct</p>
+            <p class="eyebrow">${contact.form.eyebrow}</p>
             <form id="contact-form" class="contact-form">
               <label>
-                Nom
-                <input type="text" name="name" placeholder="Votre nom" autocomplete="name" required />
+                ${contact.form.nameLabel}
+                <input type="text" name="name" placeholder="${escapeHtml(contact.form.namePlaceholder)}" autocomplete="name" required />
               </label>
               <label>
-                Email
-                <input type="email" name="email" placeholder="vous@exemple.com" autocomplete="email" required />
+                ${contact.form.emailLabel}
+                <input type="email" name="email" placeholder="${escapeHtml(contact.form.emailPlaceholder)}" autocomplete="email" required />
               </label>
               <label>
-                Sujet
-                <input type="text" name="topic" placeholder="Partenariat, support, lancement..." autocomplete="organization-title" required />
+                ${contact.form.topicLabel}
+                <input type="text" name="topic" placeholder="${escapeHtml(contact.form.topicPlaceholder)}" autocomplete="organization-title" required />
               </label>
               <label>
-                Message
-                <textarea name="message" rows="6" placeholder="Expliquez simplement votre besoin." required></textarea>
+                ${contact.form.messageLabel}
+                <textarea name="message" rows="6" placeholder="${escapeHtml(contact.form.messagePlaceholder)}" required></textarea>
               </label>
-              <button class="button button--primary" type="submit">Envoyer par e-mail</button>
+              <button class="button button--primary" type="submit">${contact.form.submit}</button>
             </form>
           </article>
           <article class="detail-card">
-            <p class="eyebrow">Coordonnées</p>
+            <p class="eyebrow">${contact.coordinates.eyebrow}</p>
             <h2>${escapeHtml(site.supportEmail)}</h2>
-            <p>Pour l'instant, le support principal passe par e-mail pour garder les demandes claires.</p>
+            <p>${contact.coordinates.copy}</p>
             <ul class="seller-facts">
-              <li>${escapeHtml(site.market)}</li>
-              <li>Réponse sous 48h ouvrées</li>
-              <li>Support produit, partenariats, lancement</li>
+              <li>${escapeHtml(site.marketLabel)}</li>
+              <li>${contact.coordinates.responseTime}</li>
+              <li>${contact.coordinates.scope}</li>
             </ul>
             <div class="faq-stack">${renderFaqs(faqs.slice(0, 2))}</div>
           </article>
@@ -1203,42 +1280,44 @@ function renderContactPage() {
     </main>
   `;
 
-  return renderLayout({
+  return renderLayout(content, {
     currentPath: '/contact/',
-    title: 'Contact Zwibba',
-    description: 'Contactez Zwibba pour le support, les partenariats ou le lancement du produit.',
+    title: contact.pageTitle,
+    description: contact.pageDescription,
     body,
     schema,
   });
 }
 
-function renderReferralPage() {
+function renderReferralPage(content) {
+  const { site, ui } = content;
+  const referral = ui.referral;
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
-    name: 'Parrainage Zwibba',
-    description: 'Redirection des codes ambassadeur Zwibba vers la bonne page de téléchargement.',
-    url: resolveUrl('/r/'),
+    name: referral.pageTitle,
+    description: referral.pageDescription,
+    url: resolveUrl(site, '/r/'),
   };
 
   const body = `
     <main id="main-content">
       <section class="page-hero page-hero--referral">
         <div class="referral-redirect">
-          <p class="eyebrow">Redirection</p>
-          <h1>Transmission du code en cours…</h1>
-          <p>Nous préparons votre code de parrainage et les liens de téléchargement.</p>
-          <strong id="referral-code-output">ZWIB-A3K9</strong>
-          <a class="button button--primary" id="referral-fallback-link" href="/ambassadeur/">Continuer vers l'ambassadeur</a>
+          <p class="eyebrow">${referral.eyebrow}</p>
+          <h1>${referral.title}</h1>
+          <p>${referral.copy}</p>
+          <strong id="referral-code-output">${referral.code}</strong>
+          <a class="button button--primary" id="referral-fallback-link" href="${localeHref(site, '/ambassadeur/')}">${referral.continueLabel}</a>
         </div>
       </section>
     </main>
   `;
 
-  return renderLayout({
+  return renderLayout(content, {
     currentPath: '/r/',
-    title: 'Parrainage Zwibba',
-    description: 'Redirection des codes ambassadeur Zwibba vers la bonne page de téléchargement.',
+    title: referral.pageTitle,
+    description: referral.pageDescription,
     body,
     schema,
   });
@@ -1262,12 +1341,55 @@ function buildSitemap(urls) {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${entries}</urlset>`;
 }
 
-function buildRobots() {
+function buildRobots(content) {
+  const { site } = content;
   return `User-agent: *
 Allow: /
 
-Sitemap: ${resolveUrl('/sitemap.xml')}
+Sitemap: ${resolveUrl(site, '/sitemap.xml')}
 `;
+}
+
+function buildLocale(localeModule) {
+  const content = {
+    site: localeModule.site,
+    ui: localeModule.ui,
+    categories: localeModule.categories,
+    featureSteps: localeModule.featureSteps,
+    platformHighlights: localeModule.platformHighlights,
+    testimonials: localeModule.testimonials,
+    faqs: localeModule.faqs,
+    aboutValues: localeModule.aboutValues,
+    supportTopics: localeModule.supportTopics,
+    ambassadorChannels: localeModule.ambassadorChannels,
+    listings: localeModule.listings,
+    safetyTips: localeModule.ui.safetyTips,
+  };
+
+  const isRoot = !content.site.urlPrefix;
+
+  for (const listing of content.listings) {
+    writeText(path.join(assetsDir, 'listings', `${listing.slug}.svg`), buildListingImage(content.site, listing));
+  }
+
+  const pages = [
+    { file: 'index.html', path: '/', html: renderLandingPage(content) },
+    ...(isRoot ? [{ file: 'App/index.html', path: '/App/', html: renderAppPage() }] : []),
+    { file: 'annonces/index.html', path: '/annonces/', html: renderBrowsePage(content) },
+    { file: 'ambassadeur/index.html', path: '/ambassadeur/', html: renderAmbassadorPage(content) },
+    { file: 'a-propos/index.html', path: '/a-propos/', html: renderAboutPage(content) },
+    { file: 'contact/index.html', path: '/contact/', html: renderContactPage(content) },
+    { file: 'r/index.html', path: '/r/', html: renderReferralPage(content) },
+    ...content.listings.map((listing) => ({
+      file: `annonce/${listing.slug}/index.html`,
+      path: `/annonce/${listing.slug}/`,
+      html: renderListingPage(content, listing),
+    })),
+  ];
+
+  pages.forEach((page) => writeText(path.join(distDir, content.site.urlPrefix, page.file), page.html));
+
+  return { content, pages };
 }
 
 function build() {
@@ -1295,30 +1417,15 @@ function build() {
     ),
   );
 
-  for (const listing of listings) {
-    writeText(path.join(assetsDir, 'listings', `${listing.slug}.svg`), buildListingImage(listing));
-  }
+  const localeResults = [frCd, frBe, nlBe].map((localeModule) => buildLocale(localeModule));
+  const [rootResult] = localeResults;
 
-  const appPage = renderAppPage();
-  const pages = [
-    { file: 'index.html', path: '/', html: renderLandingPage() },
-    { file: 'App/index.html', path: '/App/', html: appPage },
-    { file: 'annonces/index.html', path: '/annonces/', html: renderBrowsePage() },
-    { file: 'ambassadeur/index.html', path: '/ambassadeur/', html: renderAmbassadorPage() },
-    { file: 'a-propos/index.html', path: '/a-propos/', html: renderAboutPage() },
-    { file: 'contact/index.html', path: '/contact/', html: renderContactPage() },
-    { file: 'r/index.html', path: '/r/', html: renderReferralPage() },
-    ...listings.map((listing) => ({
-      file: `annonce/${listing.slug}/index.html`,
-      path: `/annonce/${listing.slug}/`,
-      html: renderListingPage(listing),
-    })),
-  ];
+  const sitemapUrls = localeResults.flatMap((result) =>
+    result.pages.map((page) => resolveUrl(result.content.site, page.path)),
+  );
 
-  pages.forEach((page) => writeText(path.join(distDir, page.file), page.html));
-
-  writeText(path.join(distDir, 'sitemap.xml'), buildSitemap(pages.map((page) => resolveUrl(page.path))));
-  writeText(path.join(distDir, 'robots.txt'), buildRobots());
+  writeText(path.join(distDir, 'sitemap.xml'), buildSitemap(sitemapUrls));
+  writeText(path.join(distDir, 'robots.txt'), buildRobots(rootResult.content));
 }
 
 async function acquireBuildLock() {

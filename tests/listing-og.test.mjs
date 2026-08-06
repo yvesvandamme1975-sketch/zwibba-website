@@ -64,3 +64,84 @@ test('falls back to the brand og-default.png when no image at all', () => {
     /property="og:image" content="https:\/\/website-production-7a12\.up\.railway\.app\/assets\/brand\/og-default\.png"/,
   );
 });
+
+test('formats EUR prices with the fr-BE thousands separator and a euro suffix', () => {
+  const html = buildListingOgTags({
+    listing: {
+      slug: 'canape-cuir',
+      title: 'Canapé cuir',
+      priceAmount: 250,
+      priceCurrency: 'EUR',
+      locationLabel: 'Ixelles, Bruxelles',
+      primaryImageUrl: 'https://cdn/canape.jpg',
+      storyImageUrl: null,
+    },
+    baseUrl: base,
+  });
+  assert.match(html, /250\s?€/);
+  assert.match(html, /property="og:description" content="250\s?€ — Ixelles, Bruxelles"/);
+});
+
+test('formats USD prices with a US$ suffix, matching the API suffix exactly', () => {
+  const html = buildListingOgTags({
+    listing: {
+      slug: 'moto-yamaha',
+      title: 'Moto Yamaha',
+      priceAmount: 1500,
+      priceCurrency: 'USD',
+      locationLabel: 'Gombe, Kinshasa',
+      primaryImageUrl: 'https://cdn/moto.jpg',
+      storyImageUrl: null,
+    },
+    baseUrl: base,
+  });
+  assert.match(html, /1\s?500\s?US\$/);
+  assert.doesNotMatch(html, /US\$\$/);
+});
+
+test('leaves CDF and missing-currency price formatting byte-identical to current behavior', () => {
+  const cdfHtml = buildListingOgTags({
+    listing: {
+      slug: 'sac-a-main',
+      title: 'Sac à main',
+      priceAmount: 80000,
+      priceCurrency: 'CDF',
+      locationLabel: 'Gombe, Kinshasa',
+      primaryImageUrl: 'https://cdn/sac.jpg',
+      storyImageUrl: null,
+    },
+    baseUrl: base,
+  });
+  assert.match(
+    cdfHtml,
+    /property="og:description" content="80\s?000 CDF — Gombe, Kinshasa"/,
+  );
+
+  const zeroHtml = buildListingOgTags({
+    listing: {
+      slug: 'don-vetements',
+      title: 'Don vêtements',
+      priceAmount: 0,
+      priceCurrency: 'CDF',
+      locationLabel: 'Matete',
+      primaryImageUrl: 'https://cdn/don.jpg',
+      storyImageUrl: null,
+    },
+    baseUrl: base,
+  });
+  assert.match(zeroHtml, /property="og:description" content="0 CDF — Matete"/);
+
+  const missingHtml = buildListingOgTags({
+    listing: {
+      slug: 'sans-prix',
+      title: 'Sans prix',
+      priceAmount: null,
+      priceCurrency: 'CDF',
+      locationLabel: 'Lemba',
+      primaryImageUrl: 'https://cdn/sans-prix.jpg',
+      storyImageUrl: null,
+    },
+    baseUrl: base,
+  });
+  assert.match(missingHtml, /property="og:description" content="CDF — Lemba"/);
+});

@@ -3,6 +3,84 @@ const menuToggle = document.querySelector('.menu-toggle');
 const siteNav = document.querySelector('.site-nav');
 const announcer = document.querySelector('#site-announcer');
 
+// Fallback strings match the current French (fr-CD) copy so the site keeps
+// working even if window.ZWIBBA_UI_STRINGS isn't injected by the build.
+const fallbackUiStrings = {
+  lang: 'fr',
+  menu: {
+    opened: 'Menu ouvert',
+    closed: 'Menu fermé',
+  },
+  copyLink: {
+    toastLabel: 'Lien copié',
+    announce: 'Lien copié dans le presse-papiers',
+    prompt: 'Copiez ce lien',
+  },
+  referral: {
+    toastLabel: 'Lien ambassadeur copié',
+    announce: 'Lien ambassadeur copié',
+  },
+  mailto: {
+    nameLabel: 'Nom',
+    emailLabel: 'Email',
+  },
+  results: {
+    one: '{count} annonce visible',
+    other: '{count} annonces visibles',
+  },
+};
+
+const uiStrings =
+  (typeof window !== 'undefined' && window.ZWIBBA_UI_STRINGS) || fallbackUiStrings;
+
+function formatResultsSummary(count) {
+  const rules = new Intl.PluralRules(uiStrings.lang || fallbackUiStrings.lang);
+  const category = rules.select(count);
+  const template =
+    (uiStrings.results && uiStrings.results[category]) ||
+    (uiStrings.results && uiStrings.results.other) ||
+    fallbackUiStrings.results[category] ||
+    fallbackUiStrings.results.other;
+
+  return template.replace('{count}', String(count));
+}
+
+// Duplicated locally from scripts/build.mjs (no bundler to share code between
+// the Node build step and this browser-loaded script).
+function conditionCode(label) {
+  return String(label)
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+// Duplicated locally from App/services/country-preference.mjs (no bundler to
+// share code between the app and the marketing site scripts).
+function readGeoCookie(cookieString) {
+  const match = /(?:^|;\s*)zwibba_geo=([A-Z]{2})(?:;|$)/.exec(cookieString ?? '');
+  return match ? match[1] : null;
+}
+
+const SITE_COUNTRY_STORAGE_KEY = 'zwibba_site_country';
+
+function getStoredSiteCountry() {
+  try {
+    return window.localStorage.getItem(SITE_COUNTRY_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setStoredSiteCountry(countryCode) {
+  try {
+    window.localStorage.setItem(SITE_COUNTRY_STORAGE_KEY, countryCode);
+  } catch {
+    // stockage indisponible : préférence non persistée, sans erreur
+  }
+}
+
 function announce(message) {
   if (!announcer) {
     return;
@@ -112,7 +190,7 @@ function initMenu() {
     const isOpen = menuToggle.getAttribute('aria-expanded') === 'true';
     menuToggle.setAttribute('aria-expanded', String(!isOpen));
     siteNav.classList.toggle('is-open', !isOpen);
-    announce(!isOpen ? 'Menu ouvert' : 'Menu fermé');
+    announce(!isOpen ? uiStrings.menu.opened : uiStrings.menu.closed);
   });
 }
 
@@ -160,7 +238,7 @@ function initBrowseFilters() {
 
     const searchMatch = !searchValue || title.includes(searchValue);
     const categoryMatch = categoryValue === 'all' || cardCategory === categoryValue;
-    const conditionMatch = conditionValue === 'all' || cardCondition === conditionValue;
+    const conditionMatch = conditionValue === 'all' || cardCondition === conditionCode(conditionValue);
 
     let priceMatch = true;
     if (priceValue !== 'all') {
@@ -204,7 +282,7 @@ function initBrowseFilters() {
     sortCards(visibleCards);
 
     if (summary) {
-      summary.textContent = `${visibleCards.length} annonce${visibleCards.length > 1 ? 's' : ''} visible${visibleCards.length > 1 ? 's' : ''}`;
+      summary.textContent = formatResultsSummary(visibleCards.length);
     }
 
     const nextUrl = new URL(window.location.href);
@@ -274,10 +352,10 @@ function initShareButtons() {
 
       try {
         await navigator.clipboard.writeText(url);
-        button.textContent = 'Lien copié';
-        announce('Lien copié dans le presse-papiers');
+        button.textContent = uiStrings.copyLink.toastLabel;
+        announce(uiStrings.copyLink.announce);
       } catch {
-        window.prompt('Copiez ce lien', url);
+        window.prompt(uiStrings.copyLink.prompt, url);
       }
     });
   });
@@ -298,10 +376,10 @@ function initReferralPages() {
 
       try {
         await navigator.clipboard.writeText(referralUrl);
-        copyButton.textContent = 'Lien ambassadeur copié';
-        announce('Lien ambassadeur copié');
+        copyButton.textContent = uiStrings.referral.toastLabel;
+        announce(uiStrings.referral.announce);
       } catch {
-        window.prompt('Copiez ce lien', referralUrl);
+        window.prompt(uiStrings.copyLink.prompt, referralUrl);
       }
     });
   }
@@ -324,6 +402,72 @@ function initReferralPages() {
   }
 }
 
+function createGeoBanner(geoBanner) {
+  const banner = document.createElement('div');
+  banner.className = 'geo-banner';
+  banner.setAttribute('data-geo-banner', '');
+  banner.setAttribute('role', 'region');
+
+  const text = document.createElement('p');
+  text.className = 'geo-banner__text';
+  text.textContent = geoBanner.text;
+
+  const actions = document.createElement('div');
+  actions.className = 'geo-banner__actions';
+
+  const cta = document.createElement('a');
+  cta.className = 'button button--primary geo-banner__cta';
+  cta.href = '/be/';
+  cta.textContent = geoBanner.cta;
+  cta.addEventListener('click', () => {
+    setStoredSiteCountry('BE');
+  });
+
+  const dismiss = document.createElement('button');
+  dismiss.type = 'button';
+  dismiss.className = 'geo-banner__dismiss';
+  dismiss.textContent = geoBanner.dismiss;
+  dismiss.addEventListener('click', () => {
+    setStoredSiteCountry('CD');
+    banner.remove();
+  });
+
+  actions.append(cta, dismiss);
+  banner.append(text, actions);
+
+  return banner;
+}
+
+function initGeoBanner() {
+  const geoBanner = uiStrings.geoBanner;
+  if (!geoBanner) {
+    return;
+  }
+
+  // The banner only suggests the belgian site from the fr-CD (unprefixed)
+  // pages; /be/ and /be/nl/ are already the belgian versions.
+  if (window.location.pathname.startsWith('/be')) {
+    return;
+  }
+
+  let geoCountry = null;
+  try {
+    geoCountry = readGeoCookie(document.cookie);
+  } catch {
+    geoCountry = null;
+  }
+
+  if (geoCountry !== 'BE') {
+    return;
+  }
+
+  if (getStoredSiteCountry() !== null) {
+    return;
+  }
+
+  document.body.prepend(createGeoBanner(geoBanner));
+}
+
 function initContactForm() {
   const form = document.querySelector('#contact-form');
   if (!form) {
@@ -337,7 +481,12 @@ function initContactForm() {
     const email = String(formData.get('email') || '').trim();
     const topic = String(formData.get('topic') || '').trim();
     const message = String(formData.get('message') || '').trim();
-    const body = [`Nom: ${name}`, `Email: ${email}`, '', message].join('\n');
+    const body = [
+      `${uiStrings.mailto.nameLabel}: ${name}`,
+      `${uiStrings.mailto.emailLabel}: ${email}`,
+      '',
+      message,
+    ].join('\n');
     const mailto = `mailto:support@zwibba.com?subject=${encodeURIComponent(topic)}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
   });
@@ -349,3 +498,4 @@ initBrowseFilters();
 initShareButtons();
 initReferralPages();
 initContactForm();
+initGeoBanner();
