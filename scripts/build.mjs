@@ -22,6 +22,7 @@ import {
   supportTopics,
   testimonials,
 } from '../src/site/content.mjs';
+import * as frCd from '../src/site/locales/fr-cd.mjs';
 import { resolveSeededListingImage } from '../shared/listing-images.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -117,8 +118,8 @@ function formatCdf(value) {
   return `${new Intl.NumberFormat('fr-FR').format(value)} CDF`;
 }
 
-function resolveUrl(relativePath) {
-  return new URL(relativePath, site.baseUrl).toString();
+function resolveUrl(currentSite, relativePath) {
+  return new URL(relativePath, currentSite.baseUrl).toString();
 }
 
 function icon(name, className = '') {
@@ -174,8 +175,8 @@ function resolveListingImageAsset(listing) {
   return resolveSeededListingImage(listing.slug)?.src || `/assets/listings/${listing.slug}.svg`;
 }
 
-function renderStoreButtons(extraClass = '') {
-  return site.stores
+function renderStoreButtons(currentSite, extraClass = '') {
+  return currentSite.stores
     .map(
       (store) => `
         <a class="store-button ${extraClass}" href="${store.href}" target="_blank" rel="noreferrer" data-store-link>
@@ -188,7 +189,8 @@ function renderStoreButtons(extraClass = '') {
     .join('');
 }
 
-function renderNav(currentPath) {
+function renderNav(content, currentPath) {
+  const { site } = content;
   const links = site.nav
     .map(({ href, label }) => {
       const isActive = currentPath === href || (href !== '/' && currentPath.startsWith(href));
@@ -217,7 +219,8 @@ function renderNav(currentPath) {
   `;
 }
 
-function renderFooter() {
+function renderFooter(content) {
+  const { site } = content;
   const footerLinks = site.nav
     .map((item) => `<a href="${item.href}">${escapeHtml(item.label)}</a>`)
     .join('');
@@ -235,7 +238,7 @@ function renderFooter() {
         </div>
         <div>
           <h2 class="site-footer__title">Disponible bientôt</h2>
-          <div class="store-row store-row--footer">${renderStoreButtons('store-button--compact')}</div>
+          <div class="store-row store-row--footer">${renderStoreButtons(site, 'store-button--compact')}</div>
         </div>
       </div>
       <div class="site-footer__meta">
@@ -286,14 +289,14 @@ function renderAppPage() {
     <meta property="og:site_name" content="${site.name}" />
     <meta property="og:title" content="Zwibba App" />
     <meta property="og:description" content="Bêta web Zwibba pour publier, découvrir et partager des annonces en direct." />
-    <meta property="og:url" content="${resolveUrl('/App/')}" />
-    <meta property="og:image" content="${resolveUrl('/assets/brand/og-default.png')}" />
+    <meta property="og:url" content="${resolveUrl(site, '/App/')}" />
+    <meta property="og:image" content="${resolveUrl(site, '/assets/brand/og-default.png')}" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Zwibba App" />
     <meta name="twitter:description" content="Bêta web Zwibba pour publier, découvrir et partager des annonces en direct." />
-    <meta name="twitter:image" content="${resolveUrl('/assets/brand/og-default.png')}" />
+    <meta name="twitter:image" content="${resolveUrl(site, '/assets/brand/og-default.png')}" />
     <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -352,7 +355,7 @@ window.ZWIBBA_SUPPORT_WHATSAPP = ${JSON.stringify({ CD: supportWhatsAppCd, BE: s
 </html>`;
 }
 
-function renderLayout({
+function renderLayout(content, {
   currentPath,
   title,
   description,
@@ -367,7 +370,8 @@ function renderLayout({
   schema,
   bodyClass = '',
 }) {
-  const canonicalUrl = resolveUrl(canonicalPath);
+  const { site } = content;
+  const canonicalUrl = resolveUrl(site, canonicalPath);
   const schemas = Array.isArray(schema) ? schema : schema ? [schema] : [];
   const schemaMarkup = schemas
     .map((item) => `<script type="application/ld+json">${serializeJson(item)}</script>`)
@@ -391,7 +395,7 @@ function renderLayout({
     <meta property="og:title" content="${escapeHtml(ogTitle)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:url" content="${canonicalUrl}" />
-    <meta property="og:image" content="${resolveUrl(ogImage)}" />
+    <meta property="og:image" content="${resolveUrl(site, ogImage)}" />
     ${ogImageWidth ? `<meta property="og:image:width" content="${escapeHtml(ogImageWidth)}" />` : ''}
     ${ogImageHeight ? `<meta property="og:image:height" content="${escapeHtml(ogImageHeight)}" />` : ''}
     ${productPriceAmount !== '' ? `<meta property="product:price:amount" content="${escapeHtml(productPriceAmount)}" />` : ''}
@@ -399,7 +403,7 @@ function renderLayout({
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escapeHtml(ogTitle)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
-    <meta name="twitter:image" content="${resolveUrl(ogImage)}" />
+    <meta name="twitter:image" content="${resolveUrl(site, ogImage)}" />
     <link rel="canonical" href="${canonicalUrl}" />
     <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml" />
     <style>
@@ -425,17 +429,17 @@ function renderLayout({
   <body class="${bodyClass}">
     <div class="site-shell">
       <a class="skip-link" href="#main-content">Aller au contenu</a>
-      ${renderNav(currentPath)}
+      ${renderNav(content, currentPath)}
       <p class="sr-only" id="site-announcer" aria-live="polite"></p>
       ${body}
-      ${renderFooter()}
+      ${renderFooter(content)}
       <dialog class="download-gate" id="download-gate">
         <div class="download-gate__panel">
           <button class="download-gate__close" type="button" data-close-gate aria-label="Fermer">${icon('close')}</button>
           <p class="eyebrow">Action réservée à l'application</p>
           <h2>Ouvrez Zwibba pour continuer</h2>
           <p>Le site sert à découvrir et à partager. Pour publier, enregistrer ou contacter un vendeur, passez par l'application Zwibba.</p>
-          <div class="store-row">${renderStoreButtons()}</div>
+          <div class="store-row">${renderStoreButtons(site)}</div>
         </div>
       </dialog>
     </div>
@@ -444,8 +448,8 @@ function renderLayout({
 </html>`;
 }
 
-function renderHeroStats() {
-  return site.socialProof
+function renderHeroStats(content) {
+  return content.site.socialProof
     .map(
       (item) => `
         <article class="metric-card">
@@ -457,8 +461,8 @@ function renderHeroStats() {
     .join('');
 }
 
-function renderCategoryCards() {
-  return categories
+function renderCategoryCards(content) {
+  return content.categories
     .map(
       (category) => `
         <article class="category-card">
@@ -471,8 +475,8 @@ function renderCategoryCards() {
     .join('');
 }
 
-function renderFeatureSteps() {
-  return featureSteps
+function renderFeatureSteps(content) {
+  return content.featureSteps
     .map(
       (step) => `
         <article class="step-card">
@@ -485,8 +489,8 @@ function renderFeatureSteps() {
     .join('');
 }
 
-function renderHighlights() {
-  return platformHighlights
+function renderHighlights(content) {
+  return content.platformHighlights
     .map(
       (item) => `
         <article class="highlight-card">
@@ -498,8 +502,8 @@ function renderHighlights() {
     .join('');
 }
 
-function renderTestimonials() {
-  return testimonials
+function renderTestimonials(content) {
+  return content.testimonials
     .map(
       (item) => `
         <article class="testimonial-card">
@@ -560,7 +564,8 @@ function renderSafetyTips() {
   return safetyTips.map((tip) => `<li>${escapeHtml(tip)}</li>`).join('');
 }
 
-function renderLandingPage() {
+function renderLandingPage(content) {
+  const { site, listings } = content;
   const highlightedListings = listings.slice(0, 4).map((listing) => renderListingCard(listing, { highlightLabel: listing.transactionType })).join('');
 
   const schema = [
@@ -594,8 +599,8 @@ function renderLandingPage() {
           <p class="eyebrow">${escapeHtml(site.marketLabel)} · Petites annonces pour mobile</p>
           <h1>La place de marché qui transforme une photo en annonce prête à publier.</h1>
           <p class="hero__lede">${escapeHtml(site.description)}</p>
-          <div class="store-row">${renderStoreButtons()}</div>
-          <div class="metric-grid">${renderHeroStats()}</div>
+          <div class="store-row">${renderStoreButtons(site)}</div>
+          <div class="metric-grid">${renderHeroStats(content)}</div>
         </div>
         <div class="hero__stage">
           <div class="hero-stage-card hero-stage-card--wide">
@@ -620,7 +625,7 @@ function renderLandingPage() {
           <h2>Publier une annonce doit être très simple.</h2>
           <p>Le parcours doit rester court, clair et pensé pour le mobile. Le site reprend cette idée et mène vers les bons points d'entrée.</p>
         </div>
-        <div class="step-grid">${renderFeatureSteps()}</div>
+        <div class="step-grid">${renderFeatureSteps(content)}</div>
       </section>
 
       <section class="section section--accent">
@@ -629,7 +634,7 @@ function renderLandingPage() {
           <h2>Dix univers clés pour le marché de Lubumbashi.</h2>
           <p>Téléphones, immobilier, services, alimentation ou agriculture : les catégories suivent les usages du terrain.</p>
         </div>
-        <div class="category-grid">${renderCategoryCards()}</div>
+        <div class="category-grid">${renderCategoryCards(content)}</div>
       </section>
 
       <section class="section">
@@ -637,7 +642,7 @@ function renderLandingPage() {
           <p class="eyebrow">Pourquoi ça marche</p>
           <h2>Un site simple qui travaille avec l'application.</h2>
         </div>
-        <div class="highlight-grid">${renderHighlights()}</div>
+        <div class="highlight-grid">${renderHighlights(content)}</div>
       </section>
 
       <section class="section">
@@ -654,7 +659,7 @@ function renderLandingPage() {
           <p class="eyebrow">Voix du terrain</p>
           <h2>Une plateforme faite pour des usages locaux, pas pour une démo générique.</h2>
         </div>
-        <div class="testimonial-grid">${renderTestimonials()}</div>
+        <div class="testimonial-grid">${renderTestimonials(content)}</div>
       </section>
 
       <section class="section section--cta">
@@ -664,13 +669,13 @@ function renderLandingPage() {
             <h2>Téléchargez Zwibba, ouvrez votre appareil photo et publiez.</h2>
             <p>Le site s'occupe de la découverte et du partage. L'application garde le contact et la confiance.</p>
           </div>
-          <div class="store-row">${renderStoreButtons()}</div>
+          <div class="store-row">${renderStoreButtons(site)}</div>
         </div>
       </section>
     </main>
   `;
 
-  return renderLayout({
+  return renderLayout(content, {
     currentPath: '/',
     title: `${site.name} | ${site.tagline}`,
     description: site.description,
@@ -679,7 +684,8 @@ function renderLandingPage() {
   });
 }
 
-function renderBrowsePage() {
+function renderBrowsePage(content) {
+  const { site, listings, categories } = content;
   const featured = listings.filter((item) => item.isFeatured).map((listing) => renderListingCard(listing, { highlightLabel: 'Top Ad' })).join('');
   const cards = listings.map((listing) => renderListingCard(listing, { highlightLabel: listing.transactionType })).join('');
   const chips = ['all', ...categories.map((category) => category.slug)]
@@ -695,13 +701,13 @@ function renderBrowsePage() {
     name: 'Annonces Zwibba',
     description:
       "Parcourez les annonces Zwibba : catégories, filtres, prix en CDF et fiches d'annonce faciles à partager.",
-    url: resolveUrl('/annonces/'),
+    url: resolveUrl(site, '/annonces/'),
     mainEntity: {
       '@type': 'ItemList',
       itemListElement: listings.map((listing, index) => ({
         '@type': 'ListItem',
         position: index + 1,
-        url: resolveUrl(`/annonce/${listing.slug}/`),
+        url: resolveUrl(site, `/annonce/${listing.slug}/`),
         name: listing.title,
       })),
     },
@@ -785,7 +791,7 @@ function renderBrowsePage() {
     </main>
   `;
 
-  return renderLayout({
+  return renderLayout(content, {
     currentPath: '/annonces/',
     title: `Annonces Zwibba | ${site.marketLabel}`,
     description:
@@ -795,7 +801,8 @@ function renderBrowsePage() {
   });
 }
 
-function renderListingPage(listing) {
+function renderListingPage(content, listing) {
+  const { site, listings } = content;
   const listingImageAsset = resolveListingImageAsset(listing);
   const hasStoryImage = Boolean(listing.storyImageUrl);
   const ogImage = hasStoryImage ? listing.storyImageUrl : listingImageAsset;
@@ -813,7 +820,7 @@ function renderListingPage(listing) {
     '@type': listing.listingType === 'Service' ? 'Service' : 'Product',
     name: listing.title,
     description: listing.summary,
-    image: resolveUrl(listingImageAsset),
+    image: resolveUrl(site, listingImageAsset),
     offers: {
       '@type': 'Offer',
       priceCurrency: 'CDF',
@@ -848,7 +855,7 @@ function renderListingPage(listing) {
             <button class="button button--ghost" type="button" data-gated="sms">SMS</button>
             <button class="button button--ghost" type="button" data-share-button data-share-title="${escapeHtml(
               listing.title,
-            )}" data-share-url="${resolveUrl(`/annonce/${listing.slug}/`)}">${icon('share')} Partager</button>
+            )}" data-share-url="${resolveUrl(site, `/annonce/${listing.slug}/`)}">${icon('share')} Partager</button>
           </div>
           <p class="detail-note">${icon('shield')} Ouvrez l'application pour voir les coordonnées complètes et contacter le vendeur en sécurité.</p>
         </div>
@@ -899,7 +906,7 @@ function renderListingPage(listing) {
             <p>Cette page est faite pour être claire et facile à partager. Pour les actions sensibles, passez par l'application.</p>
             <button class="button button--ghost button--block" type="button" data-share-button data-share-title="${escapeHtml(
               listing.title,
-            )}" data-share-url="${resolveUrl(`/annonce/${listing.slug}/`)}">Copier le lien</button>
+            )}" data-share-url="${resolveUrl(site, `/annonce/${listing.slug}/`)}">Copier le lien</button>
           </article>
         </aside>
       </section>
@@ -914,7 +921,7 @@ function renderListingPage(listing) {
     </main>
   `;
 
-  return renderLayout({
+  return renderLayout(content, {
     currentPath: `/annonce/${listing.slug}/`,
     canonicalPath: `/annonce/${listing.slug}/`,
     title: `${listing.title} | Zwibba`,
@@ -931,7 +938,8 @@ function renderListingPage(listing) {
   });
 }
 
-function renderAmbassadorPage() {
+function renderAmbassadorPage(content) {
+  const { site, ambassadorChannels } = content;
   const channels = ambassadorChannels
     .map(
       (channel) => `
@@ -949,7 +957,7 @@ function renderAmbassadorPage() {
     name: 'Programme ambassadeur Zwibba',
     description:
       "Expliquez le programme ambassadeur Zwibba, récupérez un code de parrainage et poussez l'installation dans l'application.",
-    url: resolveUrl('/ambassadeur/'),
+    url: resolveUrl(site, '/ambassadeur/'),
   };
 
   const body = `
@@ -968,7 +976,7 @@ function renderAmbassadorPage() {
             <label for="referral-code-input">Code de parrainage</label>
             <input id="referral-code-input" type="text" placeholder="ZWIB-A3K9" autocomplete="off" spellcheck="false" />
           </div>
-          <div class="store-row store-row--stacked">${renderStoreButtons()}</div>
+          <div class="store-row store-row--stacked">${renderStoreButtons(site)}</div>
           <button class="button button--ghost button--block" type="button" data-copy-referral>Copier mon lien</button>
         </div>
       </section>
@@ -1011,13 +1019,13 @@ function renderAmbassadorPage() {
             <p class="eyebrow">Parrainage</p>
             <h2>Le site récupère le code. L'application gère ensuite le suivi et les récompenses.</h2>
           </div>
-          <div class="store-row">${renderStoreButtons()}</div>
+          <div class="store-row">${renderStoreButtons(site)}</div>
         </div>
       </section>
     </main>
   `;
 
-  return renderLayout({
+  return renderLayout(content, {
     currentPath: '/ambassadeur/',
     title: 'Programme ambassadeur Zwibba',
     description:
@@ -1027,7 +1035,8 @@ function renderAmbassadorPage() {
   });
 }
 
-function renderAboutPage() {
+function renderAboutPage(content) {
+  const { site, aboutValues } = content;
   const values = aboutValues
     .map(
       (item) => `
@@ -1045,7 +1054,7 @@ function renderAboutPage() {
     name: 'À propos de Zwibba',
     description:
       'Découvrez la vision de Zwibba, une place de marché pensée pour Lubumbashi et pour les usages réels du marché congolais.',
-    url: resolveUrl('/a-propos/'),
+    url: resolveUrl(site, '/a-propos/'),
   };
 
   const body = `
@@ -1090,7 +1099,7 @@ function renderAboutPage() {
     </main>
   `;
 
-  return renderLayout({
+  return renderLayout(content, {
     currentPath: '/a-propos/',
     title: 'À propos de Zwibba',
     description: 'Découvrez la vision de Zwibba, une place de marché pensée pour Lubumbashi et pour les usages réels du marché congolais.',
@@ -1099,7 +1108,8 @@ function renderAboutPage() {
   });
 }
 
-function renderContactPage() {
+function renderContactPage(content) {
+  const { site, supportTopics, faqs } = content;
   const topics = supportTopics
     .map(
       (item) => `
@@ -1145,7 +1155,7 @@ function renderContactPage() {
     '@type': 'ContactPage',
     name: 'Contact Zwibba',
     description: 'Contactez Zwibba pour le support, les partenariats ou le lancement du produit.',
-    url: resolveUrl('/contact/'),
+    url: resolveUrl(site, '/contact/'),
   };
 
   const body = `
@@ -1203,7 +1213,7 @@ function renderContactPage() {
     </main>
   `;
 
-  return renderLayout({
+  return renderLayout(content, {
     currentPath: '/contact/',
     title: 'Contact Zwibba',
     description: 'Contactez Zwibba pour le support, les partenariats ou le lancement du produit.',
@@ -1212,13 +1222,14 @@ function renderContactPage() {
   });
 }
 
-function renderReferralPage() {
+function renderReferralPage(content) {
+  const { site } = content;
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
     name: 'Parrainage Zwibba',
     description: 'Redirection des codes ambassadeur Zwibba vers la bonne page de téléchargement.',
-    url: resolveUrl('/r/'),
+    url: resolveUrl(site, '/r/'),
   };
 
   const body = `
@@ -1235,7 +1246,7 @@ function renderReferralPage() {
     </main>
   `;
 
-  return renderLayout({
+  return renderLayout(content, {
     currentPath: '/r/',
     title: 'Parrainage Zwibba',
     description: 'Redirection des codes ambassadeur Zwibba vers la bonne page de téléchargement.',
@@ -1262,15 +1273,29 @@ function buildSitemap(urls) {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${entries}</urlset>`;
 }
 
-function buildRobots() {
+function buildRobots(content) {
+  const { site } = content;
   return `User-agent: *
 Allow: /
 
-Sitemap: ${resolveUrl('/sitemap.xml')}
+Sitemap: ${resolveUrl(site, '/sitemap.xml')}
 `;
 }
 
 function build() {
+  const content = {
+    site: frCd.site,
+    categories: frCd.categories,
+    featureSteps: frCd.featureSteps,
+    platformHighlights: frCd.platformHighlights,
+    testimonials: frCd.testimonials,
+    faqs: frCd.faqs,
+    aboutValues: frCd.aboutValues,
+    supportTopics: frCd.supportTopics,
+    ambassadorChannels: frCd.ambassadorChannels,
+    listings: frCd.listings,
+  };
+
   rmSync(distDir, { recursive: true, force: true });
   ensureDir(assetsDir);
 
@@ -1295,30 +1320,33 @@ function build() {
     ),
   );
 
-  for (const listing of listings) {
+  for (const listing of content.listings) {
     writeText(path.join(assetsDir, 'listings', `${listing.slug}.svg`), buildListingImage(listing));
   }
 
   const appPage = renderAppPage();
   const pages = [
-    { file: 'index.html', path: '/', html: renderLandingPage() },
+    { file: 'index.html', path: '/', html: renderLandingPage(content) },
     { file: 'App/index.html', path: '/App/', html: appPage },
-    { file: 'annonces/index.html', path: '/annonces/', html: renderBrowsePage() },
-    { file: 'ambassadeur/index.html', path: '/ambassadeur/', html: renderAmbassadorPage() },
-    { file: 'a-propos/index.html', path: '/a-propos/', html: renderAboutPage() },
-    { file: 'contact/index.html', path: '/contact/', html: renderContactPage() },
-    { file: 'r/index.html', path: '/r/', html: renderReferralPage() },
-    ...listings.map((listing) => ({
+    { file: 'annonces/index.html', path: '/annonces/', html: renderBrowsePage(content) },
+    { file: 'ambassadeur/index.html', path: '/ambassadeur/', html: renderAmbassadorPage(content) },
+    { file: 'a-propos/index.html', path: '/a-propos/', html: renderAboutPage(content) },
+    { file: 'contact/index.html', path: '/contact/', html: renderContactPage(content) },
+    { file: 'r/index.html', path: '/r/', html: renderReferralPage(content) },
+    ...content.listings.map((listing) => ({
       file: `annonce/${listing.slug}/index.html`,
       path: `/annonce/${listing.slug}/`,
-      html: renderListingPage(listing),
+      html: renderListingPage(content, listing),
     })),
   ];
 
   pages.forEach((page) => writeText(path.join(distDir, page.file), page.html));
 
-  writeText(path.join(distDir, 'sitemap.xml'), buildSitemap(pages.map((page) => resolveUrl(page.path))));
-  writeText(path.join(distDir, 'robots.txt'), buildRobots());
+  writeText(
+    path.join(distDir, 'sitemap.xml'),
+    buildSitemap(pages.map((page) => resolveUrl(content.site, page.path))),
+  );
+  writeText(path.join(distDir, 'robots.txt'), buildRobots(content));
 }
 
 async function acquireBuildLock() {
