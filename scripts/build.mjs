@@ -123,7 +123,10 @@ function formatPrice(currentSite, value) {
 }
 
 function resolveUrl(currentSite, relativePath) {
-  return new URL(localeHref(currentSite, relativePath), currentSite.baseUrl).toString();
+  const isRootAbsoluteAsset =
+    relativePath.startsWith('/assets/') || relativePath.startsWith('/App/');
+  const href = isRootAbsoluteAsset ? relativePath : localeHref(currentSite, relativePath);
+  return new URL(href, currentSite.baseUrl).toString();
 }
 
 const alternateLocaleSites = [

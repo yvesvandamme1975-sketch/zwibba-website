@@ -163,3 +163,27 @@ test('dist/sitemap.xml aggregates all three locale trees into the single root si
   assert.match(xml, /<loc>https:\/\/zwibba\.com\/be\/nl\/annonces\/<\/loc>/);
   assert.doesNotMatch(xml, /\/be\/annonce\//);
 });
+
+test('dist/be/index.html og:image and twitter:image point to the unprefixed root asset', () => {
+  buildSite();
+
+  const html = readFileSync(path.join(distDir, 'be', 'index.html'), 'utf8');
+  assert.match(html, /<meta property="og:image" content="https:\/\/zwibba\.com\/assets\/brand\/logo-zwibba\.svg" \/>/);
+  assert.match(html, /<meta name="twitter:image" content="https:\/\/zwibba\.com\/assets\/brand\/logo-zwibba\.svg" \/>/);
+});
+
+test('dist/be/nl/index.html og:image and twitter:image point to the unprefixed root asset', () => {
+  buildSite();
+
+  const html = readFileSync(path.join(distDir, 'be', 'nl', 'index.html'), 'utf8');
+  assert.match(html, /<meta property="og:image" content="https:\/\/zwibba\.com\/assets\/brand\/logo-zwibba\.svg" \/>/);
+  assert.match(html, /<meta name="twitter:image" content="https:\/\/zwibba\.com\/assets\/brand\/logo-zwibba\.svg" \/>/);
+});
+
+test('dist/index.html og:image is unchanged (root page unaffected by the fix)', () => {
+  buildSite();
+
+  const html = readFileSync(path.join(distDir, 'index.html'), 'utf8');
+  assert.match(html, /<meta property="og:image" content="https:\/\/zwibba\.com\/assets\/brand\/logo-zwibba\.svg" \/>/);
+  assert.match(html, /<meta name="twitter:image" content="https:\/\/zwibba\.com\/assets\/brand\/logo-zwibba\.svg" \/>/);
+});
