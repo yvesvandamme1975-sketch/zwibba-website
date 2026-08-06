@@ -81,3 +81,59 @@ test('build output uses stable condition codes for the browse filter select', as
   const html = readFileSync(distPath, 'utf8');
   assert.match(html, /value="tres-bon-etat"/);
 });
+
+test('fr-cd ui.client exposes browser-side strings for app.js with lang for plural rules', () => {
+  assert.equal(ui.client.lang, 'fr');
+  assert.equal(ui.client.menu.opened, 'Menu ouvert');
+  assert.equal(ui.client.menu.closed, 'Menu fermé');
+  assert.equal(ui.client.copyLink.toastLabel, 'Lien copié');
+  assert.equal(ui.client.copyLink.announce, 'Lien copié dans le presse-papiers');
+  assert.equal(ui.client.copyLink.prompt, 'Copiez ce lien');
+  assert.equal(ui.client.referral.toastLabel, 'Lien ambassadeur copié');
+  assert.equal(ui.client.referral.announce, 'Lien ambassadeur copié');
+  assert.equal(ui.client.mailto.nameLabel, 'Nom');
+  assert.equal(ui.client.mailto.emailLabel, 'Email');
+  assert.equal(ui.client.results.one, '{count} annonce visible');
+  assert.equal(ui.client.results.other, '{count} annonces visibles');
+});
+
+test('build output injects window.ZWIBBA_UI_STRINGS with ui.client on the landing page', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const { readFileSync } = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+  execFileSync('node', ['scripts/build.mjs'], { cwd: repoRoot, stdio: 'pipe' });
+
+  const landing = readFileSync(path.join(repoRoot, 'dist', 'index.html'), 'utf8');
+  assert.match(landing, /window\.ZWIBBA_UI_STRINGS\s*=/);
+  assert.match(landing, /Lien copié/);
+});
+
+test('build output keeps fr-CD lang and price formatting unchanged on the browse page', async () => {
+  const { readFileSync } = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+  const browse = readFileSync(path.join(repoRoot, 'dist', 'annonces', 'index.html'), 'utf8');
+  assert.match(browse, /<html lang="fr">/);
+  assert.match(browse, /450\s?000 CDF/);
+});
+
+test('build output keeps priceCurrency CDF in JSON-LD schemas', async () => {
+  const { readFileSync } = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+  const landing = readFileSync(path.join(repoRoot, 'dist', 'index.html'), 'utf8');
+  assert.match(landing, /"priceCurrency":"CDF"/);
+
+  const listing = readFileSync(
+    path.join(repoRoot, 'dist', 'annonce', 'samsung-galaxy-a54-neuf-lubumbashi', 'index.html'),
+    'utf8',
+  );
+  assert.match(listing, /"priceCurrency":"CDF"/);
+});

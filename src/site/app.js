@@ -3,6 +3,48 @@ const menuToggle = document.querySelector('.menu-toggle');
 const siteNav = document.querySelector('.site-nav');
 const announcer = document.querySelector('#site-announcer');
 
+// Fallback strings match the current French (fr-CD) copy so the site keeps
+// working even if window.ZWIBBA_UI_STRINGS isn't injected by the build.
+const fallbackUiStrings = {
+  lang: 'fr',
+  menu: {
+    opened: 'Menu ouvert',
+    closed: 'Menu fermé',
+  },
+  copyLink: {
+    toastLabel: 'Lien copié',
+    announce: 'Lien copié dans le presse-papiers',
+    prompt: 'Copiez ce lien',
+  },
+  referral: {
+    toastLabel: 'Lien ambassadeur copié',
+    announce: 'Lien ambassadeur copié',
+  },
+  mailto: {
+    nameLabel: 'Nom',
+    emailLabel: 'Email',
+  },
+  results: {
+    one: '{count} annonce visible',
+    other: '{count} annonces visibles',
+  },
+};
+
+const uiStrings =
+  (typeof window !== 'undefined' && window.ZWIBBA_UI_STRINGS) || fallbackUiStrings;
+
+function formatResultsSummary(count) {
+  const rules = new Intl.PluralRules(uiStrings.lang || fallbackUiStrings.lang);
+  const category = rules.select(count);
+  const template =
+    (uiStrings.results && uiStrings.results[category]) ||
+    (uiStrings.results && uiStrings.results.other) ||
+    fallbackUiStrings.results[category] ||
+    fallbackUiStrings.results.other;
+
+  return template.replace('{count}', String(count));
+}
+
 // Duplicated locally from scripts/build.mjs (no bundler to share code between
 // the Node build step and this browser-loaded script).
 function conditionCode(label) {
@@ -123,7 +165,7 @@ function initMenu() {
     const isOpen = menuToggle.getAttribute('aria-expanded') === 'true';
     menuToggle.setAttribute('aria-expanded', String(!isOpen));
     siteNav.classList.toggle('is-open', !isOpen);
-    announce(!isOpen ? 'Menu ouvert' : 'Menu fermé');
+    announce(!isOpen ? uiStrings.menu.opened : uiStrings.menu.closed);
   });
 }
 
@@ -215,7 +257,7 @@ function initBrowseFilters() {
     sortCards(visibleCards);
 
     if (summary) {
-      summary.textContent = `${visibleCards.length} annonce${visibleCards.length > 1 ? 's' : ''} visible${visibleCards.length > 1 ? 's' : ''}`;
+      summary.textContent = formatResultsSummary(visibleCards.length);
     }
 
     const nextUrl = new URL(window.location.href);
@@ -285,10 +327,10 @@ function initShareButtons() {
 
       try {
         await navigator.clipboard.writeText(url);
-        button.textContent = 'Lien copié';
-        announce('Lien copié dans le presse-papiers');
+        button.textContent = uiStrings.copyLink.toastLabel;
+        announce(uiStrings.copyLink.announce);
       } catch {
-        window.prompt('Copiez ce lien', url);
+        window.prompt(uiStrings.copyLink.prompt, url);
       }
     });
   });
@@ -309,10 +351,10 @@ function initReferralPages() {
 
       try {
         await navigator.clipboard.writeText(referralUrl);
-        copyButton.textContent = 'Lien ambassadeur copié';
-        announce('Lien ambassadeur copié');
+        copyButton.textContent = uiStrings.referral.toastLabel;
+        announce(uiStrings.referral.announce);
       } catch {
-        window.prompt('Copiez ce lien', referralUrl);
+        window.prompt(uiStrings.copyLink.prompt, referralUrl);
       }
     });
   }
@@ -348,7 +390,12 @@ function initContactForm() {
     const email = String(formData.get('email') || '').trim();
     const topic = String(formData.get('topic') || '').trim();
     const message = String(formData.get('message') || '').trim();
-    const body = [`Nom: ${name}`, `Email: ${email}`, '', message].join('\n');
+    const body = [
+      `${uiStrings.mailto.nameLabel}: ${name}`,
+      `${uiStrings.mailto.emailLabel}: ${email}`,
+      '',
+      message,
+    ].join('\n');
     const mailto = `mailto:support@zwibba.com?subject=${encodeURIComponent(topic)}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
   });

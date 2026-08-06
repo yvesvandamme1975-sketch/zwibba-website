@@ -295,6 +295,30 @@ export const ui = {
       be: 'Belgique',
     },
   },
+  client: {
+    lang: 'fr',
+    menu: {
+      opened: 'Menu ouvert',
+      closed: 'Menu fermé',
+    },
+    copyLink: {
+      toastLabel: 'Lien copié',
+      announce: 'Lien copié dans le presse-papiers',
+      prompt: 'Copiez ce lien',
+    },
+    referral: {
+      toastLabel: 'Lien ambassadeur copié',
+      announce: 'Lien ambassadeur copié',
+    },
+    mailto: {
+      nameLabel: 'Nom',
+      emailLabel: 'Email',
+    },
+    results: {
+      one: '{count} annonce visible',
+      other: '{count} annonces visibles',
+    },
+  },
 };
 
 export const categories = [

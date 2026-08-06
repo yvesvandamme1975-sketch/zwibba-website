@@ -115,8 +115,8 @@ function serializeJson(value) {
   return JSON.stringify(value).replaceAll('<', '\\u003c');
 }
 
-function formatCdf(value) {
-  return `${new Intl.NumberFormat('fr-FR').format(value)} CDF`;
+function formatPrice(currentSite, value) {
+  return `${new Intl.NumberFormat(currentSite.priceLocale).format(value)} ${currentSite.currency}`;
 }
 
 function resolveUrl(currentSite, relativePath) {
@@ -129,7 +129,7 @@ function icon(name, className = '') {
   return `<svg${classAttr} viewBox="0 0 24 24" aria-hidden="true">${markup}</svg>`;
 }
 
-function buildListingImage(listing) {
+function buildListingImage(currentSite, listing) {
   const [primary, secondary] = listing.accent;
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -159,7 +159,7 @@ function buildListingImage(listing) {
     listing.categoryLabel,
   )} · ${escapeHtml(listing.neighborhood)}, ${escapeHtml(listing.city)}</text>
   <text x="84" y="432" font-family="Arial, sans-serif" font-size="60" font-weight="700" fill="#E9FFE9">${escapeHtml(
-    formatCdf(listing.priceCdf),
+    formatPrice(currentSite, listing.priceCdf),
   )}</text>
   <rect x="84" y="512" width="420" height="160" rx="28" fill="rgba(17,18,20,0.22)"/>
   <text x="116" y="572" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#FFFFFF">Vendez en un clic</text>
@@ -382,7 +382,7 @@ function renderLayout(content, {
     : '';
 
   return `<!DOCTYPE html>
-<html lang="fr">
+<html lang="${site.htmlLang}">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -444,6 +444,7 @@ function renderLayout(content, {
         </div>
       </dialog>
     </div>
+    <script>window.ZWIBBA_UI_STRINGS = ${serializeJson(ui.client)};</script>
     <script src="/assets/app.js" defer></script>
   </body>
 </html>`;
@@ -530,7 +531,7 @@ function renderFaqs(items) {
     .join('');
 }
 
-function renderListingCard(listing, options = {}) {
+function renderListingCard(site, listing, options = {}) {
   const featuredBadge = listing.isFeatured ? '<span class="listing-card__badge">Booste</span>' : '';
   const highlight = options.highlightLabel ? `<span class="listing-card__meta-tag">${escapeHtml(options.highlightLabel)}</span>` : '';
   const listingImageAsset = resolveListingImageAsset(listing);
@@ -553,7 +554,7 @@ function renderListingCard(listing, options = {}) {
         <h3><a href="/annonce/${listing.slug}/">${escapeHtml(listing.title)}</a></h3>
         <p>${escapeHtml(listing.summary)}</p>
         <div class="listing-card__footer">
-          <strong>${escapeHtml(formatCdf(listing.priceCdf))}</strong>
+          <strong>${escapeHtml(formatPrice(site, listing.priceCdf))}</strong>
           <span>${escapeHtml(listing.publishedAt)}</span>
         </div>
       </div>
@@ -568,7 +569,7 @@ function renderSafetyTips(safetyTips) {
 function renderLandingPage(content) {
   const { site, listings, ui } = content;
   const landing = ui.landing;
-  const highlightedListings = listings.slice(0, 4).map((listing) => renderListingCard(listing, { highlightLabel: listing.transactionType })).join('');
+  const highlightedListings = listings.slice(0, 4).map((listing) => renderListingCard(site, listing, { highlightLabel: listing.transactionType })).join('');
 
   const schema = [
     {
@@ -587,7 +588,7 @@ function renderLandingPage(content) {
       offers: {
         '@type': 'Offer',
         price: '0',
-        priceCurrency: 'CDF',
+        priceCurrency: site.currency,
       },
       description: site.description,
       areaServed: site.marketLabel,
@@ -689,8 +690,8 @@ function renderLandingPage(content) {
 function renderBrowsePage(content) {
   const { site, listings, categories, ui } = content;
   const browse = ui.browse;
-  const featured = listings.filter((item) => item.isFeatured).map((listing) => renderListingCard(listing, { highlightLabel: browse.featuredBadge })).join('');
-  const cards = listings.map((listing) => renderListingCard(listing, { highlightLabel: listing.transactionType })).join('');
+  const featured = listings.filter((item) => item.isFeatured).map((listing) => renderListingCard(site, listing, { highlightLabel: browse.featuredBadge })).join('');
+  const cards = listings.map((listing) => renderListingCard(site, listing, { highlightLabel: listing.transactionType })).join('');
   const chips = ['all', ...categories.map((category) => category.slug)]
     .map((value) => {
       const label = value === 'all' ? browse.chipAllLabel : categories.find((item) => item.slug === value).label;
@@ -810,7 +811,7 @@ function renderListingPage(content, listing) {
   const similar = listings
     .filter((item) => item.slug !== listing.slug && item.category === listing.category)
     .slice(0, 2)
-    .map((item) => renderListingCard(item, { highlightLabel: listingUi.similarBadge }))
+    .map((item) => renderListingCard(site, item, { highlightLabel: listingUi.similarBadge }))
     .join('');
 
   const schema = {
@@ -821,7 +822,7 @@ function renderListingPage(content, listing) {
     image: resolveUrl(site, listingImageAsset),
     offers: {
       '@type': 'Offer',
-      priceCurrency: 'CDF',
+      priceCurrency: site.currency,
       price: listing.priceCdf,
       availability: 'https://schema.org/InStock',
     },
@@ -845,7 +846,7 @@ function renderListingPage(content, listing) {
             <span class="meta-pill">${escapeHtml(listing.condition)}</span>
           </div>
           <h1>${escapeHtml(listing.title)}</h1>
-          <p class="listing-hero__price">${escapeHtml(formatCdf(listing.priceCdf))}</p>
+          <p class="listing-hero__price">${escapeHtml(formatPrice(site, listing.priceCdf))}</p>
           <p class="listing-hero__summary">${escapeHtml(listing.summary)}</p>
           <div class="detail-actions">
             <button class="button button--primary" type="button" data-gated="call">${icon('phone')} ${listingUi.call}</button>
@@ -1325,7 +1326,7 @@ function build() {
   );
 
   for (const listing of content.listings) {
-    writeText(path.join(assetsDir, 'listings', `${listing.slug}.svg`), buildListingImage(listing));
+    writeText(path.join(assetsDir, 'listings', `${listing.slug}.svg`), buildListingImage(content.site, listing));
   }
 
   const appPage = renderAppPage();
