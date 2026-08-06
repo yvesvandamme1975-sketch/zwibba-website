@@ -137,4 +137,7 @@ Current priority docs:
 - `2026-08-06-zwibba-landing-i18n-design.md`
 - `2026-08-06-zwibba-landing-i18n-implementation.md`
 
+- `2026-08-06-zwibba-belgian-landing-design.md`
+- `2026-08-06-zwibba-belgian-landing-implementation.md`
+
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
