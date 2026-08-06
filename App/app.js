@@ -104,6 +104,8 @@ import {
   validateDraftForPublish,
 } from './features/post/post-flow-controller.mjs';
 import { renderShareMenu } from './components/share-menu.mjs';
+import { renderCountrySuggestionBanner } from './components/country-banner.mjs';
+import { createCountryPreference, readGeoCountry } from './services/country-preference.mjs';
 
 const appRoot = document.querySelector('[data-app-root]');
 
@@ -159,6 +161,7 @@ if (appRoot) {
     apiBaseUrl: apiConfig.apiBaseUrl,
     fetchFn: window.fetch.bind(window),
   });
+  const countryPreference = createCountryPreference({ storage: window.localStorage });
   const photoUploadQueue = createUploadTaskQueue({
     onStateChange: () => {
       renderApp();
@@ -1171,6 +1174,14 @@ if (appRoot) {
     return true;
   }
 
+  function shouldShowCountrySuggestion() {
+    return (
+      !state.session &&
+      !countryPreference.getStoredCountry() &&
+      readGeoCountry(typeof document === 'undefined' ? '' : document.cookie) === 'BE'
+    );
+  }
+
   function renderApp() {
     const route = resolveRenderableRoute();
     const routeKey = getRenderableRouteKey(route);
@@ -1195,7 +1206,9 @@ if (appRoot) {
         activeTab: getActiveTab(route),
         content: renderRoute(route),
         unreadMessagesCount: getTotalUnreadMessages(),
-      }) + renderShareMenu(state.shareMenu);
+      }) +
+      renderShareMenu(state.shareMenu) +
+      (shouldShowCountrySuggestion() ? renderCountrySuggestionBanner() : '');
     if (!canShareStoryImage()) {
       const nativeStoryShareButton = appRoot.querySelector('[data-action="share-native"]');
 
@@ -2513,6 +2526,19 @@ if (appRoot) {
 
     if (trigger.dataset.action === 'logout') {
       handleLogout();
+      return;
+    }
+
+    if (trigger.dataset.action === 'accept-country-suggestion') {
+      countryPreference.setStoredCountry('BE');
+      void loadBuyerFeed();
+      renderApp();
+      return;
+    }
+
+    if (trigger.dataset.action === 'dismiss-country-suggestion') {
+      countryPreference.setStoredCountry('CD');
+      renderApp();
       return;
     }
 
