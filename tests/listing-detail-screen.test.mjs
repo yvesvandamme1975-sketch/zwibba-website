@@ -358,6 +358,84 @@ test('listing detail screen renders a loading state', () => {
   assert.match(html, /Chargement de l'annonce/i);
 });
 
+test('listing detail screen renders a whatsapp link for a buyer when the seller has a contact phone number', () => {
+  const html = renderListingDetailScreen({
+    detail: {
+      categoryLabel: 'Sports et loisirs',
+      contactActions: ['message', 'whatsapp', 'call'],
+      contactPhoneNumber: '+243990000001',
+      id: 'listing_velo_1',
+      locationLabel: 'Golf',
+      priceCdf: 150000,
+      primaryImageUrl: null,
+      safetyTips: ['Rencontrez le vendeur dans un lieu public.'],
+      seller: {
+        name: 'Vendeur 0001',
+        responseTime: 'Répond en moyenne en 9 min',
+        role: 'Vendeur pro',
+      },
+      slug: 'velo',
+      summary: 'Vélo en bon état.',
+      title: 'Vélo',
+    },
+    state: 'ready',
+  });
+
+  const expectedText = encodeURIComponent(
+    'Bonjour, votre annonce « Vélo » sur Zwibba m\'intéresse.',
+  ).replace(/'/g, '&#39;');
+  const expectedHref = `href="https://wa.me/243990000001?text=${expectedText}"`;
+
+  assert.ok(
+    html.includes(expectedHref),
+    `expected html to include ${expectedHref}`,
+  );
+  assert.match(html, /class="app-flow__button app-flow__button--secondary"[^>]*href="https:\/\/wa\.me\/243990000001/);
+  assert.match(html, />\s*WhatsApp\s*</);
+});
+
+test('listing detail screen omits the whatsapp link for an owner viewing their own listing', () => {
+  const html = renderListingDetailScreen({
+    detail: {
+      canDelete: false,
+      editDraft: {
+        draftId: 'draft_owner_2',
+        photos: [],
+      },
+      canMarkSold: true,
+      canPause: true,
+      canRelist: false,
+      canRestore: false,
+      categoryId: 'sports_leisure',
+      categoryLabel: 'Sports et loisirs',
+      contactActions: [],
+      contactPhoneNumber: '',
+      deletedReason: null,
+      id: 'listing_velo_owner_1',
+      lifecycleStatus: 'active',
+      lifecycleStatusLabel: 'Active',
+      locationLabel: 'Golf',
+      priceCdf: 150000,
+      primaryImageUrl: null,
+      restoreUntil: null,
+      safetyTips: ['Rencontrez le vendeur dans un lieu public.'],
+      seller: {
+        name: 'Vendeur 0001',
+        responseTime: 'Répond en moyenne en 9 min',
+        role: 'Vendeur pro',
+      },
+      slug: 'velo-owner',
+      soldChannel: null,
+      summary: 'Vélo en bon état.',
+      title: 'Vélo',
+      viewerRole: 'owner',
+    },
+    state: 'ready',
+  });
+
+  assert.doesNotMatch(html, /wa\.me/);
+});
+
 test('listing detail screen replaces buyer contact actions with owner lifecycle actions', () => {
   const html = renderListingDetailScreen({
     detail: {

@@ -13,6 +13,7 @@ import {
   getFashionAttributes,
   getFashionItemTypeLabel,
 } from '../../utils/fashion-attributes.mjs';
+import { buildWhatsAppChatLink } from '../../utils/whatsapp-link.mjs';
 
 const categoryLabels = {
   agriculture: 'Agriculture',
@@ -125,6 +126,27 @@ function buildActionMarkup(action, detail) {
           Envoyer un message
         </button>
       `;
+    case 'whatsapp': {
+      const chatLink = buildWhatsAppChatLink(
+        detail.contactPhoneNumber,
+        `Bonjour, votre annonce « ${detail.title} » sur Zwibba m'intéresse.`,
+      );
+
+      if (!chatLink) {
+        return '';
+      }
+
+      return `
+        <a
+          class="app-flow__button app-flow__button--secondary"
+          href="${escapeAttribute(chatLink)}"
+          target="_blank"
+          rel="noreferrer"
+        >
+          WhatsApp
+        </a>
+      `;
+    }
     case 'call':
       if (detail.contactPhoneNumber) {
         return `
@@ -533,7 +555,7 @@ export function renderListingDetailScreen({
           ? renderOwnerLifecycleCard(detail)
           : `
             <div class="app-flow__actions" data-contact-actions="${escapeAttribute(detail.contactActions.join(','))}">
-              ${['message', 'call']
+              ${['message', 'whatsapp', 'call']
                 .filter((action) =>
                   action === 'message'
                     ? Boolean(detail.id)
