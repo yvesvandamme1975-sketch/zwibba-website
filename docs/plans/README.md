@@ -134,4 +134,7 @@ Current priority docs:
 - `2026-08-06-zwibba-whatsapp-contact-design.md`
 - `2026-08-06-zwibba-whatsapp-contact-implementation.md`
 
+- `2026-08-06-zwibba-landing-i18n-design.md`
+- `2026-08-06-zwibba-landing-i18n-implementation.md`
+
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
