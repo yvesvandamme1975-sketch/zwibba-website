@@ -302,6 +302,7 @@ export function renderProfileScreen({
   selectedProfileArea = '',
   session = null,
   state = 'loading',
+  supportWhatsAppLink = null,
 } = {}) {
   if (state === 'locked' || !session) {
     return `
@@ -399,6 +400,11 @@ export function renderProfileScreen({
             ${
               sellerReviewsHref
                 ? `<a class="app-flow__button app-flow__button--secondary" href="${escapeAttribute(sellerReviewsHref)}">Mes avis</a>`
+                : ''
+            }
+            ${
+              supportWhatsAppLink
+                ? `<a class="app-flow__button app-flow__button--secondary" href="${escapeAttribute(supportWhatsAppLink)}" target="_blank" rel="noreferrer">Support WhatsApp</a>`
                 : ''
             }
             <button class="app-flow__button app-flow__button--secondary" type="button" data-action="logout">

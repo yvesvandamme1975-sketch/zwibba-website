@@ -357,6 +357,36 @@ test('profile screen keeps an explicitly emptied city search editable', () => {
   assert.doesNotMatch(html, /name="areaSearch"[^>]+value="Lubumbashi Centre"/);
 });
 
+test('profile screen renders a Support WhatsApp link when one is provided, hidden otherwise', () => {
+  const htmlWithLink = renderProfileScreen({
+    listings: [],
+    session: {
+      canSyncDrafts: true,
+      phoneNumber: '+243990000001',
+      sessionToken: 'zwibba_session_123',
+    },
+    state: 'ready',
+    supportWhatsAppLink: 'https://wa.me/243111222333',
+  });
+  const htmlWithoutLink = renderProfileScreen({
+    listings: [],
+    session: {
+      canSyncDrafts: true,
+      phoneNumber: '+243990000001',
+      sessionToken: 'zwibba_session_123',
+    },
+    state: 'ready',
+    supportWhatsAppLink: null,
+  });
+
+  assert.match(htmlWithLink, /Support WhatsApp/);
+  assert.match(
+    htmlWithLink,
+    /<a class="app-flow__button app-flow__button--secondary" href="https:\/\/wa\.me\/243111222333" target="_blank" rel="noreferrer">Support WhatsApp<\/a>/,
+  );
+  assert.doesNotMatch(htmlWithoutLink, /Support WhatsApp/);
+});
+
 test('profile screen renders a missing-city action when the typed city has no exact match', () => {
   const html = renderProfileScreen({
     listings: [],

@@ -62,6 +62,7 @@ import {
 } from './utils/buyer-category-scroll-render-state.mjs';
 import { resolveDiscardDraftRoute } from './utils/draft-discard-navigation.mjs';
 import { resolvePhoneCountry } from './utils/phone-country.mjs';
+import { buildWhatsAppChatLink } from './utils/whatsapp-link.mjs';
 import {
   captureReviewDraftRenderState,
   restoreReviewDraftRenderState,
@@ -573,6 +574,14 @@ if (appRoot) {
     }
 
     return countryPreference.getStoredCountry() ?? 'CD';
+  }
+
+  function resolveSupportWhatsAppLink() {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    return buildWhatsAppChatLink((window.ZWIBBA_SUPPORT_WHATSAPP ?? {})[resolveBrowseCountry()]);
   }
 
   async function loadBuyerFeed() {
@@ -1113,6 +1122,7 @@ if (appRoot) {
           profileSaveBusy: state.profileSaveBusy,
           selectedProfileArea: profileCityState.selectedArea,
           profileState: state.profileStatus,
+          supportWhatsAppLink: resolveSupportWhatsAppLink(),
           state: state.session
             ? state.sellerListingsStatus === 'idle'
               ? 'loading'
