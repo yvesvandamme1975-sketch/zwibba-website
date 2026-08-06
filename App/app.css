@@ -1878,4 +1878,17 @@
     grid-template-columns: repeat(5, minmax(0, 110px));
     justify-content: center;
   }
+
+  .app-home__recent-feed {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+
+  .app-home__featured-row {
+    grid-auto-columns: 260px;
+  }
+
+  .app-flow--detail .app-detail__media,
+  .app-flow--detail .app-detail__image {
+    min-height: 380px;
+  }
 }

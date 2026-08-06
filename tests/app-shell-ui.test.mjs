@@ -108,3 +108,21 @@ test('desktop keeps the tab nav compact and centered', () => {
     /@media \(min-width: 920px\) \{[\s\S]*?\.app-tab-shell__nav\s*\{[\s\S]*?grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*110px\)\);[\s\S]*?justify-content:\s*center;/,
   );
 });
+
+test('desktop feed becomes a fluid multi-column grid', () => {
+  assert.match(
+    appStyles,
+    /@media \(min-width: 920px\) \{[\s\S]*?\.app-home__recent-feed\s*\{[\s\S]*?grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(240px,\s*1fr\)\);/,
+  );
+  assert.match(
+    appStyles,
+    /@media \(min-width: 920px\) \{[\s\S]*?\.app-home__featured-row\s*\{[\s\S]*?grid-auto-columns:\s*260px;/,
+  );
+});
+
+test('desktop listing detail gets a taller primary photo', () => {
+  assert.match(
+    appStyles,
+    /@media \(min-width: 920px\) \{[\s\S]*?\.app-flow--detail \.app-detail__media,\s*\.app-flow--detail \.app-detail__image\s*\{[\s\S]*?min-height:\s*380px;/,
+  );
+});
