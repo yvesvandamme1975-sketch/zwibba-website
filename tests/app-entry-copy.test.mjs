@@ -2,37 +2,31 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { existsSync, readFileSync } from 'node:fs';
-import test from 'node:test';
-import { setTimeout as delay } from 'node:timers/promises';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import test, { after } from 'node:test';
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
-const distAppEntry = join(repoRoot, 'dist', 'App', 'index.html');
+// Isolated dist dir so parallel test files never wipe each other's build output.
+const distDir = mkdtempSync(join(tmpdir(), 'zwibba-app-entry-dist-'));
+const distAppEntry = join(distDir, 'App', 'index.html');
+
+after(() => {
+  rmSync(distDir, { force: true, recursive: true });
+});
 
 function buildSite() {
   execFileSync('node', ['scripts/build.mjs'], {
     cwd: repoRoot,
-    env: process.env,
+    env: { ...process.env, ZWIBBA_DIST_DIR: distDir },
     stdio: 'pipe',
   });
 }
 
-async function readBuiltAppEntry() {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
-    if (existsSync(distAppEntry)) {
-      return readFileSync(distAppEntry, 'utf8');
-    }
-
-    await delay(25);
-  }
-
-  return readFileSync(distAppEntry, 'utf8');
-}
-
-test('public App shell uses beta/live copy instead of prototype wording', async () => {
+test('public App shell uses beta/live copy instead of prototype wording', () => {
   buildSite();
 
-  const html = await readBuiltAppEntry();
+  const html = readFileSync(distAppEntry, 'utf8');
 
   assert.doesNotMatch(html, /Prototype vendeur/i);
   assert.doesNotMatch(html, /App mobile, version navigateur/i);

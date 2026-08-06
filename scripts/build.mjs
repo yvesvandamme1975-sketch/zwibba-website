@@ -27,7 +27,11 @@ import { resolveSeededListingImage } from '../shared/listing-images.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 const buildLockDir = path.join(repoRoot, '.build-lock');
-const distDir = path.join(repoRoot, 'dist');
+// ZWIBBA_DIST_DIR lets tests build into an isolated directory so parallel
+// test files never wipe each other's dist output. Production builds keep dist/.
+const distDir = process.env.ZWIBBA_DIST_DIR
+  ? path.resolve(repoRoot, process.env.ZWIBBA_DIST_DIR)
+  : path.join(repoRoot, 'dist');
 const assetsDir = path.join(distDir, 'assets');
 const appApiBaseUrl =
   process.env.ZWIBBA_API_BASE_URL || 'https://api-production-b1b58.up.railway.app';

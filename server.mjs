@@ -7,7 +7,9 @@ import { buildListingOgTags } from './shared/listing-og.mjs';
 import { resolveApiBaseUrl } from './shared/api-base-url.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const distDir = path.join(__dirname, 'dist');
+const distDir = process.env.ZWIBBA_DIST_DIR
+  ? path.resolve(__dirname, process.env.ZWIBBA_DIST_DIR)
+  : path.join(__dirname, 'dist');
 const port = Number(process.env.PORT || 3003);
 const publicDomain = process.env.RAILWAY_PUBLIC_DOMAIN || '';
 const apiBaseUrl = resolveApiBaseUrl(process.env);
