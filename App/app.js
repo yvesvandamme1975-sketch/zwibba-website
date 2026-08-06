@@ -234,6 +234,7 @@ if (appRoot) {
     boostBusyListingId: '',
     boostMessage: '',
     busyLabel: '',
+    buyerFeedCountry: null,
     buyerFeedPromise: null,
     buyerListingPromise: null,
     currentListingSlug: '',
@@ -575,13 +576,20 @@ if (appRoot) {
   }
 
   async function loadBuyerFeed() {
+    const countryCode = resolveBrowseCountry();
+
     if (state.buyerFeedPromise) {
-      return state.buyerFeedPromise;
+      if (state.buyerFeedCountry === countryCode) {
+        return state.buyerFeedPromise;
+      }
+
+      return state.buyerFeedPromise.then(() => loadBuyerFeed());
     }
 
+    state.buyerFeedCountry = countryCode;
     state.buyerFeedPromise = buyerBrowseController
       .loadFeed({
-        countryCode: resolveBrowseCountry(),
+        countryCode,
       })
       .catch(() => undefined)
       .finally(() => {
