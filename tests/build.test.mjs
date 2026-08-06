@@ -9,7 +9,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const distDir = path.join(repoRoot, 'dist');
-const contentPath = path.join(repoRoot, 'src/site/content.mjs');
+const contentPath = path.join(repoRoot, 'src/site/locales/fr-cd.mjs');
 
 function buildSite(env = {}) {
   execFileSync('node', ['scripts/build.mjs'], {

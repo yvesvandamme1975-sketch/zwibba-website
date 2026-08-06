@@ -239,7 +239,7 @@ function renderFooter() {
         </div>
       </div>
       <div class="site-footer__meta">
-        <span>${escapeHtml(site.market)}</span>
+        <span>${escapeHtml(site.marketLabel)}</span>
         <span>Simple · Rapide · Mobile</span>
       </div>
     </footer>
@@ -583,7 +583,7 @@ function renderLandingPage() {
         priceCurrency: 'CDF',
       },
       description: site.description,
-      areaServed: site.market,
+      areaServed: site.marketLabel,
     },
   ];
 
@@ -591,7 +591,7 @@ function renderLandingPage() {
     <main id="main-content">
       <section class="hero">
         <div class="hero__copy">
-          <p class="eyebrow">${escapeHtml(site.market)} · Petites annonces pour mobile</p>
+          <p class="eyebrow">${escapeHtml(site.marketLabel)} · Petites annonces pour mobile</p>
           <h1>La place de marché qui transforme une photo en annonce prête à publier.</h1>
           <p class="hero__lede">${escapeHtml(site.description)}</p>
           <div class="store-row">${renderStoreButtons()}</div>
@@ -787,7 +787,7 @@ function renderBrowsePage() {
 
   return renderLayout({
     currentPath: '/annonces/',
-    title: `Annonces Zwibba | ${site.market}`,
+    title: `Annonces Zwibba | ${site.marketLabel}`,
     description:
       "Parcourez les annonces Zwibba : catégories, filtres, prix en CDF et fiches d'annonce faciles à partager.",
     body,
@@ -1191,7 +1191,7 @@ function renderContactPage() {
             <h2>${escapeHtml(site.supportEmail)}</h2>
             <p>Pour l'instant, le support principal passe par e-mail pour garder les demandes claires.</p>
             <ul class="seller-facts">
-              <li>${escapeHtml(site.market)}</li>
+              <li>${escapeHtml(site.marketLabel)}</li>
               <li>Réponse sous 48h ouvrées</li>
               <li>Support produit, partenariats, lancement</li>
             </ul>
