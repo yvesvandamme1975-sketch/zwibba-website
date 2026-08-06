@@ -31,10 +31,21 @@ function renderCategoryChips(categories, selectedCategoryId = '') {
     .join('');
 }
 
+function renderMarketSwitch(activeCountry) {
+  return `
+    <div class="buy-market-switch" role="group" aria-label="Marché">
+      <button type="button" data-action="set-browse-country" data-country="CD" ${activeCountry === 'CD' ? 'aria-pressed="true"' : ''}>RDC</button>
+      <button type="button" data-action="set-browse-country" data-country="BE" ${activeCountry === 'BE' ? 'aria-pressed="true"' : ''}>Belgique</button>
+    </div>
+  `;
+}
+
 export function renderBuyScreen({
+  activeCountry = 'CD',
   categories,
   featuredListings,
   feedStatus = 'ready',
+  hasSession = false,
   recentListings,
   searchQuery = '',
   selectedCategoryId = '',
@@ -45,6 +56,8 @@ export function renderBuyScreen({
         ${renderInAppBrand({ subtitle: 'Acheter en confiance' })}
         <span class="app-home__badge">Live beta</span>
       </div>
+
+      ${!hasSession ? renderMarketSwitch(activeCountry) : ''}
 
       <label class="app-home__search" aria-label="Recherche">
         <input

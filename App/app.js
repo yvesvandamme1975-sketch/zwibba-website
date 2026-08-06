@@ -566,6 +566,14 @@ if (appRoot) {
     return route;
   }
 
+  function resolveBrowseCountry() {
+    if (state.session) {
+      return resolvePhoneCountry(state.session.phoneNumber);
+    }
+
+    return countryPreference.getStoredCountry() ?? 'CD';
+  }
+
   async function loadBuyerFeed() {
     if (state.buyerFeedPromise) {
       return state.buyerFeedPromise;
@@ -573,7 +581,7 @@ if (appRoot) {
 
     state.buyerFeedPromise = buyerBrowseController
       .loadFeed({
-        countryCode: resolvePhoneCountry(state.session?.phoneNumber),
+        countryCode: resolveBrowseCountry(),
       })
       .catch(() => undefined)
       .finally(() => {
@@ -1106,9 +1114,11 @@ if (appRoot) {
         }
       case 'buy':
         return renderBuyScreen({
+          activeCountry: resolveBrowseCountry(),
           categories: sellerCategories,
           featuredListings: homeSections.featuredListings,
           feedStatus: homeFeedStatus,
+          hasSession: Boolean(state.session),
           recentListings: homeSections.recentListings,
           searchQuery: buyerBrowseController.state.searchQuery,
           selectedCategoryId: buyerBrowseController.state.selectedCategoryId,
@@ -2538,6 +2548,13 @@ if (appRoot) {
 
     if (trigger.dataset.action === 'dismiss-country-suggestion') {
       countryPreference.setStoredCountry('CD');
+      renderApp();
+      return;
+    }
+
+    if (trigger.dataset.action === 'set-browse-country') {
+      countryPreference.setStoredCountry(trigger.dataset.country);
+      void loadBuyerFeed();
       renderApp();
       return;
     }

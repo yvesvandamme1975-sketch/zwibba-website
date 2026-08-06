@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
@@ -6,6 +7,23 @@ import {
   getRenderableRouteKey,
   parseAppRoute,
 } from '../App/features/home/buyer-browse-controller.mjs';
+import { resolvePhoneCountry } from '../App/utils/phone-country.mjs';
+
+const APP_JS_URL = new URL('../App/app.js', import.meta.url);
+
+async function loadResolveBrowseCountry() {
+  const source = await readFile(APP_JS_URL, 'utf8');
+  const match = /function resolveBrowseCountry\(\) \{[\s\S]*?\n  \}\n/.exec(source);
+
+  assert.ok(match, 'App/app.js should define a resolveBrowseCountry() function');
+
+  return new Function(
+    'state',
+    'countryPreference',
+    'resolvePhoneCountry',
+    `${match[0]}\nreturn resolveBrowseCountry();`,
+  );
+}
 
 test('parseAppRoute recognizes the in-app listing detail route', () => {
   const route = parseAppRoute('#listing/samsung-galaxy-a54');
@@ -126,6 +144,60 @@ test('buyer browse controller forwards the session market country to the listing
   await controller.loadFeed({ countryCode: 'CD' });
 
   assert.deepEqual(requestedCountryCodes, ['BE', 'CD']);
+});
+
+test('resolveBrowseCountry uses the stored preference when there is no session', async () => {
+  const resolveBrowseCountry = await loadResolveBrowseCountry();
+
+  const result = resolveBrowseCountry(
+    { session: null },
+    { getStoredCountry: () => 'BE' },
+    resolvePhoneCountry,
+  );
+
+  assert.equal(result, 'BE');
+});
+
+test('resolveBrowseCountry falls back to CD when there is no session and no stored preference', async () => {
+  const resolveBrowseCountry = await loadResolveBrowseCountry();
+
+  const result = resolveBrowseCountry(
+    { session: null },
+    { getStoredCountry: () => null },
+    resolvePhoneCountry,
+  );
+
+  assert.equal(result, 'CD');
+});
+
+test('resolveBrowseCountry lets an active +243 session win over a stored BE preference', async () => {
+  const resolveBrowseCountry = await loadResolveBrowseCountry();
+
+  const result = resolveBrowseCountry(
+    { session: { phoneNumber: '+243990000001' } },
+    { getStoredCountry: () => 'BE' },
+    resolvePhoneCountry,
+  );
+
+  assert.equal(result, 'CD');
+});
+
+test('loadBuyerFeed resolves the active browse country through resolveBrowseCountry', async () => {
+  const source = await readFile(APP_JS_URL, 'utf8');
+
+  assert.match(
+    source,
+    /async function loadBuyerFeed\(\)[\s\S]*?countryCode:\s*resolveBrowseCountry\(\)/,
+  );
+});
+
+test('the set-browse-country action persists the chosen market and reloads the buyer feed', async () => {
+  const source = await readFile(APP_JS_URL, 'utf8');
+
+  assert.match(
+    source,
+    /trigger\.dataset\.action === 'set-browse-country'[\s\S]{0,240}countryPreference\.setStoredCountry\(trigger\.dataset\.country\)[\s\S]{0,240}loadBuyerFeed\(\)[\s\S]{0,120}renderApp\(\)/,
+  );
 });
 
 test('buyer browse controller loads a listing detail and captures errors', async () => {
