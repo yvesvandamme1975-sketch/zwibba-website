@@ -24,6 +24,7 @@ import {
 } from '../src/site/content.mjs';
 import * as frCd from '../src/site/locales/fr-cd.mjs';
 import { resolveSeededListingImage } from '../shared/listing-images.mjs';
+import { localeHref } from '../src/site/locale-href.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
@@ -120,7 +121,7 @@ function formatPrice(currentSite, value) {
 }
 
 function resolveUrl(currentSite, relativePath) {
-  return new URL(relativePath, currentSite.baseUrl).toString();
+  return new URL(localeHref(currentSite, relativePath), currentSite.baseUrl).toString();
 }
 
 function icon(name, className = '') {
@@ -195,14 +196,14 @@ function renderNav(content, currentPath) {
   const links = site.nav
     .map(({ href, label }) => {
       const isActive = currentPath === href || (href !== '/' && currentPath.startsWith(href));
-      return `<a class="nav-link${isActive ? ' is-active' : ''}" href="${href}">${escapeHtml(label)}</a>`;
+      return `<a class="nav-link${isActive ? ' is-active' : ''}" href="${localeHref(site, href)}">${escapeHtml(label)}</a>`;
     })
     .join('');
 
   return `
     <header class="site-header">
       <div class="site-header__inner">
-        <a class="brandmark" href="/" aria-label="${ui.nav.homeAriaLabel}">
+        <a class="brandmark" href="${localeHref(site, '/')}" aria-label="${ui.nav.homeAriaLabel}">
           <img src="/assets/brand/logo-zwibba.svg" alt="Zwibba" width="160" height="113" />
         </a>
         <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
@@ -212,8 +213,8 @@ function renderNav(content, currentPath) {
         </button>
         <nav class="site-nav" id="site-nav" data-open="false">
           ${links}
-          <a class="button button--ghost" href="/annonces/">${ui.nav.explore}</a>
-          <a class="button button--primary" href="/ambassadeur/">${ui.nav.download}</a>
+          <a class="button button--ghost" href="${localeHref(site, '/annonces/')}">${ui.nav.explore}</a>
+          <a class="button button--primary" href="${localeHref(site, '/ambassadeur/')}">${ui.nav.download}</a>
         </nav>
       </div>
     </header>
@@ -223,7 +224,7 @@ function renderNav(content, currentPath) {
 function renderFooter(content) {
   const { site, ui } = content;
   const footerLinks = site.nav
-    .map((item) => `<a href="${item.href}">${escapeHtml(item.label)}</a>`)
+    .map((item) => `<a href="${localeHref(site, item.href)}">${escapeHtml(item.label)}</a>`)
     .join('');
 
   return `
@@ -541,7 +542,7 @@ function renderListingCard(site, listing, options = {}) {
     )}" data-price="${listing.priceCdf}" data-title="${escapeHtml(listing.title.toLowerCase())}" data-published="${escapeHtml(
       listing.publishedAt,
     )}">
-      <a class="listing-card__media" href="/annonce/${listing.slug}/">
+      <a class="listing-card__media" href="${localeHref(site, `/annonce/${listing.slug}/`)}">
         <img src="${escapeHtml(listingImageAsset)}" alt="${escapeHtml(listing.title)}" loading="lazy" width="600" height="400" />
         ${featuredBadge}
       </a>
@@ -551,7 +552,7 @@ function renderListingCard(site, listing, options = {}) {
           <span>${escapeHtml(listing.neighborhood)}</span>
           ${highlight}
         </div>
-        <h3><a href="/annonce/${listing.slug}/">${escapeHtml(listing.title)}</a></h3>
+        <h3><a href="${localeHref(site, `/annonce/${listing.slug}/`)}">${escapeHtml(listing.title)}</a></h3>
         <p>${escapeHtml(listing.summary)}</p>
         <div class="listing-card__footer">
           <strong>${escapeHtml(formatPrice(site, listing.priceCdf))}</strong>
@@ -782,7 +783,7 @@ function renderBrowsePage(content) {
               <p class="eyebrow">${browse.categoriesEyebrow}</p>
               <h2 id="results-summary" aria-live="polite">${browse.resultsFallback}</h2>
             </div>
-            <a class="button button--ghost" href="/ambassadeur/">${browse.ambassadorCta}</a>
+            <a class="button button--ghost" href="${localeHref(site, '/ambassadeur/')}">${browse.ambassadorCta}</a>
           </div>
           <div class="listing-grid" id="browse-results-grid">${cards}</div>
         </div>
@@ -1243,7 +1244,7 @@ function renderReferralPage(content) {
           <h1>${referral.title}</h1>
           <p>${referral.copy}</p>
           <strong id="referral-code-output">${referral.code}</strong>
-          <a class="button button--primary" id="referral-fallback-link" href="/ambassadeur/">${referral.continueLabel}</a>
+          <a class="button button--primary" id="referral-fallback-link" href="${localeHref(site, '/ambassadeur/')}">${referral.continueLabel}</a>
         </div>
       </section>
     </main>
