@@ -56,6 +56,31 @@ function conditionCode(label) {
     .replace(/^-+|-+$/g, '');
 }
 
+// Duplicated locally from App/services/country-preference.mjs (no bundler to
+// share code between the app and the marketing site scripts).
+function readGeoCookie(cookieString) {
+  const match = /(?:^|;\s*)zwibba_geo=([A-Z]{2})(?:;|$)/.exec(cookieString ?? '');
+  return match ? match[1] : null;
+}
+
+const SITE_COUNTRY_STORAGE_KEY = 'zwibba_site_country';
+
+function getStoredSiteCountry() {
+  try {
+    return window.localStorage.getItem(SITE_COUNTRY_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setStoredSiteCountry(countryCode) {
+  try {
+    window.localStorage.setItem(SITE_COUNTRY_STORAGE_KEY, countryCode);
+  } catch {
+    // stockage indisponible : préférence non persistée, sans erreur
+  }
+}
+
 function announce(message) {
   if (!announcer) {
     return;
@@ -377,6 +402,72 @@ function initReferralPages() {
   }
 }
 
+function createGeoBanner(geoBanner) {
+  const banner = document.createElement('div');
+  banner.className = 'geo-banner';
+  banner.setAttribute('data-geo-banner', '');
+  banner.setAttribute('role', 'region');
+
+  const text = document.createElement('p');
+  text.className = 'geo-banner__text';
+  text.textContent = geoBanner.text;
+
+  const actions = document.createElement('div');
+  actions.className = 'geo-banner__actions';
+
+  const cta = document.createElement('a');
+  cta.className = 'button button--primary geo-banner__cta';
+  cta.href = '/be/';
+  cta.textContent = geoBanner.cta;
+  cta.addEventListener('click', () => {
+    setStoredSiteCountry('BE');
+  });
+
+  const dismiss = document.createElement('button');
+  dismiss.type = 'button';
+  dismiss.className = 'geo-banner__dismiss';
+  dismiss.textContent = geoBanner.dismiss;
+  dismiss.addEventListener('click', () => {
+    setStoredSiteCountry('CD');
+    banner.remove();
+  });
+
+  actions.append(cta, dismiss);
+  banner.append(text, actions);
+
+  return banner;
+}
+
+function initGeoBanner() {
+  const geoBanner = uiStrings.geoBanner;
+  if (!geoBanner) {
+    return;
+  }
+
+  // The banner only suggests the belgian site from the fr-CD (unprefixed)
+  // pages; /be/ and /be/nl/ are already the belgian versions.
+  if (window.location.pathname.startsWith('/be')) {
+    return;
+  }
+
+  let geoCountry = null;
+  try {
+    geoCountry = readGeoCookie(document.cookie);
+  } catch {
+    geoCountry = null;
+  }
+
+  if (geoCountry !== 'BE') {
+    return;
+  }
+
+  if (getStoredSiteCountry() !== null) {
+    return;
+  }
+
+  document.body.prepend(createGeoBanner(geoBanner));
+}
+
 function initContactForm() {
   const form = document.querySelector('#contact-form');
   if (!form) {
@@ -407,3 +498,4 @@ initBrowseFilters();
 initShareButtons();
 initReferralPages();
 initContactForm();
+initGeoBanner();

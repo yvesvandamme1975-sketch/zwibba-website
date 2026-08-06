@@ -82,6 +82,21 @@ test('build output uses stable condition codes for the browse filter select', as
   assert.match(html, /value="tres-bon-etat"/);
 });
 
+test('fr-cd ui.nav.localeSwitch exposes the footer locale switcher heading and options', () => {
+  assert.equal(ui.nav.localeSwitch.heading, 'Version');
+  assert.deepEqual(ui.nav.localeSwitch.options, [
+    { code: 'fr-CD', label: 'RDC (FR)' },
+    { code: 'fr-BE', label: 'Belgique (FR)' },
+    { code: 'nl-BE', label: 'België (NL)' },
+  ]);
+});
+
+test('fr-cd ui.client.geoBanner exposes the belgian geo suggestion banner copy', () => {
+  assert.equal(ui.client.geoBanner.text, 'Zwibba existe aussi en Belgique.');
+  assert.equal(ui.client.geoBanner.cta, 'Découvrir Zwibba Belgique');
+  assert.equal(ui.client.geoBanner.dismiss, 'Non merci');
+});
+
 test('fr-cd ui.client exposes browser-side strings for app.js with lang for plural rules', () => {
   assert.equal(ui.client.lang, 'fr');
   assert.equal(ui.client.menu.opened, 'Menu ouvert');

@@ -57,6 +57,14 @@ export const ui = {
     footerNavTitle: 'Navigatie',
     footerStoresTitle: 'Binnenkort beschikbaar',
     footerTagline: 'Eenvoudig · Snel · Mobiel',
+    localeSwitch: {
+      heading: 'Versie',
+      options: [
+        { code: 'fr-CD', label: 'RDC (FR)' },
+        { code: 'fr-BE', label: 'Belgique (FR)' },
+        { code: 'nl-BE', label: 'België (NL)' },
+      ],
+    },
   },
   gate: {
     closeLabel: 'Sluiten',
@@ -319,6 +327,11 @@ export const ui = {
     results: {
       one: '{count} zoekertje zichtbaar',
       other: '{count} zoekertjes zichtbaar',
+    },
+    geoBanner: {
+      text: 'Zwibba bestaat ook in België.',
+      cta: 'Ontdek Zwibba België',
+      dismiss: 'Nee bedankt',
     },
   },
 };

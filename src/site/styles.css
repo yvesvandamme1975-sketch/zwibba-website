@@ -900,7 +900,26 @@ textarea {
 .site-footer__grid {
   display: grid;
   gap: 24px;
-  grid-template-columns: 1.3fr 0.7fr 1fr;
+  grid-template-columns: 1.2fr 0.6fr 0.6fr 0.8fr;
+}
+
+.locale-switch__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.locale-switch__link {
+  color: var(--text-muted);
+}
+
+.locale-switch__link:hover {
+  color: var(--text);
+}
+
+.locale-switch__link--current {
+  color: var(--text);
+  font-weight: 600;
 }
 
 .site-footer__title {
@@ -931,6 +950,48 @@ textarea {
   border-top: 1px solid var(--line);
   color: var(--text-soft);
   font-size: 0.9rem;
+}
+
+.geo-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 20px;
+  background: var(--green-soft);
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  text-align: center;
+}
+
+.geo-banner__text {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.geo-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.geo-banner__cta {
+  padding: 8px 18px;
+  font-size: 0.85rem;
+}
+
+.geo-banner__dismiss {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.geo-banner__dismiss:hover {
+  color: var(--text);
 }
 
 .download-gate {

@@ -241,11 +241,38 @@ function renderNav(content, currentPath) {
   `;
 }
 
-function renderFooter(content) {
+function localeCode(currentSite) {
+  return `${currentSite.language}-${currentSite.market}`;
+}
+
+function renderLocaleSwitchLinks(content, logicalPath) {
+  const { options } = content.ui.nav.localeSwitch;
+
+  return alternateLocaleSites
+    .map(({ site: altSite }) => {
+      const code = localeCode(altSite);
+      const option = options.find((item) => item.code === code);
+      const label = option ? option.label : code;
+      const isCurrent = altSite.urlPrefix === content.site.urlPrefix;
+
+      if (isCurrent) {
+        return `<span class="locale-switch__link locale-switch__link--current" aria-current="true">${escapeHtml(label)}</span>`;
+      }
+
+      return `<a class="locale-switch__link" href="${localeHref(altSite, logicalPath)}">${escapeHtml(label)}</a>`;
+    })
+    .join('');
+}
+
+function renderFooter(content, currentPath, alternates = true) {
   const { site, ui } = content;
   const footerLinks = site.nav
     .map((item) => `<a href="${localeHref(site, item.href)}">${escapeHtml(item.label)}</a>`)
     .join('');
+  // Pages without cross-locale equivalents (e.g. fr-CD static listing pages)
+  // fall back to the browse page so the switcher never links to a 404.
+  const localeSwitchPath = alternates ? currentPath : '/annonces/';
+  const localeSwitchLinks = renderLocaleSwitchLinks(content, localeSwitchPath);
 
   return `
     <footer class="site-footer">
@@ -257,6 +284,10 @@ function renderFooter(content) {
         <div>
           <h2 class="site-footer__title">${ui.nav.footerNavTitle}</h2>
           <div class="site-footer__links">${footerLinks}</div>
+        </div>
+        <div>
+          <h2 class="site-footer__title">${escapeHtml(ui.nav.localeSwitch.heading)}</h2>
+          <div class="locale-switch__links">${localeSwitchLinks}</div>
         </div>
         <div>
           <h2 class="site-footer__title">${ui.nav.footerStoresTitle}</h2>
@@ -457,7 +488,7 @@ function renderLayout(content, {
       ${renderNav(content, currentPath)}
       <p class="sr-only" id="site-announcer" aria-live="polite"></p>
       ${body}
-      ${renderFooter(content)}
+      ${renderFooter(content, currentPath, alternates)}
       <dialog class="download-gate" id="download-gate">
         <div class="download-gate__panel">
           <button class="download-gate__close" type="button" data-close-gate aria-label="${ui.gate.closeLabel}">${icon('close')}</button>

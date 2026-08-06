@@ -55,6 +55,14 @@ export const ui = {
     footerNavTitle: 'Navigation',
     footerStoresTitle: 'Disponible bientôt',
     footerTagline: 'Simple · Rapide · Mobile',
+    localeSwitch: {
+      heading: 'Version',
+      options: [
+        { code: 'fr-CD', label: 'RDC (FR)' },
+        { code: 'fr-BE', label: 'Belgique (FR)' },
+        { code: 'nl-BE', label: 'België (NL)' },
+      ],
+    },
   },
   gate: {
     closeLabel: 'Fermer',
@@ -317,6 +325,11 @@ export const ui = {
     results: {
       one: '{count} annonce visible',
       other: '{count} annonces visibles',
+    },
+    geoBanner: {
+      text: 'Zwibba existe aussi en Belgique.',
+      cta: 'Découvrir Zwibba Belgique',
+      dismiss: 'Non merci',
     },
   },
 };

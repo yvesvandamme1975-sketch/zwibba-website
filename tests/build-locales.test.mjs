@@ -122,6 +122,36 @@ test('static fr-CD listing pages emit no hreflang alternates', () => {
   assert.doesNotMatch(html, /rel="alternate"/);
 });
 
+test('footer of dist/index.html links to the belgian locale equivalents', () => {
+  buildSite();
+
+  const html = readFileSync(path.join(distDir, 'index.html'), 'utf8');
+  assert.match(html, /<a class="locale-switch__link" href="\/be\/">/);
+  assert.match(html, /<a class="locale-switch__link" href="\/be\/nl\/">/);
+});
+
+test('footer of dist/be/nl/annonces/index.html links to the fr-cd and fr-be equivalents', () => {
+  buildSite();
+
+  const html = readFileSync(path.join(distDir, 'be', 'nl', 'annonces', 'index.html'), 'utf8');
+  assert.match(html, /<a class="locale-switch__link" href="\/annonces\/">/);
+  assert.match(html, /<a class="locale-switch__link" href="\/be\/annonces\/">/);
+});
+
+test('dist/index.html exposes geoBanner strings via window.ZWIBBA_UI_STRINGS', () => {
+  buildSite();
+
+  const html = readFileSync(path.join(distDir, 'index.html'), 'utf8');
+  const match = html.match(/window\.ZWIBBA_UI_STRINGS = (\{.*\});/);
+  assert.ok(match, 'ZWIBBA_UI_STRINGS script should be present');
+
+  const strings = JSON.parse(match[1]);
+  assert.ok(strings.geoBanner, 'geoBanner key should exist on ZWIBBA_UI_STRINGS');
+  assert.equal(typeof strings.geoBanner.text, 'string');
+  assert.equal(typeof strings.geoBanner.cta, 'string');
+  assert.equal(typeof strings.geoBanner.dismiss, 'string');
+});
+
 test('dist/sitemap.xml aggregates all three locale trees into the single root sitemap', () => {
   buildSite();
 
