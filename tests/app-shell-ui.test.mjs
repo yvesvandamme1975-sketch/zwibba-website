@@ -7,25 +7,19 @@ import { fileURLToPath } from 'node:url';
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const appStyles = readFileSync(path.join(repoRoot, 'App', 'app.css'), 'utf8');
 
-test('mobile app shell hides the standalone marketing note so the app starts first', () => {
+test('app shell fills the viewport height as a centered column', () => {
   assert.match(
     appStyles,
-    /@media \(max-width: 640px\) \{[\s\S]*?\.app-standalone__note\s*\{\s*display:\s*none;\s*\}/,
+    /\.app-shell\s*\{[\s\S]*?width:\s*min\(100%,\s*520px\);[\s\S]*?margin:\s*0 auto;[\s\S]*?height:\s*100vh;[\s\S]*?height:\s*100dvh;/,
   );
 });
 
-test('mobile app shell hides the standalone topbar so the app opens without site chrome', () => {
-  assert.match(
-    appStyles,
-    /@media \(max-width: 640px\) \{[\s\S]*?\.app-standalone__topbar\s*\{\s*display:\s*none;\s*\}/,
-  );
-});
-
-test('desktop shell gives more space to the phone and less to the landing copy', () => {
-  assert.match(
-    appStyles,
-    /@media \(min-width: 920px\) \{[\s\S]*?grid-template-columns:\s*minmax\(280px,\s*360px\)\s*minmax\(460px,\s*520px\)/,
-  );
+test('phone mockup and marketing chrome styles are removed', () => {
+  assert.doesNotMatch(appStyles, /\.app-standalone__frame/);
+  assert.doesNotMatch(appStyles, /\.app-standalone__note/);
+  assert.doesNotMatch(appStyles, /\.app-standalone__topbar/);
+  assert.doesNotMatch(appStyles, /\.app-standalone__brand/);
+  assert.doesNotMatch(appStyles, /\.app-standalone__entry/);
 });
 
 test('buyer chips and bottom navigation have explicit active-state styling', () => {
