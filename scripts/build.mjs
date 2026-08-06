@@ -23,6 +23,8 @@ import {
   testimonials,
 } from '../src/site/content.mjs';
 import * as frCd from '../src/site/locales/fr-cd.mjs';
+import * as frBe from '../src/site/locales/fr-be.mjs';
+import * as nlBe from '../src/site/locales/nl-be.mjs';
 import { resolveSeededListingImage } from '../shared/listing-images.mjs';
 import { localeHref } from '../src/site/locale-href.mjs';
 
@@ -570,7 +572,22 @@ function renderSafetyTips(safetyTips) {
 function renderLandingPage(content) {
   const { site, listings, ui } = content;
   const landing = ui.landing;
-  const highlightedListings = listings.slice(0, 4).map((listing) => renderListingCard(site, listing, { highlightLabel: listing.transactionType })).join('');
+  const hasListings = listings.length > 0;
+  const highlightedListings = hasListings
+    ? listings.slice(0, 4).map((listing) => renderListingCard(site, listing, { highlightLabel: listing.transactionType })).join('')
+    : '';
+  const listingsSection = hasListings
+    ? `
+      <section class="section">
+        <div class="section__heading">
+          <p class="eyebrow">${landing.listings.eyebrow}</p>
+          <h2>${landing.listings.title}</h2>
+          <p>${landing.listings.copy}</p>
+        </div>
+        <div class="listing-grid">${highlightedListings}</div>
+      </section>
+`
+    : '';
 
   const schema = [
     {
@@ -648,16 +665,7 @@ function renderLandingPage(content) {
         </div>
         <div class="highlight-grid">${renderHighlights(content)}</div>
       </section>
-
-      <section class="section">
-        <div class="section__heading">
-          <p class="eyebrow">${landing.listings.eyebrow}</p>
-          <h2>${landing.listings.title}</h2>
-          <p>${landing.listings.copy}</p>
-        </div>
-        <div class="listing-grid">${highlightedListings}</div>
-      </section>
-
+${listingsSection}
       <section class="section section--dense">
         <div class="section__heading">
           <p class="eyebrow">${landing.testimonials.eyebrow}</p>
@@ -1286,22 +1294,49 @@ Sitemap: ${resolveUrl(site, '/sitemap.xml')}
 `;
 }
 
-function build() {
+function buildLocale(localeModule) {
   const content = {
-    site: frCd.site,
-    ui: frCd.ui,
-    categories: frCd.categories,
-    featureSteps: frCd.featureSteps,
-    platformHighlights: frCd.platformHighlights,
-    testimonials: frCd.testimonials,
-    faqs: frCd.faqs,
-    aboutValues: frCd.aboutValues,
-    supportTopics: frCd.supportTopics,
-    ambassadorChannels: frCd.ambassadorChannels,
-    listings: frCd.listings,
-    safetyTips: frCd.ui.safetyTips,
+    site: localeModule.site,
+    ui: localeModule.ui,
+    categories: localeModule.categories,
+    featureSteps: localeModule.featureSteps,
+    platformHighlights: localeModule.platformHighlights,
+    testimonials: localeModule.testimonials,
+    faqs: localeModule.faqs,
+    aboutValues: localeModule.aboutValues,
+    supportTopics: localeModule.supportTopics,
+    ambassadorChannels: localeModule.ambassadorChannels,
+    listings: localeModule.listings,
+    safetyTips: localeModule.ui.safetyTips,
   };
 
+  const isRoot = !content.site.urlPrefix;
+
+  for (const listing of content.listings) {
+    writeText(path.join(assetsDir, 'listings', `${listing.slug}.svg`), buildListingImage(content.site, listing));
+  }
+
+  const pages = [
+    { file: 'index.html', path: '/', html: renderLandingPage(content) },
+    ...(isRoot ? [{ file: 'App/index.html', path: '/App/', html: renderAppPage() }] : []),
+    { file: 'annonces/index.html', path: '/annonces/', html: renderBrowsePage(content) },
+    { file: 'ambassadeur/index.html', path: '/ambassadeur/', html: renderAmbassadorPage(content) },
+    { file: 'a-propos/index.html', path: '/a-propos/', html: renderAboutPage(content) },
+    { file: 'contact/index.html', path: '/contact/', html: renderContactPage(content) },
+    { file: 'r/index.html', path: '/r/', html: renderReferralPage(content) },
+    ...content.listings.map((listing) => ({
+      file: `annonce/${listing.slug}/index.html`,
+      path: `/annonce/${listing.slug}/`,
+      html: renderListingPage(content, listing),
+    })),
+  ];
+
+  pages.forEach((page) => writeText(path.join(distDir, content.site.urlPrefix, page.file), page.html));
+
+  return { content, pages };
+}
+
+function build() {
   rmSync(distDir, { recursive: true, force: true });
   ensureDir(assetsDir);
 
@@ -1326,33 +1361,13 @@ function build() {
     ),
   );
 
-  for (const listing of content.listings) {
-    writeText(path.join(assetsDir, 'listings', `${listing.slug}.svg`), buildListingImage(content.site, listing));
-  }
-
-  const appPage = renderAppPage();
-  const pages = [
-    { file: 'index.html', path: '/', html: renderLandingPage(content) },
-    { file: 'App/index.html', path: '/App/', html: appPage },
-    { file: 'annonces/index.html', path: '/annonces/', html: renderBrowsePage(content) },
-    { file: 'ambassadeur/index.html', path: '/ambassadeur/', html: renderAmbassadorPage(content) },
-    { file: 'a-propos/index.html', path: '/a-propos/', html: renderAboutPage(content) },
-    { file: 'contact/index.html', path: '/contact/', html: renderContactPage(content) },
-    { file: 'r/index.html', path: '/r/', html: renderReferralPage(content) },
-    ...content.listings.map((listing) => ({
-      file: `annonce/${listing.slug}/index.html`,
-      path: `/annonce/${listing.slug}/`,
-      html: renderListingPage(content, listing),
-    })),
-  ];
-
-  pages.forEach((page) => writeText(path.join(distDir, page.file), page.html));
+  const [rootResult] = [frCd, frBe, nlBe].map((localeModule) => buildLocale(localeModule));
 
   writeText(
     path.join(distDir, 'sitemap.xml'),
-    buildSitemap(pages.map((page) => resolveUrl(content.site, page.path))),
+    buildSitemap(rootResult.pages.map((page) => resolveUrl(rootResult.content.site, page.path))),
   );
-  writeText(path.join(distDir, 'robots.txt'), buildRobots(content));
+  writeText(path.join(distDir, 'robots.txt'), buildRobots(rootResult.content));
 }
 
 async function acquireBuildLock() {
