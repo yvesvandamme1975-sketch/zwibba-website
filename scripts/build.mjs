@@ -190,7 +190,7 @@ function renderStoreButtons(currentSite, extraClass = '') {
 }
 
 function renderNav(content, currentPath) {
-  const { site } = content;
+  const { site, ui } = content;
   const links = site.nav
     .map(({ href, label }) => {
       const isActive = currentPath === href || (href !== '/' && currentPath.startsWith(href));
@@ -201,18 +201,18 @@ function renderNav(content, currentPath) {
   return `
     <header class="site-header">
       <div class="site-header__inner">
-        <a class="brandmark" href="/" aria-label="Zwibba accueil">
+        <a class="brandmark" href="/" aria-label="${ui.nav.homeAriaLabel}">
           <img src="/assets/brand/logo-zwibba.svg" alt="Zwibba" width="160" height="113" />
         </a>
         <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
           <span class="menu-toggle__icon menu-toggle__icon--open">${icon('menu')}</span>
           <span class="menu-toggle__icon menu-toggle__icon--close">${icon('close')}</span>
-          <span class="sr-only">Menu</span>
+          <span class="sr-only">${ui.nav.menuLabel}</span>
         </button>
         <nav class="site-nav" id="site-nav" data-open="false">
           ${links}
-          <a class="button button--ghost" href="/annonces/">Explorer</a>
-          <a class="button button--primary" href="/ambassadeur/">Télécharger</a>
+          <a class="button button--ghost" href="/annonces/">${ui.nav.explore}</a>
+          <a class="button button--primary" href="/ambassadeur/">${ui.nav.download}</a>
         </nav>
       </div>
     </header>
@@ -220,7 +220,7 @@ function renderNav(content, currentPath) {
 }
 
 function renderFooter(content) {
-  const { site } = content;
+  const { site, ui } = content;
   const footerLinks = site.nav
     .map((item) => `<a href="${item.href}">${escapeHtml(item.label)}</a>`)
     .join('');
@@ -233,17 +233,17 @@ function renderFooter(content) {
           <p class="site-footer__copy">${escapeHtml(site.description)}</p>
         </div>
         <div>
-          <h2 class="site-footer__title">Navigation</h2>
+          <h2 class="site-footer__title">${ui.nav.footerNavTitle}</h2>
           <div class="site-footer__links">${footerLinks}</div>
         </div>
         <div>
-          <h2 class="site-footer__title">Disponible bientôt</h2>
+          <h2 class="site-footer__title">${ui.nav.footerStoresTitle}</h2>
           <div class="store-row store-row--footer">${renderStoreButtons(site, 'store-button--compact')}</div>
         </div>
       </div>
       <div class="site-footer__meta">
         <span>${escapeHtml(site.marketLabel)}</span>
-        <span>Simple · Rapide · Mobile</span>
+        <span>${ui.nav.footerTagline}</span>
       </div>
     </footer>
   `;
@@ -370,7 +370,7 @@ function renderLayout(content, {
   schema,
   bodyClass = '',
 }) {
-  const { site } = content;
+  const { site, ui } = content;
   const canonicalUrl = resolveUrl(site, canonicalPath);
   const schemas = Array.isArray(schema) ? schema : schema ? [schema] : [];
   const schemaMarkup = schemas
@@ -428,17 +428,17 @@ function renderLayout(content, {
   </head>
   <body class="${bodyClass}">
     <div class="site-shell">
-      <a class="skip-link" href="#main-content">Aller au contenu</a>
+      <a class="skip-link" href="#main-content">${ui.nav.skipLink}</a>
       ${renderNav(content, currentPath)}
       <p class="sr-only" id="site-announcer" aria-live="polite"></p>
       ${body}
       ${renderFooter(content)}
       <dialog class="download-gate" id="download-gate">
         <div class="download-gate__panel">
-          <button class="download-gate__close" type="button" data-close-gate aria-label="Fermer">${icon('close')}</button>
-          <p class="eyebrow">Action réservée à l'application</p>
-          <h2>Ouvrez Zwibba pour continuer</h2>
-          <p>Le site sert à découvrir et à partager. Pour publier, enregistrer ou contacter un vendeur, passez par l'application Zwibba.</p>
+          <button class="download-gate__close" type="button" data-close-gate aria-label="${ui.gate.closeLabel}">${icon('close')}</button>
+          <p class="eyebrow">${ui.gate.eyebrow}</p>
+          <h2>${ui.gate.title}</h2>
+          <p>${ui.gate.body}</p>
           <div class="store-row">${renderStoreButtons(site)}</div>
         </div>
       </dialog>
@@ -565,7 +565,8 @@ function renderSafetyTips() {
 }
 
 function renderLandingPage(content) {
-  const { site, listings } = content;
+  const { site, listings, ui } = content;
+  const landing = ui.landing;
   const highlightedListings = listings.slice(0, 4).map((listing) => renderListingCard(listing, { highlightLabel: listing.transactionType })).join('');
 
   const schema = [
@@ -596,68 +597,68 @@ function renderLandingPage(content) {
     <main id="main-content">
       <section class="hero">
         <div class="hero__copy">
-          <p class="eyebrow">${escapeHtml(site.marketLabel)} · Petites annonces pour mobile</p>
-          <h1>La place de marché qui transforme une photo en annonce prête à publier.</h1>
+          <p class="eyebrow">${escapeHtml(site.marketLabel)} ${landing.heroEyebrowSuffix}</p>
+          <h1>${landing.heroTitle}</h1>
           <p class="hero__lede">${escapeHtml(site.description)}</p>
           <div class="store-row">${renderStoreButtons(site)}</div>
           <div class="metric-grid">${renderHeroStats(content)}</div>
         </div>
         <div class="hero__stage">
           <div class="hero-stage-card hero-stage-card--wide">
-            <span class="hero-stage-card__label">${icon('spark')} Zwibba IA</span>
-            <h2>Photo → analyse → prix conseillé → publication</h2>
-            <p>L'application prend vos photos, trouve la catégorie et propose une description et un prix en CDF.</p>
+            <span class="hero-stage-card__label">${icon('spark')} ${landing.heroStage.aiLabel}</span>
+            <h2>${landing.heroStage.aiTitle}</h2>
+            <p>${landing.heroStage.aiCopy}</p>
           </div>
           <div class="hero-stage-card">
-            <span class="hero-stage-card__label">${icon('chat')} Accès protégé</span>
-            <p>Le site aide à découvrir les annonces. L'application sert ensuite à contacter, enregistrer et publier.</p>
+            <span class="hero-stage-card__label">${icon('chat')} ${landing.heroStage.accessLabel}</span>
+            <p>${landing.heroStage.accessCopy}</p>
           </div>
           <div class="hero-stage-card">
-            <span class="hero-stage-card__label">${icon('shield')} Léger sur 3G</span>
-            <p>Peu de chargement et des images légères pour garder une navigation fluide sur un réseau lent.</p>
+            <span class="hero-stage-card__label">${icon('shield')} ${landing.heroStage.lightLabel}</span>
+            <p>${landing.heroStage.lightCopy}</p>
           </div>
         </div>
       </section>
 
       <section class="section">
         <div class="section__heading">
-          <p class="eyebrow">Flux central</p>
-          <h2>Publier une annonce doit être très simple.</h2>
-          <p>Le parcours doit rester court, clair et pensé pour le mobile. Le site reprend cette idée et mène vers les bons points d'entrée.</p>
+          <p class="eyebrow">${landing.flow.eyebrow}</p>
+          <h2>${landing.flow.title}</h2>
+          <p>${landing.flow.copy}</p>
         </div>
         <div class="step-grid">${renderFeatureSteps(content)}</div>
       </section>
 
       <section class="section section--accent">
         <div class="section__heading">
-          <p class="eyebrow">Catégories</p>
-          <h2>Dix univers clés pour le marché de Lubumbashi.</h2>
-          <p>Téléphones, immobilier, services, alimentation ou agriculture : les catégories suivent les usages du terrain.</p>
+          <p class="eyebrow">${landing.categories.eyebrow}</p>
+          <h2>${landing.categories.title}</h2>
+          <p>${landing.categories.copy}</p>
         </div>
         <div class="category-grid">${renderCategoryCards(content)}</div>
       </section>
 
       <section class="section">
         <div class="section__heading">
-          <p class="eyebrow">Pourquoi ça marche</p>
-          <h2>Un site simple qui travaille avec l'application.</h2>
+          <p class="eyebrow">${landing.why.eyebrow}</p>
+          <h2>${landing.why.title}</h2>
         </div>
         <div class="highlight-grid">${renderHighlights(content)}</div>
       </section>
 
       <section class="section">
         <div class="section__heading">
-          <p class="eyebrow">Annonces en avant</p>
-          <h2>Une vitrine web légère, claire et facile à partager.</h2>
-          <p>Les fiches d'annonce sont prêtes pour le partage sur WhatsApp et Facebook, tout en gardant les actions sensibles dans l'application.</p>
+          <p class="eyebrow">${landing.listings.eyebrow}</p>
+          <h2>${landing.listings.title}</h2>
+          <p>${landing.listings.copy}</p>
         </div>
         <div class="listing-grid">${highlightedListings}</div>
       </section>
 
       <section class="section section--dense">
         <div class="section__heading">
-          <p class="eyebrow">Voix du terrain</p>
-          <h2>Une plateforme faite pour des usages locaux, pas pour une démo générique.</h2>
+          <p class="eyebrow">${landing.testimonials.eyebrow}</p>
+          <h2>${landing.testimonials.title}</h2>
         </div>
         <div class="testimonial-grid">${renderTestimonials(content)}</div>
       </section>
@@ -665,9 +666,9 @@ function renderLandingPage(content) {
       <section class="section section--cta">
         <div class="cta-panel">
           <div>
-            <p class="eyebrow">Prêt pour le lancement</p>
-            <h2>Téléchargez Zwibba, ouvrez votre appareil photo et publiez.</h2>
-            <p>Le site s'occupe de la découverte et du partage. L'application garde le contact et la confiance.</p>
+            <p class="eyebrow">${landing.cta.eyebrow}</p>
+            <h2>${landing.cta.title}</h2>
+            <p>${landing.cta.copy}</p>
           </div>
           <div class="store-row">${renderStoreButtons(site)}</div>
         </div>
@@ -939,7 +940,8 @@ function renderListingPage(content, listing) {
 }
 
 function renderAmbassadorPage(content) {
-  const { site, ambassadorChannels } = content;
+  const { site, ambassadorChannels, ui } = content;
+  const ambassador = ui.ambassador;
   const channels = ambassadorChannels
     .map(
       (channel) => `
@@ -951,12 +953,13 @@ function renderAmbassadorPage(content) {
     )
     .join('');
 
+  const [ambassadorStep1, ambassadorStep2, ambassadorStep3] = ambassador.steps.items;
+
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
-    name: 'Programme ambassadeur Zwibba',
-    description:
-      "Expliquez le programme ambassadeur Zwibba, récupérez un code de parrainage et poussez l'installation dans l'application.",
+    name: ambassador.pageTitle,
+    description: ambassador.pageDescription,
     url: resolveUrl(site, '/ambassadeur/'),
   };
 
@@ -964,51 +967,51 @@ function renderAmbassadorPage(content) {
     <main id="main-content">
       <section class="page-hero">
         <div>
-          <p class="eyebrow">Programme ambassadeur</p>
-          <h1>Chaque groupe de 10 parrainages validés débloque un nouveau boost.</h1>
-          <p>Le site explique le programme, récupère le code de parrainage et renvoie ensuite vers l'application pour le suivi.</p>
+          <p class="eyebrow">${ambassador.hero.eyebrow}</p>
+          <h1>${ambassador.hero.title}</h1>
+          <p>${ambassador.hero.copy}</p>
         </div>
         <div class="referral-panel">
-          <p class="referral-panel__label">Code actuel</p>
-          <strong id="referral-code-output">ZWIB-A3K9</strong>
-          <p>Partagez un lien simple, puis laissez l'application confirmer les inscriptions et les annonces validées.</p>
+          <p class="referral-panel__label">${ambassador.panel.label}</p>
+          <strong id="referral-code-output">${ambassador.panel.code}</strong>
+          <p>${ambassador.panel.copy}</p>
           <div class="referral-input-group">
-            <label for="referral-code-input">Code de parrainage</label>
-            <input id="referral-code-input" type="text" placeholder="ZWIB-A3K9" autocomplete="off" spellcheck="false" />
+            <label for="referral-code-input">${ambassador.panel.inputLabel}</label>
+            <input id="referral-code-input" type="text" placeholder="${ambassador.panel.code}" autocomplete="off" spellcheck="false" />
           </div>
           <div class="store-row store-row--stacked">${renderStoreButtons(site)}</div>
-          <button class="button button--ghost button--block" type="button" data-copy-referral>Copier mon lien</button>
+          <button class="button button--ghost button--block" type="button" data-copy-referral>${ambassador.panel.copyButton}</button>
         </div>
       </section>
 
       <section class="section">
         <div class="section__heading">
-          <p class="eyebrow">Comment ça marche</p>
-          <h2>Un parcours simple, clair et adapté aux canaux locaux.</h2>
+          <p class="eyebrow">${ambassador.steps.eyebrow}</p>
+          <h2>${ambassador.steps.title}</h2>
         </div>
         <div class="step-grid">
           <article class="step-card">
-            <span class="step-card__index">01</span>
-            <h3>Créez un compte vendeur</h3>
-            <p>Un numéro vérifié et une première annonce publiée suffisent pour commencer.</p>
+            <span class="step-card__index">${ambassadorStep1.step}</span>
+            <h3>${ambassadorStep1.title}</h3>
+            <p>${ambassadorStep1.copy}</p>
           </article>
           <article class="step-card">
-            <span class="step-card__index">02</span>
-            <h3>Partagez votre lien</h3>
-            <p>WhatsApp passe en premier, mais Facebook, Instagram et TikTok ont aussi leur place.</p>
+            <span class="step-card__index">${ambassadorStep2.step}</span>
+            <h3>${ambassadorStep2.title}</h3>
+            <p>${ambassadorStep2.copy}</p>
           </article>
           <article class="step-card">
-            <span class="step-card__index">03</span>
-            <h3>Débloquez les récompenses</h3>
-            <p>Toutes les 10 inscriptions validées, un avantage ambassadeur arrive automatiquement.</p>
+            <span class="step-card__index">${ambassadorStep3.step}</span>
+            <h3>${ambassadorStep3.title}</h3>
+            <p>${ambassadorStep3.copy}</p>
           </article>
         </div>
       </section>
 
       <section class="section section--accent">
         <div class="section__heading">
-          <p class="eyebrow">Canaux de partage</p>
-          <h2>Conçu pour les habitudes de partage locales.</h2>
+          <p class="eyebrow">${ambassador.channels.eyebrow}</p>
+          <h2>${ambassador.channels.title}</h2>
         </div>
         <div class="channel-grid">${channels}</div>
       </section>
@@ -1016,8 +1019,8 @@ function renderAmbassadorPage(content) {
       <section class="section section--dense">
         <div class="cta-panel">
           <div>
-            <p class="eyebrow">Parrainage</p>
-            <h2>Le site récupère le code. L'application gère ensuite le suivi et les récompenses.</h2>
+            <p class="eyebrow">${ambassador.cta.eyebrow}</p>
+            <h2>${ambassador.cta.title}</h2>
           </div>
           <div class="store-row">${renderStoreButtons(site)}</div>
         </div>
@@ -1027,16 +1030,17 @@ function renderAmbassadorPage(content) {
 
   return renderLayout(content, {
     currentPath: '/ambassadeur/',
-    title: 'Programme ambassadeur Zwibba',
-    description:
-      "Expliquez le programme ambassadeur Zwibba, récupérez un code de parrainage et poussez l'installation dans l'application.",
+    title: ambassador.pageTitle,
+    description: ambassador.pageDescription,
     body,
     schema,
   });
 }
 
 function renderAboutPage(content) {
-  const { site, aboutValues } = content;
+  const { site, aboutValues, ui } = content;
+  const about = ui.about;
+  const [aboutNote1, aboutNote2, aboutNote3] = about.context.notes;
   const values = aboutValues
     .map(
       (item) => `
@@ -1051,9 +1055,8 @@ function renderAboutPage(content) {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'AboutPage',
-    name: 'À propos de Zwibba',
-    description:
-      'Découvrez la vision de Zwibba, une place de marché pensée pour Lubumbashi et pour les usages réels du marché congolais.',
+    name: about.pageTitle,
+    description: about.pageDescription,
     url: resolveUrl(site, '/a-propos/'),
   };
 
@@ -1061,38 +1064,38 @@ function renderAboutPage(content) {
     <main id="main-content">
       <section class="page-hero">
         <div>
-          <p class="eyebrow">À propos</p>
-          <h1>Zwibba construit un marché local, mobile et utile dès le premier usage.</h1>
-          <p>Le produit est pensé pour Lubumbashi. Il aide à vendre vite, reste simple à comprendre et fonctionne bien même sur un réseau lent.</p>
+          <p class="eyebrow">${about.hero.eyebrow}</p>
+          <h1>${about.hero.title}</h1>
+          <p>${about.hero.copy}</p>
         </div>
       </section>
 
       <section class="section">
         <div class="section__heading">
-          <p class="eyebrow">Trois principes</p>
-          <h2>Ce qui tient la marque et le produit ensemble.</h2>
+          <p class="eyebrow">${about.values.eyebrow}</p>
+          <h2>${about.values.title}</h2>
         </div>
         <div class="highlight-grid">${values}</div>
       </section>
 
       <section class="section section--accent">
         <div class="section__heading">
-          <p class="eyebrow">Contexte</p>
-          <h2>Lubumbashi d'abord, Congo ensuite.</h2>
-          <p>Prix en CDF, catégories claires, quartier comme filtre et partage WhatsApp par défaut : le site montre le vrai contexte local.</p>
+          <p class="eyebrow">${about.context.eyebrow}</p>
+          <h2>${about.context.title}</h2>
+          <p>${about.context.copy}</p>
         </div>
         <div class="note-card-grid">
           <article class="note-card">
-            <h3>IA utile</h3>
-            <p>Titre, description, catégorie et prix conseillé doivent vraiment faire gagner du temps.</p>
+            <h3>${aboutNote1.title}</h3>
+            <p>${aboutNote1.copy}</p>
           </article>
           <article class="note-card">
-            <h3>Prévu pour les réseaux lents</h3>
-            <p>Le site garde des pages légères et reste utile même quand la connexion est faible.</p>
+            <h3>${aboutNote2.title}</h3>
+            <p>${aboutNote2.copy}</p>
           </article>
           <article class="note-card">
-            <h3>Confiance par couches</h3>
-            <p>Le site aide à découvrir. L'application protège les échanges et le contact.</p>
+            <h3>${aboutNote3.title}</h3>
+            <p>${aboutNote3.copy}</p>
           </article>
         </div>
       </section>
@@ -1101,8 +1104,8 @@ function renderAboutPage(content) {
 
   return renderLayout(content, {
     currentPath: '/a-propos/',
-    title: 'À propos de Zwibba',
-    description: 'Découvrez la vision de Zwibba, une place de marché pensée pour Lubumbashi et pour les usages réels du marché congolais.',
+    title: about.pageTitle,
+    description: about.pageDescription,
     body,
     schema,
   });
@@ -1223,12 +1226,13 @@ function renderContactPage(content) {
 }
 
 function renderReferralPage(content) {
-  const { site } = content;
+  const { site, ui } = content;
+  const referral = ui.referral;
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
-    name: 'Parrainage Zwibba',
-    description: 'Redirection des codes ambassadeur Zwibba vers la bonne page de téléchargement.',
+    name: referral.pageTitle,
+    description: referral.pageDescription,
     url: resolveUrl(site, '/r/'),
   };
 
@@ -1236,11 +1240,11 @@ function renderReferralPage(content) {
     <main id="main-content">
       <section class="page-hero page-hero--referral">
         <div class="referral-redirect">
-          <p class="eyebrow">Redirection</p>
-          <h1>Transmission du code en cours…</h1>
-          <p>Nous préparons votre code de parrainage et les liens de téléchargement.</p>
-          <strong id="referral-code-output">ZWIB-A3K9</strong>
-          <a class="button button--primary" id="referral-fallback-link" href="/ambassadeur/">Continuer vers l'ambassadeur</a>
+          <p class="eyebrow">${referral.eyebrow}</p>
+          <h1>${referral.title}</h1>
+          <p>${referral.copy}</p>
+          <strong id="referral-code-output">${referral.code}</strong>
+          <a class="button button--primary" id="referral-fallback-link" href="/ambassadeur/">${referral.continueLabel}</a>
         </div>
       </section>
     </main>
@@ -1248,8 +1252,8 @@ function renderReferralPage(content) {
 
   return renderLayout(content, {
     currentPath: '/r/',
-    title: 'Parrainage Zwibba',
-    description: 'Redirection des codes ambassadeur Zwibba vers la bonne page de téléchargement.',
+    title: referral.pageTitle,
+    description: referral.pageDescription,
     body,
     schema,
   });
@@ -1285,6 +1289,7 @@ Sitemap: ${resolveUrl(site, '/sitemap.xml')}
 function build() {
   const content = {
     site: frCd.site,
+    ui: frCd.ui,
     categories: frCd.categories,
     featureSteps: frCd.featureSteps,
     platformHighlights: frCd.platformHighlights,

@@ -45,6 +45,154 @@ export const site = {
   ],
 };
 
+export const ui = {
+  nav: {
+    skipLink: 'Aller au contenu',
+    homeAriaLabel: 'Zwibba accueil',
+    menuLabel: 'Menu',
+    explore: 'Explorer',
+    download: 'Télécharger',
+    footerNavTitle: 'Navigation',
+    footerStoresTitle: 'Disponible bientôt',
+    footerTagline: 'Simple · Rapide · Mobile',
+  },
+  gate: {
+    closeLabel: 'Fermer',
+    eyebrow: "Action réservée à l'application",
+    title: 'Ouvrez Zwibba pour continuer',
+    body: "Le site sert à découvrir et à partager. Pour publier, enregistrer ou contacter un vendeur, passez par l'application Zwibba.",
+  },
+  landing: {
+    heroEyebrowSuffix: '· Petites annonces pour mobile',
+    heroTitle: 'La place de marché qui transforme une photo en annonce prête à publier.',
+    heroStage: {
+      aiLabel: 'Zwibba IA',
+      aiTitle: 'Photo → analyse → prix conseillé → publication',
+      aiCopy: "L'application prend vos photos, trouve la catégorie et propose une description et un prix en CDF.",
+      accessLabel: 'Accès protégé',
+      accessCopy: "Le site aide à découvrir les annonces. L'application sert ensuite à contacter, enregistrer et publier.",
+      lightLabel: 'Léger sur 3G',
+      lightCopy: 'Peu de chargement et des images légères pour garder une navigation fluide sur un réseau lent.',
+    },
+    flow: {
+      eyebrow: 'Flux central',
+      title: 'Publier une annonce doit être très simple.',
+      copy: "Le parcours doit rester court, clair et pensé pour le mobile. Le site reprend cette idée et mène vers les bons points d'entrée.",
+    },
+    categories: {
+      eyebrow: 'Catégories',
+      title: 'Dix univers clés pour le marché de Lubumbashi.',
+      copy: 'Téléphones, immobilier, services, alimentation ou agriculture : les catégories suivent les usages du terrain.',
+    },
+    why: {
+      eyebrow: 'Pourquoi ça marche',
+      title: "Un site simple qui travaille avec l'application.",
+    },
+    listings: {
+      eyebrow: 'Annonces en avant',
+      title: 'Une vitrine web légère, claire et facile à partager.',
+      copy: "Les fiches d'annonce sont prêtes pour le partage sur WhatsApp et Facebook, tout en gardant les actions sensibles dans l'application.",
+    },
+    testimonials: {
+      eyebrow: 'Voix du terrain',
+      title: 'Une plateforme faite pour des usages locaux, pas pour une démo générique.',
+    },
+    cta: {
+      eyebrow: 'Prêt pour le lancement',
+      title: 'Téléchargez Zwibba, ouvrez votre appareil photo et publiez.',
+      copy: "Le site s'occupe de la découverte et du partage. L'application garde le contact et la confiance.",
+    },
+  },
+  referral: {
+    pageTitle: 'Parrainage Zwibba',
+    pageDescription: 'Redirection des codes ambassadeur Zwibba vers la bonne page de téléchargement.',
+    eyebrow: 'Redirection',
+    title: 'Transmission du code en cours…',
+    copy: 'Nous préparons votre code de parrainage et les liens de téléchargement.',
+    code: 'ZWIB-A3K9',
+    continueLabel: "Continuer vers l'ambassadeur",
+  },
+  ambassador: {
+    pageTitle: 'Programme ambassadeur Zwibba',
+    pageDescription:
+      "Expliquez le programme ambassadeur Zwibba, récupérez un code de parrainage et poussez l'installation dans l'application.",
+    hero: {
+      eyebrow: 'Programme ambassadeur',
+      title: 'Chaque groupe de 10 parrainages validés débloque un nouveau boost.',
+      copy: "Le site explique le programme, récupère le code de parrainage et renvoie ensuite vers l'application pour le suivi.",
+    },
+    panel: {
+      label: 'Code actuel',
+      code: 'ZWIB-A3K9',
+      copy: "Partagez un lien simple, puis laissez l'application confirmer les inscriptions et les annonces validées.",
+      inputLabel: 'Code de parrainage',
+      copyButton: 'Copier mon lien',
+    },
+    steps: {
+      eyebrow: 'Comment ça marche',
+      title: 'Un parcours simple, clair et adapté aux canaux locaux.',
+      items: [
+        {
+          step: '01',
+          title: 'Créez un compte vendeur',
+          copy: 'Un numéro vérifié et une première annonce publiée suffisent pour commencer.',
+        },
+        {
+          step: '02',
+          title: 'Partagez votre lien',
+          copy: 'WhatsApp passe en premier, mais Facebook, Instagram et TikTok ont aussi leur place.',
+        },
+        {
+          step: '03',
+          title: 'Débloquez les récompenses',
+          copy: 'Toutes les 10 inscriptions validées, un avantage ambassadeur arrive automatiquement.',
+        },
+      ],
+    },
+    channels: {
+      eyebrow: 'Canaux de partage',
+      title: 'Conçu pour les habitudes de partage locales.',
+    },
+    cta: {
+      eyebrow: 'Parrainage',
+      title: "Le site récupère le code. L'application gère ensuite le suivi et les récompenses.",
+    },
+  },
+  about: {
+    pageTitle: 'À propos de Zwibba',
+    pageDescription:
+      'Découvrez la vision de Zwibba, une place de marché pensée pour Lubumbashi et pour les usages réels du marché congolais.',
+    hero: {
+      eyebrow: 'À propos',
+      title: 'Zwibba construit un marché local, mobile et utile dès le premier usage.',
+      copy: 'Le produit est pensé pour Lubumbashi. Il aide à vendre vite, reste simple à comprendre et fonctionne bien même sur un réseau lent.',
+    },
+    values: {
+      eyebrow: 'Trois principes',
+      title: 'Ce qui tient la marque et le produit ensemble.',
+    },
+    context: {
+      eyebrow: 'Contexte',
+      title: "Lubumbashi d'abord, Congo ensuite.",
+      copy: 'Prix en CDF, catégories claires, quartier comme filtre et partage WhatsApp par défaut : le site montre le vrai contexte local.',
+      notes: [
+        {
+          title: 'IA utile',
+          copy: 'Titre, description, catégorie et prix conseillé doivent vraiment faire gagner du temps.',
+        },
+        {
+          title: 'Prévu pour les réseaux lents',
+          copy: 'Le site garde des pages légères et reste utile même quand la connexion est faible.',
+        },
+        {
+          title: 'Confiance par couches',
+          copy: "Le site aide à découvrir. L'application protège les échanges et le contact.",
+        },
+      ],
+    },
+  },
+};
+
 export const categories = [
   { slug: 'real_estate', label: 'Immobilier', icon: 'Maison', hint: 'Maisons, appartements, terrains, bureaux.' },
   { slug: 'vehicles', label: 'Véhicules', icon: 'Route', hint: 'Voitures, motos, camions, pièces détachées.' },
