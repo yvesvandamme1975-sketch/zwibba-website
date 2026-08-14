@@ -26,6 +26,7 @@ import * as frCd from '../src/site/locales/fr-cd.mjs';
 import * as frBe from '../src/site/locales/fr-be.mjs';
 import * as nlBe from '../src/site/locales/nl-be.mjs';
 import { resolveSeededListingImage } from '../shared/listing-images.mjs';
+import { buildStartMarker } from '../shared/live-listings.mjs';
 import { localeHref } from '../src/site/locale-href.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -594,6 +595,28 @@ function renderListingCard(site, listing, options = {}) {
   `;
 }
 
+function liveListingsStartMarker(site, slot) {
+  return buildStartMarker({
+    slot,
+    market: site.market,
+    locale: `${site.language}-${site.market}`,
+  });
+}
+
+function liveListingsEndMarker(slot) {
+  return `<!--zwibba-live-listings slot="${escapeHtml(slot)}" end-->`;
+}
+
+function renderBrowseEmptyState(emptyState) {
+  return `
+    <div class="browse-empty-state" data-live-listings-empty-state>
+      <h3>${escapeHtml(emptyState.title)}</h3>
+      <p>${escapeHtml(emptyState.copy)}</p>
+      <a class="button button--primary" href="/App/">${escapeHtml(emptyState.cta)}</a>
+    </div>
+  `;
+}
+
 function renderSafetyTips(safetyTips) {
   return safetyTips.map((tip) => `<li>${escapeHtml(tip)}</li>`).join('');
 }
@@ -729,7 +752,10 @@ function renderBrowsePage(content) {
   const { site, listings, categories, ui } = content;
   const browse = ui.browse;
   const featured = listings.filter((item) => item.isFeatured).map((listing) => renderListingCard(site, listing, { highlightLabel: browse.featuredBadge })).join('');
-  const cards = listings.map((listing) => renderListingCard(site, listing, { highlightLabel: listing.transactionType })).join('');
+  const emptyState = renderBrowseEmptyState(browse.emptyState);
+  const cards = listings.length > 0
+    ? listings.map((listing) => renderListingCard(site, listing, { highlightLabel: listing.transactionType })).join('')
+    : emptyState;
   const chips = ['all', ...categories.map((category) => category.slug)]
     .map((value) => {
       const label = value === 'all' ? browse.chipAllLabel : categories.find((item) => item.slug === value).label;
@@ -766,7 +792,9 @@ function renderBrowsePage(content) {
 
       <section class="section section--dense">
         <div class="feature-strip">
+          ${liveListingsStartMarker(site, 'featured')}
           ${featured}
+          ${liveListingsEndMarker('featured')}
         </div>
       </section>
 
@@ -822,7 +850,12 @@ function renderBrowsePage(content) {
             </div>
             <a class="button button--ghost" href="${localeHref(site, '/ambassadeur/')}">${browse.ambassadorCta}</a>
           </div>
-          <div class="listing-grid" id="browse-results-grid">${cards}</div>
+          <div class="listing-grid" id="browse-results-grid">
+            ${liveListingsStartMarker(site, 'grid')}
+            ${cards}
+            ${liveListingsEndMarker('grid')}
+          </div>
+          <template data-live-listings-empty>${emptyState}</template>
         </div>
       </section>
     </main>

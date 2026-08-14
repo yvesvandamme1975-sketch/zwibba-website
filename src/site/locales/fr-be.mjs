@@ -245,6 +245,11 @@ export const ui = {
     categoriesEyebrow: '16 catégories',
     resultsFallback: '0 annonce visible',
     ambassadorCta: 'Devenir ambassadeur',
+    emptyState: {
+      title: 'Soyez le premier à publier en Belgique.',
+      copy: "Les annonces belges arrivent. Ouvrez l'application pour créer la première.",
+      cta: "Ouvrir l'application",
+    },
   },
   listing: {
     call: 'Appeler',

@@ -245,6 +245,11 @@ export const ui = {
     categoriesEyebrow: '16 categorieën',
     resultsFallback: '0 zoekertjes zichtbaar',
     ambassadorCta: 'Word ambassadeur',
+    emptyState: {
+      title: 'Wees de eerste om in België te publiceren.',
+      copy: 'De Belgische zoekertjes komen eraan. Open de app om het eerste zoekertje te maken.',
+      cta: 'App openen',
+    },
   },
   listing: {
     call: 'Bellen',
