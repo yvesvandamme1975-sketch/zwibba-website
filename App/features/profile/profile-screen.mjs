@@ -319,7 +319,7 @@ export function renderProfileScreen({
 
         <div class="app-auth__card">
           <strong>Profil verrouillé</strong>
-          <p>La vérification active vos annonces, votre messagerie et votre portefeuille test.</p>
+          <p>La vérification active vos annonces, votre messagerie et votre portefeuille.</p>
         </div>
 
         <div class="app-flow__actions">

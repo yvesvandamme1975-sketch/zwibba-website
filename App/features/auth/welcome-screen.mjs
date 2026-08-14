@@ -14,7 +14,7 @@ export function renderAuthWelcomeScreen({
     profile: {
       eyebrow: 'OTP pour le profil',
       reasonCopy:
-        'Votre numéro permet de retrouver vos annonces, vos messages et votre portefeuille test sur ce navigateur.',
+        'Votre numéro permet de retrouver vos annonces, vos messages et votre portefeuille sur ce navigateur.',
       title: 'Vérifiez votre session vendeur',
     },
     publish: {
@@ -26,8 +26,8 @@ export function renderAuthWelcomeScreen({
     wallet: {
       eyebrow: 'OTP pour le portefeuille',
       reasonCopy:
-        'Le portefeuille bêta et les opérations de boost sont réservés aux sessions vérifiées.',
-      title: 'Activez votre portefeuille test',
+        'Le portefeuille et les opérations de boost sont réservés aux sessions vérifiées.',
+      title: 'Activez votre portefeuille',
     },
   };
   const currentContext = contexts[context] ?? contexts.publish;

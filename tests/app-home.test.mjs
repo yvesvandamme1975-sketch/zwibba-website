@@ -84,7 +84,7 @@ test('home screen shows the Zwibba in-app brand mark', () => {
   assert.match(html, /Zwibba/);
 });
 
-test('home screen shows a Beta badge next to the brand mark without removing Seller-first', () => {
+test('home screen keeps the Beta brand badge without internal audience badges', () => {
   const html = renderHomeScreen({
     draft: null,
     featuredListings,
@@ -93,7 +93,7 @@ test('home screen shows a Beta badge next to the brand mark without removing Sel
   });
 
   assert.match(html, /class="app-brand-mark__badge"[^>]*>\s*Beta\s*</);
-  assert.match(html, /class="app-home__badge"[^>]*>Seller-first</);
+  assert.doesNotMatch(html, /Seller-first|app-home__badge/);
 });
 
 test('home screen renders a real buyer search input and interactive category chips', () => {

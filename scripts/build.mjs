@@ -206,6 +206,14 @@ function resolveListingImageAsset(listing) {
   return resolveSeededListingImage(listing.slug)?.src || `/assets/listings/${listing.slug}.svg`;
 }
 
+function renderSiteCountryBadge(currentSite) {
+  const isBelgium = currentSite.market === 'BE';
+  const flag = isBelgium ? '🇧🇪' : '🇨🇩';
+  const label = isBelgium ? (currentSite.language === 'nl' ? 'België' : 'Belgique') : 'RDC';
+
+  return '<span class="site-country-badge" aria-label="Marché actif : ' + escapeHtml(label) + '">' + flag + ' <span>' + escapeHtml(label) + '</span></span>';
+}
+
 function renderStoreButtons(currentSite, extraClass = '') {
   return currentSite.stores
     .map((store) => {
@@ -249,6 +257,7 @@ function renderNav(content, currentPath) {
         <a class="brandmark" href="${localeHref(site, '/')}" aria-label="${ui.nav.homeAriaLabel}">
           <img src="/assets/brand/logo-zwibba.svg" alt="Zwibba" width="160" height="113" />
         </a>
+        ${renderSiteCountryBadge(site)}
         <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
           <span class="menu-toggle__icon menu-toggle__icon--open">${icon('menu')}</span>
           <span class="menu-toggle__icon menu-toggle__icon--close">${icon('close')}</span>
