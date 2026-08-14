@@ -8,7 +8,11 @@ import { resolveAllowedOrigins } from './config/allowed-origins';
 
 async function bootstrap() {
   const env = loadEnv();
-  const app = await NestFactory.create(AppModule);
+  // rawBody: true captures the exact request bytes (req.rawBody) alongside
+  // the normal parsed JSON body, without disabling body parsing anywhere
+  // else. The WhatsApp webhook needs the raw bytes to verify the
+  // X-Hub-Signature-256 HMAC; every other route is unaffected.
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   app.enableCors({ origin: resolveAllowedOrigins(process.env) });
   await app.listen(env.port);
 }

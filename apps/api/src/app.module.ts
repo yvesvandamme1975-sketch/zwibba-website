@@ -13,6 +13,7 @@ import { MediaModule } from './media/media.module';
 import { ModerationModule } from './moderation/moderation.module';
 import { ProfileModule } from './profile/profile.module';
 import { ShareModule } from './share/share.module';
+import { SupportModule } from './support/support.module';
 import { WalletModule } from './wallet/wallet.module';
 
 @Module({
@@ -31,6 +32,7 @@ import { WalletModule } from './wallet/wallet.module';
     BoostModule,
     ProfileModule,
     ShareModule,
+    SupportModule,
   ],
 })
 export class AppModule {}
