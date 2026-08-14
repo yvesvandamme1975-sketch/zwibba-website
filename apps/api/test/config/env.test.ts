@@ -331,6 +331,54 @@ test('loadEnv rejects twilio as an OTP provider', () => {
   );
 });
 
+test('loadEnv exposes support config with sane defaults', () => {
+  const env = loadEnv({});
+
+  assert.equal(env.support.whatsappVerifyToken, 'whatsapp-verify-token');
+  assert.equal(env.support.metaAppSecret, 'meta-app-secret');
+  assert.equal(env.support.escalationEmail, 'hello@aivesconsulting.com');
+  assert.equal(env.support.emailProviderApiKey, 'support-email-api-key');
+});
+
+test('loadEnv defaults the support escalation email even when explicit support env is set', () => {
+  const env = loadEnv({
+    WHATSAPP_VERIFY_TOKEN: 'a-real-verify-token',
+    META_APP_SECRET: 'a-real-app-secret',
+    SUPPORT_EMAIL_API_KEY: 'a-real-email-api-key',
+  });
+
+  assert.equal(env.support.whatsappVerifyToken, 'a-real-verify-token');
+  assert.equal(env.support.metaAppSecret, 'a-real-app-secret');
+  assert.equal(env.support.escalationEmail, 'hello@aivesconsulting.com');
+  assert.equal(env.support.emailProviderApiKey, 'a-real-email-api-key');
+});
+
+test('loadEnv defaults ANTHROPIC_MODEL to claude-haiku-4-5-20251001', () => {
+  const env = loadEnv({
+    AI_PROVIDER: 'multi',
+    APP_BASE_URL: 'https://zwibba.example',
+    DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
+    ANTHROPIC_API_KEY: 'anthropic-test',
+    GEMINI_API_KEY: 'gemini-test',
+    GEMINI_MODEL: 'gemini-2.5-flash-lite',
+    NODE_ENV: 'test',
+    OTP_PROVIDER: 'demo',
+    DEMO_OTP_ALLOWLIST: '+243990000001',
+    DEMO_OTP_CODE: '123456',
+    PORT: '3200',
+    R2_ACCESS_KEY_ID: 'r2-access-key',
+    R2_ACCOUNT_ID: 'r2-account',
+    R2_BUCKET: 'zwibba-media',
+    R2_PUBLIC_BASE_URL: 'https://cdn.zwibba.example',
+    R2_S3_ENDPOINT: 'https://r2.example.com',
+    R2_SECRET_ACCESS_KEY: 'r2-secret',
+    ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
+  });
+
+  assert.ok(env.ai.anthropic);
+  assert.equal(env.ai.anthropic.model, 'claude-haiku-4-5-20251001');
+});
+
 test('treats RAILWAY_ENVIRONMENT production as production', () => {
   const source = {
     AI_PROVIDER: 'stub',

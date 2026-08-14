@@ -53,12 +53,18 @@ export type ZwibbaEnv = {
     s3Endpoint: string;
     secretAccessKey: string;
   };
+  support: {
+    whatsappVerifyToken?: string;
+    metaAppSecret?: string;
+    escalationEmail: string;
+    emailProviderApiKey?: string;
+  };
 };
 
 const defaultEnvValues = {
   AI_PROVIDER: 'stub',
   ANTHROPIC_API_KEY: 'anthropic-api-key',
-  ANTHROPIC_MODEL: 'claude-3-5-haiku-latest',
+  ANTHROPIC_MODEL: 'claude-haiku-4-5-20251001',
   APP_BASE_URL: 'http://127.0.0.1:3003',
   DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
   DEMO_OTP_ALLOWLIST: '+243990000001',
@@ -84,6 +90,10 @@ const defaultEnvValues = {
   R2_PUBLIC_BASE_URL: 'https://cdn.zwibba.example',
   R2_S3_ENDPOINT: 'https://r2.zwibba.example',
   R2_SECRET_ACCESS_KEY: 'r2-secret-access-key',
+  SUPPORT_EMAIL_API_KEY: 'support-email-api-key',
+  SUPPORT_ESCALATION_EMAIL: 'hello@aivesconsulting.com',
+  WHATSAPP_VERIFY_TOKEN: 'whatsapp-verify-token',
+  META_APP_SECRET: 'meta-app-secret',
   ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
 } as const;
 
@@ -283,6 +293,14 @@ export function loadEnv(source: EnvSource = process.env): ZwibbaEnv {
       publicBaseUrl: readRequiredString(source, 'R2_PUBLIC_BASE_URL'),
       s3Endpoint: readRequiredString(source, 'R2_S3_ENDPOINT'),
       secretAccessKey: readRequiredString(source, 'R2_SECRET_ACCESS_KEY'),
+    },
+    support: {
+      whatsappVerifyToken: readOptionalString(source, 'WHATSAPP_VERIFY_TOKEN'),
+      metaAppSecret: readOptionalString(source, 'META_APP_SECRET'),
+      escalationEmail: (
+        source.SUPPORT_ESCALATION_EMAIL ?? defaultEnvValues.SUPPORT_ESCALATION_EMAIL
+      ).trim() || defaultEnvValues.SUPPORT_ESCALATION_EMAIL,
+      emailProviderApiKey: readOptionalString(source, 'SUPPORT_EMAIL_API_KEY'),
     },
   };
 }
