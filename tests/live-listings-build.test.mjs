@@ -88,3 +88,28 @@ test('browse pages emit live-listings markers with localized fallback content', 
   ]);
   assert.match(nlBe, /<template data-live-listings-empty>[\s\S]*Wees de eerste om in België te publiceren\./);
 });
+
+test('landing pages expose market-aware open-app CTAs before download links', () => {
+  buildSite();
+
+  const cd = readDist('index.html');
+  assert.match(cd, /<a class="button button--primary" href="\/App\/">Ouvrir l'application<\/a>/);
+  assert.match(cd, /<div class="store-row">\s*<a class="button button--primary" href="\/App\/">Ouvrir l'application<\/a>/);
+  assert.match(cd, /<a class="button button--ghost" href="\/ambassadeur\/">Télécharger<\/a>/);
+
+  const frBe = readDist('be/index.html');
+  assert.match(frBe, /<a class="button button--primary" href="\/App\/\?country=BE">Ouvrir l'application<\/a>/);
+  assert.match(
+    frBe,
+    /<div class="store-row">\s*<a class="button button--primary" href="\/App\/\?country=BE">Ouvrir l'application<\/a>/,
+  );
+  assert.match(frBe, /<a class="button button--ghost" href="\/be\/ambassadeur\/">Télécharger<\/a>/);
+
+  const nlBe = readDist('be/nl/index.html');
+  assert.match(nlBe, /<a class="button button--primary" href="\/App\/\?country=BE">App openen<\/a>/);
+  assert.match(
+    nlBe,
+    /<div class="store-row">\s*<a class="button button--primary" href="\/App\/\?country=BE">App openen<\/a>/,
+  );
+  assert.match(nlBe, /<a class="button button--ghost" href="\/be\/nl\/ambassadeur\/">Downloaden<\/a>/);
+});
