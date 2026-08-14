@@ -68,11 +68,11 @@ export class WhatsappOtpSender {
                 index: '0',
                 parameters: [
                   {
-                    coupon_code: code,
-                    type: 'coupon_code',
+                    text: code,
+                    type: 'text',
                   },
                 ],
-                sub_type: 'copy_code',
+                sub_type: 'url',
                 type: 'button',
               },
             ],
