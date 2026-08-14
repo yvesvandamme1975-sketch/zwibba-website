@@ -32,9 +32,11 @@ export function formatListingPrice(listingOrPrice) {
   const rawCurrency =
     value.priceCurrency === 'USD' || value.currency === 'USD'
       ? 'USD'
-      : rawAmount != null
-        ? 'CDF'
-        : '';
+      : value.priceCurrency === 'EUR' || value.currency === 'EUR'
+        ? 'EUR'
+        : rawAmount != null
+          ? 'CDF'
+          : '';
 
   if (rawAmount == null || Number.isNaN(Number(rawAmount))) {
     if (typeof value.priceLabel === 'string' && value.priceLabel.trim()) {
@@ -52,5 +54,6 @@ export function formatListingPrice(listingOrPrice) {
     .format(Number(rawAmount))
     .replaceAll(/\s/gu, ' ');
 
-  return `${groupedValue} ${rawCurrency === 'USD' ? 'US$' : 'CDF'}`;
+  const suffix = rawCurrency === 'USD' ? 'US$' : rawCurrency === 'EUR' ? '€' : 'CDF';
+  return `${groupedValue} ${suffix}`;
 }
