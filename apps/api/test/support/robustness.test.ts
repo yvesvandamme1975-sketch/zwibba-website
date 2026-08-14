@@ -114,6 +114,7 @@ type SupportConversationRecord = {
   lastInboundAt: Date | null;
   status: string;
   pendingActionJson: unknown;
+  pendingActionNonce: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -142,6 +143,7 @@ class FakeSupportConversationDelegate {
       lastInboundAt: create.lastInboundAt ?? null,
       status: 'open',
       pendingActionJson: null,
+      pendingActionNonce: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -149,31 +151,46 @@ class FakeSupportConversationDelegate {
     return { ...record };
   }
 
-  async update({ where, data }: { where: { id: string }; data: { pendingActionJson: unknown } }) {
+  async update({
+    where,
+    data,
+  }: {
+    where: { id: string };
+    data: { pendingActionJson: unknown; pendingActionNonce?: string | null };
+  }) {
     const record = this.records.find((item) => item.id === where.id);
     if (!record) {
       throw new Error(`FakeSupportConversationDelegate.update: no record ${where.id}`);
     }
     record.pendingActionJson = data.pendingActionJson;
+    if ('pendingActionNonce' in data) {
+      record.pendingActionNonce = data.pendingActionNonce ?? null;
+    }
     record.updatedAt = new Date();
     return record;
   }
 
-  // Atomic conditional consume: only flips rows that still match the WHERE
-  // clause. Its body runs synchronously (no awaits between read and write) so
-  // two racing callers can never both observe pendingActionJson as non-null.
+  // Atomic conditional consume, now nonce-scoped: only flips the row whose
+  // pendingActionNonce equals the exact nonce in the WHERE clause. Its body
+  // runs synchronously (no awaits between read and write) so two racing
+  // callers can never both match the same nonce.
   async updateMany({
     where,
     data,
   }: {
-    where: { id: string; pendingActionJson?: { not: null } };
-    data: { pendingActionJson: unknown };
+    where: { id: string; pendingActionNonce?: string | null };
+    data: { pendingActionJson: unknown; pendingActionNonce?: string | null };
   }) {
     let count = 0;
     for (const record of this.records) {
       if (record.id !== where.id) continue;
-      if (where.pendingActionJson && record.pendingActionJson === null) continue;
+      if ('pendingActionNonce' in where && record.pendingActionNonce !== where.pendingActionNonce) {
+        continue;
+      }
       record.pendingActionJson = data.pendingActionJson;
+      if ('pendingActionNonce' in data) {
+        record.pendingActionNonce = data.pendingActionNonce ?? null;
+      }
       record.updatedAt = new Date();
       count += 1;
     }
@@ -296,11 +313,17 @@ class ThrowingModelClient implements SupportModelClient {
 class FakeSupportReplySender {
   readonly sent: Array<{ waId: string; body: string }> = [];
   throwOnce = false;
+  // When true, sendText resolves `null` (mirroring SupportReplySender's
+  // non-2xx behaviour) instead of a { messageId } — WITHOUT throwing.
+  returnNull = false;
 
   async sendText(waId: string, body: string) {
     if (this.throwOnce) {
       this.throwOnce = false;
       throw new Error('simulated send failure');
+    }
+    if (this.returnNull) {
+      return null;
     }
     this.sent.push({ waId, body });
     return { messageId: `wamid.${this.sent.length}` };
@@ -349,7 +372,11 @@ function seedOwnedListing(prismaService: FakePrismaService) {
   );
 }
 
-async function seedPendingPause(prismaService: FakePrismaService, createdAt: string) {
+async function seedPendingPause(
+  prismaService: FakePrismaService,
+  createdAt: string,
+  nonce = 'nonce_seed',
+) {
   const conversation = await prismaService.supportConversation.upsert({
     where: { waId: '32494998210' },
     create: { waId: '32494998210' },
@@ -363,6 +390,7 @@ async function seedPendingPause(prismaService: FakePrismaService, createdAt: str
     payload: {},
     createdAt,
   };
+  record.pendingActionNonce = nonce;
   return record;
 }
 
@@ -523,4 +551,92 @@ test('FIX6: when the audit insert throws, the mutation result is still returned 
 
   assert.equal(result.outcome, 'executed', 'the mutation already applied; audit failure is swallowed');
   assert.equal(prismaService.listing.records[0].lifecycleStatus, 'paused');
+});
+
+// ---------------------------------------------------------------------------
+// FIX A — Nonce-scoped consume: a confirming request that read P1 can never
+// clear/execute against a P2 that replaced it in between.
+// ---------------------------------------------------------------------------
+
+test('FIXA: a confirmation that read P1(n1) is a no-op once the pending action is replaced with P2(n2) before the consume — P1 does NOT execute and P2 is NOT cleared', async () => {
+  const prismaService = new FakePrismaService();
+  seedOwnedListing(prismaService);
+  // Pending action P1, nonce n1 — this is what the confirming request reads.
+  await seedPendingPause(prismaService, new Date().toISOString(), 'n1');
+
+  const modelClient = new ScriptedModelClient([{ type: 'text', text: 'ok' }]);
+  const { service } = buildService(prismaService, modelClient);
+
+  // A DIFFERENT pending action P2 (nonce n2) that lands between this confirming
+  // request's read and its updateMany consume.
+  const p2 = {
+    action: 'pauseListing',
+    targetId: 'listing_own',
+    waId: '32494998210',
+    payload: {},
+    createdAt: new Date().toISOString(),
+  };
+
+  const delegate = prismaService.supportConversation;
+  const originalUpdateMany = delegate.updateMany.bind(delegate);
+  let swapped = false;
+  delegate.updateMany = async (args: Parameters<typeof originalUpdateMany>[0]) => {
+    if (!swapped) {
+      swapped = true;
+      const record = delegate.records.find((r) => r.id === args.where.id);
+      if (record) {
+        record.pendingActionJson = p2;
+        record.pendingActionNonce = 'n2';
+      }
+    }
+    return originalUpdateMany(args);
+  };
+
+  await service.handleInboundMessage(inbound({ text: 'OUI', messageId: 'wamid.oui.p1' }));
+
+  // P1 never executed (listing untouched, no executed log, no lifecycle event).
+  assert.equal(prismaService.listing.records[0].lifecycleStatus, 'active', 'P1 must not execute');
+  const executedLogs = prismaService.supportActionLog.records.filter((r) => r.outcome === 'executed');
+  assert.equal(executedLogs.length, 0, 'the captured P1 payload is not executed');
+  assert.equal(prismaService.listingLifecycleEvent.records.length, 0, 'no lifecycle event fired');
+
+  // P2 is left intact — the nonce-n1 consume matched nothing, so it cleared nothing.
+  const record = delegate.records[0];
+  assert.equal(record.pendingActionNonce, 'n2', 'P2 nonce is preserved');
+  assert.equal(record.pendingActionJson, p2, 'P2 pending action is preserved (not cleared)');
+});
+
+// ---------------------------------------------------------------------------
+// FIX B — Silent send failures: a reply sender returning null (non-2xx, no
+// throw) is logged by safeSendText and never throws.
+// ---------------------------------------------------------------------------
+
+test('FIXB: when sendText resolves null (non-2xx), safeSendText logs a warning and does not throw', async () => {
+  const prismaService = new FakePrismaService();
+  const modelClient = new ScriptedModelClient([{ type: 'text', text: 'Bonjour !' }]);
+  const replySender = new FakeSupportReplySender();
+  replySender.returnNull = true;
+  const { service } = buildService(prismaService, modelClient, replySender);
+
+  const originalWarn = console.warn;
+  const warnings: unknown[][] = [];
+  // eslint-disable-next-line no-console
+  console.warn = (...args: unknown[]) => {
+    warnings.push(args);
+  };
+
+  try {
+    await assert.doesNotReject(
+      service.handleInboundMessage(inbound({ text: 'Bonjour', messageId: 'wamid.nullsend' })),
+    );
+  } finally {
+    // eslint-disable-next-line no-console
+    console.warn = originalWarn;
+  }
+
+  assert.equal(replySender.sent.length, 0, 'the null-returning send recorded nothing as sent');
+  assert.ok(
+    warnings.some((entry) => typeof entry[0] === 'string' && entry[0].includes('reply send reported no result')),
+    'a warning about the failed send is logged',
+  );
 });

@@ -275,6 +275,7 @@ model SupportConversation {
   lastInboundAt     DateTime?
   messages          SupportMessage[]
   pendingActionJson Json?
+  pendingActionNonce String?
   status            String           @default("open")
   updatedAt         DateTime         @updatedAt
   waId              String           @unique
