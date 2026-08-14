@@ -6,6 +6,11 @@ import {
   SUPPORT_WEBHOOK_ENV,
 } from './support.controller';
 import { SupportController } from './support.controller';
+import {
+  createHttpSupportEmailSender,
+  SUPPORT_EMAIL_SENDER,
+  SupportEscalationService,
+} from './support-escalation.service';
 import { SupportReplySender } from './support-reply.sender';
 import {
   createAnthropicSupportModelClient,
@@ -17,12 +22,20 @@ import {
   controllers: [SupportController],
   providers: [
     SupportReplySender,
+    SupportEscalationService,
     {
       provide: SUPPORT_MODEL_CLIENT,
       // Real, network-backed Claude client. Tests never hit this path: they
       // construct SupportAgentService directly with a fake SupportModelClient,
       // or override SUPPORT_AGENT_SERVICE entirely (see webhook.test.ts).
       useFactory: () => createAnthropicSupportModelClient(),
+    },
+    {
+      provide: SUPPORT_EMAIL_SENDER,
+      // Real, fetch-backed transactional email client. Tests never hit this
+      // path either: they construct SupportEscalationService directly with a
+      // fake SupportEmailSender (see test/support/escalation.test.ts).
+      useFactory: () => createHttpSupportEmailSender(),
     },
     {
       provide: SUPPORT_AGENT_SERVICE,

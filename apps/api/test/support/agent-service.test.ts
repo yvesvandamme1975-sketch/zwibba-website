@@ -123,12 +123,13 @@ class FakePrismaService {
 }
 
 class FakeSupportModelClient implements SupportModelClient {
-  readonly calls: Array<{ system: string; messages: SupportModelMessage[] }> = [];
+  readonly calls: Array<{ system: string; messages: SupportModelMessage[]; tools?: unknown[] }> =
+    [];
   reply = 'Bonjour, comment puis-je vous aider ?';
 
-  async generateReply(input: { system: string; messages: SupportModelMessage[] }) {
+  async generateReply(input: { system: string; messages: SupportModelMessage[]; tools?: unknown[] }) {
     this.calls.push(input);
-    return this.reply;
+    return { text: this.reply, type: 'text' as const };
   }
 }
 
@@ -141,14 +142,26 @@ class FakeSupportReplySender {
   }
 }
 
+class FakeSupportEscalationService {
+  readonly calls: Array<{ waId: string; reason: string; summary: string; history: unknown[] }> =
+    [];
+
+  async escalate(input: { waId: string; reason: string; summary: string; history: unknown[] }) {
+    this.calls.push(input);
+    return true;
+  }
+}
+
 function makeService(options?: { maxInboundPerWindow?: number; windowMs?: number }) {
   const prismaService = new FakePrismaService();
   const modelClient = new FakeSupportModelClient();
   const replySender = new FakeSupportReplySender();
+  const escalationService = new FakeSupportEscalationService();
   const service = new SupportAgentService(
     prismaService as any,
     modelClient,
     replySender as any,
+    escalationService as any,
     options
       ? {
           windowMs: options.windowMs ?? DEFAULT_SUPPORT_AGENT_RATE_LIMIT.windowMs,
@@ -158,7 +171,7 @@ function makeService(options?: { maxInboundPerWindow?: number; windowMs?: number
       : undefined,
   );
 
-  return { service, prismaService, modelClient, replySender };
+  return { service, prismaService, modelClient, replySender, escalationService };
 }
 
 function inbound(overrides: Partial<InboundWhatsappMessage> = {}): InboundWhatsappMessage {
