@@ -26,14 +26,16 @@ export const site = {
     {
       label: 'Google Play',
       href: 'https://play.google.com/store/apps/details?id=com.zwibba.app',
+      available: false,
       eyebrow: 'Android',
-      note: 'Télécharger sur Google Play',
+      note: 'Bientôt disponible',
     },
     {
       label: 'Huawei AppGallery',
       href: 'https://appgallery.huawei.com/',
+      available: false,
       eyebrow: 'Huawei',
-      note: 'Télécharger sur AppGallery',
+      note: 'Bientôt disponible',
     },
   ],
   supportEmail: 'support@zwibba.com',
@@ -52,7 +54,7 @@ export const ui = {
     menuLabel: 'Menu',
     explore: 'Explorer',
     openApp: "Ouvrir l'application",
-    download: 'Télécharger',
+    download: 'Programme ambassadeur',
     footerNavTitle: 'Navigation',
     footerStoresTitle: 'Disponible bientôt',
     footerTagline: 'Simple · Rapide · Mobile',
@@ -90,7 +92,7 @@ export const ui = {
     },
     categories: {
       eyebrow: 'Catégories',
-      title: 'Dix univers clés pour le marché de Lubumbashi.',
+      title: 'Les catégories qui suivent le marché local.',
       copy: 'Téléphones, immobilier, services, alimentation ou agriculture : les catégories suivent les usages du terrain.',
     },
     why: {
@@ -241,7 +243,7 @@ export const ui = {
     ],
     chipAllLabel: 'Tout',
     featuredBadge: 'Top Ad',
-    categoriesEyebrow: '10 catégories',
+    categoriesEyebrow: 'Catégories',
     resultsFallback: '8 annonces visibles',
     ambassadorCta: 'Devenir ambassadeur',
     emptyState: {

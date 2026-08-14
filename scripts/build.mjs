@@ -40,6 +40,11 @@ const plausibleDomain = process.env.PLAUSIBLE_DOMAIN || '';
 const plausibleSrc = process.env.PLAUSIBLE_SRC || 'https://plausible.io/js/script.js';
 const supportWhatsAppCd = process.env.ZWIBBA_SUPPORT_WHATSAPP_CD ?? '';
 const supportWhatsAppBe = process.env.ZWIBBA_SUPPORT_WHATSAPP_BE ?? '';
+const buildVersion = Date.now();
+
+function assetUrl(assetPath) {
+  return `${assetPath}?v=${buildVersion}`;
+}
 
 function whatsappDigits(phoneNumber) {
   return typeof phoneNumber === 'string' ? phoneNumber.replace(/\D/g, '') : '';
@@ -201,17 +206,39 @@ function resolveListingImageAsset(listing) {
   return resolveSeededListingImage(listing.slug)?.src || `/assets/listings/${listing.slug}.svg`;
 }
 
+function renderSiteCountryBadge(currentSite) {
+  const isBelgium = currentSite.market === 'BE';
+  const flag = isBelgium ? '🇧🇪' : '🇨🇩';
+  const label = isBelgium ? (currentSite.language === 'nl' ? 'België' : 'Belgique') : 'RDC';
+
+  return '<span class="site-country-badge" aria-label="Marché actif : ' + escapeHtml(label) + '">' + flag + ' <span>' + escapeHtml(label) + '</span></span>';
+}
+
 function renderStoreButtons(currentSite, extraClass = '') {
   return currentSite.stores
-    .map(
-      (store) => `
-        <a class="store-button ${extraClass}" href="${store.href}" target="_blank" rel="noreferrer" data-store-link>
+    .map((store) => {
+      const buttonClass = ['store-button', extraClass, store.available === false ? 'store-button--soon' : '']
+        .filter(Boolean)
+        .join(' ');
+      const content = `
           <span class="store-button__eyebrow">${escapeHtml(store.eyebrow)}</span>
           <span class="store-button__label">${escapeHtml(store.label)}</span>
-          <span class="store-button__note">${escapeHtml(store.note)}</span>
+          <span class="store-button__note">${escapeHtml(store.note)}</span>`;
+
+      if (store.available === false) {
+        return `
+        <span class="${buttonClass}" aria-disabled="true" data-store-link>
+${content}
+        </span>
+      `;
+      }
+
+      return `
+        <a class="${buttonClass}" href="${store.href}" target="_blank" rel="noreferrer" data-store-link>
+${content}
         </a>
-      `,
-    )
+      `;
+    })
     .join('');
 }
 
@@ -230,6 +257,7 @@ function renderNav(content, currentPath) {
         <a class="brandmark" href="${localeHref(site, '/')}" aria-label="${ui.nav.homeAriaLabel}">
           <img src="/assets/brand/logo-zwibba.svg" alt="Zwibba" width="160" height="113" />
         </a>
+        ${renderSiteCountryBadge(site)}
         <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
           <span class="menu-toggle__icon menu-toggle__icon--open">${icon('menu')}</span>
           <span class="menu-toggle__icon menu-toggle__icon--close">${icon('close')}</span>
@@ -237,7 +265,6 @@ function renderNav(content, currentPath) {
         </button>
         <nav class="site-nav" id="site-nav" data-open="false">
           ${links}
-          <a class="button button--ghost" href="${localeHref(site, '/annonces/')}">${ui.nav.explore}</a>
           <a class="button button--primary" href="${appHref(site)}">${ui.nav.openApp}</a>
           <a class="button button--ghost" href="${localeHref(site, '/ambassadeur/')}">${ui.nav.download}</a>
         </nav>
@@ -363,8 +390,8 @@ function renderAppPage() {
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/assets/styles.css" />
-    <link rel="stylesheet" href="/assets/app/app.css" />
+    <link rel="stylesheet" href="${assetUrl('/assets/styles.css')}" />
+    <link rel="stylesheet" href="${assetUrl('/assets/app/app.css')}" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/assets/brand/icon-192.png" />
   </head>
@@ -377,7 +404,7 @@ function renderAppPage() {
     </main>
     <script>window.ZWIBBA_API_BASE_URL = ${JSON.stringify(appApiBaseUrl)};
 window.ZWIBBA_SUPPORT_WHATSAPP = ${JSON.stringify({ CD: supportWhatsAppCd, BE: supportWhatsAppBe })};</script>
-    <script type="module" src="/assets/app/app.js"></script>
+    <script type="module" src="${assetUrl('/assets/app/app.js')}"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
@@ -445,23 +472,10 @@ function renderLayout(content, {
     <link rel="canonical" href="${canonicalUrl}" />
     ${alternateMarkup}
     <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml" />
-    <style>
-      .skip-link {
-        position: absolute;
-        top: 0;
-        left: -9999px;
-        z-index: 1000;
-      }
-
-      .skip-link:focus,
-      .skip-link:active {
-        left: 16px;
-      }
-    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/assets/styles.css" />
+    <link rel="stylesheet" href="${assetUrl('/assets/styles.css')}" />
     ${schemaMarkup}
     ${analyticsMarkup}
   </head>
@@ -482,8 +496,8 @@ function renderLayout(content, {
         </div>
       </dialog>
     </div>
-    <script>window.ZWIBBA_UI_STRINGS = ${serializeJson(ui.client)};</script>
-    <script src="/assets/app.js" defer></script>
+    <script>window.ZWIBBA_UI_STRINGS = ${serializeJson({ ...ui.client, currency: site.currency })};</script>
+    <script type="module" src="${assetUrl('/assets/app.js')}"></script>
   </body>
 </html>`;
 }
@@ -570,13 +584,13 @@ function renderFaqs(items) {
 }
 
 function renderListingCard(site, listing, options = {}) {
-  const featuredBadge = listing.isFeatured ? '<span class="listing-card__badge">Booste</span>' : '';
+  const featuredBadge = listing.isFeatured ? '<span class="listing-card__badge">Boosté</span>' : '';
   const highlight = options.highlightLabel ? `<span class="listing-card__meta-tag">${escapeHtml(options.highlightLabel)}</span>` : '';
   const listingImageAsset = resolveListingImageAsset(listing);
   return `
     <article class="listing-card" data-listing-card data-category="${listing.category}" data-condition="${escapeHtml(
       conditionCode(listing.condition),
-    )}" data-price="${listing.priceCdf}" data-title="${escapeHtml(listing.title.toLowerCase())}" data-published="${escapeHtml(
+    )}" data-price="${listing.priceCdf}" data-currency="${escapeHtml(listing.currency || site.currency)}" data-title="${escapeHtml(listing.title.toLowerCase())}" data-published="${escapeHtml(
       listing.publishedAt,
     )}">
       <a class="listing-card__media" href="${localeHref(site, `/annonce/${listing.slug}/`)}">
@@ -853,7 +867,7 @@ function renderBrowsePage(content) {
           <div class="chip-row">${chips}</div>
           <div class="browse-results__header">
             <div>
-              <p class="eyebrow">${browse.categoriesEyebrow}</p>
+              <p class="eyebrow">${categories.length} ${site.language === 'nl' ? 'categorieën' : 'catégories'}</p>
               <h2 id="results-summary" aria-live="polite">${browse.resultsFallback}</h2>
             </div>
             <a class="button button--ghost" href="${localeHref(site, '/ambassadeur/')}">${browse.ambassadorCta}</a>
@@ -1420,16 +1434,16 @@ function build() {
   writeText(path.join(assetsDir, 'brand', 'favicon.svg'), renderFavicon());
   writeText(path.join(assetsDir, 'styles.css'), readFileSync(path.join(repoRoot, 'src/site/styles.css'), 'utf8'));
   writeText(path.join(assetsDir, 'app.js'), readFileSync(path.join(repoRoot, 'src/site/app.js'), 'utf8'));
+  writeText(path.join(assetsDir, 'listing-sort.mjs'), readFileSync(path.join(repoRoot, 'src/site/listing-sort.mjs'), 'utf8'));
   cpSync(path.join(repoRoot, 'App'), path.join(assetsDir, 'app'), { recursive: true });
   cpSync(path.join(repoRoot, 'shared'), path.join(assetsDir, 'shared'), { recursive: true });
 
   writeText(path.join(distDir, 'manifest.webmanifest'), renderManifest());
   writeText(
     path.join(distDir, 'App', 'sw.js'),
-    readFileSync(path.join(repoRoot, 'src/site/service-worker.js'), 'utf8').replace(
-      '__ZWIBBA_BUILD__',
-      `zwibba-${Date.now()}`,
-    ),
+    readFileSync(path.join(repoRoot, 'src/site/service-worker.js'), 'utf8')
+      .replace('__ZWIBBA_BUILD__', `zwibba-${buildVersion}`)
+      .replace('__ZWIBBA_ASSET_VERSION__', String(buildVersion)),
   );
 
   const localeResults = [frCd, frBe, nlBe].map((localeModule) => buildLocale(localeModule));

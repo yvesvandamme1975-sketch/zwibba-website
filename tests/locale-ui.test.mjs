@@ -4,8 +4,7 @@ import assert from 'node:assert/strict';
 import { ui } from '../src/site/locales/fr-cd.mjs';
 
 test('fr-cd ui.nav exposes layout and nav chrome strings', () => {
-  assert.equal(ui.nav.explore, 'Explorer');
-  assert.equal(ui.nav.download, 'Télécharger');
+  assert.equal(ui.nav.download, 'Programme ambassadeur');
   assert.equal(ui.nav.skipLink, 'Aller au contenu');
 });
 

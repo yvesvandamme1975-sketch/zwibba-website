@@ -1,12 +1,14 @@
 // Zwibba PWA service worker - offline app shell for flaky networks (DRC).
 // CACHE_VERSION is replaced at build time so each deploy ships a fresh cache.
 const CACHE_VERSION = "__ZWIBBA_BUILD__";
+const ASSET_VERSION = "__ZWIBBA_ASSET_VERSION__";
+const versionedUrl = (url) => `${url}?v=${ASSET_VERSION}`;
 const APP_SHELL = [
   "/App/",
-  "/assets/app/app.js",
-  "/assets/app/app.css",
-  "/assets/styles.css",
-  "/manifest.webmanifest",
+  versionedUrl("/assets/app/app.js"),
+  versionedUrl("/assets/app/app.css"),
+  versionedUrl("/assets/styles.css"),
+  versionedUrl("/manifest.webmanifest"),
 ];
 
 self.addEventListener("install", (event) => {

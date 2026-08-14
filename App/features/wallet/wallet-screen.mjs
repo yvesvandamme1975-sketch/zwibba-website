@@ -34,8 +34,8 @@ export function renderWalletScreen({
         </header>
 
         <div class="app-auth__card">
-          <strong>Activez votre portefeuille test</strong>
-          <p>La vérification ouvre le solde bêta et les transactions de boost.</p>
+          <strong>Activez votre portefeuille</strong>
+          <p>La vérification ouvre votre solde et les transactions de boost.</p>
         </div>
 
         <div class="app-flow__actions">

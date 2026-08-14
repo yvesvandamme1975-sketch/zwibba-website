@@ -1236,6 +1236,8 @@ if (appRoot) {
     const threadComposerRenderState = captureThreadComposerRenderState(document.activeElement);
     const profileCityRenderState = captureProfileCityRenderState(document.activeElement);
 
+    window.ZWIBBA_ACTIVE_COUNTRY_CODE = resolveBrowseCountry();
+
     primeBuyerRouteState(route);
     chatLiveRefreshController.sync({
       refreshInbox: loadInbox,
