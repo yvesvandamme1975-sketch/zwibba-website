@@ -44,13 +44,7 @@ const contentTypes = {
   '.xml': 'application/xml; charset=utf-8',
 };
 
-const noCacheExtensions = new Set([
-  '.css',
-  '.html',
-  '.js',
-  '.json',
-  '.mjs',
-]);
+const noCacheAssetExtensions = new Set(['.css', '.js', '.json', '.mjs']);
 
 function send(response, statusCode, body, headers = {}) {
   response.writeHead(statusCode, headers);
@@ -60,6 +54,31 @@ function send(response, statusCode, body, headers = {}) {
   }
 
   response.end();
+}
+
+function isServiceWorkerPath(urlPath) {
+  const normalizedPath = urlPath.toLowerCase();
+  return normalizedPath.includes('service-worker') || normalizedPath.endsWith('/sw.js');
+}
+
+function isNavigationRequest(request, extension) {
+  return extension === '.html' || (!extension && String(request.headers.accept || '').includes('text/html'));
+}
+
+function cacheControlForRequest(request, url, extension) {
+  if (isNavigationRequest(request, extension) || isServiceWorkerPath(url.pathname)) {
+    return 'no-cache';
+  }
+
+  if (url.searchParams.has('v')) {
+    return 'public, max-age=31536000, immutable';
+  }
+
+  if (noCacheAssetExtensions.has(extension)) {
+    return 'no-cache';
+  }
+
+  return 'public, max-age=300';
 }
 
 function escapeHtml(value) {
@@ -276,7 +295,7 @@ createServer(async (request, response) => {
     const rawBody = readFileSync(filePath);
     const extension = path.extname(filePath);
     const contentType = contentTypes[extension] || 'application/octet-stream';
-    const cacheControl = noCacheExtensions.has(extension) ? 'no-cache' : 'public, max-age=86400';
+    const cacheControl = cacheControlForRequest(request, url, extension);
     let body = rawBody;
 
     if (extension === '.html') {

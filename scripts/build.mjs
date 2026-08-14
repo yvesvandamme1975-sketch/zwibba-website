@@ -40,6 +40,11 @@ const plausibleDomain = process.env.PLAUSIBLE_DOMAIN || '';
 const plausibleSrc = process.env.PLAUSIBLE_SRC || 'https://plausible.io/js/script.js';
 const supportWhatsAppCd = process.env.ZWIBBA_SUPPORT_WHATSAPP_CD ?? '';
 const supportWhatsAppBe = process.env.ZWIBBA_SUPPORT_WHATSAPP_BE ?? '';
+const buildVersion = Date.now();
+
+function assetUrl(assetPath) {
+  return `${assetPath}?v=${buildVersion}`;
+}
 
 function whatsappDigits(phoneNumber) {
   return typeof phoneNumber === 'string' ? phoneNumber.replace(/\D/g, '') : '';
@@ -363,8 +368,8 @@ function renderAppPage() {
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/assets/styles.css" />
-    <link rel="stylesheet" href="/assets/app/app.css" />
+    <link rel="stylesheet" href="${assetUrl('/assets/styles.css')}" />
+    <link rel="stylesheet" href="${assetUrl('/assets/app/app.css')}" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/assets/brand/icon-192.png" />
   </head>
@@ -377,7 +382,7 @@ function renderAppPage() {
     </main>
     <script>window.ZWIBBA_API_BASE_URL = ${JSON.stringify(appApiBaseUrl)};
 window.ZWIBBA_SUPPORT_WHATSAPP = ${JSON.stringify({ CD: supportWhatsAppCd, BE: supportWhatsAppBe })};</script>
-    <script type="module" src="/assets/app/app.js"></script>
+    <script type="module" src="${assetUrl('/assets/app/app.js')}"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
@@ -461,7 +466,7 @@ function renderLayout(content, {
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/assets/styles.css" />
+    <link rel="stylesheet" href="${assetUrl('/assets/styles.css')}" />
     ${schemaMarkup}
     ${analyticsMarkup}
   </head>
@@ -483,7 +488,7 @@ function renderLayout(content, {
       </dialog>
     </div>
     <script>window.ZWIBBA_UI_STRINGS = ${serializeJson(ui.client)};</script>
-    <script src="/assets/app.js" defer></script>
+    <script src="${assetUrl('/assets/app.js')}" defer></script>
   </body>
 </html>`;
 }
@@ -1426,10 +1431,9 @@ function build() {
   writeText(path.join(distDir, 'manifest.webmanifest'), renderManifest());
   writeText(
     path.join(distDir, 'App', 'sw.js'),
-    readFileSync(path.join(repoRoot, 'src/site/service-worker.js'), 'utf8').replace(
-      '__ZWIBBA_BUILD__',
-      `zwibba-${Date.now()}`,
-    ),
+    readFileSync(path.join(repoRoot, 'src/site/service-worker.js'), 'utf8')
+      .replace('__ZWIBBA_BUILD__', `zwibba-${buildVersion}`)
+      .replace('__ZWIBBA_ASSET_VERSION__', String(buildVersion)),
   );
 
   const localeResults = [frCd, frBe, nlBe].map((localeModule) => buildLocale(localeModule));
