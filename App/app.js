@@ -106,7 +106,12 @@ import {
 } from './features/post/post-flow-controller.mjs';
 import { renderShareMenu } from './components/share-menu.mjs';
 import { renderCountrySuggestionBanner } from './components/country-banner.mjs';
-import { createCountryPreference, readGeoCountry } from './services/country-preference.mjs';
+import {
+  createCountryPreference,
+  readCountryFromSearch,
+  readGeoCountry,
+  stripCountrySearchParam,
+} from './services/country-preference.mjs';
 
 const appRoot = document.querySelector('[data-app-root]');
 
@@ -163,6 +168,11 @@ if (appRoot) {
     fetchFn: window.fetch.bind(window),
   });
   const countryPreference = createCountryPreference({ storage: window.localStorage });
+  const countryFromSearch = readCountryFromSearch(window.location.search);
+  if (countryFromSearch) {
+    countryPreference.setStoredCountry(countryFromSearch);
+    window.history.replaceState(null, '', stripCountrySearchParam(window.location));
+  }
   const photoUploadQueue = createUploadTaskQueue({
     onStateChange: () => {
       renderApp();

@@ -11,7 +11,7 @@ function absoluteUrl(value, baseUrl) {
   return new URL(value, baseUrl).toString();
 }
 
-function formatPrice(amount, currency) {
+export function formatPrice(amount, currency) {
   if (amount === null || amount === undefined || amount === '') {
     return currency || '';
   }

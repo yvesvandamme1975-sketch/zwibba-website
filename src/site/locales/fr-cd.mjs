@@ -51,6 +51,7 @@ export const ui = {
     homeAriaLabel: 'Zwibba accueil',
     menuLabel: 'Menu',
     explore: 'Explorer',
+    openApp: "Ouvrir l'application",
     download: 'Télécharger',
     footerNavTitle: 'Navigation',
     footerStoresTitle: 'Disponible bientôt',
@@ -243,6 +244,11 @@ export const ui = {
     categoriesEyebrow: '10 catégories',
     resultsFallback: '8 annonces visibles',
     ambassadorCta: 'Devenir ambassadeur',
+    emptyState: {
+      title: 'Aucune annonce disponible pour le moment.',
+      copy: "Revenez bientôt ou ouvrez l'application pour publier la première annonce.",
+      cta: "Ouvrir l'application",
+    },
   },
   listing: {
     call: 'Appeler',

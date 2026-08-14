@@ -143,4 +143,7 @@ Current priority docs:
 - `2026-08-06-zwibba-app-fullscreen-desktop-design.md`
 - `2026-08-06-zwibba-app-fullscreen-desktop-implementation.md`
 
+- `2026-08-14-zwibba-vitrine-live-listings-design.md`
+- `2026-08-14-zwibba-vitrine-live-listings-implementation.md`
+
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
