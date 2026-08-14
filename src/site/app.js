@@ -1,3 +1,5 @@
+import { compareListingsByPrice } from './listing-sort.mjs';
+
 const gate = document.querySelector('#download-gate');
 const menuToggle = document.querySelector('.menu-toggle');
 const siteNav = document.querySelector('.site-nav');
@@ -24,6 +26,7 @@ const fallbackUiStrings = {
     nameLabel: 'Nom',
     emailLabel: 'Email',
   },
+  currency: 'CDF',
   results: {
     one: '{count} annonce visible',
     other: '{count} annonces visibles',
@@ -32,6 +35,7 @@ const fallbackUiStrings = {
 
 const uiStrings =
   (typeof window !== 'undefined' && window.ZWIBBA_UI_STRINGS) || fallbackUiStrings;
+const localCurrency = String(uiStrings.currency || fallbackUiStrings.currency || 'CDF').toUpperCase();
 
 function formatResultsSummary(count) {
   const rules = new Intl.PluralRules(uiStrings.lang || fallbackUiStrings.lang);
@@ -231,6 +235,7 @@ function initBrowseFilters() {
     const cardCategory = card.dataset.category || '';
     const cardCondition = card.dataset.condition || '';
     const cardPrice = Number(card.dataset.price || '0');
+    const cardCurrency = String(card.dataset.currency || localCurrency).toUpperCase();
     const searchValue = search ? search.value.trim().toLowerCase() : '';
     const categoryValue = category ? category.value : 'all';
     const conditionValue = condition ? condition.value : 'all';
@@ -243,7 +248,8 @@ function initBrowseFilters() {
     let priceMatch = true;
     if (priceValue !== 'all') {
       const [min, max] = priceValue.split('-').map((value) => Number(value));
-      priceMatch = cardPrice >= min && cardPrice <= max;
+      // Price filters are denominated in the locale currency; cards in other currencies are hidden while a price filter is active.
+      priceMatch = cardCurrency === localCurrency && cardPrice >= min && cardPrice <= max;
     }
 
     return searchMatch && categoryMatch && conditionMatch && priceMatch;
@@ -254,9 +260,17 @@ function initBrowseFilters() {
     const sorted = [...visibleCards];
 
     if (sortValue === 'cheap') {
-      sorted.sort((left, right) => Number(left.dataset.price) - Number(right.dataset.price));
+      sorted.sort((left, right) => compareListingsByPrice(
+        { price: left.dataset.price, currency: left.dataset.currency },
+        { price: right.dataset.price, currency: right.dataset.currency },
+        { localCurrency, direction: 'asc' },
+      ));
     } else if (sortValue === 'expensive') {
-      sorted.sort((left, right) => Number(right.dataset.price) - Number(left.dataset.price));
+      sorted.sort((left, right) => compareListingsByPrice(
+        { price: left.dataset.price, currency: left.dataset.currency },
+        { price: right.dataset.price, currency: right.dataset.currency },
+        { localCurrency, direction: 'desc' },
+      ));
     } else if (sortValue === 'featured') {
       sorted.sort((left, right) => {
         const leftFeatured = left.querySelector('.listing-card__badge') ? 1 : 0;

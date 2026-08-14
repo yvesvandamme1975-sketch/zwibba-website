@@ -496,8 +496,8 @@ function renderLayout(content, {
         </div>
       </dialog>
     </div>
-    <script>window.ZWIBBA_UI_STRINGS = ${serializeJson(ui.client)};</script>
-    <script src="${assetUrl('/assets/app.js')}" defer></script>
+    <script>window.ZWIBBA_UI_STRINGS = ${serializeJson({ ...ui.client, currency: site.currency })};</script>
+    <script type="module" src="${assetUrl('/assets/app.js')}"></script>
   </body>
 </html>`;
 }
@@ -590,7 +590,7 @@ function renderListingCard(site, listing, options = {}) {
   return `
     <article class="listing-card" data-listing-card data-category="${listing.category}" data-condition="${escapeHtml(
       conditionCode(listing.condition),
-    )}" data-price="${listing.priceCdf}" data-title="${escapeHtml(listing.title.toLowerCase())}" data-published="${escapeHtml(
+    )}" data-price="${listing.priceCdf}" data-currency="${escapeHtml(listing.currency || site.currency)}" data-title="${escapeHtml(listing.title.toLowerCase())}" data-published="${escapeHtml(
       listing.publishedAt,
     )}">
       <a class="listing-card__media" href="${localeHref(site, `/annonce/${listing.slug}/`)}">
@@ -1434,6 +1434,7 @@ function build() {
   writeText(path.join(assetsDir, 'brand', 'favicon.svg'), renderFavicon());
   writeText(path.join(assetsDir, 'styles.css'), readFileSync(path.join(repoRoot, 'src/site/styles.css'), 'utf8'));
   writeText(path.join(assetsDir, 'app.js'), readFileSync(path.join(repoRoot, 'src/site/app.js'), 'utf8'));
+  writeText(path.join(assetsDir, 'listing-sort.mjs'), readFileSync(path.join(repoRoot, 'src/site/listing-sort.mjs'), 'utf8'));
   cpSync(path.join(repoRoot, 'App'), path.join(assetsDir, 'app'), { recursive: true });
   cpSync(path.join(repoRoot, 'shared'), path.join(assetsDir, 'shared'), { recursive: true });
 
