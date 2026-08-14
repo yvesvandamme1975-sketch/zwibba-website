@@ -9,17 +9,17 @@ datasource db {
 
 model User {
   boostPurchases     BoostPurchase[]
-  chatThreadsAsBuyer ChatThread[]       @relation("BuyerThreads")
-  countryCode        String             @default("CD")
-  id                 String             @id @default(cuid())
-  phoneNumber        String             @unique
-  area               String             @default("")
+  chatThreadsAsBuyer ChatThread[]        @relation("BuyerThreads")
+  countryCode        String              @default("CD")
+  id                 String              @id @default(cuid())
+  phoneNumber        String              @unique
+  area               String              @default("")
   displayName        String?
-  createdAt          DateTime           @default(now())
-  reviews            Review[]           @relation("BuyerReviews")
-  reports            ReviewReport[]     @relation("UserReviewReports")
+  createdAt          DateTime            @default(now())
+  reviews            Review[]            @relation("BuyerReviews")
+  reports            ReviewReport[]      @relation("UserReviewReports")
   sessions           Session[]
-  updatedAt          DateTime           @updatedAt
+  updatedAt          DateTime            @updatedAt
   walletTransactions WalletTransaction[]
 }
 
@@ -34,28 +34,28 @@ model LocationOption {
   type            String
   updatedAt       DateTime @updatedAt
 
-  @@index([countryCode, type, status])
   @@unique([countryCode, type, normalizedLabel])
+  @@index([countryCode, type, status])
 }
 
 model Draft {
-  id               String      @id @default(cuid())
+  id               String       @id @default(cuid())
   area             String
   attributesJson   Json?
   categoryId       String
-  condition        String      @default("")
-  countryCode      String      @default("CD")
-  createdAt        DateTime    @default(now())
+  condition        String       @default("")
+  countryCode      String       @default("CD")
+  createdAt        DateTime     @default(now())
   description      String
   listing          Listing?
   ownerPhoneNumber String
   photos           DraftPhoto[]
   priceAmount      Int
   priceCdf         Int
-  priceCurrency    String      @default("CDF")
-  syncStatus       String      @default("synced")
+  priceCurrency    String       @default("CDF")
+  syncStatus       String       @default("synced")
   title            String
-  updatedAt        DateTime    @updatedAt
+  updatedAt        DateTime     @updatedAt
 
   @@index([ownerPhoneNumber])
 }
@@ -75,50 +75,50 @@ model DraftPhoto {
 }
 
 model Session {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  createdAt DateTime @default(now())
+  id        String    @id @default(cuid())
+  token     String    @unique
+  createdAt DateTime  @default(now())
   expiresAt DateTime?
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
 }
 
 model Listing {
-  id                 String              @id @default(cuid())
-  area               String
-  attributesJson     Json?
-  storyImageUrl      String?
-  boostPurchases     BoostPurchase[]
-  categoryId         String
-  chatThreads        ChatThread[]
-  countryCode        String              @default("CD")
-  createdAt          DateTime            @default(now())
-  deletedBySellerAt  DateTime?
-  deletedReason      String?
-  description        String
-  draft              Draft               @relation(fields: [draftId], references: [id], onDelete: Cascade)
-  draftId            String              @unique
-  lifecycleChangedAt DateTime?
-  lifecycleEvents    ListingLifecycleEvent[]
-  lifecycleStatus    String              @default("active")
-  moderationDecision ModerationDecision?
-  moderationStatus   String
-  ownerPhoneNumber   String
-  pausedAt           DateTime?
-  priceAmount        Int
-  priceCdf           Int
-  priceCurrency      String              @default("CDF")
+  id                                  String                  @id @default(cuid())
+  area                                String
+  attributesJson                      Json?
+  storyImageUrl                       String?
+  boostPurchases                      BoostPurchase[]
+  categoryId                          String
+  chatThreads                         ChatThread[]
+  countryCode                         String                  @default("CD")
+  createdAt                           DateTime                @default(now())
+  deletedBySellerAt                   DateTime?
+  deletedReason                       String?
+  description                         String
+  draft                               Draft                   @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  draftId                             String                  @unique
+  lifecycleChangedAt                  DateTime?
+  lifecycleEvents                     ListingLifecycleEvent[]
+  lifecycleStatus                     String                  @default("active")
+  moderationDecision                  ModerationDecision?
+  moderationStatus                    String
+  ownerPhoneNumber                    String
+  pausedAt                            DateTime?
+  priceAmount                         Int
+  priceCdf                            Int
+  priceCurrency                       String                  @default("CDF")
   previousLifecycleStatusBeforeDelete String?
-  publishedAt        DateTime?
-  reviews            Review[]
-  slug               String              @unique
-  shareCount         Int                 @default(0)
-  soldAt             DateTime?
-  soldChannel        String?
-  sourceType         String              @default("user")
-  title              String
-  updatedAt          DateTime            @updatedAt
+  publishedAt                         DateTime?
+  reviews                             Review[]
+  slug                                String                  @unique
+  shareCount                          Int                     @default(0)
+  soldAt                              DateTime?
+  soldChannel                         String?
+  sourceType                          String                  @default("user")
+  title                               String
+  updatedAt                           DateTime                @updatedAt
 
   @@index([countryCode])
   @@index([lifecycleStatus])
@@ -127,19 +127,19 @@ model Listing {
 }
 
 model Review {
-  id                String   @id @default(cuid())
-  listing           Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  id                String         @id @default(cuid())
+  listing           Listing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
   listingId         String
-  buyer             User     @relation("BuyerReviews", fields: [buyerUserId], references: [id], onDelete: Cascade)
+  buyer             User           @relation("BuyerReviews", fields: [buyerUserId], references: [id], onDelete: Cascade)
   buyerUserId       String
   sellerPhoneNumber String
   rating            Int
   comment           String?
   sellerReply       String?
   sellerReplyAt     DateTime?
-  createdAt         DateTime @default(now())
+  createdAt         DateTime       @default(now())
   reports           ReviewReport[]
-  updatedAt         DateTime @updatedAt
+  updatedAt         DateTime       @updatedAt
 
   @@unique([buyerUserId, listingId])
   @@index([sellerPhoneNumber])
@@ -176,17 +176,17 @@ model ListingLifecycleEvent {
 }
 
 model ChatThread {
-  id               String        @id @default(cuid())
-  buyer            User          @relation("BuyerThreads", fields: [buyerUserId], references: [id], onDelete: Cascade)
-  buyerLastReadAt  DateTime?
-  buyerUserId      String
-  createdAt        DateTime      @default(now())
-  listing          Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  listingId        String
-  messages         ChatMessage[]
-  sellerLastReadAt DateTime?
+  id                String        @id @default(cuid())
+  buyer             User          @relation("BuyerThreads", fields: [buyerUserId], references: [id], onDelete: Cascade)
+  buyerLastReadAt   DateTime?
+  buyerUserId       String
+  createdAt         DateTime      @default(now())
+  listing           Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId         String
+  messages          ChatMessage[]
+  sellerLastReadAt  DateTime?
   sellerPhoneNumber String
-  updatedAt        DateTime      @updatedAt
+  updatedAt         DateTime      @updatedAt
 
   @@index([buyerUserId])
   @@index([listingId])
@@ -267,4 +267,39 @@ model OtpChallenge {
   createdAt    DateTime  @default(now())
 
   @@index([phoneNumber])
+}
+
+model SupportConversation {
+  id                String           @id @default(cuid())
+  createdAt         DateTime         @default(now())
+  lastInboundAt     DateTime?
+  messages          SupportMessage[]
+  pendingActionJson Json?
+  status            String           @default("open")
+  updatedAt         DateTime         @updatedAt
+  waId              String           @unique
+}
+
+model SupportMessage {
+  id             String              @id @default(cuid())
+  body           String
+  conversation   SupportConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+  createdAt      DateTime            @default(now())
+  role           String
+
+  @@index([conversationId])
+}
+
+model SupportActionLog {
+  id                 String   @id @default(cuid())
+  action             String
+  createdAt          DateTime @default(now())
+  matchedPhoneNumber String?
+  outcome            String
+  payloadJson        Json?
+  targetId           String?
+  waId               String
+
+  @@index([waId])
 }
