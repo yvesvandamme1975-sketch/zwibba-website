@@ -146,4 +146,7 @@ Current priority docs:
 - `2026-08-14-zwibba-vitrine-live-listings-design.md`
 - `2026-08-14-zwibba-vitrine-live-listings-implementation.md`
 
+- `2026-08-14-zwibba-ai-draft-guardrails-design.md`
+- `2026-08-14-zwibba-ai-draft-guardrails-implementation.md`
+
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
