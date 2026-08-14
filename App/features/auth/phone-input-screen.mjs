@@ -1,6 +1,10 @@
 import { renderInAppBrand } from '../../components/in-app-brand.mjs';
 import { escapeAttribute, escapeHtml } from '../../utils/rendering.mjs';
 
+export function resolveDefaultPhonePrefix(countryCode) {
+  return countryCode === 'BE' ? '+32' : '+243';
+}
+
 export function renderPhoneInputScreen({
   errorMessage = '',
   phoneNumber = '+243',
