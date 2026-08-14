@@ -95,7 +95,7 @@ test('landing pages expose market-aware open-app CTAs before download links', ()
   const cd = readDist('index.html');
   assert.match(cd, /<a class="button button--primary" href="\/App\/">Ouvrir l'application<\/a>/);
   assert.match(cd, /<div class="store-row">\s*<a class="button button--primary" href="\/App\/">Ouvrir l'application<\/a>/);
-  assert.match(cd, /<a class="button button--ghost" href="\/ambassadeur\/">Télécharger<\/a>/);
+  assert.match(cd, /<a class="button button--ghost" href="\/ambassadeur\/">Programme ambassadeur<\/a>/);
 
   const frBe = readDist('be/index.html');
   assert.match(frBe, /<a class="button button--primary" href="\/App\/\?country=BE">Ouvrir l'application<\/a>/);
@@ -103,7 +103,7 @@ test('landing pages expose market-aware open-app CTAs before download links', ()
     frBe,
     /<div class="store-row">\s*<a class="button button--primary" href="\/App\/\?country=BE">Ouvrir l'application<\/a>/,
   );
-  assert.match(frBe, /<a class="button button--ghost" href="\/be\/ambassadeur\/">Télécharger<\/a>/);
+  assert.match(frBe, /<a class="button button--ghost" href="\/be\/ambassadeur\/">Programme ambassadeur<\/a>/);
 
   const nlBe = readDist('be/nl/index.html');
   assert.match(nlBe, /<a class="button button--primary" href="\/App\/\?country=BE">App openen<\/a>/);
@@ -111,5 +111,5 @@ test('landing pages expose market-aware open-app CTAs before download links', ()
     nlBe,
     /<div class="store-row">\s*<a class="button button--primary" href="\/App\/\?country=BE">App openen<\/a>/,
   );
-  assert.match(nlBe, /<a class="button button--ghost" href="\/be\/nl\/ambassadeur\/">Downloaden<\/a>/);
+  assert.match(nlBe, /<a class="button button--ghost" href="\/be\/nl\/ambassadeur\/">Ambassadeursprogramma<\/a>/);
 });

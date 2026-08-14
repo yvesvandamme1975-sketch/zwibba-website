@@ -208,15 +208,29 @@ function resolveListingImageAsset(listing) {
 
 function renderStoreButtons(currentSite, extraClass = '') {
   return currentSite.stores
-    .map(
-      (store) => `
-        <a class="store-button ${extraClass}" href="${store.href}" target="_blank" rel="noreferrer" data-store-link>
+    .map((store) => {
+      const buttonClass = ['store-button', extraClass, store.available === false ? 'store-button--soon' : '']
+        .filter(Boolean)
+        .join(' ');
+      const content = `
           <span class="store-button__eyebrow">${escapeHtml(store.eyebrow)}</span>
           <span class="store-button__label">${escapeHtml(store.label)}</span>
-          <span class="store-button__note">${escapeHtml(store.note)}</span>
+          <span class="store-button__note">${escapeHtml(store.note)}</span>`;
+
+      if (store.available === false) {
+        return `
+        <span class="${buttonClass}" aria-disabled="true" data-store-link>
+${content}
+        </span>
+      `;
+      }
+
+      return `
+        <a class="${buttonClass}" href="${store.href}" target="_blank" rel="noreferrer" data-store-link>
+${content}
         </a>
-      `,
-    )
+      `;
+    })
     .join('');
 }
 
@@ -242,7 +256,6 @@ function renderNav(content, currentPath) {
         </button>
         <nav class="site-nav" id="site-nav" data-open="false">
           ${links}
-          <a class="button button--ghost" href="${localeHref(site, '/annonces/')}">${ui.nav.explore}</a>
           <a class="button button--primary" href="${appHref(site)}">${ui.nav.openApp}</a>
           <a class="button button--ghost" href="${localeHref(site, '/ambassadeur/')}">${ui.nav.download}</a>
         </nav>
@@ -450,19 +463,6 @@ function renderLayout(content, {
     <link rel="canonical" href="${canonicalUrl}" />
     ${alternateMarkup}
     <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml" />
-    <style>
-      .skip-link {
-        position: absolute;
-        top: 0;
-        left: -9999px;
-        z-index: 1000;
-      }
-
-      .skip-link:focus,
-      .skip-link:active {
-        left: 16px;
-      }
-    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet" />
