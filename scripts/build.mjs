@@ -238,11 +238,16 @@ function renderNav(content, currentPath) {
         <nav class="site-nav" id="site-nav" data-open="false">
           ${links}
           <a class="button button--ghost" href="${localeHref(site, '/annonces/')}">${ui.nav.explore}</a>
-          <a class="button button--primary" href="${localeHref(site, '/ambassadeur/')}">${ui.nav.download}</a>
+          <a class="button button--primary" href="${appHref(site)}">${ui.nav.openApp}</a>
+          <a class="button button--ghost" href="${localeHref(site, '/ambassadeur/')}">${ui.nav.download}</a>
         </nav>
       </div>
     </header>
   `;
+}
+
+function appHref(site) {
+  return site.market === 'CD' ? '/App/' : '/App/?country=BE';
 }
 
 function localeCode(currentSite) {
@@ -607,12 +612,12 @@ function liveListingsEndMarker(slot) {
   return `<!--zwibba-live-listings slot="${escapeHtml(slot)}" end-->`;
 }
 
-function renderBrowseEmptyState(emptyState) {
+function renderBrowseEmptyState(site, emptyState) {
   return `
     <div class="browse-empty-state" data-live-listings-empty-state>
       <h3>${escapeHtml(emptyState.title)}</h3>
       <p>${escapeHtml(emptyState.copy)}</p>
-      <a class="button button--primary" href="/App/">${escapeHtml(emptyState.cta)}</a>
+      <a class="button button--primary" href="${appHref(site)}">${escapeHtml(emptyState.cta)}</a>
     </div>
   `;
 }
@@ -672,7 +677,10 @@ function renderLandingPage(content) {
           <p class="eyebrow">${escapeHtml(site.marketLabel)} ${landing.heroEyebrowSuffix}</p>
           <h1>${landing.heroTitle}</h1>
           <p class="hero__lede">${escapeHtml(site.description)}</p>
-          <div class="store-row">${renderStoreButtons(site)}</div>
+          <div class="store-row">
+            <a class="button button--primary" href="${appHref(site)}">${ui.nav.openApp}</a>
+            ${renderStoreButtons(site)}
+          </div>
           <div class="metric-grid">${renderHeroStats(content)}</div>
         </div>
         <div class="hero__stage">
@@ -752,7 +760,7 @@ function renderBrowsePage(content) {
   const { site, listings, categories, ui } = content;
   const browse = ui.browse;
   const featured = listings.filter((item) => item.isFeatured).map((listing) => renderListingCard(site, listing, { highlightLabel: browse.featuredBadge })).join('');
-  const emptyState = renderBrowseEmptyState(browse.emptyState);
+  const emptyState = renderBrowseEmptyState(site, browse.emptyState);
   const cards = listings.length > 0
     ? listings.map((listing) => renderListingCard(site, listing, { highlightLabel: listing.transactionType })).join('')
     : emptyState;

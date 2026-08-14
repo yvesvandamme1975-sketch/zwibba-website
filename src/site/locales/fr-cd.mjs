@@ -51,6 +51,7 @@ export const ui = {
     homeAriaLabel: 'Zwibba accueil',
     menuLabel: 'Menu',
     explore: 'Explorer',
+    openApp: "Ouvrir l'application",
     download: 'Télécharger',
     footerNavTitle: 'Navigation',
     footerStoresTitle: 'Disponible bientôt',

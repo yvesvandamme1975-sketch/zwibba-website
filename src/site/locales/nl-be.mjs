@@ -53,6 +53,7 @@ export const ui = {
     homeAriaLabel: 'Zwibba home',
     menuLabel: 'Menu',
     explore: 'Ontdekken',
+    openApp: 'App openen',
     download: 'Downloaden',
     footerNavTitle: 'Navigatie',
     footerStoresTitle: 'Binnenkort beschikbaar',
