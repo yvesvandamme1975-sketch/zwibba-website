@@ -122,6 +122,7 @@ type SupportConversationRecord = {
   lastInboundAt: Date | null;
   status: string;
   pendingActionJson: unknown;
+  pendingActionNonce: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -152,6 +153,7 @@ class FakeSupportConversationDelegate {
       lastInboundAt: create.lastInboundAt ?? null,
       status: 'open',
       pendingActionJson: null,
+      pendingActionNonce: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -165,29 +167,40 @@ class FakeSupportConversationDelegate {
     data,
   }: {
     where: { id: string };
-    data: { pendingActionJson: unknown };
+    data: { pendingActionJson: unknown; pendingActionNonce?: string | null };
   }) {
     const record = this.records.find((item) => item.id === where.id);
     if (!record) {
       throw new Error(`FakeSupportConversationDelegate.update: no record ${where.id}`);
     }
     record.pendingActionJson = data.pendingActionJson;
+    if ('pendingActionNonce' in data) {
+      record.pendingActionNonce = data.pendingActionNonce ?? null;
+    }
     record.updatedAt = new Date();
     return record;
   }
 
+  // Atomic conditional consume, now nonce-scoped: only flips the row whose
+  // pendingActionNonce equals the exact nonce in the WHERE clause. Runs
+  // synchronously (no awaits) so two racing callers never both match.
   async updateMany({
     where,
     data,
   }: {
-    where: { id: string; pendingActionJson?: { not: null } };
-    data: { pendingActionJson: unknown };
+    where: { id: string; pendingActionNonce?: string | null };
+    data: { pendingActionJson: unknown; pendingActionNonce?: string | null };
   }) {
     let count = 0;
     for (const record of this.records) {
       if (record.id !== where.id) continue;
-      if (where.pendingActionJson && record.pendingActionJson === null) continue;
+      if ('pendingActionNonce' in where && record.pendingActionNonce !== where.pendingActionNonce) {
+        continue;
+      }
       record.pendingActionJson = data.pendingActionJson;
+      if ('pendingActionNonce' in data) {
+        record.pendingActionNonce = data.pendingActionNonce ?? null;
+      }
       record.updatedAt = new Date();
       count += 1;
     }

@@ -364,7 +364,17 @@ export class SupportAgentService implements SupportAgentServiceLike {
   /** Sends a WhatsApp reply, swallowing+logging any send failure (never throws). */
   private async safeSendText(waId: string, body: string): Promise<void> {
     try {
-      await this.replySender.sendText(waId, body);
+      const result = await this.replySender.sendText(waId, body);
+
+      // FIX (silent send failures): SupportReplySender.sendText resolves `null`
+      // on a non-2xx WhatsApp Cloud API response instead of throwing, so a
+      // failed send would otherwise be swallowed here with no trace. Surface
+      // it as a warning (still non-throwing) so a broken outbound path is at
+      // least visible in the logs.
+      if (!result) {
+        // eslint-disable-next-line no-console
+        console.warn(`[support] WhatsApp reply send reported no result (send may have failed) for waId ${waId}.`);
+      }
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[support] Failed to send a WhatsApp reply.', error);
@@ -453,20 +463,27 @@ export class SupportAgentService implements SupportAgentServiceLike {
     // step 1, never something re-derived from this turn's text.
     if (conversation.pendingActionJson) {
       const pendingActionJson = conversation.pendingActionJson;
+      // Capture the nonce that was minted alongside THIS pending action so the
+      // consume below can match it exactly (see FIX note on the updateMany).
+      const pendingActionNonce = conversation.pendingActionNonce;
 
       if (isConfirmationText(text)) {
-        // FIX (atomic consume + replay protection): the pending action is
-        // cleared with a CONDITIONAL updateMany that only matches while
-        // pendingActionJson is still non-null. Under a race (two "OUI"
-        // deliveries at once), exactly one request flips it and gets count===1
-        // — that one, and only that one, executes the mutation. Any other
-        // concurrent or duplicate confirmation sees count===0 (already
-        // consumed) and stops without re-executing. This replaces the previous
-        // read-then-clear-then-execute sequence, which was not atomic and could
-        // let two confirmations both execute.
+        // FIX (nonce-scoped atomic consume + replay protection): the pending
+        // action is cleared with a CONDITIONAL updateMany matched on the EXACT
+        // nonce captured above — not on the broad `pendingActionJson != null`
+        // predicate used before. That broad predicate was too loose: if a NEW
+        // pending action (with a NEW nonce) was written between this
+        // confirming request's read and its updateMany, the old broad clear
+        // would flip the NEW pending action to null and then execute the OLD
+        // captured payload — the wrong mutation. Matching on the captured
+        // nonce guarantees a request that read P1(nonce n1) can only ever
+        // clear/execute P1: once the row holds P2(nonce n2), this updateMany
+        // matches nothing (count===0) and executes nothing. Under a race of
+        // two identical "OUI" deliveries on the SAME pending action, exactly
+        // one flips it and gets count===1; the other sees count===0.
         const consumed = await this.prismaService.supportConversation.updateMany({
-          where: { id: conversation.id, pendingActionJson: { not: null } },
-          data: { pendingActionJson: null },
+          where: { id: conversation.id, pendingActionNonce },
+          data: { pendingActionJson: null, pendingActionNonce: null },
         });
 
         if (consumed.count !== 1) {
@@ -492,12 +509,14 @@ export class SupportAgentService implements SupportAgentServiceLike {
       }
 
       // Not a confirmation: invalidate the pending action (same atomic,
-      // idempotent clear) and fall through to the normal model-driven flow.
+      // nonce-scoped clear) and fall through to the normal model-driven flow.
       // A customer who changes their mind, or a stale prompt left over from a
       // much earlier turn, can never be confirmed by an unrelated later "OUI".
+      // Scoping on the captured nonce means a NEWER pending action written
+      // concurrently is never clobbered by this clear.
       await this.prismaService.supportConversation.updateMany({
-        where: { id: conversation.id, pendingActionJson: { not: null } },
-        data: { pendingActionJson: null },
+        where: { id: conversation.id, pendingActionNonce },
+        data: { pendingActionJson: null, pendingActionNonce: null },
       });
     }
 

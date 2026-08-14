@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import type { Listing, User } from '@prisma/client';
 
 import {
@@ -68,7 +70,7 @@ export type SupportToolsPrismaClient = {
   supportConversation: {
     update(args: {
       where: { id: string };
-      data: { pendingActionJson: unknown };
+      data: { pendingActionJson: unknown; pendingActionNonce?: string | null };
     }): Promise<unknown>;
   };
   supportActionLog: {
@@ -562,8 +564,14 @@ async function requestMutatingAction(
     waId: normalizePhoneToDigits(waId),
   };
 
+  // FIX (nonce-scoped consume): mint a fresh, unguessable nonce and store it
+  // alongside the pending action. The confirmation path clears/executes the
+  // pending action with an updateMany matched on this EXACT nonce, so a
+  // confirming request that read an OLD pending action can never clear or
+  // execute against a NEWER one that replaced it in between. `randomUUID`
+  // (node:crypto) is used deliberately — never Math.random().
   await prismaService.supportConversation.update({
-    data: { pendingActionJson: pendingAction },
+    data: { pendingActionJson: pendingAction, pendingActionNonce: randomUUID() },
     where: { id: conversationId },
   });
 
