@@ -4,7 +4,16 @@ import { loadEnv } from '../config/env';
 import { PrismaService } from '../database/prisma.service';
 import { SupportEscalationService } from './support-escalation.service';
 import { SupportReplySender } from './support-reply.sender';
-import { ACCOUNT_TOOL_NAMES, GET_MY_LISTINGS_TOOL, runAccountTool } from './support-tools';
+import {
+  ACCOUNT_TOOL_NAMES,
+  executePendingAction,
+  GET_MY_LISTINGS_TOOL,
+  MARK_LISTING_SOLD_TOOL,
+  PAUSE_LISTING_TOOL,
+  runAccountTool,
+  UNPAUSE_LISTING_TOOL,
+  UPDATE_LISTING_PRICE_TOOL,
+} from './support-tools';
 import { buildSystemPrompt } from './system-prompt';
 import type {
   InboundWhatsappMessage,
@@ -139,6 +148,16 @@ const MAX_TOOL_TURNS = 3;
 
 const RATE_LIMIT_NOTICE =
   'Vous nous avez envoyé beaucoup de messages en peu de temps. Merci de patienter un instant avant de réessayer. / You have sent a lot of messages in a short time — please wait a moment before trying again.';
+
+// Matches a bare confirmation reply ("OUI", "OK", "yes", with minor trailing
+// punctuation) and NOTHING else — deliberately strict (anchored, whole
+// string) so a longer message that merely contains "oui" somewhere never
+// accidentally confirms a pending action.
+const CONFIRMATION_TEXT_PATTERN = /^\s*(oui|ok|okay|yes)\s*[!.]?\s*$/i;
+
+function isConfirmationText(text: string): boolean {
+  return CONFIRMATION_TEXT_PATTERN.test(text);
+}
 
 /**
  * @internal exported only for support.module.ts to type its own env access.
@@ -310,6 +329,47 @@ export class SupportAgentService implements SupportAgentServiceLike {
       return;
     }
 
+    // Confirmed-action short-circuit (Task 10): if this conversation has a
+    // reversible action awaiting confirmation, the SAME wa_id's very next
+    // message decides its fate deterministically — WITHOUT ever calling the
+    // model. This is what makes the confirmation step immune to the model
+    // regenerating (or being prompt-injected into regenerating) a different
+    // tool call: the executed action is always exactly the one stored in
+    // step 1, never something re-derived from this turn's text.
+    //
+    // The pending action is cleared FIRST, before executing anything, so a
+    // repeated/duplicate "OUI" (retry, double-send) can only ever execute it
+    // once, and so any non-confirmation reply immediately invalidates it —
+    // a customer who changes their mind, or a stale prompt left over from a
+    // much earlier turn, can never be confirmed by an unrelated later "OUI".
+    if (conversation.pendingActionJson) {
+      const pendingActionJson = conversation.pendingActionJson;
+
+      await this.prismaService.supportConversation.update({
+        data: { pendingActionJson: null },
+        where: { id: conversation.id },
+      });
+
+      if (isConfirmationText(text)) {
+        const result = await executePendingAction(this.prismaService, waId, pendingActionJson);
+
+        await this.replySender.sendText(waId, result.replyText);
+        await this.prismaService.supportMessage.create({
+          data: {
+            body: result.replyText,
+            conversationId: conversation.id,
+            role: 'agent',
+          },
+        });
+
+        return;
+      }
+
+      // Not a confirmation: the pending action is already cleared above, so
+      // execution simply falls through to the normal model-driven flow below
+      // for this message.
+    }
+
     const history = await this.prismaService.supportMessage.findMany({
       orderBy: { createdAt: 'desc' },
       take: CONTEXT_MESSAGE_LIMIT,
@@ -325,7 +385,14 @@ export class SupportAgentService implements SupportAgentServiceLike {
       }));
 
     const system = buildSystemPrompt();
-    const tools = [ESCALATE_TOOL, GET_MY_LISTINGS_TOOL];
+    const tools = [
+      ESCALATE_TOOL,
+      GET_MY_LISTINGS_TOOL,
+      PAUSE_LISTING_TOOL,
+      UNPAUSE_LISTING_TOOL,
+      MARK_LISTING_SOLD_TOOL,
+      UPDATE_LISTING_PRICE_TOOL,
+    ];
 
     let messages = contextMessages;
     let reply = await this.modelClient.generateReply({ messages, system, tools });
@@ -374,8 +441,18 @@ export class SupportAgentService implements SupportAgentServiceLike {
       // runAccountTool (support-tools.ts) re-resolves the authorized
       // account from `waId` alone on every call, so a model that was
       // prompt-injected into asking for another number's data still only
-      // ever gets this sender's own account.
-      const toolResultText = await runAccountTool(this.prismaService, reply.name, waId);
+      // ever gets this sender's own account. `reply.input` IS forwarded for
+      // mutating tools (e.g. the target listingId, a new price) — but it is
+      // only ever used to pick WHICH of the sender's OWN listings to act on,
+      // re-verified against `waId`-derived ownership; it can never widen
+      // whose data or account is touched.
+      const toolResultText = await runAccountTool(
+        this.prismaService,
+        reply.name,
+        waId,
+        reply.input,
+        conversation.id,
+      );
 
       messages = [
         ...messages,
