@@ -59,6 +59,8 @@ export type ZwibbaEnv = {
     metaAppSecret?: string;
     escalationEmail: string;
     emailProviderApiKey?: string;
+    claudeApiKey?: string;
+    claudeModel?: string;
   };
 };
 
@@ -320,6 +322,17 @@ export function loadEnv(source: EnvSource = process.env): ZwibbaEnv {
         source.SUPPORT_ESCALATION_EMAIL ?? defaultEnvValues.SUPPORT_ESCALATION_EMAIL
       ).trim() || defaultEnvValues.SUPPORT_ESCALATION_EMAIL,
       emailProviderApiKey: readOptionalString(source, 'SUPPORT_EMAIL_API_KEY'),
+      // Read unconditionally (unlike ai.anthropic, which is only populated
+      // when AI_PROVIDER === 'multi'): the WhatsApp support agent always
+      // needs Claude, regardless of which provider generates listing drafts.
+      // Optional (not readRequiredString) so that booting the app — and
+      // constructing the support module's SUPPORT_MODEL_CLIENT provider —
+      // never fails at startup just because these are unset; the real
+      // client instead throws when actually asked to generate a reply
+      // without credentials, the same lazy-throw pattern SupportReplySender
+      // already uses for its own (also-optional) `meta` config.
+      claudeApiKey: readOptionalString(source, 'ANTHROPIC_API_KEY'),
+      claudeModel: readOptionalString(source, 'ANTHROPIC_MODEL'),
     },
   };
 }
