@@ -4,6 +4,7 @@ import { loadEnv } from '../config/env';
 import { PrismaService } from '../database/prisma.service';
 import { SupportEscalationService } from './support-escalation.service';
 import { SupportReplySender } from './support-reply.sender';
+import { ACCOUNT_TOOL_NAMES, GET_MY_LISTINGS_TOOL, runAccountTool } from './support-tools';
 import { buildSystemPrompt } from './system-prompt';
 import type {
   InboundWhatsappMessage,
@@ -53,12 +54,15 @@ export type SupportModelTextReply = {
 };
 
 /**
- * The model chose to invoke a tool instead of replying directly. This is the
- * minimal tool-use turn: SupportAgentService executes the tool and decides
- * what (if anything) to send back to the customer — there is no second
- * round-trip back to the model in Task 8, since the only tool (`escalate`)
- * has a fixed, deterministic reply. Tasks 9-10 add read/action tools on top
- * of this same shape.
+ * The model chose to invoke a tool instead of replying directly.
+ *
+ * `escalate` (Task 8) stays single-shot: SupportAgentService executes it and
+ * answers with a fixed, deterministic reply — there is no round-trip back to
+ * the model for it. Account tools (Task 9 — see ACCOUNT_TOOL_NAMES in
+ * support-tools.ts, e.g. `getMyListings`) are proper multi-turn tool use:
+ * the tool is executed server-side, its result is appended to the message
+ * history as a tool_result, and the model is called AGAIN so it can turn
+ * that data into a customer-facing reply.
  */
 export type SupportModelToolUseReply = {
   type: 'tool_use';
@@ -126,6 +130,12 @@ export const DEFAULT_SUPPORT_AGENT_RATE_LIMIT: SupportAgentRateLimitConfig = {
 // How many prior messages (inbound + agent, combined) are loaded as context
 // for each Claude call.
 const CONTEXT_MESSAGE_LIMIT = 10;
+
+// Hard ceiling on how many tool_use round-trips a single inbound message can
+// trigger. Guards against a misbehaving/looping model repeatedly calling an
+// account tool instead of ever producing a text reply — without this, such a
+// loop would call the (paid) model API and the DB unboundedly.
+const MAX_TOOL_TURNS = 3;
 
 const RATE_LIMIT_NOTICE =
   'Vous nous avez envoyé beaucoup de messages en peu de temps. Merci de patienter un instant avant de réessayer. / You have sent a lot of messages in a short time — please wait a moment before trying again.';
@@ -314,35 +324,76 @@ export class SupportAgentService implements SupportAgentServiceLike {
         role: message.role === 'agent' ? 'assistant' : 'user',
       }));
 
-    const reply = await this.modelClient.generateReply({
-      messages: contextMessages,
-      system: buildSystemPrompt(),
-      tools: [ESCALATE_TOOL],
-    });
+    const system = buildSystemPrompt();
+    const tools = [ESCALATE_TOOL, GET_MY_LISTINGS_TOOL];
 
-    let trimmedReply: string;
+    let messages = contextMessages;
+    let reply = await this.modelClient.generateReply({ messages, system, tools });
 
-    if (reply.type === 'tool_use' && reply.name === 'escalate') {
-      const toolInput = reply.input as { reason?: unknown; summary?: unknown };
-      const reason = typeof toolInput.reason === 'string' ? toolInput.reason : 'unspecified';
-      const summary = typeof toolInput.summary === 'string' ? toolInput.summary : '';
+    let trimmedReply = '';
+    let toolTurns = 0;
 
-      // The email send/audit outcome is deliberately not awaited into this
-      // branch's control flow beyond `await` itself: escalate() never
-      // throws and always resolves a boolean, so success or failure of the
-      // email never changes what the customer sees below.
-      await this.escalationService.escalate({
-        history: contextMessages,
-        reason,
-        summary,
-        waId,
-      });
+    // Multi-turn tool loop: `escalate` (Task 8) stays single-shot — it has a
+    // fixed, deterministic reply, so handling it never re-calls the model.
+    // Account tools (Task 9, e.g. `getMyListings` — see ACCOUNT_TOOL_NAMES
+    // in support-tools.ts) are executed server-side and their result is fed
+    // back to the model for a genuine second turn, so it can turn raw
+    // account data into a customer-facing reply.
+    while (reply.type === 'tool_use' && toolTurns < MAX_TOOL_TURNS) {
+      toolTurns += 1;
 
-      trimmedReply = ESCALATION_REPLY;
-    } else if (reply.type === 'text') {
+      if (reply.name === 'escalate') {
+        const toolInput = reply.input as { reason?: unknown; summary?: unknown };
+        const reason = typeof toolInput.reason === 'string' ? toolInput.reason : 'unspecified';
+        const summary = typeof toolInput.summary === 'string' ? toolInput.summary : '';
+
+        // The email send/audit outcome is deliberately not awaited into this
+        // branch's control flow beyond `await` itself: escalate() never
+        // throws and always resolves a boolean, so success or failure of the
+        // email never changes what the customer sees below.
+        await this.escalationService.escalate({
+          history: messages,
+          reason,
+          summary,
+          waId,
+        });
+
+        trimmedReply = ESCALATION_REPLY;
+        break;
+      }
+
+      if (!ACCOUNT_TOOL_NAMES.has(reply.name)) {
+        // Unrecognized tool name: stop rather than guess, and never forward
+        // a tool_use payload to the customer as if it were a reply.
+        break;
+      }
+
+      // SECURITY: `waId` here is the webhook-verified sender from the
+      // signature-checked payload (see support.controller.ts) — never
+      // anything derived from `reply.input` or the message text.
+      // runAccountTool (support-tools.ts) re-resolves the authorized
+      // account from `waId` alone on every call, so a model that was
+      // prompt-injected into asking for another number's data still only
+      // ever gets this sender's own account.
+      const toolResultText = await runAccountTool(this.prismaService, reply.name, waId);
+
+      messages = [
+        ...messages,
+        {
+          content: JSON.stringify({ id: reply.id, input: reply.input, name: reply.name }),
+          role: 'assistant',
+        },
+        {
+          content: toolResultText,
+          role: 'user',
+        },
+      ];
+
+      reply = await this.modelClient.generateReply({ messages, system, tools });
+    }
+
+    if (reply.type === 'text' && !trimmedReply) {
       trimmedReply = reply.text?.trim() ?? '';
-    } else {
-      trimmedReply = '';
     }
 
     if (!trimmedReply) {
