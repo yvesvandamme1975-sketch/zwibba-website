@@ -6,12 +6,28 @@ import { fileURLToPath } from 'node:url';
 import { buildListingOgTags } from './shared/listing-og.mjs';
 import { resolveApiBaseUrl } from './shared/api-base-url.mjs';
 import { resolveGeoCountry, buildGeoCookie } from './shared/geo-country.mjs';
+import {
+  extractEmptyStateTemplate,
+  injectLiveListings,
+  parseStartMarkers,
+  renderLiveListingCards,
+} from './shared/live-listings.mjs';
+import * as frCd from './src/site/locales/fr-cd.mjs';
+import * as frBe from './src/site/locales/fr-be.mjs';
+import * as nlBe from './src/site/locales/nl-be.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.join(__dirname, 'dist');
 const port = Number(process.env.PORT || 3003);
 const publicDomain = process.env.RAILWAY_PUBLIC_DOMAIN || '';
 const apiBaseUrl = resolveApiBaseUrl(process.env);
+const liveListingsCache = new Map();
+const liveListingsTtlMs = 60_000;
+const categoriesByLocale = {
+  'fr-CD': frCd.categories,
+  'fr-BE': frBe.categories,
+  'nl-BE': nlBe.categories,
+};
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -85,6 +101,75 @@ async function fetchListing(slug) {
   }
 
   return response.json();
+}
+
+async function fetchBrowseFeed(market) {
+  const cached = liveListingsCache.get(market);
+  const now = Date.now();
+
+  if (cached && now - cached.fetchedAt < liveListingsTtlMs) {
+    return cached.items;
+  }
+
+  try {
+    const url = new URL('/listings', apiBaseUrl);
+    url.searchParams.set('countryCode', market);
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(2500),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Listings API returned ${response.status}`);
+    }
+
+    const body = await response.json();
+    const items = Array.isArray(body?.items) ? body.items : [];
+    liveListingsCache.set(market, { items, fetchedAt: now });
+    return items;
+  } catch (error) {
+    if (cached) {
+      console.warn(`Zwibba live listings stale cache for ${market}: ${error.message}`);
+      return cached.items;
+    }
+
+    throw error;
+  }
+}
+
+async function injectLiveListingsIntoHtml(body) {
+  const markers = parseStartMarkers(body);
+
+  if (markers.length === 0) {
+    return body;
+  }
+
+  const gridMarker = markers.find((marker) => marker.slot === 'grid') || markers[0];
+  const items = await fetchBrowseFeed(gridMarker.market);
+  const grid =
+    items.length > 0
+      ? renderLiveListingCards({
+          items,
+          categories: categoriesByLocale[gridMarker.locale] || [],
+        })
+      : extractEmptyStateTemplate(body) || '';
+
+  let injected = injectLiveListings(body, {
+    featured: '',
+    grid,
+  });
+  injected = injected.replace(
+    /<script type="application\/ld\+json">(?=[\s\S]*?"@type":"CollectionPage")[\s\S]*?<\/script>/,
+    '',
+  );
+
+  if (items.length > 0) {
+    return injected.replace(
+      /<template\s+data-live-listings-empty>[\s\S]*?<\/template>/,
+      '<template data-live-listings-empty></template>',
+    );
+  }
+
+  return injected;
 }
 
 function renderDynamicListingPage({ baseUrl, listing, slug }) {
@@ -188,10 +273,21 @@ createServer(async (request, response) => {
   }
 
   try {
-    const body = readFileSync(filePath);
+    const rawBody = readFileSync(filePath);
     const extension = path.extname(filePath);
     const contentType = contentTypes[extension] || 'application/octet-stream';
     const cacheControl = noCacheExtensions.has(extension) ? 'no-cache' : 'public, max-age=86400';
+    let body = rawBody;
+
+    if (extension === '.html') {
+      const html = rawBody.toString('utf8');
+      try {
+        const injectedHtml = await injectLiveListingsIntoHtml(html);
+        body = Buffer.from(injectedHtml);
+      } catch (error) {
+        console.warn(`Zwibba live listings static fallback for ${filePath}: ${error.message}`);
+      }
+    }
 
     if (extension === '.html' && geoCountry) {
       response.setHeader('Set-Cookie', buildGeoCookie(geoCountry));
