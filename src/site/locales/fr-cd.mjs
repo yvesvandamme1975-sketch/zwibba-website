@@ -92,7 +92,7 @@ export const ui = {
     },
     categories: {
       eyebrow: 'Catégories',
-      title: 'Dix univers clés pour le marché de Lubumbashi.',
+      title: 'Les catégories qui suivent le marché local.',
       copy: 'Téléphones, immobilier, services, alimentation ou agriculture : les catégories suivent les usages du terrain.',
     },
     why: {
@@ -243,7 +243,7 @@ export const ui = {
     ],
     chipAllLabel: 'Tout',
     featuredBadge: 'Top Ad',
-    categoriesEyebrow: '10 catégories',
+    categoriesEyebrow: 'Catégories',
     resultsFallback: '8 annonces visibles',
     ambassadorCta: 'Devenir ambassadeur',
     emptyState: {

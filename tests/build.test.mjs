@@ -426,3 +426,17 @@ test('build.mjs falls back to primaryImageUrl when storyImageUrl is null', () =>
   assert.match(detail, /<meta property="og:title" content="Samsung Galaxy A54 neuf sous emballage \| Zwibba" \/>/);
   assert.doesNotMatch(detail, /Je vends sur Zwibba ! Samsung Galaxy A54/);
 });
+
+
+test('les compteurs de catégories reflètent les données', () => {
+  buildSite();
+
+  const browse = readFileSync(path.join(distDir, 'annonces', 'index.html'), 'utf8');
+  const landing = readFileSync(path.join(distDir, 'index.html'), 'utf8');
+  const locale = readFileSync(contentPath, 'utf8');
+
+  assert.doesNotMatch(locale, /10 catégories|Dix univers/);
+  assert.doesNotMatch(browse, /10 catégories/i);
+  assert.doesNotMatch(landing, /Dix univers/);
+  assert.doesNotMatch(landing, />Booste</);
+});

@@ -584,7 +584,7 @@ function renderFaqs(items) {
 }
 
 function renderListingCard(site, listing, options = {}) {
-  const featuredBadge = listing.isFeatured ? '<span class="listing-card__badge">Booste</span>' : '';
+  const featuredBadge = listing.isFeatured ? '<span class="listing-card__badge">Boosté</span>' : '';
   const highlight = options.highlightLabel ? `<span class="listing-card__meta-tag">${escapeHtml(options.highlightLabel)}</span>` : '';
   const listingImageAsset = resolveListingImageAsset(listing);
   return `
@@ -867,7 +867,7 @@ function renderBrowsePage(content) {
           <div class="chip-row">${chips}</div>
           <div class="browse-results__header">
             <div>
-              <p class="eyebrow">${browse.categoriesEyebrow}</p>
+              <p class="eyebrow">${categories.length} ${site.language === 'nl' ? 'categorieën' : 'catégories'}</p>
               <h2 id="results-summary" aria-live="polite">${browse.resultsFallback}</h2>
             </div>
             <a class="button button--ghost" href="${localeHref(site, '/ambassadeur/')}">${browse.ambassadorCta}</a>
