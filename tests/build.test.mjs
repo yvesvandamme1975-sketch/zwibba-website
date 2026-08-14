@@ -126,12 +126,13 @@ test('landing page ships the key conversion sections from the plan', () => {
   assert.match(landing, /Lubumbashi/i);
 });
 
-test('app entry page opens the interactive flow instead of linking to the current home hash', () => {
+test('app entry page mounts the app directly without a marketing CTA', () => {
   buildSite();
 
   const appEntry = readFileSync(path.join(distDir, 'App/index.html'), 'utf8');
-  assert.match(appEntry, /Ouvrir l'app/);
-  assert.match(appEntry, /href="#capture"/i);
+  assert.doesNotMatch(appEntry, /Ouvrir l'app/);
+  assert.doesNotMatch(appEntry, /href="#capture"/i);
+  assert.match(appEntry, /class="app-shell__viewport"[^>]*data-app-root/i);
 });
 
 test('app entry page bootstraps the live API base URL for the browser seller flow', () => {

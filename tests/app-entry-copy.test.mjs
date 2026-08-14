@@ -38,5 +38,18 @@ test('public App shell uses beta/live copy instead of prototype wording', async 
   assert.doesNotMatch(html, /App mobile, version navigateur/i);
   assert.doesNotMatch(html, /Ouvrir le prototype/i);
   assert.match(html, /B[êe]ta/i);
-  assert.match(html, /Ouvrir l'app/i);
+});
+
+test('public App entry is the bare app shell without marketing chrome', async () => {
+  buildSite();
+
+  const html = await readBuiltAppEntry();
+
+  assert.doesNotMatch(html, /app-standalone__topbar/);
+  assert.doesNotMatch(html, /app-standalone__note/);
+  assert.doesNotMatch(html, /app-standalone__frame/);
+  assert.doesNotMatch(html, /app-standalone__entry/);
+  assert.doesNotMatch(html, /Ouvrir l'app/i);
+  assert.doesNotMatch(html, /Retour au site/i);
+  assert.match(html, /class="app-shell__viewport"[^>]*data-app-root/i);
 });

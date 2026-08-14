@@ -7,25 +7,19 @@ import { fileURLToPath } from 'node:url';
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const appStyles = readFileSync(path.join(repoRoot, 'App', 'app.css'), 'utf8');
 
-test('mobile app shell hides the standalone marketing note so the app starts first', () => {
+test('app shell fills the viewport height as a centered column', () => {
   assert.match(
     appStyles,
-    /@media \(max-width: 640px\) \{[\s\S]*?\.app-standalone__note\s*\{\s*display:\s*none;\s*\}/,
+    /\.app-shell\s*\{[\s\S]*?width:\s*min\(100%,\s*520px\);[\s\S]*?margin:\s*0 auto;[\s\S]*?height:\s*100vh;[\s\S]*?height:\s*100dvh;/,
   );
 });
 
-test('mobile app shell hides the standalone topbar so the app opens without site chrome', () => {
-  assert.match(
-    appStyles,
-    /@media \(max-width: 640px\) \{[\s\S]*?\.app-standalone__topbar\s*\{\s*display:\s*none;\s*\}/,
-  );
-});
-
-test('desktop shell gives more space to the phone and less to the landing copy', () => {
-  assert.match(
-    appStyles,
-    /@media \(min-width: 920px\) \{[\s\S]*?grid-template-columns:\s*minmax\(280px,\s*360px\)\s*minmax\(460px,\s*520px\)/,
-  );
+test('phone mockup and marketing chrome styles are removed', () => {
+  assert.doesNotMatch(appStyles, /\.app-standalone__frame/);
+  assert.doesNotMatch(appStyles, /\.app-standalone__note/);
+  assert.doesNotMatch(appStyles, /\.app-standalone__topbar/);
+  assert.doesNotMatch(appStyles, /\.app-standalone__brand/);
+  assert.doesNotMatch(appStyles, /\.app-standalone__entry/);
 });
 
 test('buyer chips and bottom navigation have explicit active-state styling', () => {
@@ -86,5 +80,49 @@ test('mobile footer keeps wallet on one line for narrow Android widths', () => {
   assert.match(
     appStyles,
     /@media \(max-width: 640px\) \{[\s\S]*?\.app-tab-shell__nav-label\s*\{[\s\S]*?white-space:\s*nowrap;[\s\S]*?overflow-wrap:\s*normal;[\s\S]*?word-break:\s*normal;[\s\S]*?\}/i,
+  );
+});
+
+test('desktop widens the shell and constrains screens to a readable column', () => {
+  assert.match(
+    appStyles,
+    /@media \(min-width: 920px\) \{[\s\S]*?\.app-shell\s*\{[\s\S]*?width:\s*min\(100%,\s*1080px\);/,
+  );
+  assert.match(
+    appStyles,
+    /@media \(min-width: 920px\) \{[\s\S]*?\.app-screen,\s*\.app-flow\s*\{[\s\S]*?max-width:\s*640px;[\s\S]*?margin-inline:\s*auto;/,
+  );
+  assert.match(
+    appStyles,
+    /@media \(min-width: 920px\) \{[\s\S]*?\.app-screen--home\s*\{[\s\S]*?max-width:\s*none;/,
+  );
+  assert.match(
+    appStyles,
+    /@media \(min-width: 920px\) \{[\s\S]*?\.app-flow--detail\s*\{[\s\S]*?max-width:\s*760px;/,
+  );
+});
+
+test('desktop keeps the tab nav compact and centered', () => {
+  assert.match(
+    appStyles,
+    /@media \(min-width: 920px\) \{[\s\S]*?\.app-tab-shell__nav\s*\{[\s\S]*?grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*110px\)\);[\s\S]*?justify-content:\s*center;/,
+  );
+});
+
+test('desktop feed becomes a fluid multi-column grid', () => {
+  assert.match(
+    appStyles,
+    /@media \(min-width: 920px\) \{[\s\S]*?\.app-home__recent-feed\s*\{[\s\S]*?grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(240px,\s*1fr\)\);/,
+  );
+  assert.match(
+    appStyles,
+    /@media \(min-width: 920px\) \{[\s\S]*?\.app-home__featured-row\s*\{[\s\S]*?grid-auto-columns:\s*260px;/,
+  );
+});
+
+test('desktop listing detail gets a taller primary photo', () => {
+  assert.match(
+    appStyles,
+    /@media \(min-width: 920px\) \{[\s\S]*?\.app-flow--detail \.app-detail__media,\s*\.app-flow--detail \.app-detail__image\s*\{[\s\S]*?min-height:\s*380px;/,
   );
 });

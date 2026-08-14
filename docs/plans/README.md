@@ -140,4 +140,7 @@ Current priority docs:
 - `2026-08-06-zwibba-belgian-landing-design.md`
 - `2026-08-06-zwibba-belgian-landing-implementation.md`
 
+- `2026-08-06-zwibba-app-fullscreen-desktop-design.md`
+- `2026-08-06-zwibba-app-fullscreen-desktop-implementation.md`
+
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.

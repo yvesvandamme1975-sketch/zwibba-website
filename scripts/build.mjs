@@ -365,35 +365,9 @@ function renderAppPage() {
   <body class="app-route">
     <a class="skip-link" href="#main-content">Aller au contenu</a>
     <main class="app-standalone" id="main-content">
-      <div class="app-standalone__topbar">
-        <a class="app-standalone__brand" href="/" aria-label="Retour au site Zwibba">
-          <img src="/assets/brand/logo-zwibba.svg" alt="" width="42" height="42" />
-          <span class="app-standalone__brand-copy">
-            <strong>Zwibba App</strong>
-            <span>Bêta privée</span>
-          </span>
-        </a>
-        <a class="button button--ghost" href="/">Retour au site</a>
+      <div class="app-shell">
+        <div class="app-shell__viewport" data-app-root data-screen="home"></div>
       </div>
-
-      <section class="app-standalone__entry">
-        <div class="app-standalone__note">
-          <p class="eyebrow">Version web privée</p>
-          <h1>Testez Zwibba directement dans votre navigateur.</h1>
-          <p>
-            Publiez, parcourez, partagez et ouvrez vos annonces sans quitter l'app web.
-          </p>
-          <div class="store-row">
-            <a class="button button--primary" href="#capture">Ouvrir l'app</a>
-          </div>
-        </div>
-
-        <div class="app-standalone__frame">
-          <div class="app-shell">
-            <div class="app-shell__viewport" data-app-root data-screen="home"></div>
-          </div>
-        </div>
-      </section>
     </main>
     <script>window.ZWIBBA_API_BASE_URL = ${JSON.stringify(appApiBaseUrl)};
 window.ZWIBBA_SUPPORT_WHATSAPP = ${JSON.stringify({ CD: supportWhatsAppCd, BE: supportWhatsAppBe })};</script>
