@@ -41,7 +41,7 @@ test('ai draft endpoint returns the structured seller draft response', async (t)
     .send({
       contentType: 'image/jpeg',
       objectKey: 'draft-photos/capture/photo_1-phone.jpg',
-      photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-phone.jpg',
+      photoUrl: 'https://cdn.zwibba.example/draft-photos/capture/photo_1-phone.jpg',
     })
     .expect(201);
 
@@ -88,10 +88,55 @@ test('ai draft endpoint falls back to manual mode when the provider omits the ti
     .send({
       contentType: 'image/jpeg',
       objectKey: 'draft-photos/capture/photo_1-cake.jpg',
-      photoUrl: 'https://pub.example.test/draft-photos/capture/photo_1-cake.jpg',
+      photoUrl: 'https://cdn.zwibba.example/draft-photos/capture/photo_1-cake.jpg',
     })
     .expect(201);
 
   assert.equal(response.body.status, 'manual_fallback');
   assert.match(response.body.message, /manuellement/i);
+});
+
+test('ai draft endpoint rejects photos outside the zwibba cdn', async (t) => {
+  const app = await createTestApp();
+  t.after(async () => {
+    await app.close();
+  });
+
+  await request(app.getHttpServer())
+    .post('/ai/draft')
+    .send({
+      contentType: 'image/jpeg',
+      objectKey: 'draft-photos/capture/photo.jpg',
+      photoUrl: 'https://evil.example.test/draft-photos/capture/photo.jpg',
+    })
+    .expect(400);
+});
+
+test('ai draft endpoint throttles repeated requests from one address', async (t) => {
+  const app = await createTestApp();
+  t.after(async () => {
+    await app.close();
+  });
+
+  for (let index = 0; index < 5; index += 1) {
+    await request(app.getHttpServer())
+      .post('/ai/draft')
+      .set('x-forwarded-for', '1.2.3.4, 10.0.0.1')
+      .send({
+        contentType: 'image/jpeg',
+        objectKey: `draft-photos/capture/photo_${index}-phone.jpg`,
+        photoUrl: `https://cdn.zwibba.example/draft-photos/capture/photo_${index}-phone.jpg`,
+      })
+      .expect(201);
+  }
+
+  await request(app.getHttpServer())
+    .post('/ai/draft')
+    .set('x-forwarded-for', '1.2.3.4, 10.0.0.1')
+    .send({
+      contentType: 'image/jpeg',
+      objectKey: 'draft-photos/capture/photo_6-phone.jpg',
+      photoUrl: 'https://cdn.zwibba.example/draft-photos/capture/photo_6-phone.jpg',
+    })
+    .expect(429);
 });
