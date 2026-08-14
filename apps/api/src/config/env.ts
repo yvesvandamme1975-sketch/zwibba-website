@@ -60,6 +60,9 @@ export type ZwibbaEnv = {
     emailProviderApiKey?: string;
     claudeApiKey?: string;
     claudeModel?: string;
+    whatsappPhoneNumberId?: string;
+    whatsappAccessToken?: string;
+    whatsappGraphApiVersion?: string;
   };
 };
 
@@ -314,6 +317,16 @@ export function loadEnv(source: EnvSource = process.env): ZwibbaEnv {
       // already uses for its own (also-optional) `meta` config.
       claudeApiKey: readOptionalString(source, 'ANTHROPIC_API_KEY'),
       claudeModel: readOptionalString(source, 'ANTHROPIC_MODEL'),
+      // Support-scoped WhatsApp Graph config, read directly from the
+      // META_WHATSAPP_* vars REGARDLESS of OTP_PROVIDER (unlike `meta` above,
+      // which is only populated when OTP_PROVIDER === 'meta'). The support
+      // agent must be able to send replies even when OTP runs through the demo
+      // provider or some other mechanism. Optional (readOptionalString) so a
+      // missing value never blocks boot; SupportReplySender lazy-throws only
+      // at actual send time, mirroring its previous optional `meta` pattern.
+      whatsappPhoneNumberId: readOptionalString(source, 'META_WHATSAPP_PHONE_NUMBER_ID'),
+      whatsappAccessToken: readOptionalString(source, 'META_WHATSAPP_ACCESS_TOKEN'),
+      whatsappGraphApiVersion: readOptionalString(source, 'META_GRAPH_API_VERSION'),
     },
   };
 }

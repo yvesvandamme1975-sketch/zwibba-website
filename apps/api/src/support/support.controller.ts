@@ -67,11 +67,18 @@ function extractInboundTextMessages(payload: unknown): InboundWhatsappMessage[] 
     return messages;
   }
 
-  const entries = (payload as WhatsAppWebhookPayload).entry ?? [];
+  // Meta's payload nesting (entry[] -> changes[] -> value.messages[]) is
+  // guarded with Array.isArray at every level: a validly-signed but malformed
+  // shape (e.g. {"entry":{}}, or a non-array `messages`) must be ignored and
+  // yield an empty list, never throw a TypeError that would 500 the webhook.
+  const rawEntries = (payload as WhatsAppWebhookPayload).entry;
+  const entries = Array.isArray(rawEntries) ? rawEntries : [];
 
   for (const entry of entries) {
-    for (const change of entry?.changes ?? []) {
-      for (const message of change?.value?.messages ?? []) {
+    const changes = Array.isArray(entry?.changes) ? entry.changes : [];
+    for (const change of changes) {
+      const inbound = Array.isArray(change?.value?.messages) ? change.value.messages : [];
+      for (const message of inbound) {
         if (message?.type === 'text' && message.from && message.id && message.text?.body) {
           messages.push({
             waId: message.from,
@@ -168,8 +175,19 @@ export class SupportController {
 
     const messages = extractInboundTextMessages(body);
 
+    // The signature has been verified, so this is a durable, authentic receipt:
+    // ALWAYS return 200. Each message is handled in its own try/catch so a
+    // single downstream failure can neither abort the rest of the batch nor
+    // turn a validly-signed webhook into a 500 (which would make Meta retry the
+    // whole batch). Per-message errors are logged; the agent path itself is
+    // hardened to reply gracefully rather than throw (see SupportAgentService).
     for (const message of messages) {
-      await this.supportAgentService.handleInboundMessage(message);
+      try {
+        await this.supportAgentService.handleInboundMessage(message);
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('[support] Failed to handle an inbound WhatsApp message.', error);
+      }
     }
 
     return { received: true };

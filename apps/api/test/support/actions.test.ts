@@ -175,6 +175,24 @@ class FakeSupportConversationDelegate {
     record.updatedAt = new Date();
     return record;
   }
+
+  async updateMany({
+    where,
+    data,
+  }: {
+    where: { id: string; pendingActionJson?: { not: null } };
+    data: { pendingActionJson: unknown };
+  }) {
+    let count = 0;
+    for (const record of this.records) {
+      if (record.id !== where.id) continue;
+      if (where.pendingActionJson && record.pendingActionJson === null) continue;
+      record.pendingActionJson = data.pendingActionJson;
+      record.updatedAt = new Date();
+      count += 1;
+    }
+    return { count };
+  }
 }
 
 type SupportMessageRecord = {
@@ -182,6 +200,7 @@ type SupportMessageRecord = {
   conversationId: string;
   role: string;
   body: string;
+  waMessageId: string | null;
   createdAt: Date;
 };
 
@@ -189,16 +208,34 @@ class FakeSupportMessageDelegate {
   records: SupportMessageRecord[] = [];
   private nextId = 1;
 
-  async create({ data }: { data: { conversationId: string; role: string; body: string } }) {
+  async create({
+    data,
+  }: {
+    data: { conversationId: string; role: string; body: string; waMessageId?: string | null };
+  }) {
+    if (
+      data.waMessageId &&
+      this.records.some((record) => record.waMessageId === data.waMessageId)
+    ) {
+      const error = new Error('Unique constraint failed') as Error & { code?: string };
+      error.code = 'P2002';
+      throw error;
+    }
+
     const record: SupportMessageRecord = {
       id: `message_${this.nextId++}`,
       conversationId: data.conversationId,
       role: data.role,
       body: data.body,
+      waMessageId: data.waMessageId ?? null,
       createdAt: new Date(),
     };
     this.records.push(record);
     return record;
+  }
+
+  async findUnique({ where }: { where: { waMessageId: string } }) {
+    return this.records.find((record) => record.waMessageId === where.waMessageId) ?? null;
   }
 
   async count({
