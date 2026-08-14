@@ -39,47 +39,48 @@ type RawBelgianSeed = {
   title: string;
 };
 
-// Placeholder Belgian content for local demos only. Yves must replace these
-// titles, phone numbers and images before any production seed run.
+// Contenu de lancement du marché belge. Numéros vendeurs fictifs (+324700000xx,
+// même convention que les seeds système CD) à remplacer par de vrais vendeurs
+// dès que les inscriptions réelles sont ouvertes.
 const rawBelgianSeeds: RawBelgianSeed[] = [
   {
-    area: 'Bruxelles',
+    area: 'Bruxelles Ixelles',
     categoryId: 'vehicles',
     condition: 'used_good',
-    description: 'Velo cargo electrique familial avec batterie recente, disponible a Bruxelles.',
+    description: "Vélo cargo électrique familial (longtail) avec banquette enfant à l'arrière et batterie récente. Entretien suivi, freins et pneus en bon état. Idéal pour les trajets école et courses. Remise en main propre à Bruxelles, essai possible.",
     ownerPhoneNumber: '+32470000001',
     photoPublicUrl: '/assets/listings/be-velo-cargo-electrique-bruxelles.jpg',
     priceAmount: 950,
     priceCurrency: 'EUR',
     publishedAt: '2026-08-14T08:10:00.000Z',
     slug: 'be-velo-cargo-electrique-bruxelles',
-    title: 'Velo cargo electrique a Bruxelles',
+    title: 'Vélo cargo électrique familial',
   },
   {
-    area: 'Anvers',
+    area: 'Anvers Centre',
     categoryId: 'home_garden',
     condition: 'used_good',
-    description: 'Canape deux places propre, a enlever pres du centre d Anvers.',
+    description: "Canapé deux places en tissu gris clair, propre et non fumeur, structure saine et coussins fermes. À venir chercher près du centre d'Anvers (rez-de-chaussée).",
     ownerPhoneNumber: '+32470000002',
     photoPublicUrl: '/assets/listings/be-canape-deux-places-anvers.jpg',
     priceAmount: 180,
     priceCurrency: 'EUR',
     publishedAt: '2026-08-14T08:12:00.000Z',
     slug: 'be-canape-deux-places-anvers',
-    title: 'Canape deux places a Anvers',
+    title: 'Canapé deux places en tissu gris',
   },
   {
-    area: 'Liege',
+    area: 'Liège Centre',
     categoryId: 'electronics',
     condition: 'used_good',
-    description: 'Ordinateur portable de travail avec chargeur, clavier AZERTY belge.',
+    description: "Ordinateur portable de bureautique 14 pouces avec clavier AZERTY belge et chargeur d'origine. Batterie correcte, réinitialisé et prêt à l'emploi. Remise en main propre à Liège.",
     ownerPhoneNumber: '+32470000003',
     photoPublicUrl: '/assets/listings/be-ordinateur-portable-liege.jpg',
     priceAmount: 420,
     priceCurrency: 'EUR',
     publishedAt: '2026-08-14T08:14:00.000Z',
     slug: 'be-ordinateur-portable-liege',
-    title: 'Ordinateur portable a Liege',
+    title: 'Ordinateur portable 14\" AZERTY',
   },
 ];
 
