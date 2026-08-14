@@ -287,6 +287,7 @@ model SupportMessage {
   conversationId String
   createdAt      DateTime            @default(now())
   role           String
+  waMessageId    String?             @unique
 
   @@index([conversationId])
 }

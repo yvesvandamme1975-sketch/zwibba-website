@@ -5,12 +5,14 @@ import { loadEnv } from '../config/env';
 type FetchFn = typeof fetch;
 
 type SupportReplySenderEnv = {
-  meta?: {
-    accessToken: string;
-    graphApiVersion: string;
-    phoneNumberId: string;
-    templateLang: string;
-    templateName: string;
+  // Support-scoped WhatsApp Graph config (see env.ts `support.whatsapp*`),
+  // read from META_WHATSAPP_* independently of OTP_PROVIDER. Deliberately NOT
+  // `env.meta` (the OTP-scoped config, only present when OTP_PROVIDER='meta')
+  // so the support agent can reply regardless of the OTP mechanism in use.
+  support: {
+    whatsappAccessToken?: string;
+    whatsappGraphApiVersion?: string;
+    whatsappPhoneNumberId?: string;
   };
 };
 
@@ -39,15 +41,16 @@ export class SupportReplySender {
       return null;
     }
 
-    const meta = this.env.meta;
+    const { whatsappAccessToken, whatsappGraphApiVersion, whatsappPhoneNumberId } =
+      this.env.support;
 
-    if (!meta) {
-      throw new Error('WhatsApp Cloud API is not configured.');
+    if (!whatsappAccessToken || !whatsappGraphApiVersion || !whatsappPhoneNumberId) {
+      throw new Error('WhatsApp Cloud API is not configured for support replies.');
     }
 
-    const graphApiVersion = meta.graphApiVersion.replace(/^v/i, '');
+    const graphApiVersion = whatsappGraphApiVersion.replace(/^v/i, '');
     const response = await this.fetchFn(
-      `https://graph.facebook.com/v${graphApiVersion}/${meta.phoneNumberId}/messages`,
+      `https://graph.facebook.com/v${graphApiVersion}/${whatsappPhoneNumberId}/messages`,
       {
         body: JSON.stringify({
           messaging_product: 'whatsapp',
@@ -58,7 +61,7 @@ export class SupportReplySender {
           type: 'text',
         }),
         headers: {
-          authorization: `Bearer ${meta.accessToken}`,
+          authorization: `Bearer ${whatsappAccessToken}`,
           'content-type': 'application/json',
         },
         method: 'POST',

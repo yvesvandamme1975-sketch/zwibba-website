@@ -279,7 +279,14 @@ export type PendingAccountAction = {
   createdAt: string;
 };
 
-/** Writes one SupportActionLog row. Never throws into the caller's control flow. */
+/**
+ * Writes one SupportActionLog row. Audit is BEST-EFFORT: a failing insert is
+ * logged and swallowed, never re-thrown. This matters most on the executed
+ * path — the mutation has already been applied by the time the "executed" row
+ * is written, so letting a DB hiccup on the audit insert propagate would 500
+ * the webhook and leave the caller unable to tell an applied mutation from a
+ * failed one. Mirrors the never-throw pattern in SupportEscalationService.
+ */
 async function logAction(
   prismaService: SupportToolsPrismaClient,
   entry: {
@@ -291,16 +298,21 @@ async function logAction(
     payloadJson?: unknown;
   },
 ): Promise<void> {
-  await prismaService.supportActionLog.create({
-    data: {
-      action: entry.action,
-      matchedPhoneNumber: entry.matchedPhoneNumber,
-      outcome: entry.outcome,
-      payloadJson: entry.payloadJson,
-      targetId: entry.targetId,
-      waId: entry.waId,
-    },
-  });
+  try {
+    await prismaService.supportActionLog.create({
+      data: {
+        action: entry.action,
+        matchedPhoneNumber: entry.matchedPhoneNumber,
+        outcome: entry.outcome,
+        payloadJson: entry.payloadJson,
+        targetId: entry.targetId,
+        waId: entry.waId,
+      },
+    });
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('[support] Failed to persist SupportActionLog row (best-effort).', error);
+  }
 }
 
 /**

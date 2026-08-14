@@ -123,6 +123,7 @@ export const ESCALATION_REPLY =
 
 export const SUPPORT_MODEL_CLIENT = 'SupportModelClient';
 export const SUPPORT_AGENT_RATE_LIMIT = 'SupportAgentRateLimit';
+export const SUPPORT_PENDING_ACTION_TTL = 'SupportPendingActionTtl';
 
 export type SupportAgentRateLimitConfig = {
   /** Size of the sliding window, in milliseconds, used to count inbound messages. */
@@ -148,6 +149,67 @@ const MAX_TOOL_TURNS = 3;
 
 const RATE_LIMIT_NOTICE =
   'Vous nous avez envoyé beaucoup de messages en peu de temps. Merci de patienter un instant avant de réessayer. / You have sent a lot of messages in a short time — please wait a moment before trying again.';
+
+/**
+ * How long a pending, awaiting-confirmation account action stays valid before
+ * a "OUI" can no longer execute it (FIX: stale-confirm). 15 minutes: long
+ * enough for a real customer to read a confirmation prompt and reply, short
+ * enough that a confirmation typed hours later against a long-forgotten prompt
+ * (or one left over across a support session) can never mutate anything.
+ * Overridable per-instance via SUPPORT_PENDING_ACTION_TTL for tests.
+ */
+export const PENDING_ACTION_TTL_MS = 15 * 60_000;
+
+/**
+ * Sent when a customer confirms ("OUI") an action whose pending prompt has
+ * already expired (older than PENDING_ACTION_TTL_MS). The pending action is
+ * cleared and NOTHING is mutated. Bilingual, like the other agent notices.
+ */
+export const PENDING_ACTION_EXPIRED_REPLY =
+  "Cette demande a expiré. Aucune modification n'a été faite — merci de refaire votre demande si besoin. / This request has expired. Nothing was changed — please make your request again if you still need it.";
+
+/**
+ * Fixed, deterministic apology sent when the model call (or the whole
+ * model-driven turn) throws — a transient outage must never drop the customer
+ * or 500 the webhook. Bilingual.
+ */
+export const MODEL_ERROR_REPLY =
+  "Désolé, un problème technique temporaire nous empêche de répondre à l'instant. Merci de réessayer dans un moment. / Sorry, a temporary technical problem is preventing us from replying right now. Please try again in a moment.";
+
+/** Detects a Prisma unique-constraint violation (P2002) without importing the client. */
+function isUniqueConstraintViolation(error: unknown): boolean {
+  return (
+    !!error &&
+    typeof error === 'object' &&
+    (error as { code?: unknown }).code === 'P2002'
+  );
+}
+
+/**
+ * True when a stored pending action is too old to still be confirmable, OR
+ * when its freshness cannot be established at all (missing/unparseable
+ * createdAt) — the conservative choice, since a pending action minted by
+ * requestMutatingAction always carries a valid ISO createdAt.
+ */
+function isPendingActionExpired(raw: unknown, nowMs: number, ttlMs: number): boolean {
+  if (!raw || typeof raw !== 'object') {
+    return true;
+  }
+
+  const createdAt = (raw as { createdAt?: unknown }).createdAt;
+
+  if (typeof createdAt !== 'string') {
+    return true;
+  }
+
+  const createdMs = Date.parse(createdAt);
+
+  if (Number.isNaN(createdMs)) {
+    return true;
+  }
+
+  return nowMs - createdMs > ttlMs;
+}
 
 // Matches a bare confirmation reply ("OUI", "OK", "yes", with minor trailing
 // punctuation) and NOTHING else — deliberately strict (anchored, whole
@@ -280,6 +342,7 @@ export class AnthropicSupportModelClient implements SupportModelClient {
 @Injectable()
 export class SupportAgentService implements SupportAgentServiceLike {
   private readonly rateLimit: SupportAgentRateLimitConfig;
+  private readonly pendingActionTtlMs: number;
 
   constructor(
     @Inject(PrismaService) private readonly prismaService: PrismaService,
@@ -289,12 +352,52 @@ export class SupportAgentService implements SupportAgentServiceLike {
     @Optional()
     @Inject(SUPPORT_AGENT_RATE_LIMIT)
     rateLimit?: SupportAgentRateLimitConfig,
+    @Optional()
+    @Inject(SUPPORT_PENDING_ACTION_TTL)
+    pendingActionTtlMs?: number,
   ) {
     this.rateLimit = rateLimit ?? DEFAULT_SUPPORT_AGENT_RATE_LIMIT;
+    this.pendingActionTtlMs =
+      typeof pendingActionTtlMs === 'number' ? pendingActionTtlMs : PENDING_ACTION_TTL_MS;
   }
 
-  async handleInboundMessage({ waId, text }: InboundWhatsappMessage): Promise<void> {
+  /** Sends a WhatsApp reply, swallowing+logging any send failure (never throws). */
+  private async safeSendText(waId: string, body: string): Promise<void> {
+    try {
+      await this.replySender.sendText(waId, body);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('[support] Failed to send a WhatsApp reply.', error);
+    }
+  }
+
+  /** Persists an outbound agent reply. Agent replies carry no waMessageId. */
+  private async persistAgentReply(conversationId: string, body: string): Promise<void> {
+    await this.prismaService.supportMessage.create({
+      data: {
+        body,
+        conversationId,
+        role: 'agent',
+      },
+    });
+  }
+
+  async handleInboundMessage({ waId, text, messageId }: InboundWhatsappMessage): Promise<void> {
     const now = new Date();
+
+    // FIX (idempotency): Meta delivers webhooks at-least-once. If we have
+    // already stored a SupportMessage for this exact provider messageId, this
+    // is a replay — skip it entirely: no duplicate row, no duplicate model
+    // call, no duplicate reply.
+    if (messageId) {
+      const alreadyProcessed = await this.prismaService.supportMessage.findUnique({
+        where: { waMessageId: messageId },
+      });
+
+      if (alreadyProcessed) {
+        return;
+      }
+    }
 
     const conversation = await this.prismaService.supportConversation.upsert({
       create: {
@@ -307,13 +410,25 @@ export class SupportAgentService implements SupportAgentServiceLike {
       where: { waId },
     });
 
-    await this.prismaService.supportMessage.create({
-      data: {
-        body: text,
-        conversationId: conversation.id,
-        role: 'inbound',
-      },
-    });
+    // FIX (idempotency race): two concurrent deliveries of the same messageId
+    // can both pass the pre-check above before either insert lands. The unique
+    // index on waMessageId makes the loser's insert fail with P2002 — treat
+    // that as "already processed" and stop, so the message is handled once.
+    try {
+      await this.prismaService.supportMessage.create({
+        data: {
+          body: text,
+          conversationId: conversation.id,
+          role: 'inbound',
+          waMessageId: messageId ?? null,
+        },
+      });
+    } catch (error) {
+      if (isUniqueConstraintViolation(error)) {
+        return;
+      }
+      throw error;
+    }
 
     const windowStart = new Date(now.getTime() - this.rateLimit.windowMs);
     const recentInboundCount = await this.prismaService.supportMessage.count({
@@ -325,7 +440,7 @@ export class SupportAgentService implements SupportAgentServiceLike {
     });
 
     if (recentInboundCount > this.rateLimit.maxInboundPerWindow) {
-      await this.replySender.sendText(waId, RATE_LIMIT_NOTICE);
+      await this.safeSendText(waId, RATE_LIMIT_NOTICE);
       return;
     }
 
@@ -336,38 +451,54 @@ export class SupportAgentService implements SupportAgentServiceLike {
     // regenerating (or being prompt-injected into regenerating) a different
     // tool call: the executed action is always exactly the one stored in
     // step 1, never something re-derived from this turn's text.
-    //
-    // The pending action is cleared FIRST, before executing anything, so a
-    // repeated/duplicate "OUI" (retry, double-send) can only ever execute it
-    // once, and so any non-confirmation reply immediately invalidates it —
-    // a customer who changes their mind, or a stale prompt left over from a
-    // much earlier turn, can never be confirmed by an unrelated later "OUI".
     if (conversation.pendingActionJson) {
       const pendingActionJson = conversation.pendingActionJson;
 
-      await this.prismaService.supportConversation.update({
-        data: { pendingActionJson: null },
-        where: { id: conversation.id },
-      });
-
       if (isConfirmationText(text)) {
+        // FIX (atomic consume + replay protection): the pending action is
+        // cleared with a CONDITIONAL updateMany that only matches while
+        // pendingActionJson is still non-null. Under a race (two "OUI"
+        // deliveries at once), exactly one request flips it and gets count===1
+        // — that one, and only that one, executes the mutation. Any other
+        // concurrent or duplicate confirmation sees count===0 (already
+        // consumed) and stops without re-executing. This replaces the previous
+        // read-then-clear-then-execute sequence, which was not atomic and could
+        // let two confirmations both execute.
+        const consumed = await this.prismaService.supportConversation.updateMany({
+          where: { id: conversation.id, pendingActionJson: { not: null } },
+          data: { pendingActionJson: null },
+        });
+
+        if (consumed.count !== 1) {
+          // Another turn already consumed this pending action — benign no-op.
+          return;
+        }
+
+        // FIX (TTL / stale confirm): only execute if the pending action is
+        // still fresh. An expired one is already cleared (above) and mutates
+        // nothing; the customer is told the request expired.
+        if (isPendingActionExpired(pendingActionJson, now.getTime(), this.pendingActionTtlMs)) {
+          await this.safeSendText(waId, PENDING_ACTION_EXPIRED_REPLY);
+          await this.persistAgentReply(conversation.id, PENDING_ACTION_EXPIRED_REPLY);
+          return;
+        }
+
         const result = await executePendingAction(this.prismaService, waId, pendingActionJson);
 
-        await this.replySender.sendText(waId, result.replyText);
-        await this.prismaService.supportMessage.create({
-          data: {
-            body: result.replyText,
-            conversationId: conversation.id,
-            role: 'agent',
-          },
-        });
+        await this.safeSendText(waId, result.replyText);
+        await this.persistAgentReply(conversation.id, result.replyText);
 
         return;
       }
 
-      // Not a confirmation: the pending action is already cleared above, so
-      // execution simply falls through to the normal model-driven flow below
-      // for this message.
+      // Not a confirmation: invalidate the pending action (same atomic,
+      // idempotent clear) and fall through to the normal model-driven flow.
+      // A customer who changes their mind, or a stale prompt left over from a
+      // much earlier turn, can never be confirmed by an unrelated later "OUI".
+      await this.prismaService.supportConversation.updateMany({
+        where: { id: conversation.id, pendingActionJson: { not: null } },
+        data: { pendingActionJson: null },
+      });
     }
 
     const history = await this.prismaService.supportMessage.findMany({
@@ -394,98 +525,105 @@ export class SupportAgentService implements SupportAgentServiceLike {
       UPDATE_LISTING_PRICE_TOOL,
     ];
 
-    let messages = contextMessages;
-    let reply = await this.modelClient.generateReply({ messages, system, tools });
-
     let trimmedReply = '';
-    let toolTurns = 0;
 
-    // Multi-turn tool loop: `escalate` (Task 8) stays single-shot — it has a
-    // fixed, deterministic reply, so handling it never re-calls the model.
-    // Account tools (Task 9, e.g. `getMyListings` — see ACCOUNT_TOOL_NAMES
-    // in support-tools.ts) are executed server-side and their result is fed
-    // back to the model for a genuine second turn, so it can turn raw
-    // account data into a customer-facing reply.
-    while (reply.type === 'tool_use' && toolTurns < MAX_TOOL_TURNS) {
-      toolTurns += 1;
+    // FIX (error handling): the entire model-driven turn — every
+    // generateReply call AND the server-side tool executions between them — is
+    // wrapped so a transient model outage (or any throw in the loop) never
+    // 500s the webhook or drops the customer. On failure we send a fixed
+    // bilingual apology instead of a model reply; even that send is
+    // best-effort (safeSendText never throws), so the turn always resolves.
+    try {
+      let messages = contextMessages;
+      let reply = await this.modelClient.generateReply({ messages, system, tools });
 
-      if (reply.name === 'escalate') {
-        const toolInput = reply.input as { reason?: unknown; summary?: unknown };
-        const reason = typeof toolInput.reason === 'string' ? toolInput.reason : 'unspecified';
-        const summary = typeof toolInput.summary === 'string' ? toolInput.summary : '';
+      let toolTurns = 0;
 
-        // The email send/audit outcome is deliberately not awaited into this
-        // branch's control flow beyond `await` itself: escalate() never
-        // throws and always resolves a boolean, so success or failure of the
-        // email never changes what the customer sees below.
-        await this.escalationService.escalate({
-          history: messages,
-          reason,
-          summary,
+      // Multi-turn tool loop: `escalate` (Task 8) stays single-shot — it has a
+      // fixed, deterministic reply, so handling it never re-calls the model.
+      // Account tools (Task 9, e.g. `getMyListings` — see ACCOUNT_TOOL_NAMES
+      // in support-tools.ts) are executed server-side and their result is fed
+      // back to the model for a genuine second turn, so it can turn raw
+      // account data into a customer-facing reply.
+      while (reply.type === 'tool_use' && toolTurns < MAX_TOOL_TURNS) {
+        toolTurns += 1;
+
+        if (reply.name === 'escalate') {
+          const toolInput = reply.input as { reason?: unknown; summary?: unknown };
+          const reason = typeof toolInput.reason === 'string' ? toolInput.reason : 'unspecified';
+          const summary = typeof toolInput.summary === 'string' ? toolInput.summary : '';
+
+          // The email send/audit outcome is deliberately not awaited into this
+          // branch's control flow beyond `await` itself: escalate() never
+          // throws and always resolves a boolean, so success or failure of the
+          // email never changes what the customer sees below.
+          await this.escalationService.escalate({
+            history: messages,
+            reason,
+            summary,
+            waId,
+          });
+
+          trimmedReply = ESCALATION_REPLY;
+          break;
+        }
+
+        if (!ACCOUNT_TOOL_NAMES.has(reply.name)) {
+          // Unrecognized tool name: stop rather than guess, and never forward
+          // a tool_use payload to the customer as if it were a reply.
+          break;
+        }
+
+        // SECURITY: `waId` here is the webhook-verified sender from the
+        // signature-checked payload (see support.controller.ts) — never
+        // anything derived from `reply.input` or the message text.
+        // runAccountTool (support-tools.ts) re-resolves the authorized
+        // account from `waId` alone on every call, so a model that was
+        // prompt-injected into asking for another number's data still only
+        // ever gets this sender's own account. `reply.input` IS forwarded for
+        // mutating tools (e.g. the target listingId, a new price) — but it is
+        // only ever used to pick WHICH of the sender's OWN listings to act on,
+        // re-verified against `waId`-derived ownership; it can never widen
+        // whose data or account is touched.
+        const toolResultText = await runAccountTool(
+          this.prismaService,
+          reply.name,
           waId,
-        });
+          reply.input,
+          conversation.id,
+        );
 
-        trimmedReply = ESCALATION_REPLY;
-        break;
+        messages = [
+          ...messages,
+          {
+            content: JSON.stringify({ id: reply.id, input: reply.input, name: reply.name }),
+            role: 'assistant',
+          },
+          {
+            content: toolResultText,
+            role: 'user',
+          },
+        ];
+
+        reply = await this.modelClient.generateReply({ messages, system, tools });
       }
 
-      if (!ACCOUNT_TOOL_NAMES.has(reply.name)) {
-        // Unrecognized tool name: stop rather than guess, and never forward
-        // a tool_use payload to the customer as if it were a reply.
-        break;
+      if (reply.type === 'text' && !trimmedReply) {
+        trimmedReply = reply.text?.trim() ?? '';
       }
-
-      // SECURITY: `waId` here is the webhook-verified sender from the
-      // signature-checked payload (see support.controller.ts) — never
-      // anything derived from `reply.input` or the message text.
-      // runAccountTool (support-tools.ts) re-resolves the authorized
-      // account from `waId` alone on every call, so a model that was
-      // prompt-injected into asking for another number's data still only
-      // ever gets this sender's own account. `reply.input` IS forwarded for
-      // mutating tools (e.g. the target listingId, a new price) — but it is
-      // only ever used to pick WHICH of the sender's OWN listings to act on,
-      // re-verified against `waId`-derived ownership; it can never widen
-      // whose data or account is touched.
-      const toolResultText = await runAccountTool(
-        this.prismaService,
-        reply.name,
-        waId,
-        reply.input,
-        conversation.id,
-      );
-
-      messages = [
-        ...messages,
-        {
-          content: JSON.stringify({ id: reply.id, input: reply.input, name: reply.name }),
-          role: 'assistant',
-        },
-        {
-          content: toolResultText,
-          role: 'user',
-        },
-      ];
-
-      reply = await this.modelClient.generateReply({ messages, system, tools });
-    }
-
-    if (reply.type === 'text' && !trimmedReply) {
-      trimmedReply = reply.text?.trim() ?? '';
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('[support] Support model interaction failed.', error);
+      await this.safeSendText(waId, MODEL_ERROR_REPLY);
+      return;
     }
 
     if (!trimmedReply) {
       return;
     }
 
-    await this.replySender.sendText(waId, trimmedReply);
-
-    await this.prismaService.supportMessage.create({
-      data: {
-        body: trimmedReply,
-        conversationId: conversation.id,
-        role: 'agent',
-      },
-    });
+    await this.safeSendText(waId, trimmedReply);
+    await this.persistAgentReply(conversation.id, trimmedReply);
   }
 }
 

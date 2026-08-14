@@ -389,6 +389,23 @@ test('loadEnv exposes support config with sane defaults', () => {
   assert.equal(env.support.emailProviderApiKey, 'support-email-api-key');
 });
 
+test('loadEnv populates support-scoped WhatsApp config independently of OTP_PROVIDER', () => {
+  // With OTP_PROVIDER=demo, env.meta (the OTP-scoped Graph config) is absent,
+  // but the support agent's own WhatsApp send config must still be present so
+  // it can reply regardless of the OTP mechanism.
+  const env = loadEnv({
+    OTP_PROVIDER: 'demo',
+    META_WHATSAPP_PHONE_NUMBER_ID: '9998887776',
+    META_WHATSAPP_ACCESS_TOKEN: 'support-access-token',
+    META_GRAPH_API_VERSION: '21.0',
+  });
+
+  assert.equal(env.meta, undefined);
+  assert.equal(env.support.whatsappPhoneNumberId, '9998887776');
+  assert.equal(env.support.whatsappAccessToken, 'support-access-token');
+  assert.equal(env.support.whatsappGraphApiVersion, '21.0');
+});
+
 test('loadEnv defaults the support escalation email even when explicit support env is set', () => {
   const env = loadEnv({
     WHATSAPP_VERIFY_TOKEN: 'a-real-verify-token',

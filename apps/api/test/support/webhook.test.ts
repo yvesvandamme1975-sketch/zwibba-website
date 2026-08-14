@@ -28,9 +28,13 @@ const supportWebhookEnv = {
 
 class FakeSupportAgentService implements SupportAgentServiceLike {
   readonly received: InboundWhatsappMessage[] = [];
+  throwOnText: string | null = null;
 
-  handleInboundMessage(message: InboundWhatsappMessage) {
+  async handleInboundMessage(message: InboundWhatsappMessage) {
     this.received.push(message);
+    if (this.throwOnText !== null && message.text === this.throwOnText) {
+      throw new Error('simulated downstream failure');
+    }
   }
 }
 
@@ -38,8 +42,8 @@ function signBody(rawBody: string, secret: string) {
   return `sha256=${createHmac('sha256', secret).update(rawBody).digest('hex')}`;
 }
 
-async function createTestApp() {
-  const fakeSupportAgentService = new FakeSupportAgentService();
+async function createTestApp(agentOverride?: FakeSupportAgentService) {
+  const fakeSupportAgentService = agentOverride ?? new FakeSupportAgentService();
 
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
@@ -214,6 +218,74 @@ test('POST webhook accepts a valid signature, forwards parsed text messages, and
     text: 'Bonjour, comment vendre un article ?',
     messageId: 'wamid.1',
   });
+});
+
+test('POST webhook returns 200 and keeps processing the batch when ONE message handler throws', async (t) => {
+  const agent = new FakeSupportAgentService();
+  agent.throwOnText = 'boom';
+  const { app } = await createTestApp(agent);
+  t.after(async () => {
+    await app.close();
+  });
+
+  const payload = {
+    entry: [
+      {
+        changes: [
+          {
+            value: {
+              messages: [
+                { from: '243990000001', id: 'wamid.a', type: 'text', text: { body: 'boom' } },
+                { from: '243990000002', id: 'wamid.b', type: 'text', text: { body: 'still handled' } },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+  };
+  const rawBody = JSON.stringify(payload);
+  const signature = signBody(rawBody, metaAppSecret);
+
+  await request(app.getHttpServer())
+    .post('/support/whatsapp/webhook')
+    .set('Content-Type', 'application/json')
+    .set('X-Hub-Signature-256', signature)
+    .send(rawBody)
+    .expect(200);
+
+  // Both messages are dispatched even though the first one threw.
+  assert.equal(agent.received.length, 2);
+  assert.equal(agent.received[1].text, 'still handled');
+});
+
+test('POST webhook returns 200 and dispatches nothing for malformed (validly signed) payload shapes', async (t) => {
+  const { app, fakeSupportAgentService } = await createTestApp();
+  t.after(async () => {
+    await app.close();
+  });
+
+  const malformedShapes = [
+    { entry: {} },
+    { entry: [{ changes: {} }] },
+    { entry: [{ changes: [{ value: { messages: {} } }] }] },
+    { entry: 'nope' },
+    {},
+  ];
+
+  for (const payload of malformedShapes) {
+    const rawBody = JSON.stringify(payload);
+    const signature = signBody(rawBody, metaAppSecret);
+
+    await request(app.getHttpServer())
+      .post('/support/whatsapp/webhook')
+      .set('Content-Type', 'application/json')
+      .set('X-Hub-Signature-256', signature)
+      .send(rawBody)
+      .expect(200);
+  }
+
+  assert.equal(fakeSupportAgentService.received.length, 0);
 });
 
 test('POST webhook rejects a signature computed over a tampered body', async (t) => {

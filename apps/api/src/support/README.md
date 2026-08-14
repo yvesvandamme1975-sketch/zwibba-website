@@ -56,9 +56,23 @@ this feature:
 | `SUPPORT_EMAIL_API_KEY` | API key for the transactional email provider used to send escalations (Resend-shaped `POST /emails`; see `support-escalation.service.ts`). Unset means escalation emails are skipped (logged, not sent) rather than crashing the agent. |
 | `ANTHROPIC_MODEL` | Defaults to `claude-haiku-4-5-20251001`. Also reused (when set) by the multi-provider listing-draft AI path. |
 
+### WhatsApp send credentials are independent of `OTP_PROVIDER`
+
+The support agent replies over the WhatsApp Cloud API using
+`META_WHATSAPP_PHONE_NUMBER_ID`, `META_WHATSAPP_ACCESS_TOKEN`, and
+`META_GRAPH_API_VERSION`. These are read into `env.support.whatsapp*` and
+consumed by `support-reply.sender.ts` **regardless of the `OTP_PROVIDER`
+setting** — unlike `env.meta`, which is only populated when
+`OTP_PROVIDER=meta` and is used solely by the OTP flow. So even with
+`OTP_PROVIDER=demo` (or any non-`meta` value), you MUST set the three
+`META_WHATSAPP_*` vars above for the support agent to be able to send replies.
+Missing values do not block boot; `SupportReplySender` throws only at actual
+send time.
+
 All of the above are optional at boot: a missing value degrades the
 corresponding feature (webhook verification fails closed, escalation emails
-are skipped, etc.) instead of preventing the API from starting.
+are skipped, replies fail at send time, etc.) instead of preventing the API
+from starting.
 
 ## Escalation
 
