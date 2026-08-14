@@ -4,6 +4,18 @@ function normalizeStoredCountry(value) {
   return value === 'BE' || value === 'CD' ? value : null;
 }
 
+export function readCountryFromSearch(search) {
+  const params = new URLSearchParams(search ?? '');
+  return normalizeStoredCountry(params.get('country'));
+}
+
+export function stripCountrySearchParam({ pathname, search, hash }) {
+  const params = new URLSearchParams(search ?? '');
+  params.delete('country');
+  const nextSearch = params.toString();
+  return `${pathname || ''}${nextSearch ? `?${nextSearch}` : ''}${hash || ''}`;
+}
+
 export function createCountryPreference({ storage }) {
   return {
     getStoredCountry() {
