@@ -4,7 +4,10 @@ import {
   sellerCategories,
 } from './demo-content.mjs';
 import { renderAuthWelcomeScreen } from './features/auth/welcome-screen.mjs';
-import { renderPhoneInputScreen } from './features/auth/phone-input-screen.mjs';
+import {
+  renderPhoneInputScreen,
+  resolveDefaultPhonePrefix,
+} from './features/auth/phone-input-screen.mjs';
 import { renderOtpScreen } from './features/auth/otp-screen.mjs';
 import { renderInboxScreen } from './features/chat/inbox-screen.mjs';
 import { createChatLiveRefreshController } from './features/chat/chat-live-refresh-controller.mjs';
@@ -261,7 +264,7 @@ if (appRoot) {
     otpError: '',
     pendingChallenge: authService.getPendingChallenge(),
     phoneError: '',
-    phoneNumber: authService.getPendingChallenge()?.phoneNumber ?? '+243',
+    phoneNumber: authService.getPendingChallenge()?.phoneNumber ?? null,
     profile: null,
     shareMenu: null,
     profileCityBusy: false,
@@ -1019,7 +1022,8 @@ if (appRoot) {
       case 'phone':
         return renderPhoneInputScreen({
           errorMessage: state.phoneError,
-          phoneNumber: state.phoneNumber,
+          phoneNumber:
+            state.phoneNumber ?? resolveDefaultPhonePrefix(resolveBrowseCountry()),
         });
       case 'otp':
         return renderOtpScreen({
