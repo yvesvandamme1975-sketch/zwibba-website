@@ -64,11 +64,11 @@ test('sendAuthenticationCode posts the Meta authentication template payload', as
           index: '0',
           parameters: [
             {
-              coupon_code: '123456',
-              type: 'coupon_code',
+              text: '123456',
+              type: 'text',
             },
           ],
-          sub_type: 'copy_code',
+          sub_type: 'url',
           type: 'button',
         },
       ],
