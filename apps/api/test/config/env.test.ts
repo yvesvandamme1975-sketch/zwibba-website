@@ -6,6 +6,7 @@ import { loadEnv } from '../../src/config/env';
 test('loadEnv returns the validated production env contract', () => {
   const env = loadEnv({
     AI_PROVIDER: 'multi',
+    AI_DRAFT_DAILY_LIMIT: '250',
     ANTHROPIC_API_KEY: 'anthropic-test',
     ANTHROPIC_MODEL: 'claude-3-5-haiku-latest',
     APP_BASE_URL: 'https://zwibba.example',
@@ -45,12 +46,60 @@ test('loadEnv returns the validated production env contract', () => {
   assert.equal(env.ai.anthropic.model, 'claude-3-5-haiku-latest');
   assert.ok(env.ai.mistral);
   assert.equal(env.ai.mistral.model, 'pixtral-12b-2409');
+  assert.equal(env.ai.draftDailyLimit, 250);
   assert.ok(env.meta);
   assert.equal(env.meta.phoneNumberId, '1234567890');
   assert.equal(env.meta.accessToken, 'meta-access-token');
   assert.equal(env.meta.templateName, 'zwibba_auth_code');
   assert.equal(env.meta.templateLang, 'fr');
   assert.equal(env.meta.graphApiVersion, '20.0');
+});
+
+test('loadEnv defaults the ai draft daily limit to 500 when unset', () => {
+  const env = loadEnv({
+    AI_PROVIDER: 'stub',
+    APP_BASE_URL: 'https://zwibba.example',
+    DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
+    DEMO_OTP_ALLOWLIST: '+243990000001',
+    DEMO_OTP_CODE: '123456',
+    NODE_ENV: 'production',
+    OTP_PROVIDER: 'demo',
+    PORT: '3200',
+    R2_ACCESS_KEY_ID: 'r2-access-key',
+    R2_ACCOUNT_ID: 'r2-account',
+    R2_BUCKET: 'zwibba-media',
+    R2_PUBLIC_BASE_URL: 'https://cdn.zwibba.example',
+    R2_S3_ENDPOINT: 'https://r2.example.com',
+    R2_SECRET_ACCESS_KEY: 'r2-secret',
+    ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
+  });
+
+  assert.equal(env.ai.draftDailyLimit, 500);
+});
+
+test('loadEnv rejects an invalid ai draft daily limit', () => {
+  assert.throws(
+    () =>
+      loadEnv({
+        AI_PROVIDER: 'stub',
+        AI_DRAFT_DAILY_LIMIT: 'abc',
+        APP_BASE_URL: 'https://zwibba.example',
+        DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
+        DEMO_OTP_ALLOWLIST: '+243990000001',
+        DEMO_OTP_CODE: '123456',
+        NODE_ENV: 'production',
+        OTP_PROVIDER: 'demo',
+        PORT: '3200',
+        R2_ACCESS_KEY_ID: 'r2-access-key',
+        R2_ACCOUNT_ID: 'r2-account',
+        R2_BUCKET: 'zwibba-media',
+        R2_PUBLIC_BASE_URL: 'https://cdn.zwibba.example',
+        R2_S3_ENDPOINT: 'https://r2.example.com',
+        R2_SECRET_ACCESS_KEY: 'r2-secret',
+        ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
+      }),
+    /AI_DRAFT_DAILY_LIMIT must be a positive integer/,
+  );
 });
 
 test('loadEnv returns the demo otp contract in production without Meta vars', () => {
