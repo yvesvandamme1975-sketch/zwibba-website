@@ -10,6 +10,8 @@ import { GoogleCloudVisionEnrichmentProvider } from './google-cloud-vision-enric
 import { GOOGLE_VISION_ENRICHMENT_PROVIDER } from './google-vision-enrichment-provider';
 import { MistralVisionDraftProvider } from './mistral-vision-draft-provider';
 import { VISION_DRAFT_PROVIDER, VisionDraftProvider } from './vision-draft-provider';
+import { AiDraftLimiterService } from './ai-draft-limiter.service';
+import { AI_DRAFT_PHOTO_BASE_URL } from './ai-draft-guardrails';
 
 function createStubVisionDraftProvider(): VisionDraftProvider {
   return {
@@ -69,6 +71,20 @@ function createStubVisionDraftProvider(): VisionDraftProvider {
 @Module({
   controllers: [AiController],
   providers: [
+    {
+      provide: AI_DRAFT_PHOTO_BASE_URL,
+      useFactory() {
+        return loadEnv().r2.publicBaseUrl;
+      },
+    },
+    {
+      provide: AiDraftLimiterService,
+      useFactory() {
+        return new AiDraftLimiterService({
+          dailyLimit: loadEnv().ai.draftDailyLimit,
+        });
+      },
+    },
     {
       provide: VISION_DRAFT_PROVIDER,
       useFactory() {

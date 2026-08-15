@@ -14,6 +14,7 @@ export type ZwibbaEnv = {
       apiKey: string;
       model: string;
     };
+    draftDailyLimit: number;
     gemini?: {
       apiKey: string;
       model: string;
@@ -57,6 +58,7 @@ export type ZwibbaEnv = {
 
 const defaultEnvValues = {
   AI_PROVIDER: 'stub',
+  AI_DRAFT_DAILY_LIMIT: '500',
   ANTHROPIC_API_KEY: 'anthropic-api-key',
   ANTHROPIC_MODEL: 'claude-3-5-haiku-latest',
   APP_BASE_URL: 'http://127.0.0.1:3003',
@@ -123,6 +125,22 @@ function readPort(source: EnvSource) {
 
   if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
     throw new Error('PORT must be a positive integer.');
+  }
+
+  return parsedValue;
+}
+
+function readAiDraftDailyLimit(source: EnvSource) {
+  const rawValue = readOptionalString(source, 'AI_DRAFT_DAILY_LIMIT');
+
+  if (rawValue === undefined) {
+    return 500;
+  }
+
+  const parsedValue = Number(rawValue);
+
+  if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
+    throw new Error('AI_DRAFT_DAILY_LIMIT must be a positive integer.');
   }
 
   return parsedValue;
@@ -225,6 +243,7 @@ export function loadEnv(source: EnvSource = process.env): ZwibbaEnv {
             model: 'ANTHROPIC_MODEL',
           })
         : undefined,
+      draftDailyLimit: readAiDraftDailyLimit(source),
       gemini: aiProvider === 'multi'
         ? {
             apiKey: readRequiredString(source, 'GEMINI_API_KEY'),
