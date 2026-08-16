@@ -87,6 +87,7 @@ import { syncDraftAreaFromProfile } from './utils/profile-area-sync.mjs';
 import { deriveProfileCityAutocompleteState } from './utils/profile-city-autocomplete-state.mjs';
 import { resolveProfileCityHydration } from './utils/profile-city-hydration.mjs';
 import { resolveProfileAreaForSubmit } from './utils/profile-zone-submit.mjs';
+import { resolveDisplayNameForSubmit } from './utils/profile-identity-submit.mjs';
 import {
   formatPricePreview,
   getPriceInputPlaceholder,
@@ -274,6 +275,9 @@ if (appRoot) {
     profileCityOptionsStatus: 'idle',
     profileError: '',
     profileMessage: '',
+    identityError: '',
+    identityMessage: '',
+    identitySaveBusy: false,
     profilePromise: null,
     profileSaveBusy: false,
     profileSelectedArea: '',
@@ -1131,6 +1135,9 @@ if (appRoot) {
           profileCityBusy: state.profileCityBusy,
           session: state.session,
           profileError: state.profileError,
+          identityError: state.identityError,
+          identityMessage: state.identityMessage,
+          identitySaveBusy: state.identitySaveBusy,
           profileMissingCityLabel: profileCityState.missingCityLabel,
           profileMessage: state.profileMessage,
           profileSaveBusy: state.profileSaveBusy,
@@ -1679,6 +1686,46 @@ if (appRoot) {
       window.location.hash = '#publish';
     } catch (error) {
       state.otpError = error instanceof Error ? error.message : 'Code OTP invalide.';
+      renderApp();
+    }
+  }
+
+  async function handleIdentitySubmit(form) {
+    if (!state.session) {
+      return;
+    }
+
+    const formData = new FormData(form);
+    const resolved = resolveDisplayNameForSubmit({
+      displayName: formData.get('displayName'),
+    });
+
+    if (!resolved.ok) {
+      state.identityError = resolved.error;
+      state.identityMessage = '';
+      renderApp();
+      return;
+    }
+
+    state.identitySaveBusy = true;
+    state.identityError = '';
+    state.identityMessage = '';
+    renderApp();
+
+    try {
+      const profile = await profileService.saveIdentity({
+        displayName: resolved.value,
+        session: state.session,
+      });
+
+      state.profile = profile;
+      state.identitySaveBusy = false;
+      state.identityMessage = `${profile.displayName || resolved.value}.`;
+      renderApp();
+    } catch (error) {
+      state.identitySaveBusy = false;
+      state.identityError =
+        error instanceof Error ? error.message : "Impossible d'enregistrer le nom.";
       renderApp();
     }
   }
@@ -2778,6 +2825,11 @@ if (appRoot) {
 
     if (form.dataset.action === 'report-review') {
       await handleReviewReportSubmit(form);
+      return;
+    }
+
+    if (form.dataset.form === 'profile-identity') {
+      await handleIdentitySubmit(form);
       return;
     }
 

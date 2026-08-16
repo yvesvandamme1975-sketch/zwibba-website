@@ -295,6 +295,9 @@ export function renderProfileScreen({
   profile = null,
   profileAreaInput = null,
   profileError = '',
+  identityError = '',
+  identityMessage = '',
+  identitySaveBusy = false,
   profileMissingCityLabel = '',
   profileMessage = '',
   profileState = 'idle',
@@ -395,8 +398,18 @@ export function renderProfileScreen({
               autocapitalize="words"
             />
           </label>
+          ${
+            identityMessage
+              ? `<div class="app-publish__status is-verified" data-profile-identity-message><strong>Nom enregistré</strong><span>${escapeHtml(identityMessage)}</span></div>`
+              : ''
+          }
+          ${
+            identityError
+              ? `<div class="app-review__error-summary" data-profile-identity-error><strong>Impossible d'enregistrer le nom</strong><ul class="app-review__errors"><li>${escapeHtml(identityError)}</li></ul></div>`
+              : ''
+          }
           <div class="app-flow__actions">
-            <button class="app-flow__button" type="submit">Enregistrer mon nom</button>
+            <button class="app-flow__button" type="submit"${identitySaveBusy ? ' disabled' : ''}>${identitySaveBusy ? 'Enregistrement…' : 'Enregistrer mon nom'}</button>
             ${
               sellerReviewsHref
                 ? `<a class="app-flow__button app-flow__button--secondary" href="${escapeAttribute(sellerReviewsHref)}">Mes avis</a>`
