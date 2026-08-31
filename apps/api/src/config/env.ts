@@ -54,13 +54,31 @@ export type ZwibbaEnv = {
     s3Endpoint: string;
     secretAccessKey: string;
   };
+  support: {
+    /** Ceiling on model-driven support turns per UTC day (SUPPORT_AGENT_DAILY_LIMIT). */
+    dailyLimit: number;
+    /** Sliding-window inbound rate limit applied per conversation. */
+    rateLimit: {
+      windowMs: number;
+      maxInboundPerWindow: number;
+    };
+    whatsappVerifyToken?: string;
+    metaAppSecret?: string;
+    escalationEmail: string;
+    emailProviderApiKey?: string;
+    claudeApiKey?: string;
+    claudeModel?: string;
+    whatsappPhoneNumberId?: string;
+    whatsappAccessToken?: string;
+    whatsappGraphApiVersion?: string;
+  };
 };
 
 const defaultEnvValues = {
   AI_PROVIDER: 'stub',
   AI_DRAFT_DAILY_LIMIT: '500',
   ANTHROPIC_API_KEY: 'anthropic-api-key',
-  ANTHROPIC_MODEL: 'claude-3-5-haiku-latest',
+  ANTHROPIC_MODEL: 'claude-haiku-4-5-20251001',
   APP_BASE_URL: 'http://127.0.0.1:3003',
   DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
   DEMO_OTP_ALLOWLIST: '+243990000001',
@@ -86,6 +104,13 @@ const defaultEnvValues = {
   R2_PUBLIC_BASE_URL: 'https://cdn.zwibba.example',
   R2_S3_ENDPOINT: 'https://r2.zwibba.example',
   R2_SECRET_ACCESS_KEY: 'r2-secret-access-key',
+  SUPPORT_AGENT_DAILY_LIMIT: '500',
+  SUPPORT_AGENT_RATE_LIMIT_MAX: '5',
+  SUPPORT_AGENT_RATE_LIMIT_WINDOW_MS: '60000',
+  SUPPORT_EMAIL_API_KEY: 'support-email-api-key',
+  SUPPORT_ESCALATION_EMAIL: 'hello@aivesconsulting.com',
+  WHATSAPP_VERIFY_TOKEN: 'whatsapp-verify-token',
+  META_APP_SECRET: 'meta-app-secret',
   ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
 } as const;
 
@@ -125,6 +150,33 @@ function readPort(source: EnvSource) {
 
   if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
     throw new Error('PORT must be a positive integer.');
+  }
+
+  return parsedValue;
+}
+
+/**
+ * Reads a positive-integer knob, falling back to `fallback` when unset.
+ *
+ * Same production semantics as readOptionalString: in production an absent
+ * variable is genuinely absent (the baked-in default is not silently applied),
+ * so the fallback here is the single documented source of truth.
+ */
+function readPositiveInteger(
+  source: EnvSource,
+  key: keyof typeof defaultEnvValues,
+  fallback: number,
+) {
+  const rawValue = readOptionalString(source, key);
+
+  if (rawValue === undefined) {
+    return fallback;
+  }
+
+  const parsedValue = Number(rawValue);
+
+  if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
+    throw new Error(`${key} must be a positive integer.`);
   }
 
   return parsedValue;
@@ -302,6 +354,47 @@ export function loadEnv(source: EnvSource = process.env): ZwibbaEnv {
       publicBaseUrl: readRequiredString(source, 'R2_PUBLIC_BASE_URL'),
       s3Endpoint: readRequiredString(source, 'R2_S3_ENDPOINT'),
       secretAccessKey: readRequiredString(source, 'R2_SECRET_ACCESS_KEY'),
+    },
+    support: {
+      // Cost ceilings for the WhatsApp support agent. The webhook is
+      // signature-authenticated, but ANYONE who knows the WhatsApp number can
+      // message the bot, and every inbound message can cost up to
+      // 1 + MAX_TOOL_TURNS paid Claude calls. The per-conversation rate limit
+      // alone bounds nothing across many senders, so the daily cap is what
+      // actually bounds the bill — the same role AI_DRAFT_DAILY_LIMIT plays
+      // for the listing-draft pipeline.
+      dailyLimit: readPositiveInteger(source, 'SUPPORT_AGENT_DAILY_LIMIT', 500),
+      rateLimit: {
+        maxInboundPerWindow: readPositiveInteger(source, 'SUPPORT_AGENT_RATE_LIMIT_MAX', 5),
+        windowMs: readPositiveInteger(source, 'SUPPORT_AGENT_RATE_LIMIT_WINDOW_MS', 60_000),
+      },
+      whatsappVerifyToken: readOptionalString(source, 'WHATSAPP_VERIFY_TOKEN'),
+      metaAppSecret: readOptionalString(source, 'META_APP_SECRET'),
+      escalationEmail: (
+        source.SUPPORT_ESCALATION_EMAIL ?? defaultEnvValues.SUPPORT_ESCALATION_EMAIL
+      ).trim() || defaultEnvValues.SUPPORT_ESCALATION_EMAIL,
+      emailProviderApiKey: readOptionalString(source, 'SUPPORT_EMAIL_API_KEY'),
+      // Read unconditionally (unlike ai.anthropic, which is only populated
+      // when AI_PROVIDER === 'multi'): the WhatsApp support agent always
+      // needs Claude, regardless of which provider generates listing drafts.
+      // Optional (not readRequiredString) so that booting the app — and
+      // constructing the support module's SUPPORT_MODEL_CLIENT provider —
+      // never fails at startup just because these are unset; the real
+      // client instead throws when actually asked to generate a reply
+      // without credentials, the same lazy-throw pattern SupportReplySender
+      // already uses for its own (also-optional) `meta` config.
+      claudeApiKey: readOptionalString(source, 'ANTHROPIC_API_KEY'),
+      claudeModel: readOptionalString(source, 'ANTHROPIC_MODEL'),
+      // Support-scoped WhatsApp Graph config, read directly from the
+      // META_WHATSAPP_* vars REGARDLESS of OTP_PROVIDER (unlike `meta` above,
+      // which is only populated when OTP_PROVIDER === 'meta'). The support
+      // agent must be able to send replies even when OTP runs through the demo
+      // provider or some other mechanism. Optional (readOptionalString) so a
+      // missing value never blocks boot; SupportReplySender lazy-throws only
+      // at actual send time, mirroring its previous optional `meta` pattern.
+      whatsappPhoneNumberId: readOptionalString(source, 'META_WHATSAPP_PHONE_NUMBER_ID'),
+      whatsappAccessToken: readOptionalString(source, 'META_WHATSAPP_ACCESS_TOKEN'),
+      whatsappGraphApiVersion: readOptionalString(source, 'META_GRAPH_API_VERSION'),
     },
   };
 }
