@@ -289,6 +289,17 @@ createServer(async (request, response) => {
   }
 
   if (!filePath || !filePath.startsWith(distDir)) {
+    // Legacy share links used the plural /annonces/<slug>; the per-listing OG
+    // page lives at /annonce/<slug>/.
+    const pluralListingMatch = url.pathname.match(/^\/annonces\/([^/]+)\/?$/);
+
+    if (pluralListingMatch) {
+      send(response, 301, '', {
+        Location: `/annonce/${pluralListingMatch[1]}/`,
+      });
+      return;
+    }
+
     send(response, 404, 'Not Found', { 'Content-Type': 'text/plain; charset=utf-8' });
     return;
   }
