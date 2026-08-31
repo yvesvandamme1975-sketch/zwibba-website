@@ -10,6 +10,7 @@ import { HealthModule } from './health/health.module';
 import { ListingsModule } from './listings/listings.module';
 import { LocationsModule } from './locations/locations.module';
 import { MediaModule } from './media/media.module';
+import { MarketSignalsModule } from './market-signals/market-signals.module';
 import { ModerationModule } from './moderation/moderation.module';
 import { ProfileModule } from './profile/profile.module';
 import { ShareModule } from './share/share.module';
@@ -23,6 +24,7 @@ import { WalletModule } from './wallet/wallet.module';
     AuthModule,
     DraftsModule,
     MediaModule,
+    MarketSignalsModule,
     AiModule,
     ModerationModule,
     ListingsModule,
