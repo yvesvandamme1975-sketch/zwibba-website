@@ -55,6 +55,13 @@ export type ZwibbaEnv = {
     secretAccessKey: string;
   };
   support: {
+    /** Ceiling on model-driven support turns per UTC day (SUPPORT_AGENT_DAILY_LIMIT). */
+    dailyLimit: number;
+    /** Sliding-window inbound rate limit applied per conversation. */
+    rateLimit: {
+      windowMs: number;
+      maxInboundPerWindow: number;
+    };
     whatsappVerifyToken?: string;
     metaAppSecret?: string;
     escalationEmail: string;
@@ -97,6 +104,9 @@ const defaultEnvValues = {
   R2_PUBLIC_BASE_URL: 'https://cdn.zwibba.example',
   R2_S3_ENDPOINT: 'https://r2.zwibba.example',
   R2_SECRET_ACCESS_KEY: 'r2-secret-access-key',
+  SUPPORT_AGENT_DAILY_LIMIT: '500',
+  SUPPORT_AGENT_RATE_LIMIT_MAX: '5',
+  SUPPORT_AGENT_RATE_LIMIT_WINDOW_MS: '60000',
   SUPPORT_EMAIL_API_KEY: 'support-email-api-key',
   SUPPORT_ESCALATION_EMAIL: 'hello@aivesconsulting.com',
   WHATSAPP_VERIFY_TOKEN: 'whatsapp-verify-token',
@@ -140,6 +150,33 @@ function readPort(source: EnvSource) {
 
   if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
     throw new Error('PORT must be a positive integer.');
+  }
+
+  return parsedValue;
+}
+
+/**
+ * Reads a positive-integer knob, falling back to `fallback` when unset.
+ *
+ * Same production semantics as readOptionalString: in production an absent
+ * variable is genuinely absent (the baked-in default is not silently applied),
+ * so the fallback here is the single documented source of truth.
+ */
+function readPositiveInteger(
+  source: EnvSource,
+  key: keyof typeof defaultEnvValues,
+  fallback: number,
+) {
+  const rawValue = readOptionalString(source, key);
+
+  if (rawValue === undefined) {
+    return fallback;
+  }
+
+  const parsedValue = Number(rawValue);
+
+  if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
+    throw new Error(`${key} must be a positive integer.`);
   }
 
   return parsedValue;
@@ -319,6 +356,18 @@ export function loadEnv(source: EnvSource = process.env): ZwibbaEnv {
       secretAccessKey: readRequiredString(source, 'R2_SECRET_ACCESS_KEY'),
     },
     support: {
+      // Cost ceilings for the WhatsApp support agent. The webhook is
+      // signature-authenticated, but ANYONE who knows the WhatsApp number can
+      // message the bot, and every inbound message can cost up to
+      // 1 + MAX_TOOL_TURNS paid Claude calls. The per-conversation rate limit
+      // alone bounds nothing across many senders, so the daily cap is what
+      // actually bounds the bill — the same role AI_DRAFT_DAILY_LIMIT plays
+      // for the listing-draft pipeline.
+      dailyLimit: readPositiveInteger(source, 'SUPPORT_AGENT_DAILY_LIMIT', 500),
+      rateLimit: {
+        maxInboundPerWindow: readPositiveInteger(source, 'SUPPORT_AGENT_RATE_LIMIT_MAX', 5),
+        windowMs: readPositiveInteger(source, 'SUPPORT_AGENT_RATE_LIMIT_WINDOW_MS', 60_000),
+      },
       whatsappVerifyToken: readOptionalString(source, 'WHATSAPP_VERIFY_TOKEN'),
       metaAppSecret: readOptionalString(source, 'META_APP_SECRET'),
       escalationEmail: (

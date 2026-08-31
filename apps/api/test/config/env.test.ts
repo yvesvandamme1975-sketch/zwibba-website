@@ -465,3 +465,54 @@ test('treats RAILWAY_ENVIRONMENT production as production', () => {
   };
   assert.throws(() => loadEnv(source), /Missing required env value/);
 });
+
+const minimalProductionSource = {
+  AI_PROVIDER: 'stub',
+  APP_BASE_URL: 'https://zwibba.example',
+  DATABASE_URL: 'postgresql://zwibba:zwibba@127.0.0.1:5432/zwibba',
+  DEMO_OTP_ALLOWLIST: '+243990000001',
+  DEMO_OTP_CODE: '123456',
+  NODE_ENV: 'production',
+  OTP_PROVIDER: 'demo',
+  PORT: '3200',
+  R2_ACCESS_KEY_ID: 'r2-access-key',
+  R2_ACCOUNT_ID: 'r2-account',
+  R2_BUCKET: 'zwibba-media',
+  R2_PUBLIC_BASE_URL: 'https://cdn.zwibba.example',
+  R2_S3_ENDPOINT: 'https://r2.example.com',
+  R2_SECRET_ACCESS_KEY: 'r2-secret',
+  ZWIBBA_ADMIN_SHARED_SECRET: 'zwibba-admin-secret',
+};
+
+test('loadEnv defaults the support agent cost ceilings when they are unset', () => {
+  const env = loadEnv({ ...minimalProductionSource });
+
+  assert.equal(env.support.dailyLimit, 500);
+  assert.equal(env.support.rateLimit.maxInboundPerWindow, 5);
+  assert.equal(env.support.rateLimit.windowMs, 60_000);
+});
+
+test('loadEnv reads the support agent cost ceilings from env', () => {
+  const env = loadEnv({
+    ...minimalProductionSource,
+    SUPPORT_AGENT_DAILY_LIMIT: '120',
+    SUPPORT_AGENT_RATE_LIMIT_MAX: '3',
+    SUPPORT_AGENT_RATE_LIMIT_WINDOW_MS: '30000',
+  });
+
+  assert.equal(env.support.dailyLimit, 120);
+  assert.equal(env.support.rateLimit.maxInboundPerWindow, 3);
+  assert.equal(env.support.rateLimit.windowMs, 30_000);
+});
+
+test('loadEnv rejects a non-positive-integer support agent daily limit', () => {
+  assert.throws(
+    () => loadEnv({ ...minimalProductionSource, SUPPORT_AGENT_DAILY_LIMIT: '0' }),
+    /SUPPORT_AGENT_DAILY_LIMIT must be a positive integer\./,
+  );
+
+  assert.throws(
+    () => loadEnv({ ...minimalProductionSource, SUPPORT_AGENT_DAILY_LIMIT: 'many' }),
+    /SUPPORT_AGENT_DAILY_LIMIT must be a positive integer\./,
+  );
+});

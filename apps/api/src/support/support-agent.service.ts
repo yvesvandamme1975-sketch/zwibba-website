@@ -125,6 +125,7 @@ export const ESCALATION_REPLY =
 export const SUPPORT_MODEL_CLIENT = 'SupportModelClient';
 export const SUPPORT_AGENT_RATE_LIMIT = 'SupportAgentRateLimit';
 export const SUPPORT_PENDING_ACTION_TTL = 'SupportPendingActionTtl';
+export const SUPPORT_AGENT_DAILY_LIMIT = 'SupportAgentDailyLimit';
 
 export type SupportAgentRateLimitConfig = {
   /** Size of the sliding window, in milliseconds, used to count inbound messages. */
@@ -137,6 +138,70 @@ export const DEFAULT_SUPPORT_AGENT_RATE_LIMIT: SupportAgentRateLimitConfig = {
   windowMs: 60_000,
   maxInboundPerWindow: 5,
 };
+
+/**
+ * Default ceiling on model-driven turns per UTC day, mirroring
+ * AI_DRAFT_DAILY_LIMIT. Overridden from SUPPORT_AGENT_DAILY_LIMIT.
+ *
+ * Why a daily cap is needed on top of the per-conversation rate limit: the
+ * rate limit bounds ONE sender to 5 inbound messages a minute, but nothing
+ * bounds how many senders there are. The webhook is signature-authenticated
+ * (so only Meta can call it), yet anyone who knows the WhatsApp number can
+ * make Meta call it — and each inbound message can trigger up to
+ * 1 + MAX_TOOL_TURNS paid Claude calls. Without this cap a single spammer
+ * rotating numbers runs an unbounded bill.
+ */
+export const DEFAULT_SUPPORT_AGENT_DAILY_LIMIT = 500;
+
+/** Mutable counter backing the daily cap: how many turns were spent, on which UTC day. */
+export type DailyModelBudgetState = {
+  dayKey: string;
+  count: number;
+};
+
+/**
+ * Takes one unit of `state`'s budget for the UTC day of `now`, returning false
+ * when that day's budget is already spent. Rolls the counter over on the first
+ * call of a new UTC day, so a cap reached today never latches forever.
+ *
+ * Counts model-driven TURNS, not individual API calls: one turn is one inbound
+ * message that reaches the model, and may cost up to 1 + MAX_TOOL_TURNS calls.
+ * Sizing the cap means multiplying by that factor for the worst-case spend.
+ *
+ * Pure and exported (rather than inlined in the service) so the rollover
+ * arithmetic is testable against an explicit clock, the way the trunk splits
+ * ai-draft-guardrails.ts out of AiDraftLimiterService.
+ */
+export function consumeDailyModelBudget(
+  state: DailyModelBudgetState,
+  now: Date,
+  limit: number,
+): boolean {
+  const dayKey = now.toISOString().slice(0, 10);
+
+  if (dayKey !== state.dayKey) {
+    state.dayKey = dayKey;
+    state.count = 0;
+  }
+
+  if (state.count >= limit) {
+    return false;
+  }
+
+  state.count += 1;
+
+  return true;
+}
+
+/**
+ * Sent once the daily model budget is exhausted. Deliberately shaped like a
+ * capacity notice rather than an error: the customer is told support is
+ * saturated for the day and pointed at email, so a hit cap degrades the
+ * service instead of silently dropping people. Bilingual, like every other
+ * agent notice.
+ */
+export const DAILY_LIMIT_NOTICE =
+  "Notre assistant est momentanément saturé. Merci de réessayer plus tard, ou d'écrire à hello@aivesconsulting.com. / Our assistant is temporarily at capacity. Please try again later, or email hello@aivesconsulting.com.";
 
 // How many prior messages (inbound + agent, combined) are loaded as context
 // for each Claude call.
@@ -362,6 +427,12 @@ export class AnthropicSupportModelClient implements SupportModelClient {
 export class SupportAgentService implements SupportAgentServiceLike {
   private readonly rateLimit: SupportAgentRateLimitConfig;
   private readonly pendingActionTtlMs: number;
+  private readonly dailyLimit: number;
+  // Process-local daily counter, keyed by UTC day — the same shape (and the
+  // same caveat) as AiDraftLimiterService: it resets on redeploy, and N
+  // replicas enforce N times the cap. Good enough to bound a runaway bill,
+  // which is what this guards against; it is not an accounting ledger.
+  private readonly dailyBudget: DailyModelBudgetState = { count: 0, dayKey: '' };
 
   constructor(
     @Inject(PrismaService) private readonly prismaService: PrismaService,
@@ -374,10 +445,22 @@ export class SupportAgentService implements SupportAgentServiceLike {
     @Optional()
     @Inject(SUPPORT_PENDING_ACTION_TTL)
     pendingActionTtlMs?: number,
+    @Optional()
+    @Inject(SUPPORT_AGENT_DAILY_LIMIT)
+    dailyLimit?: number,
   ) {
     this.rateLimit = rateLimit ?? DEFAULT_SUPPORT_AGENT_RATE_LIMIT;
     this.pendingActionTtlMs =
       typeof pendingActionTtlMs === 'number' ? pendingActionTtlMs : PENDING_ACTION_TTL_MS;
+    this.dailyLimit =
+      typeof dailyLimit === 'number' ? dailyLimit : DEFAULT_SUPPORT_AGENT_DAILY_LIMIT;
+  }
+
+  /**
+   * Takes one unit of today's model budget, returning false when it is spent.
+   */
+  private consumeDailyModelBudget(now: Date): boolean {
+    return consumeDailyModelBudget(this.dailyBudget, now, this.dailyLimit);
   }
 
   /** Sends a WhatsApp reply, swallowing+logging any send failure (never throws). */
@@ -537,6 +620,18 @@ export class SupportAgentService implements SupportAgentServiceLike {
         where: { id: conversation.id, pendingActionNonce },
         data: { pendingActionJson: CLEARED_PENDING_ACTION_JSON, pendingActionNonce: null },
       });
+    }
+
+    // Daily cost ceiling. Deliberately placed AFTER the confirmed-action
+    // short-circuit above: executing a pending action the customer already
+    // confirmed costs no model call at all, so a spent budget must never
+    // strand someone mid-confirmation. From here down, every path can reach
+    // the paid model.
+    if (!this.consumeDailyModelBudget(now)) {
+      await this.safeSendText(waId, DAILY_LIMIT_NOTICE);
+      await this.persistAgentReply(conversation.id, DAILY_LIMIT_NOTICE);
+
+      return;
     }
 
     const history = await this.prismaService.supportMessage.findMany({

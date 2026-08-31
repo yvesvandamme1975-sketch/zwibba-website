@@ -4,6 +4,9 @@ import test from 'node:test';
 import { Prisma } from '@prisma/client';
 
 import {
+  consumeDailyModelBudget,
+  DAILY_LIMIT_NOTICE,
+  type DailyModelBudgetState,
   MODEL_ERROR_REPLY,
   PENDING_ACTION_EXPIRED_REPLY,
   PENDING_ACTION_TTL_MS,
@@ -362,6 +365,7 @@ function buildService(
   modelClient: SupportModelClient,
   replySender: FakeSupportReplySender = new FakeSupportReplySender(),
   pendingActionTtlMs?: number,
+  dailyLimit?: number,
 ) {
   const escalationService = new FakeSupportEscalationService();
   const service = new SupportAgentService(
@@ -371,6 +375,7 @@ function buildService(
     escalationService as any,
     undefined,
     pendingActionTtlMs,
+    dailyLimit,
   );
   return { service, replySender, escalationService };
 }
@@ -658,4 +663,97 @@ test('FIXB: when sendText resolves null (non-2xx), safeSendText logs a warning a
     warnings.some((entry) => typeof entry[0] === 'string' && entry[0].includes('reply send reported no result')),
     'a warning about the failed send is logged',
   );
+});
+
+// ---------------------------------------------------------------------------
+// Daily cost ceiling (SUPPORT_AGENT_DAILY_LIMIT)
+//
+// The per-conversation rate limit bounds ONE sender to 5 inbound messages a
+// minute; nothing bounds how many senders exist. Since each model-driven turn
+// costs up to 1 + MAX_TOOL_TURNS paid Claude calls, the daily cap is what
+// actually bounds the bill.
+// ---------------------------------------------------------------------------
+
+test('daily cap: once the budget is spent the model is never called again', async () => {
+  const prismaService = new FakePrismaService();
+  const modelClient = new ScriptedModelClient([{ text: 'Bonjour !', type: 'text' }]);
+  const { service, replySender } = buildService(
+    prismaService,
+    modelClient,
+    new FakeSupportReplySender(),
+    undefined,
+    2,
+  );
+
+  await service.handleInboundMessage(inbound({ messageId: 'wamid.a' }));
+  await service.handleInboundMessage(inbound({ messageId: 'wamid.b' }));
+  assert.equal(modelClient.calls.length, 2, 'the first two turns are within budget');
+
+  await service.handleInboundMessage(inbound({ messageId: 'wamid.c' }));
+
+  assert.equal(modelClient.calls.length, 2, 'the third turn never reaches the paid model');
+  assert.equal(
+    replySender.sent.at(-1)?.body,
+    DAILY_LIMIT_NOTICE,
+    'the customer is told support is at capacity rather than being dropped silently',
+  );
+
+  const conversation = prismaService.supportConversation.records[0];
+  const persisted = prismaService.supportMessage.records.filter(
+    (record) => record.conversationId === conversation.id && record.role === 'agent',
+  );
+  assert.equal(
+    persisted.at(-1)?.body,
+    DAILY_LIMIT_NOTICE,
+    'the capacity notice is persisted, so the conversation history stays honest',
+  );
+});
+
+test('daily cap: a spent budget still lets an already-confirmed action execute', async () => {
+  const prismaService = new FakePrismaService();
+  seedOwnedListing(prismaService);
+  const modelClient = new ScriptedModelClient([{ text: 'Bonjour !', type: 'text' }]);
+  const { service, replySender } = buildService(
+    prismaService,
+    modelClient,
+    new FakeSupportReplySender(),
+    undefined,
+    1,
+  );
+
+  // Burn the single unit of budget on one ordinary turn.
+  await service.handleInboundMessage(inbound({ messageId: 'wamid.a' }));
+  assert.equal(modelClient.calls.length, 1);
+
+  await seedPendingPause(prismaService, new Date().toISOString(), 'nonce_confirm');
+  await service.handleInboundMessage(inbound({ messageId: 'wamid.b', text: 'OUI' }));
+
+  assert.equal(modelClient.calls.length, 1, 'confirming costs no model call at all');
+  assert.notEqual(
+    replySender.sent.at(-1)?.body,
+    DAILY_LIMIT_NOTICE,
+    'a spent budget must never strand a customer mid-confirmation',
+  );
+
+  const listing = prismaService.listing.records.find((record) => record.id === 'listing_own');
+  assert.equal(listing?.lifecycleStatus, 'paused', 'the confirmed action really executed');
+});
+
+test('daily budget: the counter rolls over on a new UTC day instead of latching', () => {
+  const state: DailyModelBudgetState = { count: 0, dayKey: '' };
+
+  assert.equal(consumeDailyModelBudget(state, new Date('2026-08-31T23:59:00Z'), 2), true);
+  assert.equal(consumeDailyModelBudget(state, new Date('2026-08-31T23:59:30Z'), 2), true);
+  assert.equal(
+    consumeDailyModelBudget(state, new Date('2026-08-31T23:59:59Z'), 2),
+    false,
+    "the day's budget is spent",
+  );
+
+  assert.equal(
+    consumeDailyModelBudget(state, new Date('2026-09-01T00:00:01Z'), 2),
+    true,
+    'the next UTC day starts from a fresh budget',
+  );
+  assert.equal(state.count, 1);
 });

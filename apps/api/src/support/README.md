@@ -54,7 +54,39 @@ this feature:
 | `META_APP_SECRET` | Meta app secret; verifies the `X-Hub-Signature-256` HMAC on every inbound webhook POST. |
 | `SUPPORT_ESCALATION_EMAIL` | Mailbox that receives escalation emails (defaults to `hello@aivesconsulting.com`). |
 | `SUPPORT_EMAIL_API_KEY` | API key for the transactional email provider used to send escalations (Resend-shaped `POST /emails`; see `support-escalation.service.ts`). Unset means escalation emails are skipped (logged, not sent) rather than crashing the agent. |
+| `SUPPORT_AGENT_DAILY_LIMIT` | Ceiling on model-driven turns per UTC day (default `500`). This is the cost ceiling — see below. |
+| `SUPPORT_AGENT_RATE_LIMIT_MAX` | Inbound messages per conversation per window before the agent stops calling the model (default `5`). |
+| `SUPPORT_AGENT_RATE_LIMIT_WINDOW_MS` | Length of that sliding window, in milliseconds (default `60000`). |
 | `ANTHROPIC_MODEL` | Defaults to `claude-haiku-4-5-20251001`. Also reused (when set) by the multi-provider listing-draft AI path. |
+
+### Cost ceilings
+
+Two limits bound what the agent can spend on Claude, because the webhook being
+signature-authenticated does **not** mean the traffic is trusted: only Meta can
+call the webhook, but anyone who knows the WhatsApp number can make Meta call
+it.
+
+- **Per conversation** (`SUPPORT_AGENT_RATE_LIMIT_MAX` /
+  `..._WINDOW_MS`): a sliding window over inbound messages from one `waId`.
+  Above it the agent replies with a wait notice and skips the model entirely.
+- **Per day** (`SUPPORT_AGENT_DAILY_LIMIT`): a ceiling on model-driven turns
+  across *all* conversations, mirroring `AI_DRAFT_DAILY_LIMIT` in the
+  listing-draft pipeline. The per-conversation limit alone bounds nothing when
+  a spammer rotates numbers; this is the limit that actually bounds the bill.
+
+Size the daily cap knowing one turn is **not** one API call: a turn can cost up
+to `1 + MAX_TOOL_TURNS` (currently 4) calls to Claude, each capped at 1024
+output tokens.
+
+Once the daily budget is spent the agent sends a bilingual capacity notice and
+stops calling the model — but a customer who already has a pending action
+awaiting confirmation can still confirm it, because executing a confirmed
+action costs no model call at all.
+
+The counter is process-local and keyed by UTC day, exactly like
+`AiDraftLimiterService`: it resets on redeploy, and N replicas enforce N times
+the cap. That is deliberate — it is a guard against a runaway bill, not an
+accounting ledger.
 
 ### WhatsApp send credentials are independent of `OTP_PROVIDER`
 

@@ -14,6 +14,8 @@ import {
 import { SupportReplySender } from './support-reply.sender';
 import {
   createAnthropicSupportModelClient,
+  SUPPORT_AGENT_DAILY_LIMIT,
+  SUPPORT_AGENT_RATE_LIMIT,
   SUPPORT_MODEL_CLIENT,
   SupportAgentService,
 } from './support-agent.service';
@@ -40,6 +42,18 @@ import {
     {
       provide: SUPPORT_AGENT_SERVICE,
       useClass: SupportAgentService,
+    },
+    {
+      // Both cost ceilings come from env rather than staying baked into the
+      // service. Previously neither token was registered at all, so the
+      // hard-coded defaults were the only possible values and tuning the
+      // agent's spend meant editing code and redeploying.
+      provide: SUPPORT_AGENT_RATE_LIMIT,
+      useFactory: () => loadEnv().support.rateLimit,
+    },
+    {
+      provide: SUPPORT_AGENT_DAILY_LIMIT,
+      useFactory: () => loadEnv().support.dailyLimit,
     },
     {
       provide: SUPPORT_WEBHOOK_ENV,
