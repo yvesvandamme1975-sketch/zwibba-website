@@ -332,7 +332,7 @@ export class ModerationService {
       listingSlug: listing.slug,
       reasonSummary,
       shareUrl: status === 'approved'
-        ? `https://zwibba.com/annonces/${listing.slug}`
+        ? `https://zwibba.com/annonce/${listing.slug}/`
         : '',
       status,
       statusLabel: buildStatusLabel(status),

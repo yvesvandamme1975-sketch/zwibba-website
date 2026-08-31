@@ -453,7 +453,7 @@ test('publishing a synced phone draft persists the listing and moderation decisi
     publishResponse.body.statusLabel,
     'Annonce approuvée et prête à partager',
   );
-  assert.match(publishResponse.body.shareUrl, /\/annonces\/samsung-galaxy-a54-128-go$/);
+  assert.match(publishResponse.body.shareUrl, /\/annonce\/samsung-galaxy-a54-128-go\/$/);
 
   const persistedListing = getPersistedListing(prisma, publishResponse.body.id);
   assert.equal(persistedListing.title, 'Samsung Galaxy A54 128 Go');
