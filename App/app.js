@@ -2421,18 +2421,16 @@ if (appRoot) {
     }
   }
 
-  function handleInstagramShare(storyImageUrl, listingUrl) {
-    if (storyImageUrl) {
-      handleStoryImageDownload(storyImageUrl);
-    } else if (listingUrl && navigator.clipboard?.writeText) {
-      void navigator.clipboard.writeText(
-        new URL(listingUrl, window.location.origin).toString(),
-      );
+  function handleLinkFirstShare(appUrl, rawListingUrl) {
+    const absoluteUrl = new URL(rawListingUrl, window.location.origin).toString();
+
+    if (navigator.clipboard?.writeText) {
+      void navigator.clipboard.writeText(absoluteUrl);
     }
 
-    // Instagram has no web share-intent for links: we download the story image
-    // (above) and open Instagram so the seller can post it to a story or feed.
-    window.open('https://www.instagram.com/', '_blank', 'noopener');
+    // Instagram and TikTok have no web share-intent for links: we copy the
+    // listing link and open the network so the seller can paste it in a post.
+    window.open(appUrl, '_blank', 'noopener');
   }
 
   appRoot.addEventListener('click', async (event) => {
@@ -2531,13 +2529,28 @@ if (appRoot) {
       return;
     }
 
-    if (trigger.dataset.action === 'share-instagram') {
-      await shareAsStory({
-        appUrl: 'https://www.instagram.com/',
-        listingUrl: trigger.dataset.listingUrl || buildListingUrl(state.draft),
-        storyImageUrl: trigger.dataset.storyImageUrl || '',
-        title: trigger.dataset.shareTitle || '',
-      });
+    if (
+      trigger.dataset.action === 'share-instagram' ||
+      trigger.dataset.action === 'share-tiktok'
+    ) {
+      const appUrl =
+        trigger.dataset.action === 'share-tiktok'
+          ? 'https://www.tiktok.com/'
+          : 'https://www.instagram.com/';
+      const listingUrl = trigger.dataset.listingUrl || buildListingUrl(state.draft);
+      const storyImageUrl = trigger.dataset.storyImageUrl || '';
+
+      if (state.shareMenu?.mode === 'story' && storyImageUrl) {
+        await shareAsStory({
+          appUrl,
+          listingUrl,
+          storyImageUrl,
+          title: trigger.dataset.shareTitle || '',
+        });
+      } else {
+        handleLinkFirstShare(appUrl, listingUrl);
+      }
+
       recordListingShare(trigger.dataset.shareSlug || '');
       closeShareMenu();
       return;

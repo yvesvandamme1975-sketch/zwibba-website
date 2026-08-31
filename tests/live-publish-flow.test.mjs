@@ -6,7 +6,31 @@ import {
   markDraftOtpVerified,
   updateListingDraft,
 } from '../App/models/listing-draft.mjs';
-import { submitLivePublish } from '../App/features/post/live-publish-flow.mjs';
+import {
+  resolveListingUrl,
+  submitLivePublish,
+} from '../App/features/post/live-publish-flow.mjs';
+
+test('resolveListingUrl falls back to the public /annonce/ page when the API omits shareUrl', () => {
+  assert.equal(
+    resolveListingUrl({
+      apiBaseUrl: 'https://api.example.test',
+      outcome: { listingSlug: 'mon-velo' },
+    }),
+    '/annonce/mon-velo/',
+  );
+  assert.equal(
+    resolveListingUrl({
+      apiBaseUrl: 'https://api.example.test',
+      outcome: { shareUrl: 'https://zwibba.com/annonce/x/' },
+    }),
+    'https://zwibba.com/annonce/x/',
+  );
+  assert.equal(
+    resolveListingUrl({ apiBaseUrl: 'https://api.example.test', outcome: {} }),
+    '',
+  );
+});
 
 function createJsonResponse(status, jsonValue) {
   return {
