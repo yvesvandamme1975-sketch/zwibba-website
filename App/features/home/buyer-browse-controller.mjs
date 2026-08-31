@@ -112,6 +112,7 @@ export function getRenderableRouteKey(route = {}) {
 
 export function createBuyerBrowseController({
   listingsService,
+  searchSignalReporter,
 } = {}) {
   if (!listingsService) {
     throw new Error('A listings service is required.');
@@ -187,6 +188,11 @@ export function createBuyerBrowseController({
 
     setSearchQuery(value) {
       state.searchQuery = String(value || '');
+      searchSignalReporter?.report({
+        rawQuery: state.searchQuery,
+        selectedCategoryId: state.selectedCategoryId,
+        resultCount: this.getFilteredFeed().length,
+      });
     },
 
     setSelectedCategoryId(value) {
