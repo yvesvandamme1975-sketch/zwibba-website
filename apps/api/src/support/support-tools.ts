@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import type { Listing, User } from '@prisma/client';
+import type { Listing, Prisma, User } from '@prisma/client';
 
 import {
   assertSupportedListingPrice,
@@ -70,7 +70,16 @@ export type SupportToolsPrismaClient = {
   supportConversation: {
     update(args: {
       where: { id: string };
-      data: { pendingActionJson: unknown; pendingActionNonce?: string | null };
+      data: {
+        // Typed from Prisma's own update input rather than `unknown`. `unknown`
+        // compiled here but made the whole PrismaService unassignable to this
+        // interface under tsc, and — worse — it let a raw `null` through as a
+        // way to clear the column. Prisma REFUSES a bare `null` on a `Json?`
+        // field: it must be Prisma.DbNull (SQL NULL) or Prisma.JsonNull. See
+        // CLEARED_PENDING_ACTION_JSON in support-agent.service.ts.
+        pendingActionJson: Prisma.SupportConversationUpdateInput['pendingActionJson'];
+        pendingActionNonce?: string | null;
+      };
     }): Promise<unknown>;
   };
   supportActionLog: {
@@ -273,11 +282,23 @@ export const ACTION_NO_LONGER_POSSIBLE_REPLY =
  * DIGITS form (see normalizePhoneToDigits) precisely so the confirmation
  * step can re-check it without any ambiguity about which format it's in.
  */
+/**
+ * The payload carried by a pending action.
+ *
+ * Deliberately narrower than `Record<string, unknown>`: this value is
+ * persisted into the `pendingActionJson` JSONB column, and Prisma only accepts
+ * JSON-serializable input there — `Record<string, unknown>` compiles at the
+ * call site but is rejected by `InputJsonValue`. Every builder in
+ * `buildPendingPayload` already produces flat primitives (a reason code, a
+ * price amount, a currency), so nothing is lost by saying so in the type.
+ */
+export type PendingActionPayload = Record<string, string | number | boolean | null>;
+
 export type PendingAccountAction = {
   action: string;
   targetId: string;
   waId: string;
-  payload: Record<string, unknown>;
+  payload: PendingActionPayload;
   createdAt: string;
 };
 
@@ -350,7 +371,7 @@ function buildPendingPayload(
   toolName: string,
   listing: Listing,
   toolInput: Record<string, unknown>,
-): { payload: Record<string, unknown> } | null {
+): { payload: PendingActionPayload } | null {
   switch (toolName) {
     case PAUSE_LISTING_TOOL.name:
     case UNPAUSE_LISTING_TOOL.name:
@@ -400,7 +421,7 @@ function buildPendingPayload(
 function buildConfirmationPrompt(
   toolName: string,
   listing: Listing,
-  payload: Record<string, unknown>,
+  payload: PendingActionPayload,
 ): string {
   switch (toolName) {
     case PAUSE_LISTING_TOOL.name:
@@ -424,7 +445,7 @@ function buildConfirmationPrompt(
 function buildExecutedReply(
   toolName: string,
   listing: Listing,
-  payload: Record<string, unknown>,
+  payload: PendingActionPayload,
 ): string {
   switch (toolName) {
     case PAUSE_LISTING_TOOL.name:
@@ -466,7 +487,7 @@ async function applyMutation(
   prismaService: SupportToolsPrismaClient,
   toolName: string,
   listing: Listing,
-  payload: Record<string, unknown>,
+  payload: PendingActionPayload,
   ownerPhoneNumber: string,
 ): Promise<void> {
   if (toolName === UPDATE_LISTING_PRICE_TOOL.name) {
@@ -615,7 +636,7 @@ function parsePendingAction(raw: unknown): PendingAccountAction | null {
   return {
     action: candidate.action,
     createdAt: typeof candidate.createdAt === 'string' ? candidate.createdAt : '',
-    payload: candidate.payload as Record<string, unknown>,
+    payload: candidate.payload as PendingActionPayload,
     targetId: candidate.targetId,
     waId: candidate.waId,
   };

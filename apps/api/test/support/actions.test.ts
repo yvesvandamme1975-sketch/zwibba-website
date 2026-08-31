@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { Prisma } from '@prisma/client';
+
 import {
   ACCOUNT_TOOL_NAMES,
   executePendingAction,
@@ -127,6 +129,23 @@ type SupportConversationRecord = {
   updatedAt: Date;
 };
 
+// Mirrors the real Prisma client's contract for a nullable `Json?` column: a
+// bare `null` is REFUSED (Prisma throws) — callers must pass Prisma.DbNull or
+// Prisma.JsonNull, which are then stored as a null column value. These fakes
+// used to accept `null` silently, which is why 1 390 lines of tests over the
+// confirmed-action path all passed while the real code threw in production on
+// every "OUI". Enforcing the contract here means a regression fails the tests,
+// not only `tsc`.
+function writeJsonField(value: unknown): unknown {
+  if (value === null) {
+    throw new Error(
+      'Prisma refuses a raw null on a Json? field — use Prisma.DbNull or Prisma.JsonNull.',
+    );
+  }
+
+  return value === Prisma.DbNull || value === Prisma.JsonNull ? null : value;
+}
+
 class FakeSupportConversationDelegate {
   records: SupportConversationRecord[] = [];
   private nextId = 1;
@@ -173,7 +192,7 @@ class FakeSupportConversationDelegate {
     if (!record) {
       throw new Error(`FakeSupportConversationDelegate.update: no record ${where.id}`);
     }
-    record.pendingActionJson = data.pendingActionJson;
+    record.pendingActionJson = writeJsonField(data.pendingActionJson);
     if ('pendingActionNonce' in data) {
       record.pendingActionNonce = data.pendingActionNonce ?? null;
     }
@@ -197,7 +216,7 @@ class FakeSupportConversationDelegate {
       if ('pendingActionNonce' in where && record.pendingActionNonce !== where.pendingActionNonce) {
         continue;
       }
-      record.pendingActionJson = data.pendingActionJson;
+      record.pendingActionJson = writeJsonField(data.pendingActionJson);
       if ('pendingActionNonce' in data) {
         record.pendingActionNonce = data.pendingActionNonce ?? null;
       }

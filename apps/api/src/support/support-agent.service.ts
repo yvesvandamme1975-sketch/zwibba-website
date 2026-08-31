@@ -1,4 +1,5 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { loadEnv } from '../config/env';
 import { PrismaService } from '../database/prisma.service';
@@ -159,6 +160,24 @@ const RATE_LIMIT_NOTICE =
  * Overridable per-instance via SUPPORT_PENDING_ACTION_TTL for tests.
  */
 export const PENDING_ACTION_TTL_MS = 15 * 60_000;
+
+/**
+ * The value that CLEARS the nullable `pendingActionJson` Json column.
+ *
+ * Prisma rejects a bare `null` on a `Json?` field — it demands either
+ * `Prisma.DbNull` (store SQL NULL) or `Prisma.JsonNull` (store the JSON value
+ * `null`). Passing `null` throws at runtime, which is exactly what used to
+ * happen here: every "OUI" confirmation blew up inside handleInboundMessage,
+ * the controller swallowed the error, and the customer got no reply while
+ * their action silently never ran. The unit tests never caught it because
+ * their hand-written Prisma fakes accepted `null` happily (they now refuse it,
+ * like the real client does).
+ *
+ * `DbNull` is the correct one of the two: it restores the column to the exact
+ * state it had before a pending action was minted, so the
+ * `if (conversation.pendingActionJson)` guard reads back falsy.
+ */
+export const CLEARED_PENDING_ACTION_JSON = Prisma.DbNull;
 
 /**
  * Sent when a customer confirms ("OUI") an action whose pending prompt has
@@ -483,7 +502,7 @@ export class SupportAgentService implements SupportAgentServiceLike {
         // one flips it and gets count===1; the other sees count===0.
         const consumed = await this.prismaService.supportConversation.updateMany({
           where: { id: conversation.id, pendingActionNonce },
-          data: { pendingActionJson: null, pendingActionNonce: null },
+          data: { pendingActionJson: CLEARED_PENDING_ACTION_JSON, pendingActionNonce: null },
         });
 
         if (consumed.count !== 1) {
@@ -516,7 +535,7 @@ export class SupportAgentService implements SupportAgentServiceLike {
       // concurrently is never clobbered by this clear.
       await this.prismaService.supportConversation.updateMany({
         where: { id: conversation.id, pendingActionNonce },
-        data: { pendingActionJson: null, pendingActionNonce: null },
+        data: { pendingActionJson: CLEARED_PENDING_ACTION_JSON, pendingActionNonce: null },
       });
     }
 
