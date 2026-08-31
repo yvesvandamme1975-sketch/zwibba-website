@@ -39,7 +39,7 @@ const distDir = process.env.ZWIBBA_DIST_DIR
   : path.join(repoRoot, 'dist');
 const assetsDir = path.join(distDir, 'assets');
 const appApiBaseUrl =
-  process.env.ZWIBBA_API_BASE_URL || 'https://api-production-b1b58.up.railway.app';
+  process.env.ZWIBBA_API_BASE_URL || 'https://api.zwibba.com';
 const plausibleDomain = process.env.PLAUSIBLE_DOMAIN || '';
 const plausibleSrc = process.env.PLAUSIBLE_SRC || 'https://plausible.io/js/script.js';
 const supportWhatsAppCd = process.env.ZWIBBA_SUPPORT_WHATSAPP_CD ?? '';

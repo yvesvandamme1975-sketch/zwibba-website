@@ -19,7 +19,7 @@ test('throws in production when the url is missing', () => {
 test('falls back to the dev default outside production', () => {
   assert.equal(
     resolveApiBaseUrl({ NODE_ENV: 'test' }),
-    'https://api-production-b1b58.up.railway.app',
+    'https://api.zwibba.com',
   );
 });
 

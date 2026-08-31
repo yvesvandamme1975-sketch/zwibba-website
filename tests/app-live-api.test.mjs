@@ -18,12 +18,12 @@ function createJsonResponse(status, jsonValue) {
   };
 }
 
-test('api config falls back to the live Railway API base URL', () => {
+test('api config falls back to the live API base URL', () => {
   const config = createApiConfig({
     globalObject: {},
   });
 
-  assert.equal(config.apiBaseUrl, 'https://api-production-b1b58.up.railway.app');
+  assert.equal(config.apiBaseUrl, 'https://api.zwibba.com');
 });
 
 test('api config respects an injected browser override', () => {
