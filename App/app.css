@@ -1740,6 +1740,7 @@
 .app-share-menu__icon--instagram {
   background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
 }
+.app-share-menu__icon--tiktok { background: #010101; }
 .app-share-menu__icon--link { background: rgba(255, 255, 255, 0.14); }
 
 .app-share-menu__cancel {

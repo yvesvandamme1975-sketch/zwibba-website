@@ -7,7 +7,7 @@ test('renderShareMenu returns nothing when closed', () => {
   assert.equal(renderShareMenu(null), '');
 });
 
-test('renderShareMenu renders WhatsApp, Facebook, Instagram and copy options', () => {
+test('renderShareMenu renders WhatsApp, Facebook, Instagram, TikTok and copy options', () => {
   const html = renderShareMenu({
     slug: 'mon-annonce',
     title: 'Belle annonce',
@@ -18,6 +18,7 @@ test('renderShareMenu renders WhatsApp, Facebook, Instagram and copy options', (
   assert.match(html, /data-action="share-whatsapp-chat"/);
   assert.match(html, /data-action="share-facebook"/);
   assert.match(html, /data-action="share-instagram"/);
+  assert.match(html, /data-action="share-tiktok"/);
   assert.match(html, /data-action="copy-listing-link"/);
   assert.match(html, /data-action="close-share-menu"/);
   assert.match(html, /data-action="share-menu-sheet"/);
@@ -28,6 +29,7 @@ test('renderShareMenu renders WhatsApp, Facebook, Instagram and copy options', (
 
   assert.match(html, />WhatsApp</);
   assert.match(html, />Instagram</);
+  assert.match(html, />TikTok</);
 });
 
 test('renderShareMenu exposes a post/story mode toggle', () => {
