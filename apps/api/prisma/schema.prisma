@@ -305,3 +305,33 @@ model SupportActionLog {
 
   @@index([waId])
 }
+
+model SearchQueryEvent {
+  id                 String   @id @default(cuid())
+  countryCode        String
+  rawQuery           String
+  normalizedQuery    String
+  selectedCategoryId String   @default("")
+  resultCount        Int
+  createdAt          DateTime @default(now())
+
+  @@index([countryCode, createdAt])
+  @@index([countryCode, normalizedQuery])
+}
+
+model ListingPriceEvent {
+  id               String   @id @default(cuid())
+  countryCode      String
+  draftId          String
+  listingId        String?
+  previousAmount   Int?
+  previousCurrency String?
+  nextAmount       Int
+  nextCurrency     String
+  source           String
+  createdAt        DateTime @default(now())
+
+  @@index([countryCode, createdAt])
+  @@index([draftId, createdAt])
+  @@index([listingId, createdAt])
+}

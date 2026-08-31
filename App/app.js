@@ -83,6 +83,7 @@ import {
   restoreScrollRenderState,
 } from './utils/scroll-render-state.mjs';
 import { createPendingScrollResetController } from './utils/pending-scroll-reset.mjs';
+import { createSearchSignalReporter } from './utils/search-signal-reporter.mjs';
 import { syncDraftAreaFromProfile } from './utils/profile-area-sync.mjs';
 import { deriveProfileCityAutocompleteState } from './utils/profile-city-autocomplete-state.mjs';
 import { resolveProfileCityHydration } from './utils/profile-city-hydration.mjs';
@@ -134,6 +135,9 @@ if (appRoot) {
   const listingsService = createListingsService({
     apiBaseUrl: apiConfig.apiBaseUrl,
     fetchFn: window.fetch.bind(window),
+  });
+  const searchSignalReporter = createSearchSignalReporter({
+    reportFn: listingsService.reportSearchQuery.bind(listingsService),
   });
   const reviewsService = createReviewsService({
     apiBaseUrl: apiConfig.apiBaseUrl,
@@ -243,6 +247,7 @@ if (appRoot) {
   });
   const buyerBrowseController = createBuyerBrowseController({
     listingsService,
+    searchSignalReporter,
   });
   const state = {
     authIntent: null,

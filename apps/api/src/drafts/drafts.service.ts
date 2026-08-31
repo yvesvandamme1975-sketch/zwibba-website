@@ -18,6 +18,7 @@ import {
   toPrismaListingAttributesJson,
 } from '../common/listing-attributes';
 import { PrismaService } from '../database/prisma.service';
+import { MarketSignalsService } from '../market-signals/market-signals.service';
 import { R2StorageService } from '../media/r2-storage.service';
 
 export type SyncedDraftPhotoRecord = {
@@ -52,6 +53,8 @@ export class DraftsService {
   constructor(
     @Inject(PrismaService) private readonly prismaService: PrismaService,
     @Inject(R2StorageService) private readonly r2StorageService: R2StorageService,
+    @Inject(MarketSignalsService)
+    private readonly marketSignalsService: MarketSignalsService,
   ) {}
 
   async syncDraft({
@@ -94,6 +97,11 @@ export class DraftsService {
           where: {
             id: draftId,
             ownerPhoneNumber: phoneNumber,
+          },
+          include: {
+            listing: {
+              select: { id: true },
+            },
           },
         })
       : null;
@@ -152,6 +160,23 @@ export class DraftsService {
             title,
           },
         });
+
+    await this.marketSignalsService.recordListingPriceEvent({
+      countryCode: resolvedCountryCode,
+      draftId: persistedDraft.id,
+      listingId: existingDraft?.listing?.id ?? null,
+      previous: existingDraft
+        ? {
+            amount: existingDraft.priceAmount,
+            currency: existingDraft.priceCurrency,
+          }
+        : null,
+      next: {
+        amount: supportedPrice.priceAmount,
+        currency: supportedPrice.priceCurrency,
+      },
+      source: existingDraft ? 'draft_sync' : 'draft_created',
+    });
 
     await this.prismaService.draftPhoto.deleteMany({
       where: {

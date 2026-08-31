@@ -64,5 +64,17 @@ export function createListingsService({
 
       return response.json();
     },
+
+    async reportSearchQuery(payload) {
+      try {
+        await fetchFn(`${apiBaseUrl}/market-signals/search`, {
+          body: JSON.stringify(payload),
+          headers: {
+            'content-type': 'application/json',
+          },
+          method: 'POST',
+        });
+      } catch {}
+    },
   };
 }
