@@ -152,7 +152,7 @@ test('app entry page bootstraps the live API base URL for the browser seller flo
 
   const appEntry = readFileSync(path.join(distDir, 'App/index.html'), 'utf8');
   assert.match(appEntry, /window\.ZWIBBA_API_BASE_URL/);
-  assert.match(appEntry, /https:\/\/api-production-b1b58\.up\.railway\.app/);
+  assert.match(appEntry, /https:\/\/api\.zwibba\.com/);
 });
 
 test('app ships an installable PWA manifest and an offline service worker', () => {
