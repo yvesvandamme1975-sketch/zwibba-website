@@ -39,9 +39,10 @@ async function withServer(run) {
   }
 }
 
-// Les modules ES imbriqués de l'app sont importés sans `?v=` : ils doivent malgré
-// tout être cachables, sinon chaque ouverture de l'app refait un aller-retour
-// jusqu'à l'origine pour chacun des ~75 modules.
+// Filet de sécurité : le navigateur charge désormais le bundle esbuild versionné
+// (voir tests/app-bundle.test.mjs), mais les modules .mjs bruts restent servis
+// depuis dist/. Ils sont importés sans `?v=` : s'ils redevenaient le chemin de
+// chargement, le no-cache referait un aller-retour jusqu'à l'origine par module.
 test('les modules imbriqués de l’app sont cachables', async () => {
   await withServer(async (baseUrl) => {
     const response = await fetch(`${baseUrl}/assets/app/services/api-config.mjs`);

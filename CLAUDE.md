@@ -16,7 +16,7 @@ Zwibba is a French-language classifieds platform for the Democratic Republic of 
 
 The repo is a Node + Flutter monorepo with one root `package.json` that orchestrates child workspaces. Roughly:
 
-`App/` — the buyer/seller PWA. Plain vanilla JavaScript using native ES modules (`.mjs`). No bundler, no framework. Code is organised by feature: `App/features/{auth,chat,home,listings,post,profile,wallet}/` contains the `renderXxxScreen` functions and per-feature controllers; `App/services/` hosts the API clients (auth, chat, listings, media, profile, wallet, ai-draft); `App/models/` holds domain entities (listing draft, chat thread, moderation result); `App/utils/` is rendering helpers and render-state machines. Anything UI ships here.
+`App/` — the buyer/seller PWA. Plain vanilla JavaScript using native ES modules (`.mjs`). No framework. The source stays unbundled and directly runnable; `scripts/build.mjs` bundles it with esbuild for delivery only (one request instead of ~75 nested module fetches — see below). Code is organised by feature: `App/features/{auth,chat,home,listings,post,profile,wallet}/` contains the `renderXxxScreen` functions and per-feature controllers; `App/services/` hosts the API clients (auth, chat, listings, media, profile, wallet, ai-draft); `App/models/` holds domain entities (listing draft, chat thread, moderation result); `App/utils/` is rendering helpers and render-state machines. Anything UI ships here.
 
 `apps/admin/` — a small Node 18 TypeScript service (no NestJS). `src/main.ts` and `src/server.ts` boot the HTTP listener, `src/moderation/` hosts the moderation surface, `src/config/env.ts` handles env. Dev = `tsx watch`, build = `tsc`, tests run through `scripts/run-tests.mjs` (custom node `--test` runner).
 
@@ -53,7 +53,9 @@ Merge to `main` is reserved for the landing. The application's stable trunk is t
 
 `npm run dev:api` and `npm run dev:admin` launch the backend services in watch mode (they delegate to `scripts/dev-*.sh`). `npm run build` produces the static `dist/` for the App + landing. The smokes are useful as cheap pre-commit checks: `smoke:app` for the build, `smoke:workspaces` to confirm the three sub-app manifests exist, `smoke:monorepo` for a wider sanity pass, `smoke:production-contracts` for cross-app contracts. The e2e flows in `scripts/e2e/` simulate the internal-beta seller, messaging, and device-matrix journeys; only run them when a plan explicitly says to.
 
-For the API, Prisma is the source of truth for the schema and migrations; never hand-write SQL. For the App, never introduce a bundler or framework dependency — the no-build vanilla JS choice is deliberate.
+For the API, Prisma is the source of truth for the schema and migrations; never hand-write SQL. For the App, never introduce a framework dependency — the vanilla JS choice is deliberate, and `App/` sources must stay plain ES modules that run as-is.
+
+Bundling is the one exception, and it is delivery-only: since 2026-08-31 `scripts/build.mjs` runs esbuild over `App/app.js` and writes a single minified `dist/assets/app/app.js` plus its sourcemap. Native ESM meant the browser walked ~75 nested imports on first load — 121 KB but 5.3 s to DOMContentLoaded on fibre, far worse on the 3G that dominates the DRC market. The bundle is served with the build's `?v=` stamp, so `cacheControlForRequest` in `server.mjs` marks it `immutable`. The raw `.mjs` files are still copied into `dist/` for debugging; they are no longer on the browser's load path, and the `max-age=300` they fall back to is only a safety net. Do not add a framework, a router, or a second build step on the back of this.
 
 ## How Claude should work in this repo
 
