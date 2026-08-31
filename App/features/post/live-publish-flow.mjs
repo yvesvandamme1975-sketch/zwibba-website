@@ -139,7 +139,7 @@ async function ensureUploadedPhoto({
   };
 }
 
-function resolveListingUrl({
+export function resolveListingUrl({
   apiBaseUrl,
   outcome,
 }) {
@@ -148,7 +148,8 @@ function resolveListingUrl({
   }
 
   if (outcome.listingSlug) {
-    return `${apiBaseUrl}/listings/${outcome.listingSlug}`;
+    // Public page with per-listing OG tags — never the raw API JSON endpoint.
+    return `/annonce/${outcome.listingSlug}/`;
   }
 
   return '';
