@@ -46,7 +46,12 @@ const contentTypes = {
   '.xml': 'application/xml; charset=utf-8',
 };
 
-const noCacheAssetExtensions = new Set(['.css', '.js', '.json', '.mjs']);
+// Les scripts ne sont pas listés ici : l'app importe ~75 modules ES imbriqués,
+// dont les URL ne portent pas le `?v=` du point d'entrée. En no-cache, chacun
+// repartait jusqu'à l'origine à chaque ouverture. Ils retombent donc sur le
+// `max-age=300` par défaut ; le HTML et le service worker, traités plus haut,
+// restent en no-cache et continuent de piloter la fraîcheur des déploiements.
+const noCacheAssetExtensions = new Set(['.css', '.json']);
 
 function send(response, statusCode, body, headers = {}) {
   response.writeHead(statusCode, headers);
