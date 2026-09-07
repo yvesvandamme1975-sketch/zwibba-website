@@ -8,6 +8,6 @@ export type LegalPolicy = {
 };
 export function createLegalPolicy(options: {
   manifest: { status: string; version: string; effectiveAt?: string | null; documents: Array<{ kind: string; locale: string; market: string; file: string; sha256: string }> };
-  documents: Record<string, string>; now?: Date;
+  documents: Record<string, string>; now?: Date | (() => Date);
 }): LegalPolicy;
-export function loadLegalCatalog(options?: { manifestUrl?: URL; now?: Date }): LegalPolicy;
+export function loadLegalCatalog(options?: { manifestUrl?: URL; now?: Date | (() => Date) }): LegalPolicy;

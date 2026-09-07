@@ -77,7 +77,8 @@ function setup(t: any, active = true) {
 
 test('active CGU require an explicit acceptance before consuming OTP', async t => {
   const { service, prisma, otpCalls } = setup(t);
-  await assert.rejects(() => service.verifyOtp({ phoneNumber: '+32499000001', code: '123456' }), /conditions|CGU/i);
+  await assert.rejects(() => service.verifyOtp({ phoneNumber: '+32499000001', code: '123456' }),
+    (error: any) => error.getResponse().code === 'TERMS_ACCEPTANCE_REQUIRED');
   assert.equal(otpCalls(), 0);
   assert.equal(prisma.users.length, 0);
   assert.equal(prisma.sessions.length, 0);
@@ -132,6 +133,17 @@ test('accepting the current Dutch text does not demand French acceptance too', a
   const terms = policy.termsFor('BE', 'nl-BE')!;
   const session = await service.verifyOtp({ phoneNumber: '+32499000001', code: '123456', legalAcceptance: { accepted: true, version: terms.version, hash: terms.hash, locale: terms.locale } });
   assert.equal((await service.getLegalStatus(session.sessionToken)).needsAcceptance, false);
+});
+
+test('optional authentication never grants owner access before required acceptance', async t => {
+  const { service, prisma, acceptance } = setup(t);
+  const session = await service.verifyOtp({ phoneNumber: '+32499000001', code: '123456', legalAcceptance: acceptance });
+  assert.ok(await service.findSessionToken(session.sessionToken));
+  prisma.acceptances = [];
+  assert.equal(await service.findSessionToken(session.sessionToken), null);
+  assert.equal((await service.getLegalStatus(session.sessionToken)).needsAcceptance, true);
+  await service.acceptTerms(session.sessionToken, acceptance);
+  assert.ok(await service.findSessionToken(session.sessionToken));
 });
 
 test('inactive draft catalog leaves login unchanged and records no fictional acceptance', async t => {

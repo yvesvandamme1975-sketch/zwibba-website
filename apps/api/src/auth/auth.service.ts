@@ -170,7 +170,7 @@ export class AuthService {
   }
 
   async requireSessionToken(sessionToken: string | undefined, { skipTerms = false } = {}) {
-    const session = await this.findSessionToken(sessionToken);
+    const session = await this.findSessionToken(sessionToken, { skipTerms: true });
 
     if (!sessionToken) {
       throw new UnauthorizedException('Session manquante.');
@@ -233,7 +233,7 @@ export class AuthService {
     return this.legalStatusForSession(session);
   }
 
-  async findSessionToken(sessionToken: string | undefined) {
+  async findSessionToken(sessionToken: string | undefined, { skipTerms = false } = {}) {
     if (!sessionToken) {
       return null;
     }
@@ -255,10 +255,12 @@ export class AuthService {
       return null;
     }
 
-    return {
+    const record = {
       canSyncDrafts: true as const,
       phoneNumber: session.user.phoneNumber,
       sessionToken: session.token,
     };
+    if (!skipTerms && this.legalPolicy.active && (await this.legalStatusForSession(record)).needsAcceptance) return null;
+    return record;
   }
 }

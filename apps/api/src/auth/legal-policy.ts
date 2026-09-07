@@ -15,7 +15,10 @@ export function requiredTerms(policy: LegalPolicy, phoneNumber: string, locale?:
 
 export function validateTermsAcceptance(terms: LegalDocument | null, input?: TermsAcceptanceInput) {
   if (!terms) return;
-  if (input?.accepted !== true) throw new BadRequestException('Veuillez lire et accepter les conditions générales d’utilisation (CGU).');
+  if (input?.accepted !== true) throw new BadRequestException({
+    code: 'TERMS_ACCEPTANCE_REQUIRED',
+    message: 'Veuillez lire et accepter les conditions générales d’utilisation (CGU).',
+  });
   if (input.version !== terms.version || input.hash !== terms.hash || input.locale !== terms.locale) {
     throw new ConflictException('La version des conditions a changé. Rechargez-la avant de continuer.');
   }

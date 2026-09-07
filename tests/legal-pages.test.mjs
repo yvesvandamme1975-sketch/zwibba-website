@@ -61,6 +61,16 @@ test('future published version is consultable but not yet demanded', () => {
   assert.equal(policy.termsFor('CD'), null);
 });
 
+test('a running process starts requiring a published version at its effective date', () => {
+  let current = new Date('2026-09-06T23:59:59Z');
+  const policy = createLegalPolicy({ ...fixture(), now: () => current });
+  assert.equal(policy.active, false);
+  assert.equal(policy.termsFor('BE'), null);
+  current = new Date('2026-09-07T00:00:00Z');
+  assert.equal(policy.active, true);
+  assert.equal(policy.termsFor('BE').version, '2026-09-07');
+});
+
 test('legal page renders readable headings and escapes embedded HTML', () => {
   const page = renderLegalDocument({ locale: 'fr-BE', title: 'CGU', version: 'v1', content: '# Conditions\n\nUn <script>alert(1)</script> et **texte**.' });
   assert.match(page, /<h1>Conditions<\/h1>/);

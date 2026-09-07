@@ -42,7 +42,7 @@ Vous pouvez nous signaler un contenu que vous estimez illicite à [[CONTACT_EMAI
 
 ## 10. Portefeuille interne
 
-Zwibba comporte un solde interne en francs congolais (CDF), utilisable pour la mise en avant d'annonces. Aucun achat de crédit n'est proposé, aucun moyen de paiement externe n'est intégré, aucun prix en euros n'est pratiqué à ce jour.
+Zwibba comporte un solde interne en francs congolais (CDF), utilisable pour la mise en avant d'annonces. Aucun achat de crédit n'est proposé, aucun moyen de paiement externe n'est intégré, aucun achat de crédit en euros n’est proposé. Les vendeurs belges peuvent fixer le prix de leurs annonces en euros.
 
 ## 11. Responsabilité
 

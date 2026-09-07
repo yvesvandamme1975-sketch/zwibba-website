@@ -16,11 +16,13 @@ Ce document vous informe. Il n'est pas un contrat et ne vous demande pas de cons
 
 **Annonces** : titre, description, prix, catégorie, zone, photos, et le numéro de téléphone du compte propriétaire, conservé sur le brouillon et sur l'annonce. Les événements de cycle de vie enregistrent le numéro de l'auteur de l'action.
 
-**Échanges** : messages entre acheteur et vendeur, avis, réponses de vendeur, signalements d'avis. Si vous écrivez à l'assistance via WhatsApp, la conversation et votre identifiant WhatsApp sont conservés.
+**Échanges** : messages entre acheteur et vendeur, avis, réponses de vendeur, signalements d'avis. L’activation éventuelle d’une assistance WhatsApp et les données alors conservées doivent être vérifiées avant de décrire ce canal comme opérationnel.
 
 **Portefeuille** : les mouvements du solde interne et les mises en avant payées avec ce solde.
 
 **Mesure** : les recherches sont enregistrées avec le texte saisi tel quel, le pays et le nombre de résultats, sans identifiant de compte ; ce texte peut néanmoins contenir des données personnelles si vous en saisissez. Les changements de prix sont enregistrés avec la référence du brouillon ou de l'annonce : ces enregistrements restent rattachables au compte propriétaire et ne sont donc pas anonymes.
+
+**Acceptation des CGU** : la version, la langue, le texte accepté et la date d’acceptation sont conservés avec votre compte pour établir la preuve de votre accord.
 
 ## 3. Finalités et bases légales
 
@@ -36,11 +38,11 @@ Lorsque vous partagez une annonce, vous transmettez vous-même un lien public et
 
 ## 6. Destinataires
 
-Zwibba s'appuie sur des prestataires techniques : Railway (hébergement de l'application, de l'interface et de la base de données), Cloudflare (stockage des photos dans R2, diffusion du site), Meta (codes WhatsApp et messagerie d'assistance). L'assistance IA à la rédaction transmet la photo et le texte associé à Google (Gemini), et selon la configuration à Anthropic, à Mistral et à Google Cloud Vision. Ces traitements impliquent des transferts hors de l'Espace économique européen. Les garanties contractuelles applicables n'ont pas encore été vérifiées et seront décrites ici avant toute publication.
+Zwibba s'appuie sur des prestataires techniques : Railway (hébergement de l'application, de l'interface et de la base de données), Cloudflare (stockage des photos dans R2, diffusion du site), Meta (codes WhatsApp). L'assistance IA à la rédaction transmet la photo et le texte associé à Google (Gemini), et selon la configuration à Anthropic, à Mistral et à Google Cloud Vision. Ces traitements impliquent des transferts hors de l'Espace économique européen. Les garanties contractuelles applicables n'ont pas encore été vérifiées et seront décrites ici avant toute publication.
 
 ## 7. Conservation
 
-Vos données sont conservées tant que votre compte et vos annonces existent. Aucun mécanisme de suppression automatique programmée n'est en place aujourd'hui ; nous ne pouvons donc pas annoncer de durée chiffrée. Vous pouvez demander la suppression de vos données à [[CONTACT_EMAIL]].
+Les durées et critères de conservation restent à définir par catégorie avant publication. L’absence actuelle de suppression automatique ne constitue pas une justification pour une conservation illimitée. Vous pouvez demander la suppression de vos données à [[CONTACT_EMAIL]].
 
 ## 8. Vos droits
 

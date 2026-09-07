@@ -8,7 +8,7 @@ const TITLES = {
   nl: { terms: 'Gebruiksvoorwaarden', privacy: 'Privacyverklaring', 'legal-notice': 'Juridische informatie' },
 };
 
-export function createLegalPolicy({ manifest, documents = {}, now = new Date() }) {
+export function createLegalPolicy({ manifest, documents = {}, now = () => new Date() }) {
   if (!['draft', 'published'].includes(manifest?.status)) throw new Error('Invalid legal catalog status');
   if (manifest.status === 'draft') return { active: false, published: false, version: manifest.version, documents: [], termsFor: () => null };
   if (!/^\d{4}-\d{2}-\d{2}(?:\.\d+)?$/.test(manifest.version)) throw new Error('Invalid published legal version');
@@ -30,11 +30,11 @@ export function createLegalPolicy({ manifest, documents = {}, now = new Date() }
         title: TITLES[locale.slice(0, 2)][kind], path: `/legal/${locale}/${kind}/`, effectiveAt: manifest.effectiveAt });
     }
   }
-  const active = now.getTime() >= effectiveAt;
+  const isActive = () => (typeof now === 'function' ? now() : now).getTime() >= effectiveAt;
   return {
-    published: true, active, version: manifest.version, documents: result,
+    published: true, get active() { return isActive(); }, version: manifest.version, documents: result,
     termsFor(market, locale = market === 'BE' ? 'fr-BE' : 'fr-CD') {
-      if (!active) return null;
+      if (!isActive()) return null;
       const terms = result.find(item => item.kind === 'terms' && item.market === market && item.locale === locale);
       if (!terms) throw new Error('Invalid legal document locale');
       return terms;

@@ -81,6 +81,11 @@ Expected: PASS après échecs initiaux reproduits
 - Create/Modify: `App/features/auth/otp-screen.mjs`
 - Create/Modify: `App/services/auth-service.mjs`
 - Create/Modify: `App/app.js`
+- Create/Modify: `App/app.css`
+- Create/Modify: `App/services/legal-api-fetch.mjs`
+- Create/Modify: `tests/legal-api-fetch.test.mjs`
+- Create/Modify: `tests/legal-challenge-race.test.mjs`
+- Create/Modify: `scripts/e2e/legal-acceptance.mjs`
 - Create/Modify: `tests/terms-acceptance.test.mjs`
 - Create/Modify: `tests/auth-service.test.mjs`
 
@@ -97,7 +102,33 @@ Expected: PASS après échecs initiaux
 
 `git commit -m "feat: present explicit terms acceptance in account flows"`
 
-### Task 5: Verify and document publication blockers
+### Task 5: Correct review findings before activation
+
+**Files:**
+- Modify: `apps/api/assets/legal/catalog.mjs`
+- Modify: `apps/api/assets/legal/catalog.d.mts`
+- Modify: `apps/api/src/auth/auth.service.ts`
+- Modify: `apps/api/src/auth/legal-policy.ts`
+- Modify: `apps/api/test/auth/legal-acceptance.test.ts`
+- Modify: `tests/legal-pages.test.mjs`
+- Modify: `apps/api/assets/legal/draft-2026-09-07/ (reviewed factual corrections)`
+- Modify: `apps/api/assets/legal/manifest.json`
+- Modify: `docs/plans/2026-09-07-zwibba-legal-acceptance-implementation.md`
+
+**Step 1: Write the failing test or change**
+
+Ajout explicite après revue du 7 septembre : reproduire l’activation figée à la date de démarrage et le contexte propriétaire contournant l’acceptation. Ces deux échecs ont été observés avant correction. Le code d’erreur TERMS_ACCEPTANCE_REQUIRED permet aussi de charger les textes lors d’une première activation au milieu du challenge OTP. Le frontend couvre les réponses428 et les réponses tardives concernant un ancien challenge. Vérifier ensuite l’horloge dynamique et l’absence de privilèges pour une session non acceptée. Corriger les brouillons sur les prix EUR, la preuve contractuelle, le support non confirmé et la conservation.
+
+**Step 2: Verify**
+
+Run: `node --test tests/legal-pages.test.mjs && pnpm -C apps/api test -- legal-acceptance`
+Expected: 9 tests de catalogue et 8 tests d’acceptation PASS ; seconde revue sans point bloquant
+
+**Step 3: Commit**
+
+`git commit -m "fix: close legal activation and owner access gaps"`
+
+### Task 6: Verify and document publication blockers
 
 **Files:**
 - Create/Modify: `docs/operations/2026-09-07-legal-verification.md`

@@ -16,11 +16,13 @@ Dit document informeert u. Het is geen overeenkomst en vraagt u geen toestemming
 
 **Advertenties**: titel, beschrijving, prijs, categorie, zone, foto's, en het telefoonnummer van het eigenaarsaccount, dat op het ontwerp en op de advertentie bewaard blijft. De levenscyclusgebeurtenissen van een advertentie registreren het nummer van wie de handeling stelde.
 
-**Uitwisselingen**: de berichten tussen koper en verkoper, de beoordelingen en verkopersantwoorden, en de meldingen over beoordelingen. Schrijft u de ondersteuning aan via WhatsApp, dan worden het gesprek en uw WhatsApp-identificator bewaard.
+**Uitwisselingen**: de berichten tussen koper en verkoper, de beoordelingen en verkopersantwoorden, en de meldingen over beoordelingen. De eventuele activering van WhatsApp-ondersteuning en de daarbij bewaarde gegevens moeten worden geverifieerd voordat dit kanaal als operationeel wordt beschreven.
 
 **Portefeuille**: de bewegingen van het interne saldo en de daarmee betaalde advertentiepromoties.
 
 **Meting**: uitgevoerde zoekopdrachten worden geregistreerd met de ingetypte tekst zoals ze is, het land en het aantal resultaten, zonder accountidentificator; de tekst die u intikt kan niettemin persoonsgegevens bevatten als u die invoert. Prijswijzigingen worden geregistreerd met de referentie van het ontwerp of de advertentie: die registraties blijven herleidbaar tot het eigenaarsaccount en zijn dus niet anoniem.
+
+**Aanvaarding van de voorwaarden**: de versie, taal, aanvaarde tekst en datum worden bij uw account bewaard als bewijs van uw akkoord.
 
 ## 3. Doeleinden en rechtsgronden
 
@@ -36,11 +38,11 @@ Wanneer u een advertentie deelt, geeft u zelf een publieke link en eventueel een
 
 ## 6. Ontvangers
 
-Zwibba doet een beroep op technische dienstverleners: Railway (hosting van de toepassing, de interface en de databank), Cloudflare (opslag van de foto's in R2, levering en distributie van de site), Meta (verzending van de WhatsApp-codes en ondersteuningsberichten). De AI-hulp bij het opstellen stuurt de foto en de bijbehorende tekst naar Google (Gemini), en afhankelijk van de configuratie naar Anthropic, naar Mistral en naar Google Cloud Vision. Die verwerkingen brengen doorgiften buiten de Europese Economische Ruimte mee. De contractuele waarborgen voor die doorgiften zijn nog niet nagekeken en worden hier beschreven vóór enige publicatie.
+Zwibba doet een beroep op technische dienstverleners: Railway (hosting van de toepassing, de interface en de databank), Cloudflare (opslag van de foto's in R2, levering en distributie van de site), Meta (verzending van de WhatsApp-codes). De AI-hulp bij het opstellen stuurt de foto en de bijbehorende tekst naar Google (Gemini), en afhankelijk van de configuratie naar Anthropic, naar Mistral en naar Google Cloud Vision. Die verwerkingen brengen doorgiften buiten de Europese Economische Ruimte mee. De contractuele waarborgen voor die doorgiften zijn nog niet nagekeken en worden hier beschreven vóór enige publicatie.
 
 ## 7. Bewaring
 
-Uw gegevens worden bewaard zolang uw account en uw advertenties bestaan. Er is vandaag geen mechanisme voor geprogrammeerde automatische verwijdering; wij kunnen dus geen becijferde termijn aankondigen. U kunt ons de verwijdering van uw gegevens vragen via [[CONTACT_EMAIL]].
+Bewaartermijnen en criteria moeten vóór publicatie per gegevenscategorie worden vastgelegd. Het ontbreken van automatische verwijdering rechtvaardigt geen onbeperkte bewaring. U kunt ons de verwijdering van uw gegevens vragen via [[CONTACT_EMAIL]].
 
 ## 8. Uw rechten
 
