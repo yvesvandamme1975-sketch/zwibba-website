@@ -10,6 +10,8 @@ import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 
+import { buildSync } from 'esbuild';
+
 import {
   aboutValues,
   ambassadorChannels,
@@ -1425,6 +1427,32 @@ function buildLocale(localeModule) {
   return { content, pages };
 }
 
+// L'app était servie en ESM natif : le navigateur suivait ~75 imports imbriqués,
+// soit autant d'allers-retours jusqu'à l'origine au premier chargement (121 Ko
+// seulement, mais 5,3 s de DOMContentLoaded en fibre — bien pire en 3G, qui est
+// la norme sur le marché RDC). esbuild réduit tout ça à un seul fichier, servi
+// avec le `?v=` du build donc `immutable` côté cache (voir cacheControlForRequest
+// dans server.mjs). Les modules .mjs bruts restent copiés dans dist/ : ils ne
+// sont plus chargés par le navigateur mais servent de filet pour le debug.
+function bundleApp() {
+  buildSync({
+    entryPoints: [path.join(repoRoot, 'App', 'app.js')],
+    outfile: path.join(assetsDir, 'app', 'app.js'),
+    allowOverwrite: true,
+    bundle: true,
+    format: 'esm',
+    // Les téléphones du marché cible tournent souvent sur des Chrome anciens :
+    // on garde `?.` et `??` natifs (Chrome 80+) sans exiger plus récent.
+    target: ['es2020'],
+    minify: true,
+    // Les accents restent en UTF-8 plutôt qu'en séquences \u : plus court et lisible.
+    charset: 'utf8',
+    sourcemap: true,
+    legalComments: 'none',
+    logLevel: 'warning',
+  });
+}
+
 function build() {
   rmSync(distDir, { recursive: true, force: true });
   ensureDir(assetsDir);
@@ -1441,6 +1469,7 @@ function build() {
   writeText(path.join(assetsDir, 'listing-sort.mjs'), readFileSync(path.join(repoRoot, 'src/site/listing-sort.mjs'), 'utf8'));
   cpSync(path.join(repoRoot, 'App'), path.join(assetsDir, 'app'), { recursive: true });
   cpSync(path.join(repoRoot, 'shared'), path.join(assetsDir, 'shared'), { recursive: true });
+  bundleApp();
 
   writeText(path.join(distDir, 'manifest.webmanifest'), renderManifest());
   writeText(

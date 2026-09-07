@@ -110,6 +110,41 @@ Admin verification notes:
 
 The API already issues presigned upload URLs, so the mobile client can upload media directly to R2.
 
+## 4b. Cloudflare cache rule for the service worker
+
+The `zwibba.com` zone proxies the `website` service through Cloudflare. `.js` is on
+Cloudflare's default list of cached static extensions, so `/App/sw.js` is the one file
+whose origin headers get overridden: `server.mjs` sends `no-cache` for it (see
+`isServiceWorkerPath`), but the edge rewrites that to `max-age=14400` and serves the
+file from its own cache. Nothing else is affected — HTML stays `no-cache`/DYNAMIC,
+`.mjs` and `.webmanifest` are not cached, and versioned assets keep their `immutable`.
+
+The practical effect is bounded: browsers bypass their HTTP cache for the main service
+worker script anyway (`updateViaCache` defaults to `"imports"`), so the injected
+`max-age` does not delay update detection. What it does delay is `CACHE_VERSION`
+rotation, because an edge node can keep serving the previous `sw.js` after a deploy.
+Users still get the new bundle — the HTML is uncached and points at the new `?v=`.
+
+Fix it in the dashboard, not in this repository; the origin already sends the right
+headers.
+
+1. Open the `zwibba.com` zone, then **Caching → Cache Rules → Create rule**.
+2. Expression:
+   `(ends_with(http.request.uri.path, "/sw.js") or http.request.uri.path contains "service-worker")`
+   This mirrors `isServiceWorkerPath` in `server.mjs`; keep the two in sync.
+3. Set **Cache eligibility** to **Bypass cache**. Bypassing also stops Cloudflare from
+   applying a Browser TTL, so the origin's `no-cache` passes through untouched.
+4. Verify against the origin and the edge, which must agree:
+
+```
+curl -sI https://website-production-7a12.up.railway.app/App/sw.js | grep -i cache-control
+curl -sI https://zwibba.com/App/sw.js | grep -i -E 'cache-control|cf-cache-status'
+```
+
+   Both should report `no-cache`, and `cf-cache-status` should be `BYPASS` — never
+   `HIT` or `EXPIRED`. The Railway hostname bypasses Cloudflare, which makes it the
+   reference whenever an edge header looks wrong.
+
 ## 5. Create the Twilio Verify service
 
 1. In Twilio, create a Verify Service.

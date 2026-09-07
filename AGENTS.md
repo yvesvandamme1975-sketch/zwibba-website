@@ -14,7 +14,7 @@ Zwibba is a French-language classifieds platform for the Democratic Republic of 
 - `apps/api`: NestJS 11, Prisma 6 (Postgres-backed via `@prisma/client`), AWS S3 via `@aws-sdk/client-s3`. TypeScript, ES modules. Dev with `tsx watch`, build with `tsc -p tsconfig.build.json`. Tests via `scripts/run-tests.mjs` (custom `node --test` harness).
 - `apps/admin`: Node + TypeScript, ES modules, no framework. Same tsx/tsc tooling.
 - `apps/mobile`: Flutter, Dart `>=3.4 <4.0`. Deps: `flutter_secure_storage`, `http`, `shared_preferences`. Tests with `flutter test`.
-- `App/`: plain vanilla JavaScript, native ES modules (`.mjs`). No bundler, no framework, no transpilation. Modules import each other directly from the browser.
+- `App/`: plain vanilla JavaScript, native ES modules (`.mjs`). No framework. Sources import each other directly and must stay runnable unbundled; `scripts/build.mjs` bundles them with esbuild into a single `dist/assets/app/app.js` for delivery only (one request instead of ~75 on first load).
 - Static site / preview: `server.mjs` at repo root serves `dist/` for Railway.
 
 ## Repository layout you can rely on
@@ -80,7 +80,7 @@ When executing a plan, follow these without negotiation.
 2. **TDD is mandatory.** Step 1 of each task writes the failing state. Step 2's verification command must show the failure (or the post-change passing state) it claims. If the verification command output disagrees with the doc, stop and report — do not adjust the doc to match reality silently.
 3. **One commit per task.** Use the exact commit message in Step 3. Don't add `Co-authored-by` lines or modify the message.
 4. **Stay inside the working branch.** Feature work runs on `codex/{slug}`. Never push to `main` directly.
-5. **Don't introduce framework or bundler dependencies in `App/`.** It is intentionally framework-free vanilla ES modules. UI features land as `renderXxxScreen` functions and lightweight controllers.
+5. **Don't introduce framework dependencies in `App/`.** It is intentionally framework-free vanilla ES modules. UI features land as `renderXxxScreen` functions and lightweight controllers. The esbuild step in `scripts/build.mjs` is a delivery-time bundle, not a licence to add a framework, a router, or a second build step — `App/` sources stay plain ESM.
 6. **Don't hand-edit Prisma migrations.** Use the Prisma toolchain (`prisma migrate`) and commit generated files only.
 7. **French copy.** Customer-facing strings are in French (DRC). Don't translate or anglicise existing strings without an explicit instruction from a plan.
 8. **No invented APIs.** Every reference to a function, endpoint, table, env var, or file must be grounded in a file in the working tree. If something is missing, the plan must add it explicitly before referencing it.
@@ -150,3 +150,7 @@ If this section changes, update the corresponding section in `CLAUDE.md` in the 
 - `package.json` — the root scripts are the canonical entry points; don't shell out to lower-level commands unless a plan tells you to.
 
 The zwibba-plan-writer skill orchestrates the four phases (plan design, implementation doc, codex exec, Phase 4 Railway deploy). Rule 9 above is the Codex-side counterpart that activates when the implementation doc includes a smoke marker.
+
+## Operational update — 2026-09-07 (takes precedence over older release instructions)
+
+The application trunk is `codex/website-vitrine-backup`; use it as the GitHub default and PR target. `main` is retained historical landing code. Read `README.md` and `docs/operations/git-and-releases.md` before Git or release operations. The primary workspace should show the trunk; `browser-live` is a clean detached release checkout, not a feature workspace. Preserve all dirty historical worktrees. Verify each affected Railway service and its release SHA separately; do not blindly follow an older `pull --ff-only`/website-only deployment recipe. Existing esbuild delivery bundling is intentional. Belgium and DRC have equal priority under the 6 September operating agreement. For this Git reconciliation Yves requests native Codex notifications on iPhone for progress and decisions; phone delivery must be verified, not assumed.

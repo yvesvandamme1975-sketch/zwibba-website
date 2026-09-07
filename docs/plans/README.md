@@ -155,3 +155,5 @@ Current priority docs:
 Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or superseded here.
 - `2026-08-06-zwibba-whatsapp-support-agent-design.md`
 - `2026-08-06-zwibba-whatsapp-support-agent-implementation.md`
+
+- [2026-09-07 Git order](2026-09-07-zwibba-git-order-implementation.md)
