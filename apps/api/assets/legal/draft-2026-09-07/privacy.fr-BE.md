@@ -10,7 +10,7 @@ Ce document vous informe. Il n'est pas un contrat et ne vous demande pas de cons
 
 ## 1. Responsable du traitement
 
-[[LEGAL_NAME]], [[LEGAL_FORM]], [[ADDRESS]], numéro d'entreprise [[ENTERPRISE_NUMBER]]. Contact : [[CONTACT_EMAIL]].
+Yves Van Damme, personne physique exerçant une activité indépendante sous le nom commercial Aïves Consulting, Rue Jean Schyns 29, 7100 La Louvière, Belgique, numéro d'entreprise 0825.089.324. Contact : hello@aivesconsulting.com.
 
 ## 2. Données traitées
 
@@ -44,11 +44,11 @@ Zwibba s'appuie sur des prestataires techniques : Railway (hébergement de l'app
 
 ## 7. Conservation
 
-Les durées et critères de conservation restent à définir par catégorie avant publication. L’absence actuelle de suppression automatique ne constitue pas une justification pour une conservation illimitée. Vous pouvez demander la suppression de vos données à [[CONTACT_EMAIL]].
+Les durées et critères de conservation restent à définir par catégorie avant publication. L’absence actuelle de suppression automatique ne constitue pas une justification pour une conservation illimitée. Vous pouvez demander la suppression de vos données à hello@aivesconsulting.com.
 
 ## 8. Vos droits
 
-Vous disposez des droits d'accès, de rectification, d'effacement, de limitation, d'opposition et de portabilité, ainsi que du droit de ne pas faire l'objet d'une décision entièrement automatisée. Ces droits existent quelle que soit l'interface disponible : Zwibba ne propose pas encore de bouton dédié et traite les demandes manuellement, à [[CONTACT_EMAIL]]. Nous répondons dans un délai d'un mois, prolongeable de deux mois pour une demande complexe si nous vous en informons dans le premier mois. L'exercice de ces droits est gratuit.
+Vous disposez des droits d'accès, de rectification, d'effacement, de limitation, d'opposition et de portabilité, ainsi que du droit de ne pas faire l'objet d'une décision entièrement automatisée. Ces droits existent quelle que soit l'interface disponible : Zwibba ne propose pas encore de bouton dédié et traite les demandes manuellement, à hello@aivesconsulting.com. Nous répondons dans un délai d'un mois, prolongeable de deux mois pour une demande complexe si nous vous en informons dans le premier mois. L'exercice de ces droits est gratuit.
 
 ## 9. Réclamation
 

@@ -8,7 +8,7 @@
 
 ## 1. Qui exploite Zwibba
 
-Zwibba est exploité par [[LEGAL_NAME]], [[LEGAL_FORM]], dont le siège est situé [[ADDRESS]], immatriculée sous le numéro [[ENTERPRISE_NUMBER]], numéro de TVA [[VAT_NUMBER_IF_APPLICABLE]]. Contact : [[CONTACT_EMAIL]].
+Zwibba est exploité par Yves Van Damme, personne physique exerçant une activité indépendante sous le nom commercial Aïves Consulting, dont l’adresse professionnelle est située Rue Jean Schyns 29, 7100 La Louvière, Belgique, inscrit à la Banque-Carrefour des Entreprises belge sous le numéro 0825.089.324, numéro de TVA [[VAT_NUMBER_IF_APPLICABLE]]. Contact : hello@aivesconsulting.com.
 
 ## 2. Ce que fait Zwibba, et ce qu'il ne fait pas
 
@@ -40,7 +40,7 @@ Zwibba génère des liens publics et des visuels que vous pouvez partager. Le pa
 
 ## 9. Signalement et modération
 
-Vous pouvez nous signaler un contenu que vous estimez illicite à [[CONTACT_EMAIL]]. Nous examinons les signalements et pouvons retirer une annonce, la refuser ou suspendre un compte. Lorsque nous restreignons un contenu, nous vous en indiquons le motif.
+Vous pouvez nous signaler un contenu que vous estimez illicite à hello@aivesconsulting.com. Nous examinons les signalements et pouvons retirer une annonce, la refuser ou suspendre un compte. Lorsque nous restreignons un contenu, nous vous en indiquons le motif.
 
 ## 10. Portefeuille interne
 

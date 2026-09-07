@@ -20,8 +20,8 @@ Le catalogue refuse les textes incomplets, les empreintes incorrectes et un jeu 
 
 ## Informations et décisions encore nécessaires
 
-1. Nom commercial confirmé par Yves le 7 septembre : **Aïves Consulting, pour l’instant**. Identité juridique portant ce nom commercial, adresse professionnelle, immatriculation/BCE et TVA à confirmer avant publication. Le nom commercial est désormais inscrit dans les neuf brouillons ; le champ LEGAL_NAME reste réservé à la personne physique ou morale juridiquement responsable.
-2. Contact effectivement chargé des signalements et droits sur les données ; procédure de prise en charge et notification des motifs de modération à vérifier.
+1. **Exploitant et coordonnées confirmés par Yves le 7 septembre** : Yves Van Damme, personne physique indépendante sous le nom commercial provisoire Aïves Consulting ; Rue Jean Schyns 29, 7100 La Louvière, Belgique ; BCE 0825.089.324. Les neuf brouillons sont complétés. Le numéro/statut TVA reste distinct et non confirmé par cette réponse.
+2. **Contact confirmé : hello@aivesconsulting.com**, pour Zwibba, les signalements et les droits sur les données. La procédure de prise en charge et de notification des motifs de modération reste à vérifier.
 3. Choix d’âge minimum. La proposition de 18 ans avec attestation a été soumise à Yves, sans réponse à ce stade. Aucun contrôle d’âge fictif n’a été ajouté.
 4. Durées ou critères de conservation par catégorie et modalités concrètes de suppression, y compris preuve contractuelle. L’absence de purge ne justifie pas une conservation illimitée.
 5. Localisation effective, contrats et garanties des prestataires/transferts ; situation applicable en RDC à vérifier sur les sources officielles. Aucune conformité ni obligation de migration territoriale n’est certifiée par une génération de texte.
@@ -51,3 +51,7 @@ Ouvrir la PR en brouillon vers le trunk et conserver la préparation non déploy
 ## Décision complémentaire — exploitant provisoire
 
 Yves précise : « Sous le nom d’aives consulting pour l’instant ». Cette décision remplace l’incertitude sur le nom commercial et conserve son caractère provisoire. Elle ne signifie ni création d’une société distincte ni confirmation automatique des autres coordonnées. Les notes Aïves contiennent des coordonnées historiques ; leur actualité reste à confirmer, la consultation du registre officiel n’ayant pas abouti dans cette session. Catalogue maintenu draft.
+
+### Confirmation des coordonnées
+
+Yves répond « oui » à la confirmation de son identité d’indépendant, de la BCE 0825.089.324, de l’adresse Rue Jean Schyns 29, 7100 La Louvière et de hello@aivesconsulting.com comme contact Zwibba. Cette confirmation remplace les réserves d’actualité ci-dessus pour ces seules coordonnées. Les champs correspondants sont complétés dans les neuf textes ; les autres décisions et le statut draft sont conservés.

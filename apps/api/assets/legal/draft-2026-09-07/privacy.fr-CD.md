@@ -10,7 +10,7 @@ Ce document vous informe. Il n'est pas un contrat et ne vous demande pas de cons
 
 ## 1. Responsable du traitement
 
-[[LEGAL_NAME]], [[LEGAL_FORM]], [[ADDRESS]], immatriculée sous le numéro [[ENTERPRISE_NUMBER]]. Contact : [[CONTACT_EMAIL]].
+Yves Van Damme, personne physique exerçant une activité indépendante sous le nom commercial Aïves Consulting, Rue Jean Schyns 29, 7100 La Louvière, Belgique, inscrit à la Banque-Carrefour des Entreprises belge sous le numéro 0825.089.324. Contact : hello@aivesconsulting.com.
 
 ## 2. Données traitées
 
@@ -46,11 +46,11 @@ Ces prestataires hébergent et traitent les données en dehors du territoire con
 
 ## 7. Conservation
 
-Les durées et critères de conservation restent à définir par catégorie avant publication. L’absence actuelle de suppression automatique ne constitue pas une justification pour une conservation illimitée. Vous pouvez demander la suppression de vos données à [[CONTACT_EMAIL]].
+Les durées et critères de conservation restent à définir par catégorie avant publication. L’absence actuelle de suppression automatique ne constitue pas une justification pour une conservation illimitée. Vous pouvez demander la suppression de vos données à hello@aivesconsulting.com.
 
 ## 8. Vos droits
 
-L'ordonnance-loi n° 23/010 du 13 mars 2023 portant Code du numérique vous reconnaît notamment des droits d'information, d'accès, de rectification, d'opposition et d'effacement. Ces droits existent quelle que soit l'interface disponible : Zwibba ne propose pas encore de bouton dédié et traite les demandes manuellement, à [[CONTACT_EMAIL]]. L'exercice de ces droits est gratuit.
+L'ordonnance-loi n° 23/010 du 13 mars 2023 portant Code du numérique vous reconnaît notamment des droits d'information, d'accès, de rectification, d'opposition et d'effacement. Ces droits existent quelle que soit l'interface disponible : Zwibba ne propose pas encore de bouton dédié et traite les demandes manuellement, à hello@aivesconsulting.com. L'exercice de ces droits est gratuit.
 
 ## 9. Réclamation
 

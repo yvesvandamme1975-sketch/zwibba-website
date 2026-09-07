@@ -10,7 +10,7 @@ Dit document informeert u. Het is geen overeenkomst en vraagt u geen toestemming
 
 ## 1. Verwerkingsverantwoordelijke
 
-[[LEGAL_NAME]], [[LEGAL_FORM]], [[ADDRESS]], ondernemingsnummer [[ENTERPRISE_NUMBER]]. Contact: [[CONTACT_EMAIL]].
+Yves Van Damme, zelfstandige natuurlijke persoon, handelend onder de handelsnaam Aïves Consulting, Rue Jean Schyns 29, 7100 La Louvière, België, ondernemingsnummer 0825.089.324. Contact: hello@aivesconsulting.com.
 
 ## 2. Verwerkte gegevens
 
@@ -44,11 +44,11 @@ Zwibba doet een beroep op technische dienstverleners: Railway (hosting van de to
 
 ## 7. Bewaring
 
-Bewaartermijnen en criteria moeten vóór publicatie per gegevenscategorie worden vastgelegd. Het ontbreken van automatische verwijdering rechtvaardigt geen onbeperkte bewaring. U kunt ons de verwijdering van uw gegevens vragen via [[CONTACT_EMAIL]].
+Bewaartermijnen en criteria moeten vóór publicatie per gegevenscategorie worden vastgelegd. Het ontbreken van automatische verwijdering rechtvaardigt geen onbeperkte bewaring. U kunt ons de verwijdering van uw gegevens vragen via hello@aivesconsulting.com.
 
 ## 8. Uw rechten
 
-U hebt recht op inzage, verbetering, wissing, beperking, bezwaar en overdraagbaarheid, en het recht niet te worden onderworpen aan een volledig geautomatiseerde beslissing. Die rechten bestaan ongeacht de beschikbare interface: Zwibba biedt nog geen aparte knop en behandelt aanvragen manueel, gericht aan [[CONTACT_EMAIL]]. Wij antwoorden binnen één maand, met twee maanden verlengbaar voor een complexe aanvraag als wij u daarvan binnen de eerste maand op de hoogte brengen. De uitoefening van deze rechten is kosteloos.
+U hebt recht op inzage, verbetering, wissing, beperking, bezwaar en overdraagbaarheid, en het recht niet te worden onderworpen aan een volledig geautomatiseerde beslissing. Die rechten bestaan ongeacht de beschikbare interface: Zwibba biedt nog geen aparte knop en behandelt aanvragen manueel, gericht aan hello@aivesconsulting.com. Wij antwoorden binnen één maand, met twee maanden verlengbaar voor een complexe aanvraag als wij u daarvan binnen de eerste maand op de hoogte brengen. De uitoefening van deze rechten is kosteloos.
 
 ## 9. Klacht
 

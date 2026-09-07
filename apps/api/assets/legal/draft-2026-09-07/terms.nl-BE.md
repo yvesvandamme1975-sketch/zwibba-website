@@ -8,7 +8,7 @@
 
 ## 1. Wie Zwibba uitbaat
 
-Zwibba wordt uitgebaat door [[LEGAL_NAME]], [[LEGAL_FORM]], met zetel te [[ADDRESS]], ingeschreven in de Kruispuntbank van Ondernemingen onder het nummer [[ENTERPRISE_NUMBER]], btw-nummer [[VAT_NUMBER_IF_APPLICABLE]]. Contact: [[CONTACT_EMAIL]].
+Zwibba wordt uitgebaat door Yves Van Damme, zelfstandige natuurlijke persoon, handelend onder de handelsnaam Aïves Consulting, met zetel te Rue Jean Schyns 29, 7100 La Louvière, België, ingeschreven in de Kruispuntbank van Ondernemingen onder het nummer 0825.089.324, btw-nummer [[VAT_NUMBER_IF_APPLICABLE]]. Contact: hello@aivesconsulting.com.
 
 ## 2. Wat Zwibba doet, en wat niet
 
@@ -40,7 +40,7 @@ Op basis van uw foto kan Zwibba een titel, beschrijving en categorie voorstellen
 
 ## 9. Melding en moderatie
 
-U kunt ons inhoud melden die u onwettig acht, via [[CONTACT_EMAIL]]. Wij onderzoeken meldingen en kunnen een advertentie verwijderen of weigeren, of een account schorsen. Wanneer wij inhoud beperken, delen wij u de reden mee. Die rechten, net als die uit verordening (EU) 2022/2065, hangen niet af van een specifiek formulier in de toepassing.
+U kunt ons inhoud melden die u onwettig acht, via hello@aivesconsulting.com. Wij onderzoeken meldingen en kunnen een advertentie verwijderen of weigeren, of een account schorsen. Wanneer wij inhoud beperken, delen wij u de reden mee. Die rechten, net als die uit verordening (EU) 2022/2065, hangen niet af van een specifiek formulier in de toepassing.
 
 ## 10. Interne portefeuille
 

@@ -8,12 +8,12 @@
 
 ## Éditeur du site et de l'application
 
-**Dénomination :** [[LEGAL_NAME]]
-**Forme juridique :** [[LEGAL_FORM]]
-**Siège :** [[ADDRESS]]
-**Numéro d'immatriculation :** [[ENTERPRISE_NUMBER]]
+**Dénomination :** Yves Van Damme
+**Forme juridique :** personne physique exerçant une activité indépendante sous le nom commercial Aïves Consulting
+**Adresse professionnelle :** Rue Jean Schyns 29, 7100 La Louvière, Belgique
+**Numéro d’entreprise (BCE belge) :** 0825.089.324
 **Numéro de TVA :** [[VAT_NUMBER_IF_APPLICABLE]]
-**Adresse électronique de contact :** [[CONTACT_EMAIL]]
+**Adresse électronique de contact :** hello@aivesconsulting.com
 
 Cette adresse électronique permet de nous contacter directement. Elle sert également de point de contact pour signaler un contenu que vous estimez illicite.
 

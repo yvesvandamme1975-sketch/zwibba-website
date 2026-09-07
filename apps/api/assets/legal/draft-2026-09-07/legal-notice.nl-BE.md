@@ -8,12 +8,12 @@
 
 ## Uitgever van de site en de toepassing
 
-**Benaming:** [[LEGAL_NAME]]
-**Rechtsvorm:** [[LEGAL_FORM]]
-**Vestigingsadres:** [[ADDRESS]]
-**Ondernemingsnummer (Kruispuntbank van Ondernemingen):** [[ENTERPRISE_NUMBER]]
+**Benaming:** Yves Van Damme
+**Rechtsvorm:** zelfstandige natuurlijke persoon, handelend onder de handelsnaam Aïves Consulting
+**Vestigingsadres:** Rue Jean Schyns 29, 7100 La Louvière, België
+**Ondernemingsnummer (Kruispuntbank van Ondernemingen):** 0825.089.324
 **Btw-nummer:** [[VAT_NUMBER_IF_APPLICABLE]]
-**Contactadres per e-mail:** [[CONTACT_EMAIL]]
+**Contactadres per e-mail:** hello@aivesconsulting.com
 
 Via dit e-mailadres kunt u ons rechtstreeks en doeltreffend bereiken. Het dient ook als contactpunt om inhoud te melden die u onwettig acht.
 
