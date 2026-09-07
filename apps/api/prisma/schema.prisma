@@ -8,6 +8,7 @@ datasource db {
 }
 
 model User {
+  termsAcceptances  TermsAcceptance[]
   boostPurchases     BoostPurchase[]
   chatThreadsAsBuyer ChatThread[]        @relation("BuyerThreads")
   countryCode        String              @default("CD")
@@ -335,4 +336,20 @@ model ListingPriceEvent {
   @@index([countryCode, createdAt])
   @@index([draftId, createdAt])
   @@index([listingId, createdAt])
+}
+
+
+model TermsAcceptance {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  version      String
+  documentHash String
+  documentText String
+  locale       String
+  market       String
+  acceptedAt   DateTime @default(now())
+
+  @@unique([userId, version, documentHash, locale, market])
+  @@index([userId, market, version])
 }
