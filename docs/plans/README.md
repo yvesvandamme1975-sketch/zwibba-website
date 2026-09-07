@@ -4,6 +4,9 @@ This directory is now the active planning location for Zwibba work in `/Users/pc
 
 Current priority docs:
 
+- `2026-09-07-zwibba-modern-sharing-design.md`
+- `2026-09-07-zwibba-modern-sharing-implementation.md`
+
 - `2026-03-14-zwibba-root-monorepo-design.md`
 - `2026-03-14-zwibba-root-monorepo-implementation.md`
 - `2026-03-16-zwibba-root-monorepo-phase-3-implementation.md`
