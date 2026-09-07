@@ -12,6 +12,8 @@ Ce document vous informe. Il n'est pas un contrat et ne vous demande pas de cons
 
 Yves Van Damme, personne physique exerçant une activité indépendante sous le nom commercial Aïves Consulting, Rue Jean Schyns 29, 7100 La Louvière, Belgique, inscrit à la Banque-Carrefour des Entreprises belge sous le numéro 0825.089.324. Contact : hello@aivesconsulting.com.
 
+Les données personnelles fournies à l’inscription sont traitées sous la responsabilité de l’exploitant pour les finalités et sur les bases légales décrites dans cette notice. Leur collecte ne transfère aucun droit de propriété sur vos données à Zwibba et ne vous fait pas renoncer à vos droits. Le numéro de téléphone est nécessaire à la création et à la sécurisation du compte ; sans ce numéro, aucun compte ne peut être créé.
+
 ## 2. Données traitées
 
 **Compte** : votre numéro de téléphone, votre nom d'affichage, la zone que vous indiquez et votre pays de marché. Zwibba ne demande pas votre date de naissance. La vérification par code à usage unique produit des enregistrements de tentative et d'expiration.

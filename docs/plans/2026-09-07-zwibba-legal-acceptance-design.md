@@ -26,3 +26,9 @@ Les sessions existantes disposent d’un endpoint de statut et d’un endpoint d
 Case CGU non précochée dans l’écran OTP, liens vers les trois documents publiés, aucune case « consentement confidentialité ». Écran de nouvelle acceptation pour les sessions existantes, possibilité de continuer sans compte. Le serveur reste autoritaire si une version change pendant le parcours. Les liens publics et le profil n’annoncent les textes que lorsque le catalogue est publié.
 ### 5. Déploiement et limites
 La préparation peut être vérifiée sur fixtures de catalogue publié, mais le catalogue réel reste draft tant que les données de l’exploitant et les engagements opérationnels manquent. Publier les textes et activer la demande d’acceptation requiert un commit explicite après finalisation. Aucun engagement légal à compléter ne devient automatiquement actif.
+
+## Décision du 7 septembre — adultes et rôle contractuel
+
+Yves décide explicitement d’interdire Zwibba aux mineurs. Le service est réservé aux personnes de 18 ans révolus. La case existante, obligatoire et non précochée, associe déclaration de majorité et acceptation des CGU versionnées, pour inscription et réacceptation. Aucune date de naissance ni preuve d’identité supplémentaire n’est collectée ; cette déclaration ne garantit pas l’âge réel ni à elle seule le respect des conditions Gemini.
+
+Les ventes, paiements et livraisons sont convenus entre vendeurs et acheteurs. L’exploitant conserve ses obligations propres et les responsabilités légalement impératives. Les données d’inscription sont traitées sous sa responsabilité pour les finalités annoncées, sans transfert de propriété ni renonciation des utilisateurs à leurs droits. Le catalogue reste draft tant que les autres faits nécessaires ne sont pas vérifiés.

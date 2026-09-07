@@ -12,11 +12,11 @@ Zwibba est exploité par Yves Van Damme, personne physique exerçant une activit
 
 ## 2. Ce que fait Zwibba, et ce qu'il ne fait pas
 
-Zwibba est une application web de petites annonces : publier une annonce, la rendre visible au public, échanger des messages entre acheteur et vendeur. Zwibba n'est pas partie aux ventes : il ne vend rien, ne détient aucun bien, n'organise ni la livraison ni le paiement, et ne garantit ni l'existence, ni la qualité, ni la conformité des biens proposés. Le contrat de vente se forme entre l'acheteur et le vendeur.
+Zwibba est une application web de petites annonces : publier une annonce, la rendre visible au public, échanger des messages entre acheteur et vendeur. Zwibba n'est pas partie aux ventes : il ne vend rien, ne détient aucun bien, n'organise ni la livraison ni le paiement, et ne garantit ni l'existence, ni la qualité, ni la conformité des biens proposés. Les achats et ventes sont conclus exclusivement entre l’acheteur et le vendeur. Ils conviennent directement du prix, du paiement et des modalités de remise ou de livraison, et répondent de l’exécution de leurs engagements. Zwibba fournit le service de mise en relation ; il n’est ni vendeur, ni acheteur, ni garant de la transaction. Cette répartition ne supprime pas les obligations propres de l’exploitant ni les responsabilités que la loi interdit d’exclure.
 
 ## 3. Compte
 
-La création d’un compte nécessite un numéro de téléphone belge ou congolais, vérifié par un code à usage unique envoyé sur WhatsApp. Vous êtes responsable de l'usage de votre compte et de l'exactitude des informations que vous y placez. **Âge minimum proposé : [[MINIMUM_AGE_TO_CONFIRM]]** — proposition non décidée ; aucune vérification d'âge n'est mise en œuvre aujourd'hui.
+La création d’un compte nécessite un numéro de téléphone belge ou congolais, vérifié par un code à usage unique envoyé sur WhatsApp. Vous êtes responsable de l'usage de votre compte et de l'exactitude des informations que vous y placez. Zwibba est réservé aux personnes âgées de 18 ans révolus. L’accès et l’utilisation sont interdits aux mineurs, même avec une autorisation parentale. En acceptant les présentes CGU, vous certifiez avoir 18 ans révolus. Cette déclaration ne constitue pas une vérification d’identité ou de l’âge réel. La consultation des pages publiques ne comporte actuellement aucun contrôle d’âge ; cette absence de contrôle ne vaut pas autorisation d’utilisation par un mineur. Un compte utilisé par un mineur peut être suspendu.
 
 ## 4. Acceptation et versions
 

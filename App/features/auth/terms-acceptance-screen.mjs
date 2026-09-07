@@ -52,6 +52,10 @@ export function renderTermsAcceptanceFields({
     return '';
   }
 
+  const dutch = terms.locale === 'nl-BE';
+  const declaration = dutch
+    ? 'Ik verklaar dat ik minstens 18 jaar oud ben. Ik heb de volgende voorwaarden gelezen en aanvaard deze:'
+    : 'Je certifie avoir 18 ans révolus. J’ai lu et j’accepte les';
   const title = terms.title || defaultTermsTitle;
   const termsLabel = isPresentableDocument(terms)
     ? `<a class="app-flow__link" href="${escapeAttribute(
@@ -66,7 +70,7 @@ export function renderTermsAcceptanceFields({
       <div class="app-flow__note app-legal">
         <label class="app-legal__consent">
           <input type="checkbox" name="acceptedTerms" value="true" required />
-          <span>J’ai lu et j’accepte les ${termsLabel} (version ${escapeHtml(
+          <span>${escapeHtml(declaration)} ${termsLabel} (${escapeHtml(dutch ? 'versie' : 'version')} ${escapeHtml(
             terms.version,
           )}).</span>
         </label>

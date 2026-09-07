@@ -12,11 +12,11 @@ Zwibba wordt uitgebaat door Yves Van Damme, zelfstandige natuurlijke persoon, ha
 
 ## 2. Wat Zwibba doet, en wat niet
 
-Zwibba is een webtoepassing voor zoekertjes: een advertentie plaatsen, ze publiek zichtbaar maken, berichten uitwisselen tussen koper en verkoper. Zwibba is geen partij bij de verkopen: het verkoopt niets, houdt geen goederen bij, organiseert noch de levering noch de betaling, en waarborgt het bestaan, de kwaliteit of de conformiteit van de aangeboden goederen niet. De koopovereenkomst komt tot stand tussen koper en verkoper.
+Zwibba is een webtoepassing voor zoekertjes: een advertentie plaatsen, ze publiek zichtbaar maken, berichten uitwisselen tussen koper en verkoper. Zwibba is geen partij bij de verkopen: het verkoopt niets, houdt geen goederen bij, organiseert noch de levering noch de betaling, en waarborgt het bestaan, de kwaliteit of de conformiteit van de aangeboden goederen niet. Aankopen en verkopen worden uitsluitend tussen koper en verkoper gesloten. Zij spreken rechtstreeks de prijs, betaling en overdracht of levering af en staan in voor de uitvoering van hun verbintenissen. Zwibba brengt hen met elkaar in contact; het is geen verkoper, koper of garant van de transactie. Dit doet geen afbreuk aan de eigen verplichtingen van de uitbater of aan aansprakelijkheid die wettelijk niet kan worden uitgesloten.
 
 ## 3. Account
 
-Een account aanmaken vereist een Belgisch of Congolees telefoonnummer, geverifieerd met een eenmalige code die via WhatsApp wordt verstuurd. U bent verantwoordelijk voor het gebruik van uw account en voor de juistheid van de gegevens die u erin plaatst. **Voorgestelde minimumleeftijd: [[MINIMUM_AGE_TO_CONFIRM]]** — een voorstel, geen beslissing; er is vandaag geen enkele leeftijdscontrole ingebouwd.
+Een account aanmaken vereist een Belgisch of Congolees telefoonnummer, geverifieerd met een eenmalige code die via WhatsApp wordt verstuurd. U bent verantwoordelijk voor het gebruik van uw account en voor de juistheid van de gegevens die u erin plaatst. Zwibba is uitsluitend bestemd voor personen van 18 jaar of ouder. Toegang en gebruik zijn verboden voor minderjarigen, ook met ouderlijke toestemming. Door deze voorwaarden te aanvaarden, verklaart u dat u minstens 18 jaar oud bent. Deze verklaring is geen controle van uw identiteit of werkelijke leeftijd. Bij het bekijken van openbare pagina’s wordt momenteel geen leeftijdscontrole uitgevoerd; het ontbreken van die controle geeft minderjarigen geen toestemming om de dienst te gebruiken. Een account dat door een minderjarige wordt gebruikt, kan worden geschorst.
 
 ## 4. Aanvaarding en versies
 

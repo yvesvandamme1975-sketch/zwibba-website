@@ -66,3 +66,18 @@ test('OTP copy does not claim a demo code for a real challenge', () => {
   assert.match(demo, /démonstration/);
   assert.match(demo, /123456/);
 });
+
+test('registration and returning accounts explicitly attest adulthood with the terms', () => {
+  const legal = { required: true, terms, documents };
+  for (const html of [renderOtpScreen({ legal }), renderTermsAcceptanceScreen({ legal })]) {
+    assert.match(html, /Je certifie avoir 18 ans révolus/);
+    assert.match(html, /name="acceptedTerms"[^>]*required/);
+    assert.doesNotMatch(html, /checked|name="birthDate"/);
+  }
+});
+
+test('Dutch terms use a Dutch adulthood and acceptance declaration', () => {
+ const html = renderTermsAcceptanceFields({ legal: { terms: { ...terms, locale: 'nl-BE' } } });
+ assert.match(html, /Ik verklaar dat ik minstens 18 jaar oud ben/);
+ assert.doesNotMatch(html, /Je certifie avoir/);
+});

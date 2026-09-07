@@ -149,3 +149,28 @@ Expected: PASS ; activation réelle uniquement après finalisation des informati
 ## Release conditions
 
 Follow docs/operations/git-and-releases.md. All tests and review precede a PR to trunk. While legal facts remain unresolved, keep this branch reviewable and do not activate published status. If shipping the inactive preparation separately becomes useful, the release must explicitly record that no terms are in force. Activation requires complete verified manifest, real public links, website/API at the same reviewed version, document HTTP200 and SHA checks, then an account-flow smoke without fabricating acceptance for a real user. Public legal text marker is the actual published version and must be stated in the activation change, not invented now.
+
+### Task 7: Apply adult-only and intermediary decisions
+
+**Files:**
+- Modify: `docs/plans/2026-09-07-zwibba-legal-acceptance-design.md`
+- Modify: `docs/plans/2026-09-07-zwibba-legal-acceptance-implementation.md`
+- Modify: `App/features/auth/terms-acceptance-screen.mjs`
+- Modify: `tests/terms-acceptance.test.mjs`
+- Modify: `apps/api/assets/legal/draft-2026-09-07/terms.fr-BE.md`, `terms.fr-CD.md`, `terms.nl-BE.md`
+- Modify: `apps/api/assets/legal/draft-2026-09-07/privacy.fr-BE.md`, `privacy.fr-CD.md`, `privacy.nl-BE.md`
+- Modify: `apps/api/assets/legal/manifest.json`
+- Modify: `docs/operations/2026-09-07-legal-verification.md`
+
+**Step 1: Write the failing test or change**
+
+Tester la déclaration explicite de 18 ans sur inscription OTP et réacceptation. Observer son absence avant modification. Ajouter cette déclaration à la case existante, préciser les trois CGU sur majorité, transactions et responsabilités propres, et les trois notices sur traitement sans appropriation des données. Recalculer les empreintes, conserver draft.
+
+**Step 2: Verify**
+
+Run: `node --test tests/terms-acceptance.test.mjs tests/legal-pages.test.mjs tests/auth-service.test.mjs && npm run build`
+Expected: PASS après échec initial de la déclaration de majorité ; build réussi, aucun brouillon publié
+
+**Step 3: Commit**
+
+`git commit -m "feat: clarify adult eligibility and marketplace responsibilities"`

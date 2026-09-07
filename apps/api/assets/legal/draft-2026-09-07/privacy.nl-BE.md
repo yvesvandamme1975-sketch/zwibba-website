@@ -12,6 +12,8 @@ Dit document informeert u. Het is geen overeenkomst en vraagt u geen toestemming
 
 Yves Van Damme, zelfstandige natuurlijke persoon, handelend onder de handelsnaam Aïves Consulting, Rue Jean Schyns 29, 7100 La Louvière, België, ondernemingsnummer 0825.089.324. Contact: hello@aivesconsulting.com.
 
+De persoonsgegevens die u bij de registratie verstrekt, worden onder verantwoordelijkheid van de uitbater verwerkt voor de doeleinden en op de rechtsgronden in deze verklaring. Door de verzameling worden uw gegevens geen eigendom van Zwibba en doet u geen afstand van uw rechten. Het telefoonnummer is noodzakelijk om het account aan te maken en te beveiligen; zonder dit nummer kan geen account worden aangemaakt.
+
 ## 2. Verwerkte gegevens
 
 **Account**: uw telefoonnummer, uw weergavenaam, de zone die u opgeeft en uw marktland. Zwibba vraagt uw geboortedatum niet. De verificatie met een eenmalige code levert registraties van pogingen en vervaltijden op.
