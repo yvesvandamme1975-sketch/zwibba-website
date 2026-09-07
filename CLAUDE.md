@@ -76,3 +76,7 @@ Anti-hallucination rule for this repo: every claim about a file, function, table
 - `AGENTS.md` — the Codex-facing twin of this file. Read it before producing prompts for Codex so the two stay aligned.
 - `docs/plans/README.md` — the active-plans index. Always update when adding a plan pair.
 - `package.json` — the npm scripts at the repo root are the canonical entry points for build, test, smoke, and dev.
+
+## Operational update — 2026-09-07 (takes precedence over older release instructions)
+
+The application trunk is `codex/website-vitrine-backup`; use it as the GitHub default and PR target. `main` is retained historical landing code. Read `README.md` and `docs/operations/git-and-releases.md` before Git or release operations. The primary workspace should show the trunk; `browser-live` is a clean detached release checkout, not a feature workspace. Preserve all dirty historical worktrees. Verify each affected Railway service and its release SHA separately; do not blindly follow an older `pull --ff-only`/website-only deployment recipe. Existing esbuild delivery bundling is intentional. Belgium and DRC have equal priority under the 6 September operating agreement. For this Git reconciliation Yves requests native Codex notifications on iPhone for progress and decisions; phone delivery must be verified, not assumed.

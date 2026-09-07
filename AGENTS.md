@@ -150,3 +150,7 @@ If this section changes, update the corresponding section in `CLAUDE.md` in the 
 - `package.json` — the root scripts are the canonical entry points; don't shell out to lower-level commands unless a plan tells you to.
 
 The zwibba-plan-writer skill orchestrates the four phases (plan design, implementation doc, codex exec, Phase 4 Railway deploy). Rule 9 above is the Codex-side counterpart that activates when the implementation doc includes a smoke marker.
+
+## Operational update — 2026-09-07 (takes precedence over older release instructions)
+
+The application trunk is `codex/website-vitrine-backup`; use it as the GitHub default and PR target. `main` is retained historical landing code. Read `README.md` and `docs/operations/git-and-releases.md` before Git or release operations. The primary workspace should show the trunk; `browser-live` is a clean detached release checkout, not a feature workspace. Preserve all dirty historical worktrees. Verify each affected Railway service and its release SHA separately; do not blindly follow an older `pull --ff-only`/website-only deployment recipe. Existing esbuild delivery bundling is intentional. Belgium and DRC have equal priority under the 6 September operating agreement. For this Git reconciliation Yves requests native Codex notifications on iPhone for progress and decisions; phone delivery must be verified, not assumed.
