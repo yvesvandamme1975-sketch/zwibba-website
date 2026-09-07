@@ -122,3 +122,25 @@ Expected: PASS ; toute divergence est signalée avant poursuite
 Follow docs/operations/git-and-releases.md, which supersedes the old deploy recipe. PR target codex/website-vitrine-backup. Before merge record active website/API deployment IDs and SHA. After CI and review merge, verify both affected services SUCCESS at merged SHA. HTTP200 on /, /app/, API /healthz ; /assets/app/app.js contains « Copier la légende ». Verify one published listing page uses market-aware metadata; verify a generated landscape fixture is 1200x630. Existing listings without shareImageUrl deliberately retain photo fallback. Record failures and rollback using verified Railway CLI syntax if necessary. Do not declare native iPhone delivery verified by browser simulation.
 
 Discovery during Task 3: the existing server integration suite is tests/live-listings-server.test.mjs; corrected the Task 4 path before editing. Python Playwright is unavailable in the bundled runtime; browser checks use the repository’s existing Node Playwright package.
+
+### Task 6: Resolve relative photos found during release verification
+
+**Files:**
+- Modify: `apps/api/src/share/story-image.service.ts`
+- Modify: `apps/api/test/share/story-image.service.test.ts`
+- Modify: `docs/operations/2026-09-07-modern-sharing-verification.md`
+
+**Step 1: Write the failing test or change**
+
+Production backfill regenerated the three user ads but skipped ten seeded ads: their publicUrl is /assets/listings/...jpg. Add a failing test for relative photo URLs resolved against the configured application origin, then resolve with URL before fetch. Keep absolute R2 URLs and updatedAt preservation unchanged. No unrelated refactor.
+
+**Step 2: Verify**
+
+Run: `pnpm -C apps/api test -- share && pnpm -C apps/api run build`
+Expected: new relative-URL case initially fails, then all share tests and API build pass.
+
+**Step 3: Commit**
+
+`git commit -m "fix: resolve relative listing photos for share media"`
+
+Repeat required full checks before the correction PR and verify only the previously skipped ten items after deploy.

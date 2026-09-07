@@ -104,6 +104,81 @@ test('failed photo fetch never composes or uploads an error document', async () 
   assert.equal(mocks.updates.length, 0);
 });
 
+test('relative draft photo urls resolve against the configured application origin', async () => {
+  const mocks = buildMocks();
+  mocks.prismaService.draft.findUnique = async () => ({
+    id: 'd1',
+    photos: [
+      {
+        publicUrl: '/assets/listings/be-velo-cargo-electrique-bruxelles.jpg',
+        uploadStatus: 'uploaded',
+        sourcePresetId: 'capture',
+        createdAt: new Date(),
+      },
+    ],
+  });
+  const service = new StoryImageService(mocks.prismaService as any, mocks.r2StorageService as any, {
+    fetchImpl: mocks.fetchImpl as any,
+    appBaseUrl: 'https://zwibba.com/App/',
+  });
+
+  await service.generateAndStoreForListing('l1');
+
+  assert.equal(
+    mocks.fetchedUrls[0],
+    'https://zwibba.com/assets/listings/be-velo-cargo-electrique-bruxelles.jpg',
+  );
+});
+
+test('relative draft photo urls fall back to APP_BASE_URL then to the public site', async () => {
+  const previous = process.env.APP_BASE_URL;
+  const relativePhoto = {
+    publicUrl: '/assets/listings/mangues-et-avocats-frais-du-haut-katanga.jpg',
+    uploadStatus: 'uploaded',
+    sourcePresetId: 'capture',
+    createdAt: new Date(),
+  };
+
+  try {
+    process.env.APP_BASE_URL = 'https://staging.zwibba.example';
+    const withEnv = buildMocks();
+    withEnv.prismaService.draft.findUnique = async () => ({ id: 'd1', photos: [relativePhoto] });
+    await new StoryImageService(withEnv.prismaService as any, withEnv.r2StorageService as any, {
+      fetchImpl: withEnv.fetchImpl as any,
+    }).generateAndStoreForListing('l1');
+    assert.equal(
+      withEnv.fetchedUrls[0],
+      'https://staging.zwibba.example/assets/listings/mangues-et-avocats-frais-du-haut-katanga.jpg',
+    );
+
+    delete process.env.APP_BASE_URL;
+    const withoutEnv = buildMocks();
+    withoutEnv.prismaService.draft.findUnique = async () => ({ id: 'd1', photos: [relativePhoto] });
+    await new StoryImageService(withoutEnv.prismaService as any, withoutEnv.r2StorageService as any, {
+      fetchImpl: withoutEnv.fetchImpl as any,
+    }).generateAndStoreForListing('l1');
+    assert.equal(
+      withoutEnv.fetchedUrls[0],
+      'https://zwibba.com/assets/listings/mangues-et-avocats-frais-du-haut-katanga.jpg',
+    );
+  } finally {
+    if (previous === undefined) delete process.env.APP_BASE_URL;
+    else process.env.APP_BASE_URL = previous;
+  }
+});
+
+test('absolute photo urls are fetched unchanged whatever the application origin', async () => {
+  const mocks = buildMocks();
+  const service = new StoryImageService(mocks.prismaService as any, mocks.r2StorageService as any, {
+    fetchImpl: mocks.fetchImpl as any,
+    appBaseUrl: 'https://zwibba.com/App/',
+  });
+
+  await service.generateAndStoreForListing('l1');
+
+  assert.equal(mocks.fetchedUrls[0], 'https://cdn.example.com/photo.jpg');
+});
+
 test('share prices preserve zero and format currencies for both markets', () => {
   assert.equal(formatSharePrice(0, 'EUR'), '0 €');
   assert.equal(formatSharePrice(250, 'EUR'), '250 €');
