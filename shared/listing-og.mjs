@@ -32,34 +32,35 @@ export function formatPrice(amount, currency) {
 
 export function buildListingOgTags({ listing, baseUrl }) {
   const normalizedBaseUrl = String(baseUrl || '').replace(/\/+$/, '');
-  const hasStory = Boolean(listing?.storyImageUrl);
+  const hasLandscape = Boolean(listing?.shareImageUrl);
+  const isBelgium = listing?.countryCode === 'BE' || (!listing?.countryCode && listing?.priceCurrency === 'EUR');
   const rawImageUrl =
-    listing?.storyImageUrl ||
+    listing?.shareImageUrl ||
     listing?.primaryImageUrl ||
     `${normalizedBaseUrl}/assets/brand/og-default.png`;
   const imageUrl = absoluteUrl(rawImageUrl, normalizedBaseUrl);
   const title = listing?.title || 'Annonce Zwibba';
   const slug = listing?.slug || '';
-  const currency = listing?.priceCurrency || 'CDF';
+  const currency = listing?.priceCurrency || (isBelgium ? 'EUR' : 'CDF');
   const price = formatPrice(listing?.priceAmount, currency);
-  const location = listing?.locationLabel || 'RDC';
+  const location = listing?.locationLabel || (isBelgium ? 'Belgique' : 'RDC');
   const description = [price, location].filter(Boolean).join(' — ');
-  const ogTitle = hasStory ? `Je vends sur Zwibba ! ${title}` : `${title} | Zwibba`;
+  const ogTitle = `${title} | Zwibba`;
   const ogUrl = absoluteUrl(`/annonce/${slug}/`, normalizedBaseUrl);
 
   const tags = [
     ['property', 'og:type', 'website'],
     ['property', 'og:site_name', 'Zwibba'],
-    ['property', 'og:locale', 'fr_CD'],
+    ['property', 'og:locale', isBelgium ? 'fr_BE' : 'fr_CD'],
     ['property', 'og:title', ogTitle],
     ['property', 'og:description', description],
     ['property', 'og:url', ogUrl],
     ['property', 'og:image', imageUrl],
   ];
 
-  if (hasStory) {
-    tags.push(['property', 'og:image:width', '1080']);
-    tags.push(['property', 'og:image:height', '1920']);
+  if (hasLandscape) {
+    tags.push(['property', 'og:image:width', '1200']);
+    tags.push(['property', 'og:image:height', '630']);
   }
 
   tags.push(['property', 'product:price:amount', listing?.priceAmount ?? '']);

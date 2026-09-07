@@ -36,7 +36,9 @@ try {
     await page.getByRole('button', { name: 'Instagram', exact: true }).click();
     assert.match(await dialog.innerText(), /Ouvrez ensuite Instagram/);
     assert.match(await dialog.innerText(), /Copier la légende/);
-    await page.screenshot({ path: `/private/tmp/zwibba-sharing-${width}.png` });
+    await page.screenshot({ path: `/private/tmp/zwibba-sharing-${width}.png`, animations: 'disabled' });
+    const bounds = await dialog.boundingBox();
+    assert.ok(bounds.y >= 0 && bounds.y + bounds.height <= 845, 'dialog stays inside viewport');
     const first = dialog.locator('button:enabled').first();
     await first.focus();
     await page.keyboard.press('Shift+Tab');

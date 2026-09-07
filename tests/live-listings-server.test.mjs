@@ -82,6 +82,32 @@ function listing({ slug, title, countryCode = 'BE', categoryId = 'vehicles' }) {
   };
 }
 
+test('public listing pages preserve market metadata and do not cache false fallback listings', async () => {
+  await withMockApi((request, response) => {
+    if (request.url === '/listings/belgian') {
+      response.setHeader('Content-Type', 'application/json');
+      response.end(JSON.stringify({ ...listing({ slug: 'belgian', title: 'Vélo belge' }), countryCode: 'BE', shareImageUrl: 'https://cdn.test/share.png' }));
+    } else {
+      response.statusCode = request.url === '/listings/missing' ? 404 : 503;
+      response.end('{}');
+    }
+  }, async apiUrl => {
+    await withServer(async baseUrl => {
+      const live = await fetch(`${baseUrl}/annonce/belgian/`);
+      assert.equal(live.status, 200);
+      const body = await live.text();
+      assert.match(body, /og:locale" content="fr_BE/);
+      assert.match(body, /og:image:height" content="630/);
+      const missing = await fetch(`${baseUrl}/annonce/missing/`);
+      assert.equal(missing.status, 404);
+      assert.doesNotMatch(await missing.text(), /og:description|RDC|CDF/);
+      const failed = await fetch(`${baseUrl}/annonce/failure/`);
+      assert.equal(failed.status, 503);
+      assert.match(failed.headers.get('cache-control'), /no-store/);
+    }, { ZWIBBA_API_BASE_URL: apiUrl });
+  });
+});
+
 test('server injects live listings into browse pages with empty, fallback and cache paths', async () => {
   const requestedCountries = [];
   let requestCount = 0;

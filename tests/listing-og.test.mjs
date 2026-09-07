@@ -4,7 +4,7 @@ import { buildListingOgTags } from '../shared/listing-og.mjs';
 
 const base = 'https://website-production-7a12.up.railway.app';
 
-test('uses the story image and brand title when storyImageUrl is present', () => {
+test('uses the landscape image and neutral title without cropping the story', () => {
   const html = buildListingOgTags({
     listing: {
       slug: 'bague-or-blanc',
@@ -14,12 +14,13 @@ test('uses the story image and brand title when storyImageUrl is present', () =>
       locationLabel: 'Gombe, Kinshasa',
       primaryImageUrl: 'https://cdn/photo.jpg',
       storyImageUrl: 'https://r2/listings/l1/story.png',
+      shareImageUrl: 'https://r2/listings/l1/share.png',
     },
     baseUrl: base,
   });
-  assert.match(html, /property="og:image" content="https:\/\/r2\/listings\/l1\/story\.png"/);
-  assert.match(html, /property="og:image:width" content="1080"/);
-  assert.match(html, /property="og:title" content="Je vends sur Zwibba ! Bague or blanc"/);
+  assert.match(html, /property="og:image" content="https:\/\/r2\/listings\/l1\/share\.png"/);
+  assert.match(html, /property="og:image:width" content="1200"/);
+  assert.match(html, /property="og:title" content="Bague or blanc \| Zwibba"/);
   assert.match(
     html,
     /property="og:url" content="https:\/\/website-production-7a12\.up\.railway\.app\/annonce\/bague-or-blanc\/"/,
@@ -144,4 +145,19 @@ test('leaves CDF and missing-currency price formatting byte-identical to current
     baseUrl: base,
   });
   assert.match(missingHtml, /property="og:description" content="CDF — Lemba"/);
+});
+
+
+test('BE metadata keeps a Belgian locale and zero EUR value', () => {
+  const html = buildListingOgTags({ listing: { slug: 'don', title: '<Vélo>', countryCode: 'BE', priceAmount: 0, priceCurrency: 'EUR' }, baseUrl: base });
+  assert.match(html, /og:locale" content="fr_BE/);
+  assert.match(html, /0 € — Belgique/);
+  assert.match(html, /&lt;Vélo&gt;/);
+  assert.doesNotMatch(html, /CDF|RDC/);
+});
+
+test('legacy story is never used as a link preview when landscape is missing', () => {
+  const html = buildListingOgTags({ listing: { slug: 'old', storyImageUrl: 'https://cdn/story.png', primaryImageUrl: 'https://cdn/photo.jpg' }, baseUrl: base });
+  assert.match(html, /og:image" content="https:\/\/cdn\/photo.jpg/);
+  assert.doesNotMatch(html, /story.png|1920/);
 });

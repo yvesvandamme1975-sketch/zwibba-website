@@ -107,25 +107,13 @@ function resolveBaseUrl(requestUrl) {
   return requestUrl.origin;
 }
 
-function buildFallbackListing(slug) {
-  return {
-    slug,
-    title: 'Annonce Zwibba',
-    priceAmount: null,
-    priceCurrency: 'CDF',
-    locationLabel: 'RDC',
-    primaryImageUrl: null,
-    storyImageUrl: null,
-  };
-}
-
 async function fetchListing(slug) {
   const response = await fetch(`${apiBaseUrl}/listings/${encodeURIComponent(slug)}`, {
     signal: AbortSignal.timeout(2500),
   });
 
   if (!response.ok) {
-    throw new Error(`Listing API returned ${response.status}`);
+    throw Object.assign(new Error(`Listing API returned ${response.status}`), { status: response.status });
   }
 
   return response.json();
@@ -201,7 +189,7 @@ async function injectLiveListingsIntoHtml(body) {
 }
 
 function renderDynamicListingPage({ baseUrl, listing, slug }) {
-  const appRoute = `/App/#listing/${slug}`;
+  const appRoute = `/App/#listing/${encodeURIComponent(slug)}`;
   const ogTags = buildListingOgTags({ listing, baseUrl });
   const canonicalUrl = new URL(`/annonce/${slug}/`, baseUrl).toString();
   const title = `${listing.title || 'Annonce Zwibba'} | Zwibba`;
@@ -273,12 +261,18 @@ createServer(async (request, response) => {
   if ((!filePath || !filePath.startsWith(distDir)) && dynamicListingMatch) {
     const slug = decodeURIComponent(dynamicListingMatch[1]);
     const baseUrl = resolveBaseUrl(url);
-    let listing = buildFallbackListing(slug);
+    let listing;
 
     try {
       listing = await fetchListing(slug);
     } catch (error) {
-      console.warn(`Zwibba listing OG fallback for ${slug}: ${error.message}`);
+      const status = error.status === 404 ? 404 : 503;
+      const message = status === 404 ? 'Annonce introuvable ou indisponible.' : 'Annonce temporairement indisponible. Réessayez dans quelques instants.';
+      send(response, status, `<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="robots" content="noindex"><title>Annonce indisponible | Zwibba</title><body><p>${message}</p><a href="/App/">Ouvrir Zwibba</a></body></html>`, {
+        'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
+        ...(status === 503 ? { 'Retry-After': '30' } : {}),
+      });
+      return;
     }
 
     const body = renderDynamicListingPage({ baseUrl, listing: { ...listing, slug }, slug });
