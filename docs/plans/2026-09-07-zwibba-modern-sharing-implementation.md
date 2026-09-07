@@ -53,6 +53,9 @@ Expected: PASS après un échec initial module absent
 - Create/Modify: `App/components/share-menu.mjs`
 - Create/Modify: `App/app.css`
 - Create/Modify: `tests/share-menu.test.mjs`
+- Modify: `App/features/listings/listing-detail-screen.mjs`
+- Modify: `App/features/post/success-screen.mjs`
+- Create: `scripts/e2e/modern-sharing.mjs`
 - Create/Modify: `tests/listing-share.test.mjs`
 
 **Step 1: Write the failing test or change**
@@ -81,7 +84,7 @@ Expected: PASS après échec des nouveaux cas sur le rendu ancien
 - Create/Modify: `shared/listing-og.mjs`
 - Create/Modify: `tests/listing-og.test.mjs`
 - Create/Modify: `server.mjs`
-- Create/Modify: `tests/server-runtime.test.mjs`
+- Create/Modify: `tests/live-listings-server.test.mjs`
 
 **Step 1: Write the failing test or change**
 
@@ -117,3 +120,5 @@ Expected: PASS ; toute divergence est signalée avant poursuite
 ## Delivery after committed tasks
 
 Follow docs/operations/git-and-releases.md, which supersedes the old deploy recipe. PR target codex/website-vitrine-backup. Before merge record active website/API deployment IDs and SHA. After CI and review merge, verify both affected services SUCCESS at merged SHA. HTTP200 on /, /app/, API /healthz ; /assets/app/app.js contains « Copier la légende ». Verify one published listing page uses market-aware metadata; verify a generated landscape fixture is 1200x630. Existing listings without shareImageUrl deliberately retain photo fallback. Record failures and rollback using verified Railway CLI syntax if necessary. Do not declare native iPhone delivery verified by browser simulation.
+
+Discovery during Task 3: the existing server integration suite is tests/live-listings-server.test.mjs; corrected the Task 4 path before editing. Python Playwright is unavailable in the bundled runtime; browser checks use the repository’s existing Node Playwright package.

@@ -133,6 +133,7 @@ export function renderSuccessScreen({
                 type="button"
                 data-action="open-share-menu"
                 data-share-slug="${escapeAttribute(outcome?.listingSlug || '')}"
+                data-share-image-url="${escapeAttribute(primaryImageUrl)}"
                 data-share-title="${escapeAttribute(draft.details.title || 'Annonce Zwibba')}"
                 data-share-url="${escapeAttribute(listingUrl)}"${storyImageAttribute}
               >

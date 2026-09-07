@@ -13,19 +13,15 @@ const ICONS = {
     '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9.5 13.5a3 3 0 0 0 4.24 0l3-3a3 3 0 0 0-4.24-4.24l-1 1M14.5 10.5a3 3 0 0 0-4.24 0l-3 3a3 3 0 0 0 4.24 4.24l1-1"/></svg>',
 };
 
-function option(action, iconKey, label, dataCtx) {
-  return `
-          <button class="app-share-menu__option" type="button" data-action="${action}" ${dataCtx}>
-            <span class="app-share-menu__icon app-share-menu__icon--${iconKey}">${ICONS[iconKey]}</span>
-            <span class="app-share-menu__label">${escapeHtml(label)}</span>
-          </button>`;
+function option(action, iconKey, label, dataCtx, disabled = false) {
+  return `<button class="app-share-menu__option" type="button" data-action="${escapeAttribute(action)}" ${dataCtx} ${disabled ? 'disabled' : ''}>
+    <span class="app-share-menu__icon app-share-menu__icon--${escapeAttribute(iconKey)}">${ICONS[iconKey]}</span>
+    <span class="app-share-menu__label">${escapeHtml(label)}</span>
+  </button>`;
 }
 
-export function renderShareMenu(menu) {
-  if (!menu) {
-    return '';
-  }
-
+export function renderShareMenu(menu = null) {
+  if (!menu) return '';
   const mode = menu.mode === 'story' ? 'story' : 'post';
   const dataCtx = [
     `data-listing-url="${escapeAttribute(menu.url || '')}"`,
@@ -33,30 +29,39 @@ export function renderShareMenu(menu) {
     `data-share-title="${escapeAttribute(menu.title || '')}"`,
     `data-story-image-url="${escapeAttribute(menu.storyImageUrl || '')}"`,
   ].join(' ');
-
-  const hint =
-    mode === 'story'
-      ? "L'image story est téléchargée : postez-la sur votre story ou statut."
-      : "Le lien de l'annonce est partagé, avec son aperçu image.";
-
+  const button = (action, icon, label) => option(action, icon, label, dataCtx, menu.busy);
+  const imageHint = menu.imageStatus === 'preparing'
+    ? 'Préparation de l’image… Le lien reste disponible.'
+    : menu.imageStatus === 'ready'
+      ? 'Image prête. Partagez-la avec une application ou enregistrez-la dans vos fichiers.'
+      : 'L’image est indisponible pour le moment. Vous pouvez partager le lien.';
   return `
     <div class="app-share-menu" data-action="close-share-menu" role="presentation">
-      <div class="app-share-menu__sheet" data-action="share-menu-sheet" role="dialog" aria-modal="true" aria-label="Partager l'annonce">
+      <div class="app-share-menu__sheet" data-action="share-menu-sheet" role="dialog" aria-modal="true" aria-label="Partager l’annonce" tabindex="-1">
         <span class="app-share-menu__handle" aria-hidden="true"></span>
         <h2 class="app-share-menu__title">Partager</h2>
+        ${menu.primaryImageUrl ? `<img class="app-share-menu__photo" src="${escapeAttribute(menu.primaryImageUrl)}" alt="" />` : ''}
+        <p class="app-share-menu__listing">${escapeHtml(menu.title || 'Annonce Zwibba')}</p>
         <div class="app-share-menu__segmented" role="group" aria-label="Mode de partage">
-          <button type="button" class="app-share-menu__seg${mode === 'post' ? ' app-share-menu__seg--active' : ''}" data-action="share-mode-post" aria-pressed="${mode === 'post'}">En post</button>
-          <button type="button" class="app-share-menu__seg${mode === 'story' ? ' app-share-menu__seg--active' : ''}" data-action="share-mode-story" aria-pressed="${mode === 'story'}">En story</button>
+          <button type="button" class="app-share-menu__seg${mode === 'post' ? ' app-share-menu__seg--active' : ''}" data-action="share-mode-post" aria-pressed="${escapeAttribute(mode === 'post')}" ${menu.busy ? 'disabled' : ''}>En post</button>
+          <button type="button" class="app-share-menu__seg${mode === 'story' ? ' app-share-menu__seg--active' : ''}" data-action="share-mode-story" aria-pressed="${escapeAttribute(mode === 'story')}" ${menu.busy ? 'disabled' : ''}>En story</button>
         </div>
         <div class="app-share-menu__options">
-${option('share-whatsapp-chat', 'whatsapp', 'WhatsApp', dataCtx)}
-${option('share-facebook', 'facebook', 'Facebook', dataCtx)}
-${option('share-instagram', 'instagram', 'Instagram', dataCtx)}
-${option('share-tiktok', 'tiktok', 'TikTok', dataCtx)}
-${option('copy-listing-link', 'link', 'Copier le lien', dataCtx)}
+          ${menu.canShareLink ? button('share-native-link', 'link', 'Partager avec une application…') : ''}
+          ${mode === 'post' ? button('share-whatsapp-chat', 'whatsapp', 'WhatsApp') + button('share-facebook', 'facebook', 'Facebook') : ''}
+          ${button('share-instagram', 'instagram', 'Instagram')}
+          ${button('share-tiktok', 'tiktok', 'TikTok')}
+          ${mode === 'story' && menu.imageStatus === 'ready' ?
+            (menu.canShareImage ? button('share-native-image', 'link', 'Partager l’image…') : '') +
+            button('download-story-image', 'link', 'Enregistrer l’image') : ''}
+          ${mode === 'story' && menu.imageStatus === 'unavailable' && menu.storyImageUrl ? button('retry-share-image', 'link', 'Réessayer de préparer l’image') : ''}
+          ${mode === 'story' ? button('copy-share-caption', 'link', 'Copier la légende') : ''}
+          ${button('copy-listing-link', 'link', 'Copier le lien')}
         </div>
-        <p class="app-share-menu__hint">${escapeHtml(hint)}</p>
-        <button class="app-share-menu__cancel" type="button" data-action="close-share-menu">Annuler</button>
+        <p class="app-share-menu__hint">${escapeHtml(mode === 'story' ? imageHint : 'Partagez le lien de cette annonce. L’aperçu dépend de l’application choisie.')}</p>
+        <p class="app-share-menu__status" role="status" aria-live="polite">${escapeHtml(menu.message || '')}</p>
+        ${menu.manualText ? `<label class="app-share-menu__manual">Texte à copier<textarea class="app-share-menu__text" data-share-manual readonly rows="3">${escapeHtml(menu.manualText)}</textarea></label>` : ''}
+        <button class="app-share-menu__cancel" type="button" data-action="close-share-menu">Fermer</button>
       </div>
     </div>`;
 }

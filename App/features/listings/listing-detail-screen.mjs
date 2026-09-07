@@ -103,6 +103,7 @@ function buildShareButton(detail, { compact = false } = {}) {
       data-action="open-share-menu"
       data-share-slug="${escapeAttribute(detail.slug)}"
       data-share-title="${escapeAttribute(detail.title)}"
+      data-share-image-url="${escapeAttribute(resolveGalleryImages(detail)[0] || '')}"
       data-share-url="${escapeAttribute(shareUrl)}"
       ${detail.storyImageUrl ? `data-story-image-url="${escapeAttribute(detail.storyImageUrl)}"` : ''}
       ${compact ? `aria-label="${escapeAttribute('Partager cette annonce')}"` : ''}
