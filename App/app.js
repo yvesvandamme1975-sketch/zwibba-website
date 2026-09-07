@@ -100,16 +100,14 @@ import {
   shouldRetainDraftAfterPublish,
 } from './utils/post-publish-draft-state.mjs';
 import {
-  buildStoryShareText,
-  canShareStoryImage,
   createPostFlowController,
   decidePublishGate,
   getMissingRequiredPhotoPrompts,
   refreshReviewValidationErrors,
-  shareStoryImageNative,
   validateDraftForPublish,
 } from './features/post/post-flow-controller.mjs';
 import { renderShareMenu } from './components/share-menu.mjs';
+import { createListingShareController } from './services/listing-share.mjs';
 import { renderCountrySuggestionBanner } from './components/country-banner.mjs';
 import {
   createCountryPreference,
@@ -1237,6 +1235,7 @@ if (appRoot) {
   }
 
   function renderApp() {
+    const previousShareAction = document.activeElement?.closest('.app-share-menu') ? document.activeElement.dataset.action : null;
     const route = resolveRenderableRoute();
     const routeKey = getRenderableRouteKey(route);
     const scrollRenderState =
@@ -1265,13 +1264,6 @@ if (appRoot) {
       }) +
       renderShareMenu(state.shareMenu) +
       (shouldShowCountrySuggestion() ? renderCountrySuggestionBanner() : '');
-    if (!canShareStoryImage()) {
-      const nativeStoryShareButton = appRoot.querySelector('[data-action="share-native"]');
-
-      if (nativeStoryShareButton instanceof HTMLElement) {
-        nativeStoryShareButton.style.display = 'none';
-      }
-    }
     if (route.type === 'buy') {
       restoreBuyerSearchRenderState(appRoot, buyerSearchRenderState);
     }
@@ -1293,6 +1285,7 @@ if (appRoot) {
       restoreProfileCityRenderState(appRoot, profileCityRenderState);
     }
     restoreScrollRenderState(appRoot, scrollRenderState, window);
+    if (state.shareMenu) syncShareFocus(previousShareAction);
     appRoot.dataset.appReady = 'true';
     appRoot.dataset.screen = route.type;
     lastRenderedRouteKey = routeKey;
@@ -2236,202 +2229,111 @@ if (appRoot) {
     }
   }
 
-  async function handleListingLinkCopy(rawListingUrl) {
-    const absoluteUrl = new URL(rawListingUrl, window.location.origin).toString();
-
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(absoluteUrl);
-      return;
-    }
-
-    window.prompt('Copiez ce lien', absoluteUrl);
-  }
-
-  async function handleNativeStoryShare(trigger) {
-    const storyImageUrl = trigger.dataset.storyImageUrl || '';
-    const imageUrl = trigger.dataset.shareImageUrl || '';
-    const listingUrl = trigger.dataset.listingUrl || buildListingUrl(state.publishedDraft ?? state.draft);
-
-    await shareStoryImageNative({
-      fetchFn: window.fetch.bind(window),
-      imageUrl,
-      listingUrl: new URL(listingUrl, window.location.origin).toString(),
-      navigatorObject: navigator,
-      storyImageUrl,
-      title: trigger.dataset.shareTitle || state.publishedDraft?.details?.title || state.draft?.details?.title || '',
-    });
-  }
-
-  function recordListingShare(slug) {
-    if (!slug) {
-      return;
-    }
-
-    void window
-      .fetch(`${apiConfig.apiBaseUrl}/listings/${encodeURIComponent(slug)}/share`, {
-        method: 'POST',
-      })
-      .catch(() => {});
-  }
-
-  async function handleListingShare(trigger) {
-    const slug = trigger.dataset.shareSlug || '';
-    const title = trigger.dataset.shareTitle || '';
-    const shareUrl = trigger.dataset.shareUrl || (slug ? `/annonce/${slug}/` : '');
-    const absoluteUrl = new URL(shareUrl, window.location.origin).toString();
-    const shareText = buildStoryShareText({
-      listingUrl: absoluteUrl,
-      title,
-    });
-    const detail = buyerBrowseController.state.detail;
-
-    if (detail?.storyImageUrl && canShareStoryImage()) {
-      await shareStoryImageNative({
-        fetchFn: window.fetch.bind(window),
-        imageUrl: detail.primaryImageUrl,
-        listingUrl: absoluteUrl,
-        navigatorObject: navigator,
-        storyImageUrl: detail.storyImageUrl,
-        title,
-      });
-      recordListingShare(slug);
-      return;
-    }
-
-    if (navigator.share) {
-      await navigator.share({
-        text: shareText,
-        title: 'Je vends sur Zwibba !',
-        url: absoluteUrl,
-      });
-      recordListingShare(slug);
-      return;
-    }
-
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(absoluteUrl);
-    } else {
-      window.prompt('Copiez ce lien', absoluteUrl);
-    }
-
-    if (trigger instanceof HTMLElement) {
-      const originalHtml = trigger.innerHTML;
-
-      trigger.textContent = 'Lien copié';
-      window.setTimeout(() => {
-        trigger.innerHTML = originalHtml;
-      }, 2000);
-    }
-
-    recordListingShare(slug);
-  }
-
-  async function handleFacebookShare(rawListingUrl, trigger) {
-    const storyImageUrl = trigger?.dataset?.storyImageUrl || '';
-    const imageUrl = trigger?.dataset?.shareImageUrl || '';
-
-    if (canShareStoryImage() && (storyImageUrl || imageUrl)) {
-      await handleNativeStoryShare(trigger);
-      return;
-    }
-
-    const absoluteUrl = new URL(rawListingUrl, window.location.origin).toString();
-    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(absoluteUrl)}`;
-
-    window.open(shareUrl, '_blank', 'noopener');
-  }
-
-  function handleWhatsAppShare(rawListingUrl) {
-    const absoluteUrl = new URL(rawListingUrl, window.location.origin).toString();
-    const title =
-      state.publishedDraft?.details?.title || state.draft?.details?.title || 'Mon annonce Zwibba';
-    const text = `Je vends sur Zwibba ! ${title} — ${absoluteUrl}`;
-    const shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-
-    window.open(shareUrl, '_blank', 'noopener');
-  }
-
-  function handleStoryImageDownload(storyImageUrl) {
-    if (!storyImageUrl) {
-      return;
-    }
-
-    const link = document.createElement('a');
-    link.href = storyImageUrl;
-    link.download = 'zwibba-story.png';
-    link.rel = 'noreferrer';
-    document.body.append(link);
-    link.click();
-    link.remove();
-  }
+  let shareReturnTarget = null;
+  let shareLastAction = null;
+  let shareLastAnnouncement = '';
+  const shareAnnouncement = document.createElement('p');
+  shareAnnouncement.className = 'app-share-menu__announcement';
+  shareAnnouncement.dataset.shareAnnouncement = '';
+  shareAnnouncement.setAttribute('role', 'status');
+  shareAnnouncement.setAttribute('aria-live', 'polite');
+  document.body.append(shareAnnouncement);
+  const shareInertElements = new Map();
+  const shareController = createListingShareController({
+    baseUrl: window.location.origin,
+    navigatorObject: navigator,
+    fetchFn: window.fetch.bind(window),
+    openWindow(url) {
+      // With the noopener feature, window.open returns null even on success.
+      // Detach the blank same-origin window before navigating instead.
+      const popup = window.open('about:blank', '_blank');
+      if (!popup) return false;
+      popup.opener = null;
+      popup.location.replace(url);
+      return true;
+    },
+    downloadFile(file) {
+      const url = URL.createObjectURL(file);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.name;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+    },
+    onChange(menu) { state.shareMenu = menu; renderApp(); },
+  });
 
   function openShareMenu(trigger) {
-    state.shareMenu = {
-      mode: 'post',
+    const candidates = [...appRoot.querySelectorAll('[data-action="open-share-menu"]')];
+    shareReturnTarget = { slug: trigger.dataset.shareSlug || '', index: candidates.indexOf(trigger) };
+    const detail = buyerBrowseController.state.detail;
+    const matchingDetail = detail?.slug === trigger.dataset.shareSlug ? detail : null;
+    void shareController.open({
       slug: trigger.dataset.shareSlug || '',
-      storyImageUrl:
-        trigger.dataset.storyImageUrl ||
-        buyerBrowseController.state.detail?.storyImageUrl ||
-        '',
-      title: trigger.dataset.shareTitle || '',
-      url:
-        trigger.dataset.shareUrl ||
-        trigger.dataset.listingUrl ||
-        buildListingUrl(state.draft),
-    };
-    renderApp();
-  }
-
-  function setShareMode(mode) {
-    if (state.shareMenu && state.shareMenu.mode !== mode) {
-      state.shareMenu.mode = mode;
-      renderApp();
-    }
-  }
-
-  async function shareAsStory({ appUrl, listingUrl, storyImageUrl, title }) {
-    if (storyImageUrl && canShareStoryImage()) {
-      try {
-        await shareStoryImageNative({
-          fetchFn: window.fetch.bind(window),
-          listingUrl: new URL(listingUrl, window.location.origin).toString(),
-          navigatorObject: navigator,
-          storyImageUrl,
-          title,
-        });
-        return;
-      } catch {
-        // Native share unavailable or cancelled: fall back to download + open app.
-      }
-    }
-
-    if (storyImageUrl) {
-      handleStoryImageDownload(storyImageUrl);
-    }
-
-    if (appUrl) {
-      window.open(appUrl, '_blank', 'noopener');
-    }
+      title: trigger.dataset.shareTitle || matchingDetail?.title || 'Annonce Zwibba',
+      url: trigger.dataset.shareUrl || trigger.dataset.listingUrl || '',
+      storyImageUrl: trigger.dataset.storyImageUrl || matchingDetail?.storyImageUrl || '',
+      primaryImageUrl: trigger.dataset.shareImageUrl || matchingDetail?.primaryImageUrl || '',
+    });
   }
 
   function closeShareMenu() {
-    if (state.shareMenu) {
-      state.shareMenu = null;
-      renderApp();
+    if (!state.shareMenu) return;
+    shareController.close();
+    for (const [element, wasInert] of shareInertElements) element.inert = wasInert;
+    shareInertElements.clear();
+    const candidates = [...appRoot.querySelectorAll('[data-action="open-share-menu"]')];
+    const target = candidates[shareReturnTarget?.index];
+    (target?.dataset.shareSlug === shareReturnTarget?.slug ? target :
+      candidates.find(item => item.dataset.shareSlug === shareReturnTarget?.slug))?.focus({ preventScroll: true });
+    shareReturnTarget = null;
+    shareLastAction = null;
+    shareAnnouncement.textContent = '';
+    shareLastAnnouncement = '';
+  }
+
+  function syncShareFocus(previousAction) {
+    const dialog = appRoot.querySelector('[role="dialog"][data-action="share-menu-sheet"]');
+    if (!dialog) return;
+    // Make siblings inert up to body, without hiding an ancestor of the dialog.
+    let branch = dialog.closest('.app-share-menu');
+    while (branch && branch !== document.body) {
+      for (const sibling of branch.parentElement?.children || []) {
+        if (sibling !== branch && sibling !== shareAnnouncement && !shareInertElements.has(sibling)) {
+          shareInertElements.set(sibling, sibling.inert);
+          sibling.inert = true;
+        }
+      }
+      branch = branch.parentElement;
+    }
+    const focusable = [...dialog.querySelectorAll('button:not(:disabled), textarea')];
+    if (previousAction && previousAction !== 'share-menu-sheet') shareLastAction = previousAction;
+    const previous = focusable.find(item => item.dataset.action === previousAction) ||
+      focusable.find(item => item.dataset.action === shareLastAction);
+    (state.shareMenu.busy ? dialog : previous || focusable[0] || dialog).focus({ preventScroll: true });
+    const message = state.shareMenu.message;
+    if (message !== shareLastAnnouncement) {
+      shareLastAnnouncement = message;
+      shareAnnouncement.textContent = '';
+      window.requestAnimationFrame(() => {
+        if (state.shareMenu?.message === message) shareAnnouncement.textContent = message;
+      });
     }
   }
 
-  function handleLinkFirstShare(appUrl, rawListingUrl) {
-    const absoluteUrl = new URL(rawListingUrl, window.location.origin).toString();
-
-    if (navigator.clipboard?.writeText) {
-      void navigator.clipboard.writeText(absoluteUrl);
-    }
-
-    // Instagram and TikTok have no web share-intent for links: we copy the
-    // listing link and open the network so the seller can paste it in a post.
-    window.open(appUrl, '_blank', 'noopener');
-  }
+  document.addEventListener('keydown', event => {
+    if (!state.shareMenu) return;
+    if (event.key === 'Escape') { event.preventDefault(); closeShareMenu(); return; }
+    if (event.key !== 'Tab') return;
+    const dialog = appRoot.querySelector('[role="dialog"][data-action="share-menu-sheet"]');
+    const controls = [...(dialog?.querySelectorAll('button:not(:disabled), textarea') || [])];
+    const index = controls.indexOf(document.activeElement);
+    if (!controls.length) { event.preventDefault(); dialog?.focus(); return; }
+    if (event.shiftKey && index <= 0) { event.preventDefault(); controls.at(-1).focus(); }
+    else if (!event.shiftKey && (index < 0 || index === controls.length - 1)) { event.preventDefault(); controls[0].focus(); }
+  });
 
   appRoot.addEventListener('click', async (event) => {
     const scrollTopTrigger = event.target.closest('[data-scroll-top-target]');
@@ -2519,95 +2421,23 @@ if (appRoot) {
       return;
     }
 
-    if (trigger.dataset.action === 'share-mode-post') {
-      setShareMode('post');
+    if (trigger.dataset.action === 'share-mode-post' || trigger.dataset.action === 'share-mode-story') {
+      shareController.setMode(trigger.dataset.action === 'share-mode-story' ? 'story' : 'post');
       return;
     }
-
-    if (trigger.dataset.action === 'share-mode-story') {
-      setShareMode('story');
+    if (trigger.dataset.action === 'retry-share-image') {
+      await shareController.prepareImage();
       return;
     }
-
-    if (
-      trigger.dataset.action === 'share-instagram' ||
-      trigger.dataset.action === 'share-tiktok'
-    ) {
-      const appUrl =
-        trigger.dataset.action === 'share-tiktok'
-          ? 'https://www.tiktok.com/'
-          : 'https://www.instagram.com/';
-      const listingUrl = trigger.dataset.listingUrl || buildListingUrl(state.draft);
-      const storyImageUrl = trigger.dataset.storyImageUrl || '';
-
-      if (state.shareMenu?.mode === 'story' && storyImageUrl) {
-        await shareAsStory({
-          appUrl,
-          listingUrl,
-          storyImageUrl,
-          title: trigger.dataset.shareTitle || '',
-        });
-      } else {
-        handleLinkFirstShare(appUrl, listingUrl);
-      }
-
-      recordListingShare(trigger.dataset.shareSlug || '');
-      closeShareMenu();
-      return;
-    }
-
-    if (trigger.dataset.action === 'copy-listing-link') {
-      await handleListingLinkCopy(trigger.dataset.listingUrl || buildListingUrl(state.draft));
-      closeShareMenu();
-      return;
-    }
-
-    if (trigger.dataset.action === 'share-native') {
-      await handleNativeStoryShare(trigger);
-      return;
-    }
-
-    if (trigger.dataset.action === 'share-listing') {
-      await handleListingShare(trigger);
-      return;
-    }
-
-    if (trigger.dataset.action === 'share-facebook') {
-      const listingUrl = trigger.dataset.listingUrl || buildListingUrl(state.draft);
-      if (state.shareMenu?.mode === 'story') {
-        await shareAsStory({
-          appUrl: 'https://www.facebook.com/',
-          listingUrl,
-          storyImageUrl: trigger.dataset.storyImageUrl || '',
-          title: trigger.dataset.shareTitle || '',
-        });
-      } else {
-        handleFacebookShare(listingUrl);
-      }
-      recordListingShare(trigger.dataset.shareSlug || '');
-      closeShareMenu();
-      return;
-    }
-
-    if (trigger.dataset.action === 'share-whatsapp-chat') {
-      const listingUrl = trigger.dataset.listingUrl || buildListingUrl(state.draft);
-      if (state.shareMenu?.mode === 'story') {
-        await shareAsStory({
-          appUrl: 'https://wa.me/',
-          listingUrl,
-          storyImageUrl: trigger.dataset.storyImageUrl || '',
-          title: trigger.dataset.shareTitle || '',
-        });
-      } else {
-        handleWhatsAppShare(listingUrl);
-      }
-      recordListingShare(trigger.dataset.shareSlug || '');
-      closeShareMenu();
-      return;
-    }
-
-    if (trigger.dataset.action === 'download-story-image') {
-      handleStoryImageDownload(trigger.dataset.storyImageUrl || '');
+    const shareActions = {
+      'share-native-link': 'native-link', 'share-native-image': 'native-image',
+      'share-whatsapp-chat': 'whatsapp', 'share-facebook': 'facebook',
+      'share-instagram': 'instagram', 'share-tiktok': 'tiktok',
+      'copy-listing-link': 'copy-link', 'copy-share-caption': 'copy-caption',
+      'download-story-image': 'download-image',
+    };
+    if (shareActions[trigger.dataset.action]) {
+      await shareController.perform(shareActions[trigger.dataset.action]);
       return;
     }
 

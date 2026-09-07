@@ -39,6 +39,8 @@ type PersistedListingRecord = {
   sourceType?: string | null;
   shareCount?: number | null;
   storyImageUrl?: string | null;
+  shareImageUrl?: string | null;
+  countryCode?: string;
   title: string;
   updatedAt?: Date;
 };
@@ -267,6 +269,8 @@ function toListingSummary(
     primaryImageUrl,
     slug: listing.slug,
     storyImageUrl: listing.storyImageUrl ?? null,
+    shareImageUrl: listing.shareImageUrl ?? null,
+    countryCode: listing.countryCode ?? (price.priceCurrency === 'EUR' ? 'BE' : 'CD'),
     title: listing.title,
   };
 }
@@ -334,6 +338,8 @@ async function toListingDetail({
     shareCount: listing.shareCount ?? 0,
     slug: listing.slug,
     storyImageUrl: listing.storyImageUrl ?? null,
+    shareImageUrl: listing.shareImageUrl ?? null,
+    countryCode: listing.countryCode ?? (price.priceCurrency === 'EUR' ? 'BE' : 'CD'),
     summary: listing.description,
     title: listing.title,
     viewerRole,

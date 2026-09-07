@@ -70,6 +70,31 @@ export async function composeStoryImage(input: ComposeStoryImageInput): Promise<
     .toBuffer();
 }
 
+/** Landscape preview for link crawlers; never crop the finished 9:16 story. */
+export async function composeLinkImage(input: ComposeStoryImageInput): Promise<Buffer> {
+  const photo = await sharp(input.photoBuffer).rotate().resize(570, 630, { fit: 'cover' }).png().toBuffer();
+  const logo = await sharp(Buffer.from(ZWIBBA_LOGO_SVG), { density: 160 }).trim().resize({ width: 240 }).png().toBuffer();
+  const words = truncate(input.title, 76).split(' ');
+  const lines: string[] = [''];
+  for (const word of words) {
+    const last = lines.length - 1;
+    if (`${lines[last]} ${word}`.trim().length > 22 && lines[last]) lines.push(word);
+    else lines[last] = `${lines[last]} ${word}`.trim();
+  }
+  const titleLines = lines.slice(0, 3).map((line, index) =>
+    `<text x="36" y="${190 + index * 55}" font-family="Manrope" font-size="38" font-weight="700" fill="#ffffff">${escapeXml(truncate(line, 23))}${index === 2 && lines.length > 3 ? '…' : ''}</text>`,
+  ).join('');
+  const labels = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="630" height="630">
+    ${titleLines}
+    <text x="36" y="405" font-family="Manrope" font-size="28" fill="#c2cec2">${escapeXml(truncate(input.zoneLabel, 31))}</text>
+    <text x="36" y="488" font-family="Sora" font-size="46" font-weight="700" fill="#9aff8f">${escapeXml(truncate(input.priceLabel, 22))}</text>
+    <text x="36" y="578" font-family="Manrope" font-size="24" fill="#c2cec2">Découvrez cette annonce sur Zwibba</text>
+  </svg>`);
+  return sharp({ create: { width: 1200, height: 630, channels: 4, background: '#0f160f' } })
+    .composite([{ input: photo, left: 0, top: 0 }, { input: labels, left: 570, top: 0 }, { input: logo, left: 606, top: 34 }])
+    .png().toBuffer();
+}
+
 function buildLabelSvg(): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS_WIDTH}" height="${LABEL_HEIGHT}" viewBox="0 0 ${CANVAS_WIDTH} ${LABEL_HEIGHT}">
     <text x="540" y="76" fill="#9aff8f" font-family="Manrope" font-size="72" font-weight="700" letter-spacing="0.5" text-anchor="middle">Je vends sur</text>

@@ -348,6 +348,7 @@ test('runtime renders per-listing OG tags for a non-static slug via the API', as
           locationLabel: 'Gombe, Kinshasa',
           primaryImageUrl: 'https://cdn.example.com/listings/mon-annonce/photo.jpg',
           storyImageUrl: 'https://r2.example.com/listings/mon-annonce/story.png',
+          shareImageUrl: 'https://r2.example.com/listings/mon-annonce/share.png',
         }),
       );
       return;
@@ -363,7 +364,7 @@ test('runtime renders per-listing OG tags for a non-static slug via the API', as
       const body = await response.text();
 
       assert.equal(response.status, 200);
-      assert.match(body, /property="og:image" content="https:\/\/r2\.example\.com\/listings\/mon-annonce\/story\.png"/);
+      assert.match(body, /property="og:image" content="https:\/\/r2\.example\.com\/listings\/mon-annonce\/share\.png"/);
       assert.match(body, /80\s?000 CDF/);
       assert.match(body, /Gombe, Kinshasa/);
       assert.match(body, /#listing\/mon-annonce-test/);
@@ -371,7 +372,7 @@ test('runtime renders per-listing OG tags for a non-static slug via the API', as
   });
 });
 
-test('runtime falls back to brand og-default.png when the API has no such listing', async () => {
+test('runtime returns a non-indexable 404 when the API has no such listing', async () => {
   await withMockApi((request, response) => {
     response.writeHead(404, { 'content-type': 'application/json' });
     response.end(JSON.stringify({ message: `No listing for ${request.url}` }));
@@ -382,8 +383,9 @@ test('runtime falls back to brand og-default.png when the API has no such listin
       });
       const body = await response.text();
 
-      assert.equal(response.status, 200);
-      assert.match(body, /assets\/brand\/og-default\.png/);
+      assert.equal(response.status, 404);
+      assert.match(body, /noindex/);
+      assert.doesNotMatch(body, /og:image/);
     }, { ZWIBBA_API_BASE_URL: mockBase });
   });
 });

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import test from 'node:test';
 
-import { StoryImageService } from '../../src/share/story-image.service';
+import { StoryImageService, formatSharePrice } from '../../src/share/story-image.service';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PHOTO_BUFFER = readFileSync(path.resolve(__dirname, '../fixtures/sample-product.png'));
@@ -54,7 +54,7 @@ function buildMocks() {
   // sharp composite is the real pipeline; we'll feed a tiny photo via fetch mock
   const fetchImpl = async (url: string) => {
     fetchedUrls.push(url);
-    return { arrayBuffer: async () => PHOTO_BUFFER };
+    return { ok: true, arrayBuffer: async () => PHOTO_BUFFER };
   };
 
   return { prismaService, r2StorageService, updates, r2Puts, fetchedUrls, fetchImpl };
@@ -67,7 +67,9 @@ test('generateAndStoreForListing composes, uploads, and persists the URL', async
   const result = await service.generateAndStoreForListing('l1');
 
   assert.match(result.storyImageUrl, /listings\/l1\/story\.png$/);
-  assert.equal(mocks.r2Puts.length, 1);
+  assert.equal(mocks.r2Puts.length, 2);
+  assert.equal(mocks.r2Puts[1].objectKey, 'listings/l1/share.png');
+  assert.match(mocks.updates[0].data.shareImageUrl, /share\.png/);
   assert.equal(mocks.r2Puts[0].objectKey, 'listings/l1/story.png');
   assert.equal(mocks.r2Puts[0].contentType, 'image/png');
   assert.equal(mocks.updates.length, 1);
@@ -91,4 +93,21 @@ test('generateAndStoreForListing throws when the listing is not found', async ()
   mocks.prismaService.listing.findUnique = async () => null;
   const service = new StoryImageService(mocks.prismaService as any, mocks.r2StorageService as any, { fetchImpl: mocks.fetchImpl as any });
   await assert.rejects(() => service.generateAndStoreForListing('unknown'), /not found/i);
+});
+
+
+test('failed photo fetch never composes or uploads an error document', async () => {
+  const mocks = buildMocks();
+  const service = new StoryImageService(mocks.prismaService as any, mocks.r2StorageService as any, { fetchImpl: (async () => ({ ok: false, status: 503, arrayBuffer: async () => PHOTO_BUFFER })) as any });
+  await assert.rejects(() => service.generateAndStoreForListing('l1'), /503/);
+  assert.equal(mocks.r2Puts.length, 0);
+  assert.equal(mocks.updates.length, 0);
+});
+
+test('share prices preserve zero and format currencies for both markets', () => {
+  assert.equal(formatSharePrice(0, 'EUR'), '0 €');
+  assert.equal(formatSharePrice(250, 'EUR'), '250 €');
+  assert.equal(formatSharePrice(50, 'USD'), '50 US$');
+  assert.equal(formatSharePrice(500, 'CDF'), '500 CDF');
+  assert.equal(formatSharePrice(null, 'CDF'), '');
 });

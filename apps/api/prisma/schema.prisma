@@ -89,6 +89,7 @@ model Listing {
   area                                String
   attributesJson                      Json?
   storyImageUrl                       String?
+  shareImageUrl                       String?
   boostPurchases                      BoostPurchase[]
   categoryId                          String
   chatThreads                         ChatThread[]
