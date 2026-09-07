@@ -4,6 +4,9 @@ This directory is now the active planning location for Zwibba work in `/Users/pc
 
 Current priority docs:
 
+- `2026-09-07-zwibba-legal-acceptance-design.md`
+- `2026-09-07-zwibba-legal-acceptance-implementation.md`
+
 - `2026-09-07-zwibba-modern-sharing-design.md`
 - `2026-09-07-zwibba-modern-sharing-implementation.md`
 
