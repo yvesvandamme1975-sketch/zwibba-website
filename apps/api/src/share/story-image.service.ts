@@ -9,7 +9,7 @@ export class StoryImageService {
   constructor(
     @Inject(PrismaService) private readonly prismaService: PrismaService,
     @Inject(R2StorageService) private readonly r2StorageService: R2StorageService,
-    private readonly options: { fetchImpl?: typeof fetch } = {},
+    private readonly options: { fetchImpl?: typeof fetch; appBaseUrl?: string } = {},
   ) {}
 
   async generateAndStoreForListing(listingId: string): Promise<{ storyImageUrl: string; shareImageUrl: string }> {
@@ -28,7 +28,8 @@ export class StoryImageService {
     }
 
     const fetchImpl = this.options.fetchImpl ?? fetch;
-    const photoResponse = await fetchImpl(primaryImageUrl, { signal: AbortSignal.timeout(15000) });
+    const photoUrl = resolvePhotoFetchUrl(primaryImageUrl, this.options.appBaseUrl);
+    const photoResponse = await fetchImpl(photoUrl, { signal: AbortSignal.timeout(15000) });
     if (!photoResponse.ok) throw new Error(`Photo download failed: ${photoResponse.status}`);
     const photoBuffer = Buffer.from(await photoResponse.arrayBuffer());
 
@@ -60,6 +61,19 @@ export class StoryImageService {
 
     return { storyImageUrl: publicUrl, shareImageUrl };
   }
+}
+
+const PUBLIC_APP_BASE_URL = 'https://zwibba.com';
+
+/**
+ * Seeded listings store their photo as a site-relative path (`/assets/listings/...jpg`),
+ * which `fetch` rejects. Resolve those against the application origin; absolute R2 or CDN
+ * URLs are returned untouched.
+ */
+export function resolvePhotoFetchUrl(publicUrl: string, appBaseUrl?: string): string {
+  if (/^https?:\/\//i.test(publicUrl)) return publicUrl;
+  const base = new URL(appBaseUrl || process.env.APP_BASE_URL || PUBLIC_APP_BASE_URL);
+  return new URL(publicUrl, base.origin).toString();
 }
 
 export function formatSharePrice(amount: number | null, currency: string | null): string {
