@@ -1,10 +1,16 @@
 import { renderInAppBrand } from '../../components/in-app-brand.mjs';
-import { escapeHtml } from '../../utils/rendering.mjs';
+import { escapeAttribute, escapeHtml } from '../../utils/rendering.mjs';
+import { renderTermsAcceptanceFields } from './terms-acceptance-screen.mjs';
 
 export function renderOtpScreen({
+  demoCode = '',
   errorMessage = '',
+  legal = null,
   phoneNumber = '',
-}) {
+} = {}) {
+  const terms = legal?.terms ?? null;
+  const legalFields = renderTermsAcceptanceFields({ legal });
+
   return `
     <section class="app-flow app-flow--auth">
       <header class="app-flow__header">
@@ -19,8 +25,8 @@ export function renderOtpScreen({
       </header>
 
       <div class="app-auth__card">
-        <strong>Code envoyé</strong>
-        <p>Nous simulons l'envoi vers ${escapeHtml(phoneNumber || 'votre numéro')}.</p>
+        <strong>Vérification du numéro</strong>
+        <p>Saisissez le code reçu via WhatsApp pour ${escapeHtml(phoneNumber || 'votre numéro')}.</p>
       </div>
 
       ${
@@ -29,13 +35,29 @@ export function renderOtpScreen({
           : ''
       }
 
-      <form class="app-review__form" data-form="verify-otp">
+      <form class="app-review__form" data-form="verify-otp"${
+        terms
+          ? ` data-terms-version="${escapeAttribute(
+              terms.version,
+            )}" data-terms-hash="${escapeAttribute(
+              terms.hash,
+            )}" data-terms-locale="${escapeAttribute(terms.locale)}"`
+          : ''
+      }>
         <label class="app-review__field app-review__field--full">
           <span>Code à 6 chiffres</span>
-          <input class="app-auth__code" name="otpCode" type="text" inputmode="numeric" maxlength="6" />
+          <input class="app-auth__code" name="otpCode" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required />
         </label>
 
-        <div class="app-flow__note">Beta Railway: utilisez le code <strong>123456</strong>.</div>
+        ${legalFields}
+
+        ${
+          demoCode
+            ? `<div class="app-flow__note">Compte de démonstration : utilisez le code <strong>${escapeHtml(
+                demoCode,
+              )}</strong>.</div>`
+            : ''
+        }
 
         <div class="app-flow__actions">
           <button class="app-flow__button" type="submit">Vérifier et continuer</button>

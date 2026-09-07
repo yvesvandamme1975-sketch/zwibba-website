@@ -1933,3 +1933,38 @@
 .app-share-menu__segmented { clear: both; }
 
 .app-share-menu__announcement { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+.app-legal__consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.app-legal__consent input[type="checkbox"] {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  margin: 2px 0 0;
+  accent-color: var(--green);
+}
+
+.app-legal__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 12px;
+}
+
+.app-legal__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.app-legal__hint {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+}

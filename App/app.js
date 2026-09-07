@@ -9,6 +9,11 @@ import {
   resolveDefaultPhonePrefix,
 } from './features/auth/phone-input-screen.mjs';
 import { renderOtpScreen } from './features/auth/otp-screen.mjs';
+import {
+  renderLegalLinks,
+  renderLegalStatusNotice,
+  renderTermsAcceptanceScreen,
+} from './features/auth/terms-acceptance-screen.mjs';
 import { renderInboxScreen } from './features/chat/inbox-screen.mjs';
 import { createChatLiveRefreshController } from './features/chat/chat-live-refresh-controller.mjs';
 import { renderThreadScreen } from './features/chat/thread-screen.mjs';
@@ -44,6 +49,7 @@ import { createAiDraftService } from './services/ai-draft.mjs';
 import { createApiConfig } from './services/api-config.mjs';
 import { createAuthService } from './services/auth-service.mjs';
 import { createChatService } from './services/chat-service.mjs';
+import { createLegalAwareFetch } from './services/legal-api-fetch.mjs';
 import { createDraftStorageService } from './services/draft-storage.mjs';
 import { createImageCompressionService } from './services/image-compression.mjs';
 import { createListingsService } from './services/listings-service.mjs';
@@ -130,48 +136,58 @@ if (appRoot) {
     fetchFn: window.fetch.bind(window),
     storage: window.localStorage,
   });
+  // A 428 on an account request means the server published a version this
+  // account has not accepted: reload the authoritative status, never assume it.
+  const apiFetch = createLegalAwareFetch({
+    fetchFn: window.fetch.bind(window),
+    getSessionToken: () => state.session?.sessionToken ?? '',
+    onTermsRequired: () => {
+      state.legalStatusStatus = 'idle';
+      void loadLegalStatus();
+    },
+  });
   const listingsService = createListingsService({
     apiBaseUrl: apiConfig.apiBaseUrl,
-    fetchFn: window.fetch.bind(window),
+    fetchFn: apiFetch,
   });
   const searchSignalReporter = createSearchSignalReporter({
     reportFn: listingsService.reportSearchQuery.bind(listingsService),
   });
   const reviewsService = createReviewsService({
     apiBaseUrl: apiConfig.apiBaseUrl,
-    fetchFn: window.fetch.bind(window),
+    fetchFn: apiFetch,
   });
   const reviewReportsService = createReviewReportsService({
     apiBaseUrl: apiConfig.apiBaseUrl,
-    fetchFn: window.fetch.bind(window),
+    fetchFn: apiFetch,
   });
   const sellerRepliesService = createSellerRepliesService({
     apiBaseUrl: apiConfig.apiBaseUrl,
-    fetchFn: window.fetch.bind(window),
+    fetchFn: apiFetch,
   });
   const chatService = createChatService({
     apiBaseUrl: apiConfig.apiBaseUrl,
-    fetchFn: window.fetch.bind(window),
+    fetchFn: apiFetch,
   });
   const walletService = createWalletService({
     apiBaseUrl: apiConfig.apiBaseUrl,
-    fetchFn: window.fetch.bind(window),
+    fetchFn: apiFetch,
   });
   const sellerListingsService = createSellerListingsService({
     apiBaseUrl: apiConfig.apiBaseUrl,
-    fetchFn: window.fetch.bind(window),
+    fetchFn: apiFetch,
   });
   const profileService = createProfileService({
     apiBaseUrl: apiConfig.apiBaseUrl,
-    fetchFn: window.fetch.bind(window),
+    fetchFn: apiFetch,
   });
   const mediaService = createMediaService({
     apiBaseUrl: apiConfig.apiBaseUrl,
-    fetchFn: window.fetch.bind(window),
+    fetchFn: apiFetch,
   });
   const liveDraftService = createLiveDraftService({
     apiBaseUrl: apiConfig.apiBaseUrl,
-    fetchFn: window.fetch.bind(window),
+    fetchFn: apiFetch,
   });
   const countryPreference = createCountryPreference({ storage: window.localStorage });
   const countryFromSearch = readCountryFromSearch(window.location.search);
@@ -237,7 +253,7 @@ if (appRoot) {
     imageCompressionService: createImageCompressionService(),
     aiDraftService: createAiDraftService({
       apiBaseUrl: apiConfig.apiBaseUrl,
-      fetchFn: window.fetch.bind(window),
+      fetchFn: apiFetch,
     }),
     mediaService,
     onUploadStageChange: syncUploadProgress,
@@ -263,6 +279,16 @@ if (appRoot) {
     inboxItems: [],
     inboxPromise: null,
     inboxStatus: 'idle',
+    legalAcceptBusy: false,
+    legalAcceptError: '',
+    legalDocuments: [],
+    legalDocumentsMarket: '',
+    legalDocumentsPromise: null,
+    legalDocumentsStatus: 'idle',
+    legalStatus: null,
+    legalStatusError: '',
+    legalStatusPromise: null,
+    legalStatusStatus: 'idle',
     listingLifecycleBusyId: '',
     listingLifecycleMessage: '',
     otpError: '',
@@ -930,9 +956,115 @@ if (appRoot) {
     return state.profileCityOptionsPromise;
   }
 
+  const accountRouteTypes = new Set(['messages', 'thread', 'wallet', 'profile', 'publish']);
+
+  // Only a status confirmed by the server gates the account screens. A status
+  // that could not be read is reported as such, never as "nothing to accept".
+  function requiresTermsAcceptance() {
+    return Boolean(
+      state.session && state.legalStatus?.active && state.legalStatus?.needsAcceptance,
+    );
+  }
+
+  function loadLegalStatus() {
+    const sessionToken = state.session?.sessionToken;
+
+    if (!sessionToken) {
+      return Promise.resolve(null);
+    }
+
+    if (state.legalStatusPromise) {
+      return state.legalStatusPromise;
+    }
+
+    state.legalStatusStatus = 'loading';
+    state.legalStatusError = '';
+    state.legalStatusPromise = authService
+      .getLegalStatus({
+        sessionToken,
+      })
+      .then((legalStatus) => {
+        // A logout or a new session during the request must not adopt this answer.
+        if (state.session?.sessionToken !== sessionToken) {
+          return null;
+        }
+
+        state.legalStatus = legalStatus;
+        state.legalStatusStatus = 'ready';
+        return legalStatus;
+      })
+      .catch((error) => {
+        if (state.session?.sessionToken !== sessionToken) {
+          return null;
+        }
+
+        state.legalStatusStatus = 'error';
+        state.legalStatusError =
+          error instanceof Error
+            ? error.message
+            : 'Statut des conditions générales indisponible.';
+        return null;
+      })
+      .finally(() => {
+        if (state.session?.sessionToken === sessionToken) state.legalStatusPromise = null;
+        renderApp();
+      });
+
+    return state.legalStatusPromise;
+  }
+
+  function loadLegalDocuments() {
+    if (state.legalDocumentsPromise) {
+      return state.legalDocumentsPromise;
+    }
+
+    const market = resolveBrowseCountry();
+
+    state.legalDocumentsStatus = 'loading';
+    state.legalDocumentsMarket = market;
+    state.legalDocumentsPromise = authService
+      .getLegalDocuments({
+        market,
+      })
+      .then((catalog) => {
+        // A draft catalog publishes nothing: no link is invented for it.
+        state.legalDocuments = catalog?.active ? catalog.documents : [];
+        state.legalDocumentsStatus = 'ready';
+        return catalog;
+      })
+      .catch(() => {
+        state.legalDocuments = [];
+        state.legalDocumentsStatus = 'error';
+        return null;
+      })
+      .finally(() => {
+        state.legalDocumentsPromise = null;
+        renderApp();
+      });
+
+    return state.legalDocumentsPromise;
+  }
+
   function primeBuyerRouteState(route) {
+    if (state.session && state.legalStatusStatus === 'idle') {
+      void loadLegalStatus();
+    }
+
+    if (
+      (route.type === 'auth-welcome' || route.type === 'phone' || route.type === 'otp') &&
+      (state.legalDocumentsStatus === 'idle' ||
+        state.legalDocumentsMarket !== resolveBrowseCountry())
+    ) {
+      void loadLegalDocuments();
+    }
+
+    // Account data is pointless while the server refuses the session over terms.
+    // Public browsing keeps loading normally.
+    const blockedByTerms = requiresTermsAcceptance();
+
     if (
       state.session &&
+      !blockedByTerms &&
       (
         state.profileStatus === 'idle' ||
         (route.type === 'seller' && !state.profile && state.profileStatus !== 'loading')
@@ -963,21 +1095,21 @@ if (appRoot) {
       void loadPublicSeller(route.sellerId);
     }
 
-    if (route.type === 'messages' && state.session && state.inboxStatus === 'idle') {
+    if (route.type === 'messages' && state.session && !blockedByTerms && state.inboxStatus === 'idle') {
       void loadInbox();
     }
 
-    if (route.type === 'thread' && state.session) {
+    if (route.type === 'thread' && state.session && !blockedByTerms) {
       if (!state.thread || state.currentThreadId !== route.threadId || state.threadStatus === 'idle') {
         void loadThread(route.threadId);
       }
     }
 
-    if (route.type === 'wallet' && state.session && state.walletStatus === 'idle') {
+    if (route.type === 'wallet' && state.session && !blockedByTerms && state.walletStatus === 'idle') {
       void loadWallet();
     }
 
-    if (route.type === 'profile' && state.session && state.sellerListingsStatus === 'idle') {
+    if (route.type === 'profile' && state.session && !blockedByTerms && state.sellerListingsStatus === 'idle') {
       void loadSellerListings();
     }
 
@@ -987,6 +1119,35 @@ if (appRoot) {
   }
 
   function renderRoute(route) {
+    if (accountRouteTypes.has(route.type) && requiresTermsAcceptance()) {
+      return renderTermsAcceptanceScreen({
+        busy: state.legalAcceptBusy || state.legalStatusStatus === 'loading',
+        errorMessage: state.legalAcceptError,
+        legal: state.legalStatus,
+        statusErrorMessage: state.legalStatusError,
+      });
+    }
+
+    // An unreadable status is surfaced where it matters, without blocking the
+    // account screens: the API stays authoritative and answers 428 if needed.
+    const legalStatusNotice = accountRouteTypes.has(route.type)
+      ? renderLegalStatusNotice({
+          busy: state.legalStatusStatus === 'loading',
+          errorMessage: state.legalStatusError,
+        })
+      : '';
+    // Published documents stay readable while browsing without an account.
+    const publicLegalLinks =
+      route.type === 'auth-welcome' || route.type === 'phone'
+        ? renderLegalLinks({
+            documents: state.legalDocuments,
+          })
+        : '';
+
+    return legalStatusNotice + renderRouteContent(route) + publicLegalLinks;
+  }
+
+  function renderRouteContent(route) {
     const homeSections = buyerBrowseController.getHomeSections();
     const homeFeedStatus =
       buyerBrowseController.state.feedStatus === 'idle'
@@ -1034,7 +1195,10 @@ if (appRoot) {
         });
       case 'otp':
         return renderOtpScreen({
+          // Only a demo challenge carries a code to display.
+          demoCode: state.pendingChallenge?.demoCode ?? '',
           errorMessage: state.otpError,
+          legal: state.pendingChallenge?.legal ?? null,
           phoneNumber: state.pendingChallenge?.phoneNumber ?? state.phoneNumber,
         });
       case 'publish':
@@ -1226,6 +1390,71 @@ if (appRoot) {
     return true;
   }
 
+  const legalFormFieldNames = new Set(['acceptedTerms', 'otpCode']);
+
+  function captureLegalFormRenderState(root, activeElement) {
+    const form = root?.querySelector(
+      'form[data-form="verify-otp"], form[data-form="accept-terms"]',
+    );
+
+    if (!form) {
+      return null;
+    }
+
+    const codeInput = form.querySelector('input[name="otpCode"]');
+    const consentInput = form.querySelector('input[name="acceptedTerms"]');
+
+    return {
+      accepted: consentInput ? consentInput.checked === true : false,
+      code: codeInput ? String(codeInput.value ?? '') : '',
+      focusedName:
+        activeElement && legalFormFieldNames.has(activeElement.name) ? activeElement.name : '',
+      formName: form.dataset.form,
+      termsHash: form.dataset.termsHash ?? '',
+      termsLocale: form.dataset.termsLocale ?? '',
+      termsVersion: form.dataset.termsVersion ?? '',
+    };
+  }
+
+  function restoreLegalFormRenderState(root, capturedState) {
+    if (!root || !capturedState) {
+      return;
+    }
+
+    const form = root.querySelector(`form[data-form="${capturedState.formName}"]`);
+
+    if (!form) {
+      return;
+    }
+
+    const codeInput = form.querySelector('input[name="otpCode"]');
+
+    if (codeInput instanceof HTMLInputElement && capturedState.code) {
+      codeInput.value = capturedState.code;
+    }
+
+    const consentInput = form.querySelector('input[name="acceptedTerms"]');
+
+    if (consentInput instanceof HTMLInputElement) {
+      // Acceptance always targets the exact text displayed: a new version, hash
+      // or locale clears the tick and asks for an explicit consent again.
+      const sameTerms =
+        (form.dataset.termsVersion ?? '') === capturedState.termsVersion &&
+        (form.dataset.termsHash ?? '') === capturedState.termsHash &&
+        (form.dataset.termsLocale ?? '') === capturedState.termsLocale;
+
+      consentInput.checked = sameTerms ? capturedState.accepted : false;
+    }
+
+    if (capturedState.focusedName) {
+      const focusTarget = form.querySelector(`[name="${capturedState.focusedName}"]`);
+
+      if (focusTarget instanceof HTMLElement) {
+        focusTarget.focus();
+      }
+    }
+  }
+
   function shouldShowCountrySuggestion() {
     return (
       !state.session &&
@@ -1246,6 +1475,7 @@ if (appRoot) {
     const reviewDraftRenderState = captureReviewDraftRenderState(appRoot, document.activeElement);
     const threadComposerRenderState = captureThreadComposerRenderState(document.activeElement);
     const profileCityRenderState = captureProfileCityRenderState(document.activeElement);
+    const legalFormRenderState = captureLegalFormRenderState(appRoot, document.activeElement);
 
     window.ZWIBBA_ACTIVE_COUNTRY_CODE = resolveBrowseCountry();
 
@@ -1284,6 +1514,7 @@ if (appRoot) {
     if (route.type === 'profile') {
       restoreProfileCityRenderState(appRoot, profileCityRenderState);
     }
+    restoreLegalFormRenderState(appRoot, legalFormRenderState);
     restoreScrollRenderState(appRoot, scrollRenderState, window);
     if (state.shareMenu) syncShareFocus(previousShareAction);
     appRoot.dataset.appReady = 'true';
@@ -1621,6 +1852,12 @@ if (appRoot) {
     state.sellerListingsStatus = 'idle';
     state.listingLifecycleBusyId = '';
     state.listingLifecycleMessage = '';
+    state.legalAcceptBusy = false;
+    state.legalAcceptError = '';
+    state.legalStatus = null;
+    state.legalStatusError = '';
+    state.legalStatusPromise = null;
+    state.legalStatusStatus = 'idle';
     buyerBrowseController.state.detail = null;
     buyerBrowseController.state.detailError = '';
     buyerBrowseController.state.detailStatus = 'idle';
@@ -1630,13 +1867,51 @@ if (appRoot) {
     renderApp();
   }
 
+  // The checkbox is the only source of a consent: nothing is sent when the user
+  // did not tick it.
+  function readLegalAcceptance(formData) {
+    if (String(formData.get('acceptedTerms') ?? '') !== 'true') {
+      return null;
+    }
+
+    return {
+      accepted: true,
+      version: String(formData.get('termsVersion') ?? ''),
+      hash: String(formData.get('termsHash') ?? ''),
+      locale: String(formData.get('termsLocale') ?? ''),
+    };
+  }
+
+  async function refreshPendingChallengeLegal() {
+    const previousChallenge = state.pendingChallenge;
+    try {
+      const challenge = await authService.refreshPendingChallengeLegal();
+      if (state.pendingChallenge?.challengeId === previousChallenge?.challengeId &&
+          state.pendingChallenge?.phoneNumber === previousChallenge?.phoneNumber) {
+        state.pendingChallenge = challenge;
+      }
+    } catch {
+      // The server message already explains the refusal; the pending code stays
+      // usable and the user can retry.
+    }
+  }
+
   async function handleOtpSubmit(form) {
     const formData = new FormData(form);
+    const legalAcceptance = readLegalAcceptance(formData);
+
+    if (state.pendingChallenge?.legal?.required && !legalAcceptance) {
+      state.otpError =
+        'Veuillez lire et accepter les conditions générales d’utilisation (CGU) pour continuer.';
+      renderApp();
+      return;
+    }
 
     try {
       const session = await authService.verifyOtp({
         code: String(formData.get('otpCode') ?? '').trim(),
         phoneNumber: state.pendingChallenge?.phoneNumber ?? state.phoneNumber,
+        ...(legalAcceptance ? { legalAcceptance } : {}),
       });
 
       state.session = session;
@@ -1655,6 +1930,10 @@ if (appRoot) {
       state.profileSelectedArea = '';
       state.walletStatus = 'idle';
       state.sellerListingsStatus = 'idle';
+      state.legalStatus = null;
+      state.legalStatusError = '';
+      state.legalStatusStatus = 'idle';
+      state.legalAcceptError = '';
 
       if (state.draft) {
         state.draft = markDraftOtpVerified(state.draft, {
@@ -1684,6 +1963,78 @@ if (appRoot) {
       window.location.hash = '#publish';
     } catch (error) {
       state.otpError = error instanceof Error ? error.message : 'Code OTP invalide.';
+
+      // A version published while the user was typing: reload the presented text
+      // without asking for a new code, and require a fresh explicit acceptance.
+      if (error?.status === 409 || error?.code === 'TERMS_ACCEPTANCE_REQUIRED') {
+        await refreshPendingChallengeLegal();
+      }
+
+      renderApp();
+    }
+  }
+
+  async function handleAcceptTermsSubmit(form) {
+    const sessionToken = state.session?.sessionToken;
+
+    if (!sessionToken) {
+      return;
+    }
+
+    const legalAcceptance = readLegalAcceptance(new FormData(form));
+
+    if (!legalAcceptance) {
+      state.legalAcceptError =
+        'Veuillez lire et accepter les conditions générales d’utilisation (CGU) pour continuer.';
+      renderApp();
+      return;
+    }
+
+    state.legalAcceptBusy = true;
+    state.legalAcceptError = '';
+    renderApp();
+
+    try {
+      const legalStatus = await authService.acceptTerms({
+        legalAcceptance,
+        session: {
+          sessionToken,
+        },
+      });
+
+      // A logout during the request wins: nothing is applied to another session.
+      if (state.session?.sessionToken !== sessionToken) {
+        return;
+      }
+
+      state.legalStatus = legalStatus;
+      state.legalStatusError = '';
+      state.legalStatusStatus = 'ready';
+      state.inboxStatus = 'idle';
+      state.profileStatus = 'idle';
+      state.sellerListingsStatus = 'idle';
+      state.walletStatus = 'idle';
+    } catch (error) {
+      if (state.session?.sessionToken !== sessionToken) {
+        return;
+      }
+
+      state.legalAcceptError =
+        error instanceof Error
+          ? error.message
+          : 'Acceptation des conditions générales impossible.';
+
+      if (error?.status === 409) {
+        state.legalStatusStatus = 'idle';
+        state.legalAcceptBusy = false;
+        await loadLegalStatus();
+        return;
+      }
+    } finally {
+      if (state.session?.sessionToken === sessionToken) {
+        state.legalAcceptBusy = false;
+      }
+
       renderApp();
     }
   }
@@ -1825,7 +2176,7 @@ if (appRoot) {
       const result = await submitLivePublish({
         apiBaseUrl: apiConfig.apiBaseUrl,
         draft: state.draft,
-        fetchFn: window.fetch.bind(window),
+        fetchFn: apiFetch,
         session: state.session,
       });
       const listingRoute = buildBuyerListingRoute(result.outcome?.listingSlug);
@@ -2242,7 +2593,7 @@ if (appRoot) {
   const shareController = createListingShareController({
     baseUrl: window.location.origin,
     navigatorObject: navigator,
-    fetchFn: window.fetch.bind(window),
+    fetchFn: apiFetch,
     openWindow(url) {
       // With the noopener feature, window.open returns null even on success.
       // Detach the blank same-origin window before navigating instead.
@@ -2465,6 +2816,15 @@ if (appRoot) {
 
     if (trigger.dataset.action === 'logout') {
       handleLogout();
+      return;
+    }
+
+    if (trigger.dataset.action === 'retry-legal-status') {
+      state.legalStatusStatus = 'idle';
+      state.legalStatusError = '';
+      state.legalAcceptError = '';
+      renderApp();
+      await loadLegalStatus();
       return;
     }
 
@@ -2693,6 +3053,11 @@ if (appRoot) {
 
     if (form.dataset.form === 'verify-otp') {
       await handleOtpSubmit(form);
+      return;
+    }
+
+    if (form.dataset.form === 'accept-terms') {
+      await handleAcceptTermsSubmit(form);
       return;
     }
 
