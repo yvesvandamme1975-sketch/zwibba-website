@@ -22,7 +22,7 @@ Le catalogue refuse les textes incomplets, les empreintes incorrectes et un jeu 
 
 1. **Exploitant et coordonnées confirmés par Yves le 7 septembre** : Yves Van Damme, personne physique indépendante sous le nom commercial provisoire Aïves Consulting ; Rue Jean Schyns 29, 7100 La Louvière, Belgique ; BCE 0825.089.324. Les neuf brouillons sont complétés. Le numéro/statut TVA reste distinct et non confirmé par cette réponse.
 2. **Contact confirmé : hello@aivesconsulting.com**, pour Zwibba, les signalements et les droits sur les données. La procédure de prise en charge et de notification des motifs de modération reste à vérifier.
-3. Choix d’âge minimum. La proposition de 18 ans avec attestation a été soumise à Yves, sans réponse à ce stade. Aucun contrôle d’âge fictif n’a été ajouté.
+3. Accès des mineurs : Yves répond « pas nécessairement » à la proposition de limite à 18 ans et demande une nouvelle relecture de Claude avant publication. Aucun seuil automatique ni contrôle d’âge fictif n’est retenu. La configuration Gemini actuelle impose une vérification technique et contractuelle avant toute ouverture explicite aux mineurs.
 4. Durées ou critères de conservation par catégorie et modalités concrètes de suppression, y compris preuve contractuelle. L’absence de purge ne justifie pas une conservation illimitée.
 5. Localisation effective, contrats et garanties des prestataires/transferts ; situation applicable en RDC à vérifier sur les sources officielles. Aucune conformité ni obligation de migration territoriale n’est certifiée par une génération de texte.
 
@@ -55,3 +55,13 @@ Yves précise : « Sous le nom d’aives consulting pour l’instant ». Cette d
 ### Confirmation des coordonnées
 
 Yves répond « oui » à la confirmation de son identité d’indépendant, de la BCE 0825.089.324, de l’adresse Rue Jean Schyns 29, 7100 La Louvière et de hello@aivesconsulting.com comme contact Zwibba. Cette confirmation remplace les réserves d’actualité ci-dessus pour ces seules coordonnées. Les champs correspondants sont complétés dans les neuf textes ; les autres décisions et le statut draft sont conservés.
+
+## Nouvelle demande de publication et vérification Claude
+
+Yves demande de publier après une nouvelle vérification par Claude. La revue réelle du commit `c2a620e` (session `b24caf4c-7abe-4d6f-b3f0-b2e7a84364fa`) conclut **NOT READY**. Le rapport est conservé dans `2026-09-07-claude-legal-publication-review.md`. Il s’agit d’un avis technique et documentaire ; les hypothèses juridiques du rapport ne sont pas une certification.
+
+Vérification complémentaire de la configuration API de production, limitée aux valeurs publiques et à la présence des clés : fournisseur `multi`, Gemini configuré, enrichissement Google Cloud Vision activé ; Anthropic et Mistral non configurés. OTP Meta configuré. Aucune clé n’est enregistrée dans ce rapport. Les conditions Gemini officielles du 23 mars 2026 excluent les applications susceptibles d’être utilisées par des moins de 18 ans : une clause parentale seule ne résout donc pas l’accès des mineurs avec cette intégration. Source : https://ai.google.dev/gemini-api/terms .
+
+Les DPA publics Railway et Cloudflare ont été trouvés ; cela ne vérifie ni les contrats effectivement applicables au compte, ni la localisation des traitements, ni les garanties de transfert requises. Les critères de conservation doivent correspondre à une procédure réelle ; remplacer un champ par une formule vague ne suffit pas.
+
+Avant publication, corriger également les notes internes encore présentes dans les neuf textes, décrire la modération automatisée réellement utilisée, préciser les contacts et vérifier les prestataires analytiques actifs et la langue réellement acceptée. Le catalogue reste draft et la migration n’est pas appliquée. Aucun nouveau test applicatif n’est revendiqué pour cette seule mise à jour documentaire.
