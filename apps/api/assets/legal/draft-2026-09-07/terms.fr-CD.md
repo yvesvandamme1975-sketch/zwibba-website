@@ -4,6 +4,8 @@
 
 **Version : draft-2026-09-07 · Marché : République démocratique du Congo · Langue : français**
 
+**Nom commercial : Aïves Consulting**
+
 ## 1. Qui exploite Zwibba
 
 Zwibba est exploité par [[LEGAL_NAME]], [[LEGAL_FORM]], dont le siège est situé [[ADDRESS]], immatriculée sous le numéro [[ENTERPRISE_NUMBER]], numéro de TVA [[VAT_NUMBER_IF_APPLICABLE]]. Contact : [[CONTACT_EMAIL]].

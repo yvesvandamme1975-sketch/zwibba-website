@@ -6,6 +6,8 @@
 
 Ce document vous informe. Il n'est pas un contrat et ne vous demande pas de consentement : l'accès à Zwibba n'est jamais conditionné à l'acceptation de cette notice. Lorsqu'un traitement repose sur votre consentement, celui-ci est demandé séparément, pour une finalité précise, et son refus n'entraîne aucune perte d'accès au service.
 
+**Nom commercial : Aïves Consulting**
+
 ## 1. Responsable du traitement
 
 [[LEGAL_NAME]], [[LEGAL_FORM]], [[ADDRESS]], numéro d'entreprise [[ENTERPRISE_NUMBER]]. Contact : [[CONTACT_EMAIL]].

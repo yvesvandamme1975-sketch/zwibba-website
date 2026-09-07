@@ -20,7 +20,7 @@ Le catalogue refuse les textes incomplets, les empreintes incorrectes et un jeu 
 
 ## Informations et décisions encore nécessaires
 
-1. Exploitant à publier : dénomination et forme juridique, adresse professionnelle, immatriculation/BCE et TVA si applicable. Ne pas déduire l’exploitant du seul nom Aïves.
+1. Nom commercial confirmé par Yves le 7 septembre : **Aïves Consulting, pour l’instant**. Identité juridique portant ce nom commercial, adresse professionnelle, immatriculation/BCE et TVA à confirmer avant publication. Le nom commercial est désormais inscrit dans les neuf brouillons ; le champ LEGAL_NAME reste réservé à la personne physique ou morale juridiquement responsable.
 2. Contact effectivement chargé des signalements et droits sur les données ; procédure de prise en charge et notification des motifs de modération à vérifier.
 3. Choix d’âge minimum. La proposition de 18 ans avec attestation a été soumise à Yves, sans réponse à ce stade. Aucun contrôle d’âge fictif n’a été ajouté.
 4. Durées ou critères de conservation par catégorie et modalités concrètes de suppression, y compris preuve contractuelle. L’absence de purge ne justifie pas une conservation illimitée.
@@ -46,3 +46,8 @@ Sources consultées : SPF Économie (mentions obligatoires et DSA), EUR-Lex (RGP
 ## Livrable et suite
 
 Ouvrir la PR en brouillon vers le trunk et conserver la préparation non déployée tant que les faits listés ci-dessus ne sont pas finalisés. Avant activation : catalogue complet, contrôle des documents servis et de leurs empreintes, migration PostgreSQL vérifiée, puis smoke de cohérence website/API. Le registre actuel a été testé avec un adaptateur transactionnel de test ; la migration de cette fonctionnalité n’a pas encore été exécutée sur la base de production.
+
+
+## Décision complémentaire — exploitant provisoire
+
+Yves précise : « Sous le nom d’aives consulting pour l’instant ». Cette décision remplace l’incertitude sur le nom commercial et conserve son caractère provisoire. Elle ne signifie ni création d’une société distincte ni confirmation automatique des autres coordonnées. Les notes Aïves contiennent des coordonnées historiques ; leur actualité reste à confirmer, la consultation du registre officiel n’ayant pas abouti dans cette session. Catalogue maintenu draft.

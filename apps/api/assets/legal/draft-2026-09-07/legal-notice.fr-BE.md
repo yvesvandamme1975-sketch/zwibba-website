@@ -4,6 +4,8 @@
 
 **Version : draft-2026-09-07 · Marché : Belgique · Langue : français**
 
+**Nom commercial : Aïves Consulting**
+
 ## Éditeur du site et de l'application
 
 **Dénomination :** [[LEGAL_NAME]]

@@ -6,6 +6,8 @@
 
 Dit document informeert u. Het is geen overeenkomst en vraagt u geen toestemming: toegang tot Zwibba wordt nooit afhankelijk gemaakt van de aanvaarding van deze verklaring. Berust een verwerking op uw toestemming, dan wordt die apart gevraagd, voor een welbepaald doel, en leidt een weigering niet tot verlies van toegang tot de dienst.
 
+**Handelsnaam: Aïves Consulting**
+
 ## 1. Verwerkingsverantwoordelijke
 
 [[LEGAL_NAME]], [[LEGAL_FORM]], [[ADDRESS]], ondernemingsnummer [[ENTERPRISE_NUMBER]]. Contact: [[CONTACT_EMAIL]].

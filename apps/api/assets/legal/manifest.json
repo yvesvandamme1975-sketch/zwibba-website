@@ -8,63 +8,63 @@
       "locale": "fr-BE",
       "market": "BE",
       "file": "draft-2026-09-07/legal-notice.fr-BE.md",
-      "sha256": "dec643c093e4f7fdc4a42f2f7f9ea07b3e370745acd84ecab69c0f647f5d203e"
+      "sha256": "c598b7fd64d087c6d4131352a3a077808bc0ed8cfdea9ccf57a278faa3a46e2b"
     },
     {
       "kind": "privacy",
       "locale": "fr-BE",
       "market": "BE",
       "file": "draft-2026-09-07/privacy.fr-BE.md",
-      "sha256": "cb7f4431a1ee36387ae12baf99fea4a3dd199cf5fdfdbdb22dd056e4e778ec78"
+      "sha256": "7cdedfdca7bf751d4d31211be84acdbe54f94836ef094cb40b9e1dd9d7c6619f"
     },
     {
       "kind": "terms",
       "locale": "fr-BE",
       "market": "BE",
       "file": "draft-2026-09-07/terms.fr-BE.md",
-      "sha256": "6ac693fad1d081c07af0f8ae4502cd78dfb9d2bddebdf8eec07b3596f5d0d6bc"
+      "sha256": "10b606d552d6a5785ef5f9dd7f899026ab839bcaf2ebf6c24676d3e9ec358e9f"
     },
     {
       "kind": "legal-notice",
       "locale": "fr-CD",
       "market": "CD",
       "file": "draft-2026-09-07/legal-notice.fr-CD.md",
-      "sha256": "f168299d7e5caa6ef69855f46ad1ec366f4e4655280cd27778683367e77d951c"
+      "sha256": "58299504a5947856fc67323b60d704a59621966cbe1d3dfef2e5a007ed34b21d"
     },
     {
       "kind": "privacy",
       "locale": "fr-CD",
       "market": "CD",
       "file": "draft-2026-09-07/privacy.fr-CD.md",
-      "sha256": "3de4e3206ac78c6b900fc2f46a74650acbccbd5de1c9061507ba1ef0552e56fc"
+      "sha256": "41fdba28c22a2d2bef4f1584b77c91da6de97e3862e4f5a4b2737685e083f8c3"
     },
     {
       "kind": "terms",
       "locale": "fr-CD",
       "market": "CD",
       "file": "draft-2026-09-07/terms.fr-CD.md",
-      "sha256": "7a002e9fd927eeb27e1610c7748d3fdf9e56b991912c000d66b1967bc9365df7"
+      "sha256": "d42d48e3aa27cd61e965357c720f1002239f2ae65a945c5ffe9c25aced812245"
     },
     {
       "kind": "legal-notice",
       "locale": "nl-BE",
       "market": "BE",
       "file": "draft-2026-09-07/legal-notice.nl-BE.md",
-      "sha256": "29c8f7fe74a9f852551250950b0f230118294199cdc7b8ebd2dcf15a7bddfcd9"
+      "sha256": "2c6a7cd9ae6f5293544253dd60bf11757594322cc2e8a4b99dfee4d96407730b"
     },
     {
       "kind": "privacy",
       "locale": "nl-BE",
       "market": "BE",
       "file": "draft-2026-09-07/privacy.nl-BE.md",
-      "sha256": "bf1bdf1b6a64da92ece8812f29035a997ba45325b493852fbc54d8b2f0cb4c42"
+      "sha256": "222d31ea7fb9b403e370e74acf8dab8eb9157ab2f98b5c9faa355143d240aee1"
     },
     {
       "kind": "terms",
       "locale": "nl-BE",
       "market": "BE",
       "file": "draft-2026-09-07/terms.nl-BE.md",
-      "sha256": "d71967a9b6f5999f3d867b427df076c097407128769ffb33b36e7c4e8beab98d"
+      "sha256": "19d9cb960c5392973b792cb60df71f5a34b4ba6aea27b9cd763e1ff72921b2e4"
     }
   ]
 }

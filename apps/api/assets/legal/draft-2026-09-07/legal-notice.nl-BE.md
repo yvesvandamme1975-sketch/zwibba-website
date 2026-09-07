@@ -4,6 +4,8 @@
 
 **Versie: draft-2026-09-07 · Markt: België · Taal: Nederlands**
 
+**Handelsnaam: Aïves Consulting**
+
 ## Uitgever van de site en de toepassing
 
 **Benaming:** [[LEGAL_NAME]]

@@ -4,6 +4,8 @@
 
 **Versie: draft-2026-09-07 · Markt: België · Taal: Nederlands**
 
+**Handelsnaam: Aïves Consulting**
+
 ## 1. Wie Zwibba uitbaat
 
 Zwibba wordt uitgebaat door [[LEGAL_NAME]], [[LEGAL_FORM]], met zetel te [[ADDRESS]], ingeschreven in de Kruispuntbank van Ondernemingen onder het nummer [[ENTERPRISE_NUMBER]], btw-nummer [[VAT_NUMBER_IF_APPLICABLE]]. Contact: [[CONTACT_EMAIL]].
