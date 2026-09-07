@@ -20,6 +20,16 @@ Les annonces sans shareImageUrl utilisent leur photo réelle, sans fausse dimens
 
 La recette navigateur ne valide pas une feuille native sur un iPhone réel ni la publication dans WhatsApp/Instagram/TikTok. Il faut confirmer ces derniers gestes avec Yves. Aucun partage externe réel n’a été émis pendant les tests.
 
+## Correction du 7 septembre : photos relatives (tâche 6)
+
+La régénération en production a bien traité les trois annonces utilisateurs mais a ignoré les dix annonces semées, avec l’erreur `Failed to parse URL from /assets/listings/....jpg`. Cause vérifiée : leur `publicUrl` de photo est un chemin relatif au site (`apps/api/src/listings/system-seeded-listings.ts`, `apps/api/src/listings/belgian-seed-listings.ts`), que `fetch` refuse.
+
+`StoryImageService` résout désormais ces chemins avant le téléchargement, via `resolvePhotoFetchUrl` : base = `options.appBaseUrl`, sinon `process.env.APP_BASE_URL`, sinon `https://zwibba.com` ; la résolution se fait sur l’origine, donc une base contenant `/App/` donne bien `https://zwibba.com/assets/listings/...`. Les URLs absolues R2 ou CDN partent inchangées, et la préservation d’`updatedAt` côté modération n’est pas touchée.
+
+Tests unitaires isolés ajoutés (aucun chargement d’environnement complet, aucune photo réelle téléchargée ; le `fetch` simulé capture l’URL demandée) : origine configurée, repli `APP_BASE_URL` puis site public, et non-régression des URLs absolues. Les nouveaux cas échouaient d’abord sur le chemin relatif brut.
+
+Vérifications locales : 16 tests API de partage passent, 392 tests API au total passent, build TypeScript API sans erreur. Après déploiement, ne revérifier que les dix annonces précédemment ignorées.
+
 ## Revue Claude et traitement
 
 Les observations 1, 3, 4, 5 et 6 ont été reproduites ou vérifiées puis corrigées : slug conservé sur 503, région d’annonce persistante hors du rendu, focus restauré, course entre préparations protégée par l’identité du contrôleur AbortController, fixtures localhost admises, instructions adaptées à une image absente. De nouveaux tests reproduisaient la perte du focus, la course, le blocage localhost et la perte du slug avant correction.
