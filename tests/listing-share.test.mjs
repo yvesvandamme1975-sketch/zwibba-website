@@ -110,6 +110,25 @@ test('stale file fetch does not replace the newly selected listing', async () =>
   assert.equal(controller.state.imageStatus, 'unavailable');
 });
 
+test('superseded preparation cannot erase a newer file on the same menu', async () => {
+  const pending = [];
+  const { controller } = setup({ fetchFn: () => new Promise((resolve, reject) => pending.push({ resolve, reject })) });
+  const first = controller.open({ slug: 'velo', storyImageUrl: 'https://cdn.example/story.png' });
+  const second = controller.prepareImage();
+  pending[1].resolve(new Response(new Blob(['new'], { type: 'image/png' })));
+  await second;
+  pending[0].reject(new DOMException('Aborted', 'AbortError'));
+  await first;
+  assert.equal(controller.state.imageStatus, 'ready');
+  assert.equal(await controller.perform('native-image'), 'handed-off');
+});
+
+test('local HTTP image fixtures can exercise the real preparation path', async () => {
+  const { controller } = setup({ baseUrl: 'http://127.0.0.1:4328' });
+  await controller.open({ slug: 'velo', storyImageUrl: '/story.png' });
+  assert.equal(controller.state.imageStatus, 'ready');
+});
+
 test('Instagram and TikTok explain export without opening or copying silently', async () => {
   for (const action of ['instagram', 'tiktok']) {
     const { controller, calls } = setup();

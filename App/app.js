@@ -2230,6 +2230,14 @@ if (appRoot) {
   }
 
   let shareReturnTarget = null;
+  let shareLastAction = null;
+  let shareLastAnnouncement = '';
+  const shareAnnouncement = document.createElement('p');
+  shareAnnouncement.className = 'app-share-menu__announcement';
+  shareAnnouncement.dataset.shareAnnouncement = '';
+  shareAnnouncement.setAttribute('role', 'status');
+  shareAnnouncement.setAttribute('aria-live', 'polite');
+  document.body.append(shareAnnouncement);
   const shareInertElements = new Map();
   const shareController = createListingShareController({
     baseUrl: window.location.origin,
@@ -2281,6 +2289,9 @@ if (appRoot) {
     (target?.dataset.shareSlug === shareReturnTarget?.slug ? target :
       candidates.find(item => item.dataset.shareSlug === shareReturnTarget?.slug))?.focus({ preventScroll: true });
     shareReturnTarget = null;
+    shareLastAction = null;
+    shareAnnouncement.textContent = '';
+    shareLastAnnouncement = '';
   }
 
   function syncShareFocus(previousAction) {
@@ -2290,7 +2301,7 @@ if (appRoot) {
     let branch = dialog.closest('.app-share-menu');
     while (branch && branch !== document.body) {
       for (const sibling of branch.parentElement?.children || []) {
-        if (sibling !== branch && !shareInertElements.has(sibling)) {
+        if (sibling !== branch && sibling !== shareAnnouncement && !shareInertElements.has(sibling)) {
           shareInertElements.set(sibling, sibling.inert);
           sibling.inert = true;
         }
@@ -2298,8 +2309,18 @@ if (appRoot) {
       branch = branch.parentElement;
     }
     const focusable = [...dialog.querySelectorAll('button:not(:disabled), textarea')];
-    const previous = focusable.find(item => item.dataset.action === previousAction);
-    (previous || focusable[0] || dialog).focus({ preventScroll: true });
+    if (previousAction && previousAction !== 'share-menu-sheet') shareLastAction = previousAction;
+    const previous = focusable.find(item => item.dataset.action === previousAction) ||
+      focusable.find(item => item.dataset.action === shareLastAction);
+    (state.shareMenu.busy ? dialog : previous || focusable[0] || dialog).focus({ preventScroll: true });
+    const message = state.shareMenu.message;
+    if (message !== shareLastAnnouncement) {
+      shareLastAnnouncement = message;
+      shareAnnouncement.textContent = '';
+      window.requestAnimationFrame(() => {
+        if (state.shareMenu?.message === message) shareAnnouncement.textContent = message;
+      });
+    }
   }
 
   document.addEventListener('keydown', event => {

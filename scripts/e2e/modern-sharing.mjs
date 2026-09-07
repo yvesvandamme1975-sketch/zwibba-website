@@ -29,10 +29,12 @@ try {
     assert.equal(await page.evaluate(() => Boolean(document.activeElement.closest('[role="dialog"]'))), true);
     await page.getByRole('button', { name: 'Partager avec une application…' }).click();
     assert.equal(await page.evaluate(() => window.shareCalls.length), 1);
+    assert.equal(await page.evaluate(() => document.activeElement.dataset.action), 'share-native-link');
     await page.getByRole('button', { name: 'Copier le lien', exact: true }).click();
     await page.locator('[data-share-manual]').waitFor();
     assert.match(await page.locator('[data-share-manual]').inputValue(), /\/annonce\/velo-test\/$/);
     assert.doesNotMatch(await dialog.innerText(), /Lien copié/);
+    await page.locator('[data-share-announcement]').filter({ hasText: 'La copie automatique' }).waitFor({ state: 'attached' });
     await page.getByRole('button', { name: 'Instagram', exact: true }).click();
     assert.match(await dialog.innerText(), /Ouvrez ensuite Instagram/);
     assert.match(await dialog.innerText(), /Copier la légende/);

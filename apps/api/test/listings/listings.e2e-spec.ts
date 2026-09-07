@@ -719,6 +719,8 @@ test('listings feed includes approved active system seed listings from the same 
       primaryImageUrl: '/assets/listings/mangues-et-avocats-frais-du-haut-katanga.jpg',
       slug: 'panier-fruits-frais',
       storyImageUrl: null,
+      shareImageUrl: null,
+      countryCode: 'CD',
       title: 'Panier de fruits frais',
     },
   ]);

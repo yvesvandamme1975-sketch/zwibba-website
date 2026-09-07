@@ -50,27 +50,28 @@ export function createListingShareController({
     changed();
     try {
       const imageUrl = new URL(current.storyImageUrl, baseUrl);
-      if (imageUrl.protocol !== 'https:') throw new Error('Invalid image URL');
+      const localHttp = imageUrl.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(imageUrl.hostname);
+      if (imageUrl.protocol !== 'https:' && !localHttp) throw new Error('Invalid image URL');
       const response = await fetchFn(imageUrl.href, { signal: abort.signal, credentials: 'omit' });
       if (!response.ok || Number(response.headers?.get('content-length')) > MAX_IMAGE_BYTES) {
         throw new Error('Image unavailable');
       }
       const blob = await response.blob();
       if (!IMAGE_TYPES.has(blob.type) || !blob.size || blob.size > MAX_IMAGE_BYTES) throw new Error('Invalid image');
-      if (state !== current || abort.signal.aborted) return;
+      if (state !== current || preparationAbort !== abort || abort.signal.aborted) return;
       const extension = blob.type === 'image/jpeg' ? 'jpg' : blob.type.split('/')[1];
       preparedFile = new File([blob], `zwibba-story.${extension}`, { type: blob.type });
       current.canShareImage = typeof navigatorObject.share === 'function' &&
         typeof navigatorObject.canShare === 'function' && navigatorObject.canShare({ files: [preparedFile] });
       current.imageStatus = 'ready';
     } catch {
-      if (state !== current) return;
+      if (state !== current || preparationAbort !== abort) return;
       preparedFile = null;
       current.canShareImage = false;
       current.imageStatus = 'unavailable';
     } finally {
       clearTimeout(timeout);
-      if (state === current) changed();
+      if (state === current && preparationAbort === abort) changed();
     }
   }
 
@@ -126,7 +127,7 @@ export function createListingShareController({
         result = 'download-requested';
       } else if (action === 'instagram' || action === 'tiktok') {
         current.mode = 'story';
-        current.message = `Enregistrez l’image et copiez la légende. Ouvrez ensuite ${action === 'instagram' ? 'Instagram' : 'TikTok'} pour créer votre publication. Ajoutez le lien là où l’application le permet.`;
+        current.message = `${current.imageStatus === 'ready' ? 'Enregistrez l’image et copiez la légende.' : 'L’image n’est pas encore disponible. Vous pouvez déjà copier la légende.'} Ouvrez ensuite ${action === 'instagram' ? 'Instagram' : 'TikTok'} pour créer votre publication. Ajoutez le lien là où l’application le permet.`;
         result = 'instructions';
       } else {
         throw new Error('Cette action est indisponible.');

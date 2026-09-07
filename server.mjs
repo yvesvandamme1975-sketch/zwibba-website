@@ -258,7 +258,14 @@ createServer(async (request, response) => {
   const dynamicListingMatch = url.pathname.match(/^\/annonce\/([^/]+)\/?$/);
   const geoCountry = resolveGeoCountry(request.headers);
 
-  if ((!filePath || !filePath.startsWith(distDir)) && dynamicListingMatch) {
+  const localizedListingMatch = url.pathname.match(/^\/be\/(?:nl\/)?annonce\/([^/]+)\/?$/);
+  if (localizedListingMatch) {
+    send(response, 301, '', { Location: `/annonce/${localizedListingMatch[1]}/` });
+    return;
+  }
+
+  // Historical generated pages must also use the live moderation/lifecycle state.
+  if (dynamicListingMatch) {
     const slug = decodeURIComponent(dynamicListingMatch[1]);
     const baseUrl = resolveBaseUrl(url);
     let listing;
@@ -268,7 +275,9 @@ createServer(async (request, response) => {
     } catch (error) {
       const status = error.status === 404 ? 404 : 503;
       const message = status === 404 ? 'Annonce introuvable ou indisponible.' : 'Annonce temporairement indisponible. Réessayez dans quelques instants.';
-      send(response, status, `<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="robots" content="noindex"><title>Annonce indisponible | Zwibba</title><body><p>${message}</p><a href="/App/">Ouvrir Zwibba</a></body></html>`, {
+      const appRoute = status === 503 ? `/App/#listing/${encodeURIComponent(slug)}` : '/App/';
+      const retryScript = status === 503 ? `<script>location.replace(${JSON.stringify(appRoute)})</script>` : '';
+      send(response, status, `<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="robots" content="noindex"><title>Annonce indisponible | Zwibba</title><body><p>${message}</p><a href="${escapeHtml(appRoute)}">Ouvrir Zwibba</a>${retryScript}</body></html>`, {
         'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
         ...(status === 503 ? { 'Retry-After': '30' } : {}),
       });
