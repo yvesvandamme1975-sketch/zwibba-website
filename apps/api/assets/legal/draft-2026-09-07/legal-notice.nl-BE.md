@@ -1,0 +1,30 @@
+# Zwibba — Wettelijke vermeldingen (België)
+
+> **ONTWERP — NIET VAN KRACHT.** Ontwerp ter nazicht, juridisch niet gevalideerd, zonder datum van inwerkingtreding. Niet publiceren.
+
+**Versie: draft-2026-09-07 · Markt: België · Taal: Nederlands**
+
+## Uitgever van de site en de toepassing
+
+**Benaming:** [[LEGAL_NAME]]
+**Rechtsvorm:** [[LEGAL_FORM]]
+**Vestigingsadres:** [[ADDRESS]]
+**Ondernemingsnummer (Kruispuntbank van Ondernemingen):** [[ENTERPRISE_NUMBER]]
+**Btw-nummer:** [[VAT_NUMBER_IF_APPLICABLE]]
+**Contactadres per e-mail:** [[CONTACT_EMAIL]]
+
+Via dit e-mailadres kunt u ons rechtstreeks en doeltreffend bereiken. Het dient ook als contactpunt om inhoud te melden die u onwettig acht.
+
+## Activiteit
+
+Zwibba is een webtoepassing voor zoekertjes tussen gebruikers. De uitgever is geen partij bij de verkopen tussen gebruikers.
+
+Voor deze activiteit is geen vergunning of gereglementeerd beroep vereist, en de uitgever is aan geen enkele gedragscode onderworpen. *(Nog te bevestigen vóór publicatie; aan te vullen met de bevoegde toezichthoudende overheid en de verwijzing naar de toepasselijke code indien een van die gevallen zich voordoet.)*
+
+## Hosting
+
+De toepassing, de publieke interface en de databank worden gehost door Railway. De foto's worden opgeslagen en geleverd door Cloudflare (R2 en distributienetwerk).
+
+## Verwante documenten
+
+Algemene gebruiksvoorwaarden · Privacyverklaring *(links in te voegen bij de onlineplaatsing)*.

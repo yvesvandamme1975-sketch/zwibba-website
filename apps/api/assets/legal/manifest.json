@@ -1,0 +1,70 @@
+{
+  "status": "draft",
+  "version": "draft-2026-09-07",
+  "effectiveAt": null,
+  "documents": [
+    {
+      "kind": "legal-notice",
+      "locale": "fr-BE",
+      "market": "BE",
+      "file": "draft-2026-09-07/legal-notice.fr-BE.md",
+      "sha256": "dec643c093e4f7fdc4a42f2f7f9ea07b3e370745acd84ecab69c0f647f5d203e"
+    },
+    {
+      "kind": "privacy",
+      "locale": "fr-BE",
+      "market": "BE",
+      "file": "draft-2026-09-07/privacy.fr-BE.md",
+      "sha256": "7f09a857c949caf59bba04aaf45284666b3abb854f577d1538caec8b1e8b92ed"
+    },
+    {
+      "kind": "terms",
+      "locale": "fr-BE",
+      "market": "BE",
+      "file": "draft-2026-09-07/terms.fr-BE.md",
+      "sha256": "46faab64195e931e5dcc1376a214d0984303bab4df298980c9769ca48885c38a"
+    },
+    {
+      "kind": "legal-notice",
+      "locale": "fr-CD",
+      "market": "CD",
+      "file": "draft-2026-09-07/legal-notice.fr-CD.md",
+      "sha256": "f168299d7e5caa6ef69855f46ad1ec366f4e4655280cd27778683367e77d951c"
+    },
+    {
+      "kind": "privacy",
+      "locale": "fr-CD",
+      "market": "CD",
+      "file": "draft-2026-09-07/privacy.fr-CD.md",
+      "sha256": "2529b313e29e55f868058e2156fcc4e2a89319dbf8334dc2cba538ac51094195"
+    },
+    {
+      "kind": "terms",
+      "locale": "fr-CD",
+      "market": "CD",
+      "file": "draft-2026-09-07/terms.fr-CD.md",
+      "sha256": "7a002e9fd927eeb27e1610c7748d3fdf9e56b991912c000d66b1967bc9365df7"
+    },
+    {
+      "kind": "legal-notice",
+      "locale": "nl-BE",
+      "market": "BE",
+      "file": "draft-2026-09-07/legal-notice.nl-BE.md",
+      "sha256": "29c8f7fe74a9f852551250950b0f230118294199cdc7b8ebd2dcf15a7bddfcd9"
+    },
+    {
+      "kind": "privacy",
+      "locale": "nl-BE",
+      "market": "BE",
+      "file": "draft-2026-09-07/privacy.nl-BE.md",
+      "sha256": "1c094d48bf963ef6c143e2e1045c4b953d28c37246a9e934b472b6f6ec2a834e"
+    },
+    {
+      "kind": "terms",
+      "locale": "nl-BE",
+      "market": "BE",
+      "file": "draft-2026-09-07/terms.nl-BE.md",
+      "sha256": "d71967a9b6f5999f3d867b427df076c097407128769ffb33b36e7c4e8beab98d"
+    }
+  ]
+}
