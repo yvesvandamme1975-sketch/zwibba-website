@@ -97,7 +97,7 @@ test('thread refresh controller switches to inbox polling on the messages route'
   assert.deepEqual(events, ['inbox']);
 });
 
-test('thread refresh controller also polls inbox on non-thread app routes', async () => {
+test('thread refresh controller stays quiet on non-message app routes', async () => {
   const timers = createFakeTimers();
   const events = [];
   const controller = createChatLiveRefreshController({
@@ -121,9 +121,9 @@ test('thread refresh controller also polls inbox on non-thread app routes', asyn
     },
   });
 
-  assert.equal(timers.flushNext(), true);
+  assert.equal(timers.flushNext(), false);
   await Promise.resolve();
-  assert.deepEqual(events, ['inbox']);
+  assert.deepEqual(events, []);
 });
 
 test('thread refresh controller stops polling on capture, draft-edit, and profile routes', async () => {

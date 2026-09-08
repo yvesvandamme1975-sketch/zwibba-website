@@ -51,7 +51,11 @@ export function createChatLiveRefreshController({
       return `thread:${route.threadId}`;
     }
 
-    return 'inbox';
+    if (route?.type === 'messages') {
+      return 'inbox';
+    }
+
+    return '';
   }
 
   function scheduleNextRefresh(expectedGeneration) {
