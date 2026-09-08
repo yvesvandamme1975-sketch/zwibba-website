@@ -385,8 +385,8 @@ export const platformHighlights = [
     copy: 'Filtres par quartier, prix en CDF et catégories utiles pour le marché local.',
   },
   {
-    title: "Paiement mobile d'abord",
-    copy: 'M-Pesa, Airtel Money et Orange Money servent pour les options payantes et la mise en avant.',
+    title: 'Transactions entre utilisateurs',
+    copy: 'Acheteurs et vendeurs conviennent directement du paiement et de la remise du bien.',
   },
   {
     title: 'Accès protégé',

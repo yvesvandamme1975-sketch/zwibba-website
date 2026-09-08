@@ -72,7 +72,20 @@ Expected: account containment fails before the CSS correction and passes afterwa
 
 **Step 3:** Commit: `git commit -m "fix: contain long profile and conversation content"`
 
-### Task 5: Record audit evidence and release checks
+### Task 5: Align visible wording with available behavior
+
+**Files:**
+- Modify: `App/features/auth/welcome-screen.mjs`
+- Modify: `src/site/locales/fr-cd.mjs`
+
+**Step 1:** Replace user-facing OTP jargon with plain verification wording. Replace the unsupported claim that three mobile-money integrations are operational with the user-confirmed fact that buyers and sellers agree transactions directly. No payment feature or new claim is added.
+
+**Step 2:** Run: `node --test tests/ui-wording.test.mjs tests/locale-parity.test.mjs` and `npm run build`.
+Expected: tests and build pass; public copy no longer promises the absent integrations.
+
+**Step 3:** Commit: `git commit -m "fix: clarify verification and transaction wording"`
+
+### Task 6: Record audit evidence and release checks
 
 **Files:**
 - Create: `docs/operations/2026-09-08-impeccable-ui-audit.md`
