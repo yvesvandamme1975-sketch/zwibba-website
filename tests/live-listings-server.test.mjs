@@ -189,7 +189,7 @@ test('server injects live listings into browse pages with empty, fallback and ca
     await withServer(async (baseUrl) => {
       const cd = await (await fetch(`${baseUrl}/annonces/`, { signal: AbortSignal.timeout(3000) })).text();
       const frBe = await (await fetch(`${baseUrl}/be/annonces/`, { signal: AbortSignal.timeout(3000) })).text();
-      assert.match(cd, /Samsung Galaxy A54 neuf sous emballage/);
+      assert.doesNotMatch(cd, /Samsung Galaxy A54 neuf sous emballage/);
       const home=await (await fetch(`${baseUrl}/`)).text();
       assert.doesNotMatch(home,/Samsung Galaxy A54 neuf sous emballage/);
       assert.match(home,/data-live-listings-empty-state/);

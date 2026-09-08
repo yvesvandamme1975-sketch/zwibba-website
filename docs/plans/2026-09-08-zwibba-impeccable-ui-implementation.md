@@ -85,7 +85,20 @@ Expected: tests and build pass; public copy no longer promises the absent integr
 
 **Step 3:** Commit: `git commit -m "fix: clarify verification and transaction wording"`
 
-### Task 6: Record audit evidence and release checks
+### Task 6: Avoid historical listings during an API outage
+
+**Files:**
+- Modify: `server.mjs`
+- Modify: `tests/live-listings-server.test.mjs`
+
+**Step 1:** Change the existing outage regression to reject historical sample cards. When injection fails without usable cache, replace all live slots with the page's localized empty-state fallback (featured empty). Preserve routes, status and cached success behavior.
+
+**Step 2:** Run: `node --test tests/live-listings-server.test.mjs`.
+Expected: outage assertion fails before the change and passes afterward.
+
+**Step 3:** Commit: `git commit -m "fix: avoid historical cards when listings api is unavailable"`
+
+### Task 7: Record audit evidence and release checks
 
 **Files:**
 - Create: `docs/operations/2026-09-08-impeccable-ui-audit.md`

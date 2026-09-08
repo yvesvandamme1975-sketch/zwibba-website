@@ -330,7 +330,18 @@ createServer(async (request, response) => {
         const injectedHtml = await injectLiveListingsIntoHtml(html);
         body = Buffer.from(injectedHtml);
       } catch (error) {
-        console.warn(`Zwibba live listings static fallback for ${filePath}: ${error.message}`);
+        console.warn(`Zwibba live listings unavailable for ${filePath}: ${error.message}`);
+        // Historical build-time cards are not evidence of currently available listings.
+        const emptyState = extractEmptyStateTemplate(html) || '';
+        const safeHtml = injectLiveListings(html, {
+          featured: '',
+          grid: emptyState,
+          landing: emptyState,
+        }).replace(
+          /<script type="application\/ld\+json">(?=[\s\S]*?"@type":"CollectionPage")[\s\S]*?<\/script>/,
+          '',
+        );
+        body = Buffer.from(safeHtml);
       }
     }
 
