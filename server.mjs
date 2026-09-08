@@ -172,6 +172,9 @@ async function injectLiveListingsIntoHtml(body) {
   let injected = injectLiveListings(body, {
     featured: '',
     grid,
+    landing: items.length > 0
+      ? renderLiveListingCards({ items: items.slice(0, 4), categories: categoriesByLocale[gridMarker.locale] || [] })
+      : extractEmptyStateTemplate(body) || '',
   });
   injected = injected.replace(
     /<script type="application\/ld\+json">(?=[\s\S]*?"@type":"CollectionPage")[\s\S]*?<\/script>/,

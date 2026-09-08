@@ -51,7 +51,7 @@ Further verified audit findings require explicit additional tasks here before co
 - Modify: `tests/live-listings-build.test.mjs`
 - Create: `scripts/e2e/ui-public-resilience.mjs`
 
-**Step 1:** Add failing coverage for live landing cards, safe fallback, a working final PWA CTA, named navigation, mobile overflow and Escape menu dismissal. Then extend existing server injection with a landing slot (maximum four cards), retain localized empty/retry fallback, stack the CTA on small screens and restore menu-toggle focus on Escape. This task was added after independent Impeccable A/B reproduced those defects.
+**Step 1:** Add failing coverage for live landing cards, safe fallback, a working final PWA CTA, named navigation, mobile overflow and Escape menu dismissal. Then extend existing server injection with a landing slot (maximum four cards), retain localized empty/retry fallback, stack the CTA on small screens, collapse the header before its links overflow on tablets, and restore menu-toggle focus on Escape. This task was added after independent Impeccable A/B reproduced those defects.
 
 **Step 2:** Run: `node --test --test-concurrency=1 tests/live-listings-build.test.mjs tests/live-listings-server.test.mjs`, then `npm run build` and `node scripts/e2e/ui-public-resilience.mjs` with the local server on port 4340.
 Expected: new assertions fail before changes and all pass afterward. Browser checks cover three locales at 320, 390, 768 and 1440 pixels in Chromium and WebKit.
