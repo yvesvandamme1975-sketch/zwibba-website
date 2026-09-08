@@ -273,7 +273,7 @@ function renderNav(content, currentPath) {
           <span class="menu-toggle__icon menu-toggle__icon--close">${icon('close')}</span>
           <span class="sr-only">${ui.nav.menuLabel}</span>
         </button>
-        <nav class="site-nav" id="site-nav" data-open="false">
+        <nav class="site-nav" id="site-nav" data-open="false" aria-label="${escapeHtml(ui.nav.menuLabel)}">
           ${links}
           <a class="button button--primary" href="${appHref(site)}">${ui.nav.openApp}</a>
           <a class="button button--ghost" href="${localeHref(site, '/ambassadeur/')}">${ui.nav.download}</a>
@@ -654,22 +654,22 @@ function renderSafetyTips(safetyTips) {
 function renderLandingPage(content) {
   const { site, listings, ui } = content;
   const landing = ui.landing;
-  const hasListings = listings.length > 0;
-  const highlightedListings = hasListings
-    ? listings.slice(0, 4).map((listing) => renderListingCard(site, listing, { highlightLabel: listing.transactionType })).join('')
-    : '';
-  const listingsSection = hasListings
-    ? `
+  const emptyState = renderBrowseEmptyState(site, ui.browse.emptyState);
+  const listingsSection = `
       <section class="section">
         <div class="section__heading">
           <p class="eyebrow">${landing.listings.eyebrow}</p>
           <h2>${landing.listings.title}</h2>
           <p>${landing.listings.copy}</p>
         </div>
-        <div class="listing-grid">${highlightedListings}</div>
+        <div class="listing-grid">
+          ${liveListingsStartMarker(site, 'landing')}
+          ${emptyState}
+          ${liveListingsEndMarker('landing')}
+        </div>
+        <template data-live-listings-empty>${emptyState}</template>
       </section>
-`
-    : '';
+`;
 
   const schema = [
     {
@@ -766,7 +766,10 @@ ${listingsSection}
             <h2>${landing.cta.title}</h2>
             <p>${landing.cta.copy}</p>
           </div>
-          <div class="store-row">${renderStoreButtons(site)}</div>
+          <div class="store-row">
+            <a class="button button--primary" href="${appHref(site)}">${escapeHtml(ui.nav.openApp)}</a>
+            ${renderStoreButtons(site)}
+          </div>
         </div>
       </section>
     </main>

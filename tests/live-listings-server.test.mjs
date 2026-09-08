@@ -154,7 +154,13 @@ test('server injects live listings into browse pages with empty, fallback and ca
       assert.match(cd, /Moto live Lubumbashi/);
       assert.doesNotMatch(cd, /Samsung Galaxy A54 neuf sous emballage/);
 
-      assert.deepEqual(requestedCountries.slice(0, 2), ['BE', 'CD']);
+      assert.deepEqual([...new Set(requestedCountries)].sort(), ['BE', 'CD']);
+
+      for (const [route,title] of [['/','Moto live Lubumbashi'],['/be/','Vélo live Bruxelles'],['/be/nl/','Vélo live Bruxelles']]) {
+        const landing=await (await fetch(`${baseUrl}${route}`)).text();
+        assert.match(landing,new RegExp(title));
+        assert.doesNotMatch(landing,/Samsung Galaxy A54 neuf sous emballage/);
+      }
 
       const countBeforeCacheHit = requestCount;
       const cachedResponse = await fetch(`${baseUrl}/be/annonces/`, { signal: AbortSignal.timeout(3000) });
@@ -183,9 +189,17 @@ test('server injects live listings into browse pages with empty, fallback and ca
     await withServer(async (baseUrl) => {
       const cd = await (await fetch(`${baseUrl}/annonces/`, { signal: AbortSignal.timeout(3000) })).text();
       const frBe = await (await fetch(`${baseUrl}/be/annonces/`, { signal: AbortSignal.timeout(3000) })).text();
-      assert.match(cd, /Samsung Galaxy A54 neuf sous emballage/);
+      assert.doesNotMatch(cd, /Samsung Galaxy A54 neuf sous emballage/);
+      const home=await (await fetch(`${baseUrl}/`)).text();
+      assert.doesNotMatch(home,/Samsung Galaxy A54 neuf sous emballage/);
+      assert.match(home,/data-live-listings-empty-state/);
       assert.match(frBe, /data-live-listings-empty-state/);
-      assert.match(frBe, /Soyez le premier à publier en Belgique\./);
+      assert.doesNotMatch(frBe, /Soyez le premier à publier en Belgique\./);
+      assert.match(frBe, /Impossible de charger les annonces pour le moment/);
+      assert.match(frBe, /href="\/be\/annonces\/">Réessayer/);
+      const nl=await (await fetch(`${baseUrl}/be/nl/annonces/`)).text();
+      assert.match(nl, /De advertenties kunnen momenteel niet worden geladen/);
+      assert.match(nl, /Opnieuw proberen/);
     }, { ZWIBBA_API_BASE_URL: mockBase });
   });
 });

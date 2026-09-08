@@ -190,6 +190,14 @@ function initMenu() {
     return;
   }
 
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || menuToggle.getAttribute('aria-expanded') !== 'true') return;
+    menuToggle.setAttribute('aria-expanded', 'false');
+    siteNav.classList.remove('is-open');
+    menuToggle.focus();
+    announce(uiStrings.menu.closed);
+  });
+
   menuToggle.addEventListener('click', () => {
     const isOpen = menuToggle.getAttribute('aria-expanded') === 'true';
     menuToggle.setAttribute('aria-expanded', String(!isOpen));

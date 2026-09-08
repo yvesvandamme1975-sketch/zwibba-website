@@ -172,6 +172,9 @@ async function injectLiveListingsIntoHtml(body) {
   let injected = injectLiveListings(body, {
     featured: '',
     grid,
+    landing: items.length > 0
+      ? renderLiveListingCards({ items: items.slice(0, 4), categories: categoriesByLocale[gridMarker.locale] || [] })
+      : extractEmptyStateTemplate(body) || '',
   });
   injected = injected.replace(
     /<script type="application\/ld\+json">(?=[\s\S]*?"@type":"CollectionPage")[\s\S]*?<\/script>/,
@@ -327,7 +330,27 @@ createServer(async (request, response) => {
         const injectedHtml = await injectLiveListingsIntoHtml(html);
         body = Buffer.from(injectedHtml);
       } catch (error) {
-        console.warn(`Zwibba live listings static fallback for ${filePath}: ${error.message}`);
+        console.warn(`Zwibba live listings unavailable for ${filePath}: ${error.message}`);
+        // Historical build-time cards are not evidence of currently available listings.
+        const locale = parseStartMarkers(html)[0]?.locale || 'fr-CD';
+        const isDutch = locale === 'nl-BE';
+        const heading = isDutch
+          ? 'De advertenties kunnen momenteel niet worden geladen.'
+          : 'Impossible de charger les annonces pour le moment.';
+        const retryLabel = isDutch ? 'Opnieuw proberen' : 'Réessayer';
+        const emptyState = `<div class="browse-empty-state" data-live-listings-empty-state role="status"><h3>${escapeHtml(heading)}</h3><a class="button button--primary" href="${escapeHtml(url.pathname + url.search)}">${escapeHtml(retryLabel)}</a></div>`;
+        const safeHtml = injectLiveListings(html, {
+          featured: '',
+          grid: emptyState,
+          landing: emptyState,
+        }).replace(
+          /<script type="application\/ld\+json">(?=[\s\S]*?"@type":"CollectionPage")[\s\S]*?<\/script>/,
+          '',
+        );
+        body = Buffer.from(safeHtml.replace(
+          /<template\s+data-live-listings-empty>[\s\S]*?<\/template>/,
+          '<template data-live-listings-empty></template>',
+        ));
       }
     }
 

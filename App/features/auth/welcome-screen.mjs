@@ -6,25 +6,25 @@ export function renderAuthWelcomeScreen({
 } = {}) {
   const contexts = {
     messages: {
-      eyebrow: 'OTP pour la messagerie',
+      eyebrow: 'Vérification du numéro',
       reasonCopy:
         'Vous pouvez parcourir Zwibba librement. Le numéro est demandé avant le premier message pour sécuriser les conversations.',
       title: 'Activez votre messagerie Zwibba',
     },
     profile: {
-      eyebrow: 'OTP pour le profil',
+      eyebrow: 'Vérification du numéro',
       reasonCopy:
         'Votre numéro permet de retrouver vos annonces, vos messages et votre portefeuille sur ce navigateur.',
       title: 'Vérifiez votre session vendeur',
     },
     publish: {
-      eyebrow: 'OTP à la publication',
+      eyebrow: 'Vérification avant publication',
       reasonCopy:
         'Vous pouvez commencer le brouillon sans compte. Le numéro n’est demandé qu’au moment de publier, pour synchroniser le brouillon et limiter le spam.',
       title: 'Publiez seulement après vérification',
     },
     wallet: {
-      eyebrow: 'OTP pour le portefeuille',
+      eyebrow: 'Vérification du numéro',
       reasonCopy:
         'Le portefeuille et les opérations de boost sont réservés aux sessions vérifiées.',
       title: 'Activez votre portefeuille',

@@ -113,3 +113,14 @@ test('landing pages expose market-aware open-app CTAs before download links', ()
   );
   assert.match(nlBe, /<a class="button button--ghost" href="\/be\/nl\/ambassadeur\/">Ambassadeursprogramma<\/a>/);
 });
+
+test('landing cards use live data with a safe fallback and the final CTA opens the PWA', () => {
+  buildSite();
+  for (const [file, market, locale] of [['index.html','CD','fr-CD'],['be/index.html','BE','fr-BE'],['be/nl/index.html','BE','nl-BE']]) {
+    const html=readDist(file);
+    assertMarkerPair(html,{slot:'landing',market,locale});
+    assert.doesNotMatch(html,/Samsung Galaxy A54 neuf sous emballage/);
+    assert.match(html,/<nav class="site-nav"[^>]+aria-label="[^"]+"/);
+    assert.match(html,/<section class="section section--cta">[\s\S]*?href="\/App\//);
+  }
+});

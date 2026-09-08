@@ -163,3 +163,6 @@ Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or 
 - `2026-08-06-zwibba-whatsapp-support-agent-implementation.md`
 
 - [2026-09-07 Git order](2026-09-07-zwibba-git-order-implementation.md)
+
+- [Impeccable UI reliability design](2026-09-08-zwibba-impeccable-ui-design.md)
+- [Impeccable UI reliability implementation](2026-09-08-zwibba-impeccable-ui-implementation.md)

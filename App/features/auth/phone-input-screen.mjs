@@ -6,9 +6,10 @@ export function resolveDefaultPhonePrefix(countryCode) {
 }
 
 export function renderPhoneInputScreen({
+  busy = false,
   errorMessage = '',
   phoneNumber = '+243',
-}) {
+} = {}) {
   return `
     <section class="app-flow app-flow--auth">
       <header class="app-flow__header">
@@ -24,18 +25,18 @@ export function renderPhoneInputScreen({
 
       ${
         errorMessage
-          ? `<div class="app-review__errors"><li>${escapeHtml(errorMessage)}</li></div>`
+          ? `<p class="app-review__errors" role="alert">${escapeHtml(errorMessage)}</p>`
           : ''
       }
 
-      <form class="app-review__form" data-form="request-otp">
+      <form class="app-review__form" data-form="request-otp" aria-busy="${escapeAttribute(busy)}">
         <label class="app-review__field app-review__field--full">
           <span>Numéro de téléphone</span>
-          <input name="phoneNumber" type="tel" value="${escapeAttribute(phoneNumber)}" />
+          <input name="phoneNumber" type="tel" autocomplete="tel" required${busy ? ' readonly' : ''} value="${escapeAttribute(phoneNumber)}" />
         </label>
 
         <div class="app-flow__actions">
-          <button class="app-flow__button" type="submit">Recevoir le code</button>
+          <button class="app-flow__button" type="submit"${busy ? ' disabled' : ''}>${busy ? 'Envoi du code…' : 'Recevoir le code'}</button>
         </div>
       </form>
     </section>

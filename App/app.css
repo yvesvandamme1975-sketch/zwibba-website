@@ -37,6 +37,7 @@
 }
 
 .app-tab-shell {
+  min-width: 0;
   --app-mobile-nav-height: 88px;
   flex: 1 1 auto;
   height: 100%;
@@ -46,6 +47,7 @@
 }
 
 .app-tab-shell__content {
+  min-width: 0;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
@@ -124,6 +126,8 @@
 }
 
 .app-screen {
+  min-width: 0;
+  overflow-wrap: anywhere;
   min-height: 100%;
 }
 
