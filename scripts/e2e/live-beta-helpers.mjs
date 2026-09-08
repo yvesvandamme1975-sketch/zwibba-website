@@ -12,7 +12,7 @@ export const DEFAULT_BUYER_PHONE =
 export const DEFAULT_OTP_CODE =
   process.env.ZWIBBA_E2E_OTP_CODE || '123456';
 export const DEFAULT_PROFILE_AREA =
-  process.env.ZWIBBA_E2E_PROFILE_AREA || 'Golf';
+  process.env.ZWIBBA_E2E_PROFILE_AREA || 'Lubumbashi';
 export const DEFAULT_TEST_IMAGE_PATH =
   process.env.ZWIBBA_E2E_IMAGE_PATH ||
   path.join(repoRoot, 'public', 'assets', 'listings', 'ordinateur-portable-hp-elitebook.jpg');
@@ -232,11 +232,35 @@ export async function authenticateViaProfile(page, {
     await waitForHashRoute(page, '#profile');
   }
 
-  const areaSelect = page.locator('form[data-form="profile-zone"] select[name="area"]');
+  const zoneForm = page.locator('form[data-form="profile-zone"]');
+  const hasExplicitAreaOverride = Boolean(process.env.ZWIBBA_E2E_PROFILE_AREA);
+  const hasSavedZone = await zoneForm
+    .getByText(/Les nouvelles annonces reprendront automatiquement/u)
+    .count();
 
-  await areaSelect.selectOption({
-    label: area,
-  });
+  if (hasSavedZone && !hasExplicitAreaOverride) {
+    return;
+  }
+
+  const areaSearchInput = zoneForm.locator('input[name="areaSearch"]');
+  const areaSelect = zoneForm.locator('select[name="area"]');
+
+  if (await areaSearchInput.count()) {
+    await areaSearchInput.fill(area);
+    const citySuggestion = zoneForm
+      .locator('[data-action="select-profile-city"]')
+      .filter({ hasText: area })
+      .first();
+
+    if (await citySuggestion.count()) {
+      await citySuggestion.click();
+    }
+  } else {
+    await areaSelect.selectOption({
+      label: area,
+    });
+  }
+
   await page.getByRole('button', { name: /Enregistrer ma zone|Enregistrement/u }).click();
   await page.getByText('Zone enregistrée', { exact: true }).waitFor({
     timeout: 30000,
@@ -261,7 +285,19 @@ export async function fillReviewDraft(page, {
     await page.locator('textarea[name="description"]').fill(description);
   }
 
-  await page.locator('input[name="priceCdf"]').fill(priceCdf);
+  const priceAmountInput = page.locator('input[name="priceAmount"]');
+
+  if (await priceAmountInput.count()) {
+    const priceCurrencySelect = page.locator('select[name="priceCurrency"]');
+
+    if (await priceCurrencySelect.count()) {
+      await priceCurrencySelect.selectOption('CDF');
+    }
+
+    await priceAmountInput.fill(priceCdf);
+  } else {
+    await page.locator('input[name="priceCdf"]').fill(priceCdf);
+  }
 }
 
 export async function reachabilityCheck(url) {
