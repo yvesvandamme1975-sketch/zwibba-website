@@ -291,8 +291,10 @@ if (appRoot) {
     legalStatusStatus: 'idle',
     listingLifecycleBusyId: '',
     listingLifecycleMessage: '',
+    otpBusy: false,
     otpError: '',
     pendingChallenge: authService.getPendingChallenge(),
+    phoneBusy: false,
     phoneError: '',
     phoneNumber: authService.getPendingChallenge()?.phoneNumber ?? null,
     profile: null,
@@ -1189,12 +1191,14 @@ if (appRoot) {
         });
       case 'phone':
         return renderPhoneInputScreen({
+          busy: state.phoneBusy,
           errorMessage: state.phoneError,
           phoneNumber:
             state.phoneNumber ?? resolveDefaultPhonePrefix(resolveBrowseCountry()),
         });
       case 'otp':
         return renderOtpScreen({
+          busy: state.otpBusy,
           // Only a demo challenge carries a code to display.
           demoCode: state.pendingChallenge?.demoCode ?? '',
           errorMessage: state.otpError,
@@ -1771,11 +1775,16 @@ if (appRoot) {
   }
 
   async function handlePhoneSubmit(form) {
+    if (state.phoneBusy) return;
     const formData = new FormData(form);
+    state.phoneNumber = String(formData.get('phoneNumber') ?? '');
+    state.phoneBusy = true;
+    state.phoneError = '';
+    renderApp();
 
     try {
       const challenge = await authService.requestOtp({
-        phoneNumber: String(formData.get('phoneNumber') ?? ''),
+        phoneNumber: state.phoneNumber,
       });
 
       state.pendingChallenge = challenge;
@@ -1785,6 +1794,8 @@ if (appRoot) {
       window.location.hash = '#otp';
     } catch (error) {
       state.phoneError = error instanceof Error ? error.message : 'Numéro invalide.';
+    } finally {
+      state.phoneBusy = false;
       renderApp();
     }
   }
@@ -1897,6 +1908,7 @@ if (appRoot) {
   }
 
   async function handleOtpSubmit(form) {
+    if (state.otpBusy) return;
     const formData = new FormData(form);
     const legalAcceptance = readLegalAcceptance(formData);
 
@@ -1905,6 +1917,16 @@ if (appRoot) {
         'Veuillez lire et accepter les conditions générales d’utilisation (CGU) pour continuer.';
       renderApp();
       return;
+    }
+
+    state.otpBusy = true;
+    state.otpError = '';
+    // Update pending controls in place: keep the typed code and explicit consent.
+    form.setAttribute('aria-busy', 'true');
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Vérification…';
     }
 
     try {
@@ -1970,6 +1992,8 @@ if (appRoot) {
         await refreshPendingChallengeLegal();
       }
 
+    } finally {
+      state.otpBusy = false;
       renderApp();
     }
   }

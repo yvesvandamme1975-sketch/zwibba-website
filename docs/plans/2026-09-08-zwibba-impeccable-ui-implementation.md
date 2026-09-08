@@ -39,3 +39,33 @@ Expected: tests fail before the fix and pass afterward in Chromium and WebKit.
 **Step 3:** Commit: `git commit -m "fix: preserve auth input and prevent duplicate requests"`
 
 Further verified audit findings require explicit additional tasks here before code edits. Final release requires `npm test`, `npm run build`, `npm run smoke:production-contracts`, review and clean Git status. Public smoke marker: bundled `/assets/app/app.js` contains `Envoi du code…`; `/` and `/App/` return HTTP 200. Observe Git-triggered Railway deployments before considering manual deployment.
+
+### Task 3: Repair public landing navigation and responsive layout
+
+**Files:**
+- Modify: `scripts/build.mjs`
+- Modify: `server.mjs`
+- Modify: `src/site/app.js`
+- Modify: `src/site/styles.css`
+- Modify: `tests/live-listings-server.test.mjs`
+- Modify: `tests/live-listings-build.test.mjs`
+- Create: `scripts/e2e/ui-public-resilience.mjs`
+
+**Step 1:** Add failing coverage for live landing cards, safe fallback, a working final PWA CTA, named navigation, mobile overflow and Escape menu dismissal. Then extend existing server injection with a landing slot (maximum four cards), retain localized empty/retry fallback, stack the CTA on small screens and restore menu-toggle focus on Escape. This task was added after independent Impeccable A/B reproduced those defects.
+
+**Step 2:** Run: `node --test --test-concurrency=1 tests/live-listings-build.test.mjs tests/live-listings-server.test.mjs`, then `npm run build` and `node scripts/e2e/ui-public-resilience.mjs` with the local server on port 4340.
+Expected: new assertions fail before changes and all pass afterward. Browser checks cover three locales at 320, 390, 768 and 1440 pixels in Chromium and WebKit.
+
+**Step 3:** Commit: `git commit -m "fix: repair live landing links and mobile navigation"`
+
+### Task 4: Record audit evidence and release checks
+
+**Files:**
+- Create: `docs/operations/2026-09-08-impeccable-ui-audit.md`
+
+**Step 1:** Record source provenance, independently verified findings and false positives, coverage, residual limitations and follow-up decisions. No claim of physical iPhone or universal bug-free certification.
+
+**Step 2:** Run: `npm test`, `npm run build`, `npm run smoke:production-contracts`, auth/public browser suites and existing sharing/legal browser fixtures using their configured local port.
+Expected: all required checks pass. Save exact results and request code review before merge.
+
+**Step 3:** Commit: `git commit -m "docs: record impeccable ui audit and verification"`

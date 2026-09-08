@@ -3,6 +3,7 @@ import { escapeAttribute, escapeHtml } from '../../utils/rendering.mjs';
 import { renderTermsAcceptanceFields } from './terms-acceptance-screen.mjs';
 
 export function renderOtpScreen({
+  busy = false,
   demoCode = '',
   errorMessage = '',
   legal = null,
@@ -20,7 +21,7 @@ export function renderOtpScreen({
         </div>
         <div>
           <p class="app-flow__eyebrow">Étape 2</p>
-          <h2 class="app-flow__title">Confirmez le code OTP</h2>
+          <h2 class="app-flow__title">Confirmez le code reçu</h2>
         </div>
       </header>
 
@@ -31,11 +32,11 @@ export function renderOtpScreen({
 
       ${
         errorMessage
-          ? `<div class="app-review__errors"><li>${escapeHtml(errorMessage)}</li></div>`
+          ? `<p class="app-review__errors" role="alert">${escapeHtml(errorMessage)}</p>`
           : ''
       }
 
-      <form class="app-review__form" data-form="verify-otp"${
+      <form class="app-review__form" data-form="verify-otp" aria-busy="${escapeAttribute(busy)}"${
         terms
           ? ` data-terms-version="${escapeAttribute(
               terms.version,
@@ -60,7 +61,7 @@ export function renderOtpScreen({
         }
 
         <div class="app-flow__actions">
-          <button class="app-flow__button" type="submit">Vérifier et continuer</button>
+          <button class="app-flow__button" type="submit"${busy ? ' disabled' : ''}>${busy ? 'Vérification…' : 'Vérifier et continuer'}</button>
         </div>
       </form>
     </section>
