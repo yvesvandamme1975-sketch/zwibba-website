@@ -11,6 +11,10 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 
 import { buildSync } from 'esbuild';
+import { loadLegalCatalog } from '../apps/api/assets/legal/catalog.mjs';
+import { renderLegalDocument } from '../shared/legal-pages.mjs';
+
+const legalCatalog = loadLegalCatalog();
 
 import {
   aboutValues,
@@ -308,6 +312,7 @@ function renderLocaleSwitchLinks(content, logicalPath) {
 
 function renderFooter(content, currentPath, alternates = true) {
   const { site, ui } = content;
+  const legalLinks = legalCatalog.documents.filter(doc => doc.locale === site.locale.replace('_', '-')).map(doc => `<a href="${escapeHtml(doc.path)}">${escapeHtml(doc.title)}</a>`).join('');
   const footerLinks = site.nav
     .map((item) => `<a href="${localeHref(site, item.href)}">${escapeHtml(item.label)}</a>`)
     .join('');
@@ -325,7 +330,7 @@ function renderFooter(content, currentPath, alternates = true) {
         </div>
         <div>
           <h2 class="site-footer__title">${ui.nav.footerNavTitle}</h2>
-          <div class="site-footer__links">${footerLinks}</div>
+          <div class="site-footer__links">${footerLinks}${legalLinks}</div>
         </div>
         <div>
           <h2 class="site-footer__title">${escapeHtml(ui.nav.localeSwitch.heading)}</h2>
@@ -1485,6 +1490,11 @@ function build() {
   const sitemapUrls = localeResults.flatMap((result) =>
     result.pages.map((page) => resolveUrl(result.content.site, page.path)),
   );
+
+  for (const document of legalCatalog.documents) {
+    writeText(path.join(distDir, document.path.slice(1), 'index.html'), renderLegalDocument(document));
+    sitemapUrls.push(resolveUrl(rootResult.content.site, document.path));
+  }
 
   writeText(path.join(distDir, 'sitemap.xml'), buildSitemap(sitemapUrls));
   writeText(path.join(distDir, 'robots.txt'), buildRobots(rootResult.content));

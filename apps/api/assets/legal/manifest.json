@@ -1,0 +1,70 @@
+{
+  "status": "published",
+  "version": "2026-09-08",
+  "effectiveAt": "2026-09-09T00:00:00+02:00",
+  "documents": [
+    {
+      "kind": "legal-notice",
+      "locale": "fr-BE",
+      "market": "BE",
+      "file": "2026-09-08/legal-notice.fr-BE.md",
+      "sha256": "80b301bd37ab874f4b90e036441e3e3890f0a1e0dbb6b438e97badd46fa08ff7"
+    },
+    {
+      "kind": "privacy",
+      "locale": "fr-BE",
+      "market": "BE",
+      "file": "2026-09-08/privacy.fr-BE.md",
+      "sha256": "aca58235a336a99dde27b2aae40a8375c05a92ae8bdd60577ec43ddebbc150c3"
+    },
+    {
+      "kind": "terms",
+      "locale": "fr-BE",
+      "market": "BE",
+      "file": "2026-09-08/terms.fr-BE.md",
+      "sha256": "5a5fbab38fb22014a3d77deee4dd8b5125a1720dbb94b9da7b6bd9b135543f23"
+    },
+    {
+      "kind": "legal-notice",
+      "locale": "fr-CD",
+      "market": "CD",
+      "file": "2026-09-08/legal-notice.fr-CD.md",
+      "sha256": "486528e29a495a7c65907d45066fd385454c1ac6a6a40c653dff784f56d68941"
+    },
+    {
+      "kind": "privacy",
+      "locale": "fr-CD",
+      "market": "CD",
+      "file": "2026-09-08/privacy.fr-CD.md",
+      "sha256": "72b4ef7f26d6b8f664b5a7905686e121c3519ebb5dcf06dbf8914285909daf48"
+    },
+    {
+      "kind": "terms",
+      "locale": "fr-CD",
+      "market": "CD",
+      "file": "2026-09-08/terms.fr-CD.md",
+      "sha256": "e3c72aae5bdc709a4b889fdb796cae754746847d728e9b1d2033da4ee676d4f7"
+    },
+    {
+      "kind": "legal-notice",
+      "locale": "nl-BE",
+      "market": "BE",
+      "file": "2026-09-08/legal-notice.nl-BE.md",
+      "sha256": "d5bacd5039fde7beb3c4abd44848cd410d61bdbcb3717647433d0d1366c4b5d8"
+    },
+    {
+      "kind": "privacy",
+      "locale": "nl-BE",
+      "market": "BE",
+      "file": "2026-09-08/privacy.nl-BE.md",
+      "sha256": "d88d36e0c2df6c9adfa47183a71011481431b4eb178577a7a32fe2723889675f"
+    },
+    {
+      "kind": "terms",
+      "locale": "nl-BE",
+      "market": "BE",
+      "file": "2026-09-08/terms.nl-BE.md",
+      "sha256": "f3039b8beb0dbd71c2c626dae822a5d13a21f50751effc68037c9f808f409f86"
+    }
+  ]
+}

@@ -7,6 +7,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
+import type { Prisma } from '@prisma/client';
+import { type LegalDocument, type LegalPolicy } from '../../assets/legal/catalog.mjs';
+import { LEGAL_POLICY, requiredTerms, validateTermsAcceptance, recordTermsAcceptance, type TermsAcceptanceInput } from './legal-policy';
 
 import { loadEnv } from '../config/env';
 import { PrismaService } from '../database/prisma.service';
@@ -29,6 +32,7 @@ export class AuthService {
     @Inject(PrismaService) private readonly prismaService: PrismaService,
     @Inject(OtpService)
     private readonly otpService: OtpService,
+    @Inject(LEGAL_POLICY) private readonly legalPolicy: LegalPolicy,
   ) {}
 
   async requestOtp(phoneNumber: string) {
@@ -67,17 +71,22 @@ export class AuthService {
       challengeId: verification.sid,
       expiresInSeconds: 300,
       phoneNumber: normalizedPhone,
+      ...(this.legalPolicy.active ? { legal: this.legalRequirement(normalizedPhone) } : {}),
     };
   }
 
   async verifyOtp({
     code,
     phoneNumber,
+    legalAcceptance,
   }: {
     code: string;
     phoneNumber: string;
+    legalAcceptance?: TermsAcceptanceInput;
   }) {
     const normalizedPhone = phoneNumber.trim();
+    const terms = requiredTerms(this.legalPolicy, normalizedPhone, legalAcceptance?.locale);
+    validateTermsAcceptance(terms, legalAcceptance);
     const verification = await this.otpService.checkVerification({
       code,
       phoneNumber: normalizedPhone,
@@ -87,25 +96,23 @@ export class AuthService {
       throw new UnauthorizedException('Code OTP invalide.');
     }
 
-    const phoneCountry = resolvePhoneCountry(normalizedPhone) ?? 'CD';
-    const user = await this.prismaService.user.upsert({
-      where: {
-        phoneNumber: normalizedPhone,
-      },
-      update: { countryCode: phoneCountry },
-      create: { phoneNumber: normalizedPhone, countryCode: phoneCountry },
-    });
-
-    await this.seedDemoWalletIfNeeded(user.id);
+    const phoneCountry = resolvePhoneCountry(normalizedPhone)!;
     const sessionToken = `zwibba_session_${randomUUID().replaceAll('-', '')}`;
-
-    await this.prismaService.session.create({
-      data: {
-        token: sessionToken,
-        userId: user.id,
-        expiresAt: computeSessionExpiry(),
-      },
-    });
+    const issueSession = async (db: Prisma.TransactionClient) => {
+      const user = await db.user.upsert({
+        where: { phoneNumber: normalizedPhone }, update: { countryCode: phoneCountry },
+        create: { phoneNumber: normalizedPhone, countryCode: phoneCountry },
+      });
+      if (terms) await recordTermsAcceptance(db, user.id, terms);
+      await db.session.create({ data: { token: sessionToken, userId: user.id, expiresAt: computeSessionExpiry() } });
+      return user;
+    };
+    // Real, active contract acceptance must commit with account and session.
+    // Inactive drafts preserve the established login path and create no evidence.
+    const user = terms
+      ? await this.prismaService.$transaction(issueSession)
+      : await issueSession(this.prismaService);
+    await this.seedDemoWalletIfNeeded(user.id);
     await this.prismaService.verificationAttempt.updateMany({
       where: {
         phoneNumber: normalizedPhone,
@@ -161,8 +168,8 @@ export class AuthService {
     });
   }
 
-  async requireSessionToken(sessionToken: string | undefined) {
-    const session = await this.findSessionToken(sessionToken);
+  async requireSessionToken(sessionToken: string | undefined, { skipTerms = false } = {}) {
+    const session = await this.findSessionToken(sessionToken, { skipTerms: true });
 
     if (!sessionToken) {
       throw new UnauthorizedException('Session manquante.');
@@ -172,10 +179,60 @@ export class AuthService {
       throw new UnauthorizedException('Session inconnue.');
     }
 
+    if (!skipTerms && this.legalPolicy.active) {
+      const status = await this.legalStatusForSession(session);
+      if (status.needsAcceptance) throw new HttpException({ code: 'TERMS_ACCEPTANCE_REQUIRED', message: 'Veuillez accepter la nouvelle version des CGU pour continuer avec votre compte.' }, 428);
+    }
     return session;
   }
 
-  async findSessionToken(sessionToken: string | undefined) {
+  private publicDocument(document: LegalDocument) {
+    const { content, path, ...metadata } = document;
+    return { ...metadata, url: new URL(path, this.env.appBaseUrl).href };
+  }
+
+  getLegalDocuments() {
+    return { active: this.legalPolicy.active, documents: this.legalPolicy.documents.map(doc => this.publicDocument(doc)) };
+  }
+
+  private legalRequirement(phoneNumber: string, locale?: string) {
+    const terms = requiredTerms(this.legalPolicy, phoneNumber, locale);
+    return terms ? { required: true, terms: this.publicDocument(terms),
+      documents: this.legalPolicy.documents.filter(doc => doc.market === terms.market).map(doc => this.publicDocument(doc)) } : null;
+  }
+
+  private async legalStatusForSession(session: SessionRecord) {
+    if (!this.legalPolicy.active) return { active: false, needsAcceptance: false, terms: null, documents: [] };
+    const market = resolvePhoneCountry(session.phoneNumber)!;
+    const user = await this.prismaService.user.findUnique({ where: { phoneNumber: session.phoneNumber } });
+    if (!user) throw new UnauthorizedException('Compte introuvable.');
+    const accepted = await this.prismaService.termsAcceptance.findFirst({ where: {
+      userId: user.id, market, version: this.legalPolicy.version,
+      OR: this.legalPolicy.documents.filter(doc => doc.kind === 'terms' && doc.market === market)
+        .map(doc => ({ documentHash: doc.hash, locale: doc.locale })),
+    } });
+    return { active: true, needsAcceptance: !accepted, ...this.legalRequirement(session.phoneNumber) };
+  }
+
+  async getLegalStatus(sessionToken: string | undefined) {
+    const session = await this.requireSessionToken(sessionToken, { skipTerms: true });
+    return this.legalStatusForSession(session);
+  }
+
+  async acceptTerms(sessionToken: string | undefined, input?: TermsAcceptanceInput) {
+    const session = await this.requireSessionToken(sessionToken, { skipTerms: true });
+    const terms = requiredTerms(this.legalPolicy, session.phoneNumber, input?.locale);
+    if (!terms) throw new BadRequestException('Aucune version des CGU publiée à accepter.');
+    validateTermsAcceptance(terms, input);
+    await this.prismaService.$transaction(async tx => {
+      const user = await tx.user.findUnique({ where: { phoneNumber: session.phoneNumber } });
+      if (!user) throw new UnauthorizedException('Compte introuvable.');
+      await recordTermsAcceptance(tx, user.id, terms);
+    });
+    return this.legalStatusForSession(session);
+  }
+
+  async findSessionToken(sessionToken: string | undefined, { skipTerms = false } = {}) {
     if (!sessionToken) {
       return null;
     }
@@ -197,10 +254,12 @@ export class AuthService {
       return null;
     }
 
-    return {
+    const record = {
       canSyncDrafts: true as const,
       phoneNumber: session.user.phoneNumber,
       sessionToken: session.token,
     };
+    if (!skipTerms && this.legalPolicy.active && (await this.legalStatusForSession(record)).needsAcceptance) return null;
+    return record;
   }
 }
