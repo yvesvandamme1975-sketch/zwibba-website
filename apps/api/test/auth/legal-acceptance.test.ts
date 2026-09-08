@@ -1,3 +1,9 @@
+import { Test } from '@nestjs/testing';
+import { AuthModule } from '../../src/auth/auth.module';
+import { OtpService } from '../../src/auth/otp.service';
+import { LEGAL_POLICY } from '../../src/auth/legal-policy';
+import { DatabaseModule } from '../../src/database/database.module';
+import { PrismaService } from '../../src/database/prisma.service';
 import 'reflect-metadata';
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -151,4 +157,16 @@ test('inactive draft catalog leaves login unchanged and records no fictional acc
   const session = await service.verifyOtp({ phoneNumber: '+32499000001', code: '123456' });
   assert.equal(prisma.acceptances.length, 0);
   assert.equal((await service.getLegalStatus(session.sessionToken)).active, false);
+});
+
+test('the Nest auth module honors the injected active legal policy', async (t) => {
+  const { prisma, policy } = setup(t);
+  const moduleRef = await Test.createTestingModule({ imports: [DatabaseModule, AuthModule] })
+    .overrideProvider(PrismaService).useValue(prisma)
+    .overrideProvider(OtpService).useValue({ requestVerification: async () => ({ sid: 'fixture', status: 'pending' }) })
+    .overrideProvider(LEGAL_POLICY).useValue(policy)
+    .compile();
+  t.after(() => moduleRef.close());
+  const response = await moduleRef.get(AuthService).requestOtp('+32499000001');
+  assert.equal(response.legal?.terms?.version, policy.version);
 });

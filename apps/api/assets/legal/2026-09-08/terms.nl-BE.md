@@ -1,8 +1,8 @@
 # Zwibba — Algemene gebruiksvoorwaarden (België)
 
-> **ONTWERP — NIET VAN KRACHT.** Deze tekst is een ontwerp ter nazicht. Hij werd juridisch niet gevalideerd en is op geen enkele gebruiker van toepassing. Er is geen datum van inwerkingtreding vastgelegd. Niet publiceren.
+**Versie: 2026-09-08 · Markt: België · Taal: Nederlands**
 
-**Versie: draft-2026-09-07 · Markt: België · Taal: Nederlands**
+**Inwerkingtreding: 9 september 2026 om 00.00 uur, Brusselse tijd (UTC+02:00).**
 
 **Handelsnaam: Aïves Consulting**
 

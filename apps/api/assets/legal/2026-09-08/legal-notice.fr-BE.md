@@ -1,8 +1,8 @@
 # Zwibba — Mentions légales (Belgique)
 
-> **PROJET — NON EN VIGUEUR.** Brouillon soumis à relecture, sans validation juridique, sans date d'entrée en vigueur. Ne pas publier.
+**Version : 2026-09-08 · Marché : Belgique · Langue : français**
 
-**Version : draft-2026-09-07 · Marché : Belgique · Langue : français**
+**Entrée en vigueur : 9 septembre 2026 à 00 h 00, heure de Bruxelles (UTC+02:00).**
 
 **Nom commercial : Aïves Consulting**
 

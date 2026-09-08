@@ -1,3 +1,4 @@
+import { inactiveLegalPolicy } from '../fixtures/inactive-legal-policy.mjs';
 import { BadRequestException } from '@nestjs/common';
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -148,8 +149,9 @@ test('verifyOtp skips demo wallet seeding when the Prisma fake has no walletTran
   const ServiceConstructor = AuthService as unknown as new (
     prismaService: FakePrismaWithoutWalletTransaction,
     otpService: FakeOtpService,
+    legalPolicy: typeof inactiveLegalPolicy,
   ) => AuthService;
-  const service = new ServiceConstructor(prisma, new FakeOtpService());
+  const service = new ServiceConstructor(prisma, new FakeOtpService(), inactiveLegalPolicy);
 
   const session = await service.verifyOtp({
     code: '123456',
@@ -179,8 +181,9 @@ test('requestOtp rejects a French number with the +243/+32 message and never cal
   const ServiceConstructor = AuthService as unknown as new (
     prismaService: FakePrismaWithoutWalletTransaction,
     otpService: FakeOtpService,
+    legalPolicy: typeof inactiveLegalPolicy,
   ) => AuthService;
-  const service = new ServiceConstructor(prisma, otpService);
+  const service = new ServiceConstructor(prisma, otpService, inactiveLegalPolicy);
 
   await assert.rejects(
     () => service.requestOtp('+33612345678'),
@@ -205,8 +208,9 @@ test('verifyOtp persists countryCode BE for a Belgian phone number', async (t) =
   const ServiceConstructor = AuthService as unknown as new (
     prismaService: FakePrismaCapturingUpsert,
     otpService: FakeBelgianOtpService,
+    legalPolicy: typeof inactiveLegalPolicy,
   ) => AuthService;
-  const service = new ServiceConstructor(prisma, new FakeBelgianOtpService());
+  const service = new ServiceConstructor(prisma, new FakeBelgianOtpService(), inactiveLegalPolicy);
 
   const session = await service.verifyOtp({
     code: '123456',

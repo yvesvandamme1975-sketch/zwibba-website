@@ -3,13 +3,12 @@ import {
   HttpException,
   HttpStatus,
   Inject,
-  Optional,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
-import { loadLegalCatalog, type LegalDocument, type LegalPolicy } from '../../assets/legal/catalog.mjs';
+import { type LegalDocument, type LegalPolicy } from '../../assets/legal/catalog.mjs';
 import { LEGAL_POLICY, requiredTerms, validateTermsAcceptance, recordTermsAcceptance, type TermsAcceptanceInput } from './legal-policy';
 
 import { loadEnv } from '../config/env';
@@ -33,7 +32,7 @@ export class AuthService {
     @Inject(PrismaService) private readonly prismaService: PrismaService,
     @Inject(OtpService)
     private readonly otpService: OtpService,
-    @Optional() @Inject(LEGAL_POLICY) private readonly legalPolicy: LegalPolicy = loadLegalCatalog(),
+    @Inject(LEGAL_POLICY) private readonly legalPolicy: LegalPolicy,
   ) {}
 
   async requestOtp(phoneNumber: string) {

@@ -1,70 +1,70 @@
 {
-  "status": "draft",
-  "version": "draft-2026-09-07",
-  "effectiveAt": null,
+  "status": "published",
+  "version": "2026-09-08",
+  "effectiveAt": "2026-09-09T00:00:00+02:00",
   "documents": [
     {
       "kind": "legal-notice",
       "locale": "fr-BE",
       "market": "BE",
-      "file": "draft-2026-09-07/legal-notice.fr-BE.md",
-      "sha256": "60fb1d562ff92541c147b8577fce17bfb50878a84669c81d962f8fc1d74b2176"
+      "file": "2026-09-08/legal-notice.fr-BE.md",
+      "sha256": "80b301bd37ab874f4b90e036441e3e3890f0a1e0dbb6b438e97badd46fa08ff7"
     },
     {
       "kind": "privacy",
       "locale": "fr-BE",
       "market": "BE",
-      "file": "draft-2026-09-07/privacy.fr-BE.md",
-      "sha256": "bfc4cfe2aecbf6611fa02c4b31141346a7fe74eb8564277b80e70cd87005cc7e"
+      "file": "2026-09-08/privacy.fr-BE.md",
+      "sha256": "aca58235a336a99dde27b2aae40a8375c05a92ae8bdd60577ec43ddebbc150c3"
     },
     {
       "kind": "terms",
       "locale": "fr-BE",
       "market": "BE",
-      "file": "draft-2026-09-07/terms.fr-BE.md",
-      "sha256": "822a3d5043a1942de33c4093d0f55a7d803ed43b03a61479305c8fccbbdff71d"
+      "file": "2026-09-08/terms.fr-BE.md",
+      "sha256": "5a5fbab38fb22014a3d77deee4dd8b5125a1720dbb94b9da7b6bd9b135543f23"
     },
     {
       "kind": "legal-notice",
       "locale": "fr-CD",
       "market": "CD",
-      "file": "draft-2026-09-07/legal-notice.fr-CD.md",
-      "sha256": "a5668535bb5b989592303c408109037d93296c9012bc32dca6a13251b93bd15f"
+      "file": "2026-09-08/legal-notice.fr-CD.md",
+      "sha256": "486528e29a495a7c65907d45066fd385454c1ac6a6a40c653dff784f56d68941"
     },
     {
       "kind": "privacy",
       "locale": "fr-CD",
       "market": "CD",
-      "file": "draft-2026-09-07/privacy.fr-CD.md",
-      "sha256": "26835e9559c5ba594b74ffdcec5cd0c12408d19dc1d11706e7fd9b50d0ef036a"
+      "file": "2026-09-08/privacy.fr-CD.md",
+      "sha256": "72b4ef7f26d6b8f664b5a7905686e121c3519ebb5dcf06dbf8914285909daf48"
     },
     {
       "kind": "terms",
       "locale": "fr-CD",
       "market": "CD",
-      "file": "draft-2026-09-07/terms.fr-CD.md",
-      "sha256": "b2f1c1605c447039ab4637e2af7ffd03c7968bb96d51215994fe918db2237e63"
+      "file": "2026-09-08/terms.fr-CD.md",
+      "sha256": "e3c72aae5bdc709a4b889fdb796cae754746847d728e9b1d2033da4ee676d4f7"
     },
     {
       "kind": "legal-notice",
       "locale": "nl-BE",
       "market": "BE",
-      "file": "draft-2026-09-07/legal-notice.nl-BE.md",
-      "sha256": "3512efe2bd8de70bbbbead4d90bfead6f5fffbbc17abcfce909eae54a97b974e"
+      "file": "2026-09-08/legal-notice.nl-BE.md",
+      "sha256": "d5bacd5039fde7beb3c4abd44848cd410d61bdbcb3717647433d0d1366c4b5d8"
     },
     {
       "kind": "privacy",
       "locale": "nl-BE",
       "market": "BE",
-      "file": "draft-2026-09-07/privacy.nl-BE.md",
-      "sha256": "67a4e304c94fb8f9a4dd9596da64fc9d4fbd418b8a68deec22a66dafbf49d56c"
+      "file": "2026-09-08/privacy.nl-BE.md",
+      "sha256": "d88d36e0c2df6c9adfa47183a71011481431b4eb178577a7a32fe2723889675f"
     },
     {
       "kind": "terms",
       "locale": "nl-BE",
       "market": "BE",
-      "file": "draft-2026-09-07/terms.nl-BE.md",
-      "sha256": "a830c394a8b4bebcb36ab7bcca4e7e0603c03306b5a2f7302ed087b3308f3178"
+      "file": "2026-09-08/terms.nl-BE.md",
+      "sha256": "f3039b8beb0dbd71c2c626dae822a5d13a21f50751effc68037c9f808f409f86"
     }
   ]
 }

@@ -1,16 +1,16 @@
-# Zwibba — Notice de confidentialité (Belgique)
+# Zwibba — Notice de confidentialité (République démocratique du Congo)
 
-> **PROJET — NON EN VIGUEUR.** Ce texte est un brouillon soumis à relecture. Il n'a fait l'objet d'aucune validation juridique et ne décrit aucun engagement opposable. Aucune date d'entrée en vigueur n'est fixée. Ne pas publier.
+**Version : 2026-09-08 · Marché : République démocratique du Congo · Langue : français**
 
-**Version : draft-2026-09-07 · Marché : Belgique · Langue : français**
+**Entrée en vigueur : 9 septembre 2026 à 00 h 00, heure de Bruxelles (UTC+02:00).**
 
-Ce document vous informe. Il n'est pas un contrat et ne vous demande pas de consentement : l'accès à Zwibba n'est jamais conditionné à l'acceptation de cette notice. Lorsqu'un traitement repose sur votre consentement, celui-ci est demandé séparément, pour une finalité précise, et son refus n'entraîne aucune perte d'accès au service.
+Ce document vous informe. Il n'est pas un contrat et ne vous demande pas de consentement : l'accès à Zwibba n'est jamais conditionné à l'acceptation de cette notice. Lorsqu'un traitement repose sur votre consentement, celui-ci est demandé séparément, pour une finalité précise, et peut être retiré ; son refus n'entraîne aucune perte d'accès au service.
 
 **Nom commercial : Aïves Consulting**
 
 ## 1. Responsable du traitement
 
-Yves Van Damme, personne physique exerçant une activité indépendante sous le nom commercial Aïves Consulting, Rue Jean Schyns 29, 7100 La Louvière, Belgique, numéro d'entreprise 0825.089.324. Contact : hello@aivesconsulting.com.
+Yves Van Damme, personne physique exerçant une activité indépendante sous le nom commercial Aïves Consulting, Rue Jean Schyns 29, 7100 La Louvière, Belgique, inscrit à la Banque-Carrefour des Entreprises belge sous le numéro 0825.089.324. Contact : hello@aivesconsulting.com.
 
 Les données personnelles fournies à l’inscription sont traitées sous la responsabilité de l’exploitant pour les finalités et sur les bases légales décrites dans cette notice. Leur collecte ne transfère aucun droit de propriété sur vos données à Zwibba et ne vous fait pas renoncer à vos droits. Le numéro de téléphone est nécessaire à la création et à la sécurisation du compte ; sans ce numéro, aucun compte ne peut être créé.
 
@@ -22,15 +22,15 @@ Les données personnelles fournies à l’inscription sont traitées sous la res
 
 **Échanges** : messages entre acheteur et vendeur, avis, réponses de vendeur, signalements d'avis. Si vous adressez un message au numéro WhatsApp du service, son contenu, votre identifiant WhatsApp et les éléments de suivi peuvent être enregistrés pour traiter la demande. Une réponse automatique n’est pas garantie ; le contact de référence est hello@aivesconsulting.com.
 
-**Portefeuille** : les mouvements du solde interne et les mises en avant payées avec ce solde.
+**Portefeuille** : les mouvements du solde interne en francs congolais et les mises en avant payées avec ce solde.
 
 **Mesure** : les recherches sont enregistrées avec le texte saisi tel quel, le pays et le nombre de résultats, sans identifiant de compte ; ce texte peut néanmoins contenir des données personnelles si vous en saisissez. Les changements de prix sont enregistrés avec la référence du brouillon ou de l'annonce : ces enregistrements restent rattachables au compte propriétaire et ne sont donc pas anonymes.
 
 **Acceptation des CGU** : la version, la langue, le texte accepté et la date d’acceptation sont conservés avec votre compte pour établir la preuve de votre accord.
 
-## 3. Finalités et bases légales
+## 3. Finalités
 
-Fournir le service, publier vos annonces, permettre la messagerie et sécuriser la connexion : exécution du contrat. Modérer les contenus, prévenir les abus, mesurer et améliorer le service : intérêt légitime. Répondre à une obligation légale lorsqu'elle s'applique. Toute autre finalité fera l'objet d'une information et, si nécessaire, d'un consentement distinct.
+Fournir le service, publier vos annonces, permettre la messagerie et sécuriser la connexion. Modérer les contenus, prévenir les abus, mesurer et améliorer le service. Répondre à une obligation légale lorsqu'elle s'applique. Toute autre finalité fera l'objet d'une information et, si nécessaire, d'un consentement distinct.
 
 ## 4. Ce qui est public
 
@@ -48,7 +48,7 @@ Le projet Gemini utilisé dispose d’une facturation active. Les conditions des
 
 Les traitements des prestataires sont encadrés par leurs accords de traitement : Railway (railway.com/legal/dpa), Cloudflare (cloudflare.com/cloudflare-customer-dpa), Google (ai.google.dev/gemini-api/terms et accords de traitement associés) et WhatsApp (whatsapp.com/legal/business-data-processing-terms).
 
-Ces traitements peuvent impliquer des transferts hors de l’Espace économique européen, notamment aux États-Unis. Les accords des prestataires prévoient des clauses contractuelles types de la Commission européenne, ou un mécanisme d’adéquation lorsque celui-ci est applicable. Vous pouvez demander des précisions ou une copie des garanties pertinentes à l’adresse de contact. Ces garanties contractuelles ne constituent pas une garantie d’absence de risque ni une certification de chaque traitement.
+Les données sont hébergées et traitées hors du territoire congolais. Les accords des prestataires décrits ci-dessus ne valent pas autorisation d’une autorité congolaise. À la date de cette notice, l’exploitant n’a pas vérifié l’existence d’une autorisation ou d’un constat d’adéquation congolais couvrant ces traitements. La publication de cette information ne signifie pas qu’une dérogation est acquise. Vous pouvez demander des précisions et exercer vos droits à l’adresse de contact.
 
 ## 7. Conservation
 
@@ -68,10 +68,10 @@ L’exploitant applique les règles suivantes par traitement manuel, avec une re
 
 ## 8. Vos droits
 
-Vous disposez des droits d'accès, de rectification, d'effacement, de limitation, d'opposition et de portabilité, ainsi que du droit de ne pas faire l'objet d'une décision entièrement automatisée. Ces droits existent quelle que soit l'interface disponible : Zwibba ne propose pas encore de bouton dédié et traite les demandes manuellement, à hello@aivesconsulting.com. Nous répondons dans un délai d'un mois, prolongeable de deux mois pour une demande complexe si nous vous en informons dans le premier mois. L'exercice de ces droits est gratuit.
+L'ordonnance-loi n° 23/010 du 13 mars 2023 portant Code du numérique vous reconnaît notamment des droits d'information, d'accès, de rectification, d'opposition et d'effacement. Ces droits existent quelle que soit l'interface disponible : Zwibba ne propose pas encore de bouton dédié et traite les demandes manuellement, à hello@aivesconsulting.com. L'exercice de ces droits est gratuit. Nous répondons dans les 30 jours suivant la réception de votre demande ; toute prolongation légalement permise est motivée et vous est notifiée dans ce délai.
 
 ## 9. Réclamation
 
-Vous pouvez introduire une réclamation auprès de l'Autorité de protection des données, Rue de la Presse 35, 1000 Bruxelles, sans préjudice de tout recours juridictionnel.
+Vous pouvez saisir l'autorité congolaise compétente en matière de protection des données à caractère personnel, sans préjudice de tout recours devant les juridictions congolaises.
 
 Sur votre appareil, le navigateur conserve la session, le marché choisi et les brouillons d’annonces pour vous permettre de reprendre votre travail. Les droits décrits ci-dessus s’exercent dans les conditions et limites prévues par les textes applicables.

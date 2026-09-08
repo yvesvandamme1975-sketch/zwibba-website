@@ -18,8 +18,24 @@ function fixture() {
   return { manifest: { status: 'published', version: '2026-09-07', effectiveAt: '2026-09-07', documents: entries }, documents };
 }
 
-test('real unfinished legal documents never become public or required', () => {
-  const policy = loadLegalCatalog();
+test('real reviewed catalog is published and becomes effective on its stated date', () => {
+  const before = loadLegalCatalog({ now: new Date('2026-09-08T12:00:00Z') });
+  assert.equal(before.published, true);
+  assert.equal(before.active, false);
+  assert.equal(before.documents.length, 9);
+  assert.equal(before.termsFor('BE'), null);
+  const after = loadLegalCatalog({ now: new Date('2026-09-09T00:00:01+02:00') });
+  assert.equal(after.active, true);
+  assert.equal(after.version, '2026-09-08');
+  for (const document of after.documents) {
+    assert.equal(document.hash, createHash('sha256').update(document.content).digest('hex'));
+    assert.doesNotMatch(document.content, /\[\[|PROJET|ONTWERP|draft-/);
+    assert.match(document.content, /BE0825089324|0825.089.324/);
+  }
+});
+
+test('draft fixtures stay private and never require acceptance', () => {
+  const policy = createLegalPolicy({ manifest: { status: 'draft', version: 'test', documents: [] } });
   assert.equal(policy.active, false);
   assert.equal(policy.published, false);
   assert.deepEqual(policy.documents, []);

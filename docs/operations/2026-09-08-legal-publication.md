@@ -19,3 +19,17 @@ Les formalités ARPTC et les garanties/autorisation de transfert RDC doivent êt
 ## Vérifications avant activation
 
 Test de navigation observé en échec puis corrigé :10tests catalogue/navigation passent. Suites complètes avant activation :516web,400API,12admin, builds et smoke réussis. Premier essai dans le bac à sable échoue sur écoute HTTP locale EPERM ; même code vérifié hors restriction. Les scripts d’acceptation existants conservent la preuve versionnée. Sauvegarde et migration doivent être vérifiées avant livraison.
+
+## Activation préparée
+
+Catalogue version2026-09-08, effet9septembre2026à00h00 Bruxelles. Les neuf documents sont renommés et leurs empreintes recalculées ; un test du catalogue réel vérifie la consultation avant effet et l’activation ensuite. LEGAL_POLICY est enregistré explicitement dans AuthModule, sans exemption de production. Les fixtures non juridiques injectent leur politique inactive pour ne pas dépendre du calendrier ; testNest reproduit l’override ignoré avant correction et actif ensuite. Deux constructeurs de fixtures initialement oubliés ont été corrigés après leur échec observé.
+
+Sauvegarde PostgreSQL pré-migration :154638octets,134entrées lisibles avec pg_restore18. L’ancien pg_dump14 avait refusé le serveur18 sans modification de données ; libpq compatible installé séparément, sans remplacement du serveur. Lisibilité de l’archive vérifiée, sans prétendre une restauration complète.
+
+Recette mobile : le titre néerlandais Verwerkingsverantwoordelijke provoquait407px de largeur sur écran390px. Correction de césure/repli des mots dans la feuille de style des pages légales, après reproduction mesurée.
+
+## Résultat avant livraison
+
+517testsweb,401testsAPI,12testsadmin passent sur le catalogue publié ; buildsweb/API et smokeproductioncontracts réussis. RecetteChromium390px :9pages légales HTTP200 avec3liens, sans débordement après correction ;3parcours d’acceptation fictifs passent (OTP,compteexistant,activationpendantOTP). Captures FR/NL inspectées ; pas de recette sur iPhone physique ni d’acceptation d’un vrai compte.
+
+Revue technique Claude session44541b6d-02b0-48e7-a97c-2946c082c75d : aucun défaut bloquant, vérification de l’injection réelle et de la date dynamique. Réserves levées : fichiers ajoutés au commit et suite API relancée avec401succès après renommage de la fixture ; l’import.ts de cette fixture est exécuté par le lanceur de tests tsx existant, jamais par la production.

@@ -1,8 +1,8 @@
 # Zwibba — Wettelijke vermeldingen (België)
 
-> **ONTWERP — NIET VAN KRACHT.** Ontwerp ter nazicht, juridisch niet gevalideerd, zonder datum van inwerkingtreding. Niet publiceren.
+**Versie: 2026-09-08 · Markt: België · Taal: Nederlands**
 
-**Versie: draft-2026-09-07 · Markt: België · Taal: Nederlands**
+**Inwerkingtreding: 9 september 2026 om 00.00 uur, Brusselse tijd (UTC+02:00).**
 
 **Handelsnaam: Aïves Consulting**
 

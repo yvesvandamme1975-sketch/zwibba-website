@@ -195,3 +195,26 @@ Expected: PASS après échec initial des liens de navigation ; empreintes vérif
 **Step 3: Commit**
 
 `git commit -m "feat: finalize legal notices and publication navigation"`
+
+### Task 9: Activate reviewed catalog with stable test policy injection
+
+**Files:**
+- Modify: `apps/api/src/auth/auth.module.ts`, `apps/api/src/auth/auth.service.ts`
+- Create: `apps/api/test/fixtures/inactive-legal-policy.mjs`
+- Modify: `apps/api/test/` (existing AppModule fixtures override policy explicitly)
+- Modify: `apps/api/assets/legal/manifest.json`, `tests/legal-pages.test.mjs`, `shared/legal-pages.mjs` (repli des mots longs après échec de la recette mobile)
+- Rename: nine reviewed documents from `draft-2026-09-07/` to `2026-09-08/`
+- Modify: `docs/operations/2026-09-08-legal-publication.md`
+
+**Step 1: Write the failing test or change**
+
+Reproduire le provider LEGAL_POLICY non enregistré : son override Nest doit effectivement fournir la politique active. Enregistrer le vrai chargeur dans AuthModule, rendre la dépendance explicite et injecter une fixture inactive dans les tests sans objet juridique, plutôt que de les rendre dépendants du jour réel d’activation. Aucun contournement NODE_ENV ou flag de production. Tester le catalogue réel publié, retirer les marqueurs draft et recalculer les empreintes. Date d’effet :9septembre2026 à00h00 Bruxelles, consultation immédiate après livraison.
+
+**Step 2: Verify**
+
+Run: `npm test && npm run build && npm run smoke:production-contracts && pnpm -C apps/api test && pnpm -C apps/api run build && pnpm -C apps/admin test`
+Expected: PASS ; catalogue publié consultable et active selon date, preuve versionnée en tests, CI requise. Smoke final :HTTP200 sur les neuf URLs /legal/{locale}/{kind}/, version2026-09-08, empreintes API identiques aux sources ; /healthz API ok ; parcours simulé sans acceptation inventée pour un vrai utilisateur.
+
+**Step 3: Commit**
+
+`git commit -m "feat: publish reviewed legal catalog with explicit policy injection"`

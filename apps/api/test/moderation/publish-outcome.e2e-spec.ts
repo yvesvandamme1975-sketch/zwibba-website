@@ -1,3 +1,4 @@
+import { inactiveLegalPolicy, LEGAL_POLICY } from '../fixtures/inactive-legal-policy.mjs';
 import 'reflect-metadata';
 
 import { INestApplication } from '@nestjs/common';
@@ -325,7 +326,8 @@ async function createTestApp(): Promise<INestApplication> {
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
   })
-      .overrideProvider(PrismaService)
+      .overrideProvider(LEGAL_POLICY).useValue(inactiveLegalPolicy)
+    .overrideProvider(PrismaService)
       .useValue(prisma)
       .overrideProvider(OtpService)
       .useValue(new _FakeOtpService())
@@ -419,7 +421,8 @@ test('publishing a synced phone draft persists the listing and moderation decisi
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
   })
-      .overrideProvider(PrismaService)
+      .overrideProvider(LEGAL_POLICY).useValue(inactiveLegalPolicy)
+    .overrideProvider(PrismaService)
       .useValue(prisma)
       .overrideProvider(OtpService)
       .useValue(new _FakeOtpService())
@@ -476,7 +479,8 @@ test('publishing ignores a spoofed owner phone number from the request body', as
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
   })
-      .overrideProvider(PrismaService)
+      .overrideProvider(LEGAL_POLICY).useValue(inactiveLegalPolicy)
+    .overrideProvider(PrismaService)
       .useValue(prisma)
       .overrideProvider(OtpService)
       .useValue(new _FakeOtpService())
@@ -521,7 +525,8 @@ test('publishing a complete synced vehicle draft auto-approves the listing', asy
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
   })
-      .overrideProvider(PrismaService)
+      .overrideProvider(LEGAL_POLICY).useValue(inactiveLegalPolicy)
+    .overrideProvider(PrismaService)
       .useValue(prisma)
       .overrideProvider(OtpService)
       .useValue(new _FakeOtpService())
@@ -623,7 +628,8 @@ test('publishing an incomplete synced vehicle draft blocks the listing with a cl
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
   })
-      .overrideProvider(PrismaService)
+      .overrideProvider(LEGAL_POLICY).useValue(inactiveLegalPolicy)
+    .overrideProvider(PrismaService)
       .useValue(prisma)
       .overrideProvider(OtpService)
       .useValue(new _FakeOtpService())
@@ -681,7 +687,8 @@ test('publishing a synced USD draft persists amount and currency on the listing'
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
   })
-      .overrideProvider(PrismaService)
+      .overrideProvider(LEGAL_POLICY).useValue(inactiveLegalPolicy)
+    .overrideProvider(PrismaService)
       .useValue(prisma)
       .overrideProvider(OtpService)
       .useValue(new _FakeOtpService())
@@ -723,7 +730,8 @@ test('publishing a synced free listing persists zero amount and selected currenc
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
   })
-      .overrideProvider(PrismaService)
+      .overrideProvider(LEGAL_POLICY).useValue(inactiveLegalPolicy)
+    .overrideProvider(PrismaService)
       .useValue(prisma)
       .overrideProvider(OtpService)
       .useValue(new _FakeOtpService())
@@ -765,7 +773,8 @@ test('publishing a synced draft with missing metadata persists a blocked moderat
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
   })
-      .overrideProvider(PrismaService)
+      .overrideProvider(LEGAL_POLICY).useValue(inactiveLegalPolicy)
+    .overrideProvider(PrismaService)
       .useValue(prisma)
       .overrideProvider(OtpService)
       .useValue(new _FakeOtpService())
@@ -816,7 +825,8 @@ test('publishing rejects prices above the 32-bit beta limit with a clear seller 
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
   })
-      .overrideProvider(PrismaService)
+      .overrideProvider(LEGAL_POLICY).useValue(inactiveLegalPolicy)
+    .overrideProvider(PrismaService)
       .useValue(prisma)
       .overrideProvider(OtpService)
       .useValue(new _FakeOtpService())
@@ -853,7 +863,8 @@ test('publishing a synced belgian draft propagates countryCode BE to the listing
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
   })
-      .overrideProvider(PrismaService)
+      .overrideProvider(LEGAL_POLICY).useValue(inactiveLegalPolicy)
+    .overrideProvider(PrismaService)
       .useValue(prisma)
       .overrideProvider(OtpService)
       .useValue(new _FakeOtpService())
@@ -910,7 +921,8 @@ test('publishing a belgian draft priced in CDF is rejected as an unsupported mar
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
   })
-      .overrideProvider(PrismaService)
+      .overrideProvider(LEGAL_POLICY).useValue(inactiveLegalPolicy)
+    .overrideProvider(PrismaService)
       .useValue(prisma)
       .overrideProvider(OtpService)
       .useValue(new _FakeOtpService())
@@ -951,7 +963,8 @@ test('publishing a DRC draft priced in CDF still publishes fine', async (t) => {
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
   })
-      .overrideProvider(PrismaService)
+      .overrideProvider(LEGAL_POLICY).useValue(inactiveLegalPolicy)
+    .overrideProvider(PrismaService)
       .useValue(prisma)
       .overrideProvider(OtpService)
       .useValue(new _FakeOtpService())

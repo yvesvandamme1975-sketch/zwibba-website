@@ -1,3 +1,4 @@
+import { inactiveLegalPolicy, LEGAL_POLICY } from '../fixtures/inactive-legal-policy.mjs';
 import 'reflect-metadata';
 
 import { INestApplication } from '@nestjs/common';
@@ -163,6 +164,7 @@ async function createTestApp(): Promise<{
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
   })
+    .overrideProvider(LEGAL_POLICY).useValue(inactiveLegalPolicy)
     .overrideProvider(PrismaService)
     .useValue(prisma)
     .compile();
