@@ -79,3 +79,13 @@ test('legal page renders readable headings and escapes embedded HTML', () => {
   assert.match(page, /<strong>texte<\/strong>/);
   assert.match(page, /name="viewport"/);
 });
+
+test('public legal pages link to all documents in their own locale', () => {
+ for (const locale of ['fr-BE', 'fr-CD', 'nl-BE']) {
+  const page = renderLegalDocument({ locale, content: '# Texte' });
+  for (const kind of ['terms', 'privacy', 'legal-notice']) {
+   assert.ok(page.includes(`href="/legal/${locale}/${kind}/"`));
+  }
+  assert.match(page, /<nav aria-label=/);
+ }
+});

@@ -174,3 +174,24 @@ Expected: PASS après échec initial de la déclaration de majorité ; build ré
 **Step 3: Commit**
 
 `git commit -m "feat: clarify adult eligibility and marketplace responsibilities"`
+
+### Task 8: Finalize factual notices and usable legal navigation
+
+**Files:**
+- Modify: `apps/api/assets/legal/draft-2026-09-07/` (nine documents), `apps/api/assets/legal/manifest.json`
+- Modify: `shared/legal-pages.mjs`, `tests/legal-pages.test.mjs`
+- Create: `docs/operations/2026-09-08-data-rights-and-retention.md`
+- Create: `docs/operations/2026-09-08-legal-publication.md`
+
+**Step 1: Write the failing test or change**
+
+Confirmer TVA/franchise2026, facturation réelle Gemini, régions Railway/R2 et prestataires actifs. Documenter les opérations manuelles de droits et les critères de conservation sans promettre une purge historique. Rendre la navigation entre les trois documents effectivement cliquable : test avant code. Les incertitudes réglementaires RDC sont décrites honnêtement, sans dérogation prétendue acquise. Faire relire à Claude avant activation.
+
+**Step 2: Verify**
+
+Run: `node --test tests/legal-pages.test.mjs && npm run build`
+Expected: PASS après échec initial des liens de navigation ; empreintes vérifiées séparément avant activation
+
+**Step 3: Commit**
+
+`git commit -m "feat: finalize legal notices and publication navigation"`

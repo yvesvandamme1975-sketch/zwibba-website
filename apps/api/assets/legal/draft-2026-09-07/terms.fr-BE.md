@@ -8,7 +8,7 @@
 
 ## 1. Qui exploite Zwibba
 
-Zwibba est exploité par Yves Van Damme, personne physique exerçant une activité indépendante sous le nom commercial Aïves Consulting, dont l’adresse professionnelle est située Rue Jean Schyns 29, 7100 La Louvière, Belgique, inscrit à la Banque-Carrefour des Entreprises sous le numéro 0825.089.324, numéro de TVA [[VAT_NUMBER_IF_APPLICABLE]]. Contact : hello@aivesconsulting.com.
+Zwibba est exploité par Yves Van Damme, personne physique exerçant une activité indépendante sous le nom commercial Aïves Consulting, dont l’adresse professionnelle est située Rue Jean Schyns 29, 7100 La Louvière, Belgique, inscrit à la Banque-Carrefour des Entreprises sous le numéro 0825.089.324, numéro de TVA BE0825089324. Contact : hello@aivesconsulting.com.
 
 ## 2. Ce que fait Zwibba, et ce qu'il ne fait pas
 
@@ -42,6 +42,8 @@ Zwibba génère des liens publics et des visuels que vous pouvez partager. Le pa
 
 Vous pouvez nous signaler un contenu que vous estimez illicite à hello@aivesconsulting.com. Nous examinons les signalements et pouvons retirer une annonce, la refuser ou suspendre un compte. Lorsque nous restreignons un contenu, nous vous en indiquons le motif. Ces droits, comme ceux prévus par le règlement (UE) 2022/2065, ne dépendent pas d'un formulaire dédié dans l'application.
 
+Les contrôles automatiques portent notamment sur la présence du titre, de la description, du prix et des photos requises. Une annonce incomplète peut être refusée automatiquement avec un motif à corriger ; les annonces immobilières sont orientées vers une revue manuelle. Vous pouvez demander un réexamen humain à hello@aivesconsulting.com, en indiquant la référence de l’annonce et le motif de votre contestation. Ces contrôles ne garantissent pas la licéité ou la conformité de chaque bien.
+
 ## 10. Portefeuille interne
 
 Zwibba comporte un solde interne en francs congolais (CDF), utilisable pour la mise en avant d'annonces. Aucun achat de crédit n'est proposé, aucun moyen de paiement externe n'est intégré, aucun achat de crédit en euros n’est proposé. Les vendeurs belges peuvent fixer le prix de leurs annonces en euros.
@@ -53,3 +55,9 @@ L'exploitant répond de ses propres manquements, non des agissements des utilisa
 ## 12. Droit applicable
 
 Le droit belge s'applique. Si vous agissez en qualité de consommateur, ce choix ne peut vous priver de la protection impérative de la loi de votre pays de résidence habituelle, et vous conservez le droit de saisir les juridictions de votre lieu de domicile.
+
+**Régime TVA de l’exploitant :** franchise de taxe pour les petites entreprises en 2026. Ce régime concerne les prestations de l’exploitant, pas le statut fiscal des vendeurs.
+
+## 13. Données personnelles
+
+Les données d’inscription sont traitées sous la responsabilité de l’exploitant pour fournir le service, selon la notice de confidentialité. Elles ne deviennent pas la propriété de Zwibba. Vos droits d’accès, de rectification et de suppression s’exercent dans les conditions légales.

@@ -8,7 +8,7 @@
 
 ## 1. Wie Zwibba uitbaat
 
-Zwibba wordt uitgebaat door Yves Van Damme, zelfstandige natuurlijke persoon, handelend onder de handelsnaam Aïves Consulting, met zetel te Rue Jean Schyns 29, 7100 La Louvière, België, ingeschreven in de Kruispuntbank van Ondernemingen onder het nummer 0825.089.324, btw-nummer [[VAT_NUMBER_IF_APPLICABLE]]. Contact: hello@aivesconsulting.com.
+Zwibba wordt uitgebaat door Yves Van Damme, zelfstandige natuurlijke persoon, handelend onder de handelsnaam Aïves Consulting, met zetel te Rue Jean Schyns 29, 7100 La Louvière, België, ingeschreven in de Kruispuntbank van Ondernemingen onder het nummer 0825.089.324, btw-nummer BE0825089324. Contact: hello@aivesconsulting.com.
 
 ## 2. Wat Zwibba doet, en wat niet
 
@@ -21,6 +21,8 @@ Een account aanmaken vereist een Belgisch of Congolees telefoonnummer, geverifie
 ## 4. Aanvaarding en versies
 
 Deze voorwaarden vormen een overeenkomst tussen u en de uitbater. Ze worden uitdrukkelijk aanvaard en die aanvaarding wordt geregistreerd samen met het versienummer. Een nieuwe versie wordt u voorgelegd voordat ze u kan worden tegengeworpen. Deze aanvaarding staat los van de privacyverklaring, een informatiedocument en geen overeenkomst, en los van elke facultatieve toestemming, die apart en per welbepaald doel wordt gevraagd.
+
+De huidige accountinterface is Franstalig en legt Belgische accounts de Franse versie voor. Het aanvaardingsbewijs vermeldt altijd de werkelijk aanvaarde taal en versie; het raadplegen van deze Nederlandse vertaling geldt niet als aanvaarding ervan.
 
 ## 5. Uw advertenties
 
@@ -42,6 +44,8 @@ Op basis van uw foto kan Zwibba een titel, beschrijving en categorie voorstellen
 
 U kunt ons inhoud melden die u onwettig acht, via hello@aivesconsulting.com. Wij onderzoeken meldingen en kunnen een advertentie verwijderen of weigeren, of een account schorsen. Wanneer wij inhoud beperken, delen wij u de reden mee. Die rechten, net als die uit verordening (EU) 2022/2065, hangen niet af van een specifiek formulier in de toepassing.
 
+Automatische controles betreffen onder meer de aanwezigheid van titel, beschrijving, prijs en vereiste foto’s. Een onvolledige advertentie kan automatisch worden geweigerd met een te corrigeren reden; vastgoedadvertenties gaan naar een handmatige beoordeling. U kunt een menselijke herbeoordeling vragen via hello@aivesconsulting.com, met de referentie van de advertentie en de reden van uw betwisting. Deze controles garanderen niet de wettigheid of conformiteit van elk goed.
+
 ## 10. Interne portefeuille
 
 Zwibba bevat een intern saldo in Congolese frank (CDF), bruikbaar om advertenties in de kijker te zetten. Er wordt geen krediet te koop aangeboden, geen enkel extern betaalmiddel is geïntegreerd, en Zwibba biedt geen aankoop van krediet in euro aan. Belgische verkopers kunnen hun advertentieprijzen wel in euro bepalen.
@@ -53,3 +57,9 @@ De uitbater staat in voor zijn eigen tekortkomingen, niet voor het handelen van 
 ## 12. Toepasselijk recht
 
 Het Belgische recht is van toepassing. Handelt u als consument, dan kan die keuze u niet beroven van de dwingende bescherming van het recht van uw land van gewone verblijfplaats, en behoudt u het recht om de rechtbanken van uw woonplaats te vatten.
+
+**Btw-regeling van de uitbater:** vrijstellingsregeling voor kleine ondernemingen in 2026. Deze regeling betreft de diensten van de uitbater, niet het fiscale statuut van verkopers.
+
+## 13. Persoonsgegevens
+
+Registratiegegevens worden onder verantwoordelijkheid van de uitbater verwerkt om de dienst te leveren, zoals beschreven in de privacyverklaring. Ze worden geen eigendom van Zwibba. Uw rechten op inzage, rectificatie en verwijdering gelden onder de wettelijke voorwaarden.

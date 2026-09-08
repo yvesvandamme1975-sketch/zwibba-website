@@ -20,7 +20,7 @@ Les données personnelles fournies à l’inscription sont traitées sous la res
 
 **Annonces** : titre, description, prix, catégorie, zone, photos, et le numéro de téléphone du compte propriétaire, conservé sur le brouillon et sur l'annonce. Les événements de cycle de vie enregistrent le numéro de l'auteur de l'action.
 
-**Échanges** : messages entre acheteur et vendeur, avis, réponses de vendeur, signalements d'avis. L’activation éventuelle d’une assistance WhatsApp et les données alors conservées doivent être vérifiées avant de décrire ce canal comme opérationnel.
+**Échanges** : messages entre acheteur et vendeur, avis, réponses de vendeur, signalements d'avis. Si vous adressez un message au numéro WhatsApp du service, son contenu, votre identifiant WhatsApp et les éléments de suivi peuvent être enregistrés pour traiter la demande. Une réponse automatique n’est pas garantie ; le contact de référence est hello@aivesconsulting.com.
 
 **Portefeuille** : les mouvements du solde interne en francs congolais et les mises en avant payées avec ce solde.
 
@@ -40,26 +40,38 @@ Titre, description, photos, prix, zone et nom d'affichage du vendeur sont visibl
 
 Lorsque vous partagez une annonce, vous transmettez vous-même un lien public et, le cas échéant, une image, à l'application de votre choix. Ce que cette application en fait relève de ses propres règles, hors du contrôle de Zwibba.
 
-## 6. Destinataires et localisation des données
+## 6. Destinataires et transferts
 
-Zwibba s'appuie sur des prestataires techniques : Railway (hébergement de l'application, de l'interface et de la base de données), Cloudflare (stockage des photos dans R2, diffusion du site), Meta (codes WhatsApp). L'assistance IA à la rédaction transmet la photo et le texte associé à Google (Gemini), et selon la configuration à Anthropic, à Mistral et à Google Cloud Vision.
+Railway assure l’hébergement du site, de l’API et de la base de données aux États-Unis. Cloudflare assure le stockage R2 des photos dans une région Europe de l’Ouest et leur diffusion mondiale. Meta/WhatsApp traite le numéro et les éléments nécessaires à l’envoi du code de connexion et aux messages adressés au service. Google reçoit les photos et éléments associés nécessaires à la préparation des suggestions d’annonce via Gemini et Google Cloud Vision. Anthropic et Mistral ne sont pas utilisés dans la configuration vérifiée à la date de cette notice.
 
-Ces prestataires hébergent et traitent les données en dehors du territoire congolais. Le Code du numérique encadre l'hébergement et le transfert des données à caractère personnel hors du pays. La situation de Zwibba au regard de ces règles doit être examinée et régularisée, et sera décrite ici avant toute publication.
+Le projet Gemini utilisé dispose d’une facturation active. Les conditions des services payants prévoient que les contenus envoyés ne servent pas à améliorer les produits Google ; une conservation limitée reste prévue pour la sécurité et les obligations légales. Zwibba ne fixe pas lui-même la durée technique des journaux des prestataires.
+
+Les traitements des prestataires sont encadrés par leurs accords de traitement : Railway (railway.com/legal/dpa), Cloudflare (cloudflare.com/cloudflare-customer-dpa), Google (ai.google.dev/gemini-api/terms et accords de traitement associés) et WhatsApp (whatsapp.com/legal/business-data-processing-terms).
+
+Les données sont hébergées et traitées hors du territoire congolais. Les accords des prestataires décrits ci-dessus ne valent pas autorisation d’une autorité congolaise. À la date de cette notice, l’exploitant n’a pas vérifié l’existence d’une autorisation ou d’un constat d’adéquation congolais couvrant ces traitements. La publication de cette information ne signifie pas qu’une dérogation est acquise. Vous pouvez demander des précisions et exercer vos droits à l’adresse de contact.
 
 ## 7. Conservation
 
-Les durées et critères de conservation restent à définir par catégorie avant publication. L’absence actuelle de suppression automatique ne constitue pas une justification pour une conservation illimitée. Vous pouvez demander la suppression de vos données à hello@aivesconsulting.com.
+L’exploitant applique les règles suivantes par traitement manuel, avec une revue mensuelle des échéances. Il n’existe pas de purge automatique générale. Les délais ci-dessous sont la politique de conservation de Zwibba ; ils ne sont pas présentés comme des durées légales obligatoires.
+
+**Compte et profil :** pendant l’utilisation du compte. Un compte sans activité depuis 24 mois est examiné en vue de sa clôture, avec information préalable lorsque cela est possible. Après clôture, les données opérationnelles sont supprimées ou rendues anonymes dans les 30 jours, sauf exception motivée ci-dessous. L’identifiant du compte et le numéro permettant de rattacher les preuves à leur auteur peuvent rester conservés sous accès restreint avec les preuves contractuelles ; ils ne sont pas annoncés comme supprimés dans ce délai de 30 jours.
+
+**Brouillons, annonces, photos et visuels :** pendant leur utilisation ou publication, puis suppression dans les 90 jours du retrait définitif ou de la clôture du compte. Un brouillon sans modification depuis 12 mois est considéré comme abandonné et entre dans ce délai de suppression.
+
+**Messages et assistance, y compris WhatsApp :** suppression ou anonymisation au plus tard 12 mois après le dernier échange. Les avis liés à une annonce restent visibles pendant sa publication, puis sont retirés dans les 90 jours de son retrait définitif. Une demande d’effacement est examinée sans attendre ces échéances, en tenant compte des droits des autres participants.
+
+**Connexion et sécurité :** les codes expirés ou consommés, les tentatives de vérification et les sessions expirées sont supprimés dans les 30 jours de leur expiration, consommation ou enregistrement. Les sessions sans date d’expiration sont révoquées lors de la clôture du compte ou de la revue mensuelle, puis supprimées dans les 30 jours de leur révocation. Les recherches brutes sont supprimées dans les 30 jours de leur enregistrement. Les journaux de prix, de cycle de vie et de modération sont conservés au maximum 12 mois après l’événement, sauf incident ou litige identifié.
+
+**Preuves contractuelles et solde interne :** après clôture, seules les données nécessaires à la preuve de l’acceptation et des opérations internes sont conservées, sous accès restreint, pendant 3 ans au maximum. Une obligation légale précise ou un litige identifié peut justifier une durée différente pour les seules pièces concernées ; sa justification et sa date de réexamen sont documentées et revues mensuellement. Cette règle n’autorise pas la conservation de l’ensemble des photos, messages ou recherches comme preuves.
+
+**Sauvegardes :** les copies de récupération sont réservées à la restauration et ne sont pas utilisées pour les opérations courantes. Leur fenêtre de rotation complète n’a pas été vérifiée à la date de cette notice ; nous ne garantissons donc pas l’effacement immédiat de chaque copie historique. Les suppressions doivent être réappliquées avant une remise en service de données restaurées. Les copies diffusées par vos soins sur des services tiers relèvent également des règles de ces services.
 
 ## 8. Vos droits
 
-L'ordonnance-loi n° 23/010 du 13 mars 2023 portant Code du numérique vous reconnaît notamment des droits d'information, d'accès, de rectification, d'opposition et d'effacement. Ces droits existent quelle que soit l'interface disponible : Zwibba ne propose pas encore de bouton dédié et traite les demandes manuellement, à hello@aivesconsulting.com. L'exercice de ces droits est gratuit.
+L'ordonnance-loi n° 23/010 du 13 mars 2023 portant Code du numérique vous reconnaît notamment des droits d'information, d'accès, de rectification, d'opposition et d'effacement. Ces droits existent quelle que soit l'interface disponible : Zwibba ne propose pas encore de bouton dédié et traite les demandes manuellement, à hello@aivesconsulting.com. L'exercice de ces droits est gratuit. Nous répondons dans les 30 jours suivant la réception de votre demande ; toute prolongation légalement permise est motivée et vous est notifiée dans ce délai.
 
 ## 9. Réclamation
 
 Vous pouvez saisir l'autorité congolaise compétente en matière de protection des données à caractère personnel, sans préjudice de tout recours devant les juridictions congolaises.
-
-## À compléter avant publication
-
-Durées et critères de conservation par catégorie de données : [[RETENTION_SCHEDULE]]. Garanties vérifiées des transferts internationaux : [[TRANSFER_SAFEGUARDS_TO_VERIFY]].
 
 Sur votre appareil, le navigateur conserve la session, le marché choisi et les brouillons d’annonces pour vous permettre de reprendre votre travail. Les droits décrits ci-dessus s’exercent dans les conditions et limites prévues par les textes applicables.

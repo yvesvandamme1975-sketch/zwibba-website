@@ -8,7 +8,7 @@
 
 ## 1. Qui exploite Zwibba
 
-Zwibba est exploité par Yves Van Damme, personne physique exerçant une activité indépendante sous le nom commercial Aïves Consulting, dont l’adresse professionnelle est située Rue Jean Schyns 29, 7100 La Louvière, Belgique, inscrit à la Banque-Carrefour des Entreprises belge sous le numéro 0825.089.324, numéro de TVA [[VAT_NUMBER_IF_APPLICABLE]]. Contact : hello@aivesconsulting.com.
+Zwibba est exploité par Yves Van Damme, personne physique exerçant une activité indépendante sous le nom commercial Aïves Consulting, dont l’adresse professionnelle est située Rue Jean Schyns 29, 7100 La Louvière, Belgique, inscrit à la Banque-Carrefour des Entreprises belge sous le numéro 0825.089.324, numéro de TVA BE0825089324. Contact : hello@aivesconsulting.com.
 
 ## 2. Ce que fait Zwibba, et ce qu'il ne fait pas
 
@@ -42,6 +42,8 @@ Zwibba génère des liens publics et des visuels que vous pouvez partager. Le pa
 
 Vous pouvez nous signaler un contenu que vous estimez illicite à hello@aivesconsulting.com. Nous examinons les signalements et pouvons retirer une annonce, la refuser ou suspendre un compte. Lorsque nous restreignons un contenu, nous vous en indiquons le motif.
 
+Les contrôles automatiques portent notamment sur la présence du titre, de la description, du prix et des photos requises. Une annonce incomplète peut être refusée automatiquement avec un motif à corriger ; les annonces immobilières sont orientées vers une revue manuelle. Vous pouvez demander un réexamen humain à hello@aivesconsulting.com, en indiquant la référence de l’annonce et le motif de votre contestation. Ces contrôles ne garantissent pas la licéité ou la conformité de chaque bien.
+
 ## 10. Portefeuille interne
 
 Zwibba comporte un solde interne en francs congolais (CDF), utilisable pour la mise en avant d'annonces. Aucun achat de crédit n'est proposé, aucun paiement par mobile money n'est intégré, aucun autre moyen de paiement externe n'est disponible à ce jour.
@@ -53,3 +55,9 @@ L'exploitant répond de ses propres manquements, non des agissements des utilisa
 ## 12. Droit applicable
 
 Le droit de la République démocratique du Congo s'applique à votre utilisation de Zwibba, y compris l'ordonnance-loi n° 23/010 du 13 mars 2023 portant Code du numérique. Aucune clause du présent document ne fait obstacle aux protections impératives que le droit congolais vous reconnaît, ni à votre droit de saisir les juridictions congolaises compétentes.
+
+**Régime TVA de l’exploitant :** franchise de taxe pour les petites entreprises en 2026. Ce régime concerne les prestations de l’exploitant, pas le statut fiscal des vendeurs.
+
+## 13. Données personnelles
+
+Les données d’inscription sont traitées sous la responsabilité de l’exploitant pour fournir le service, selon la notice de confidentialité. Elles ne deviennent pas la propriété de Zwibba. Vos droits d’accès, de rectification et de suppression s’exercent dans les conditions légales.
