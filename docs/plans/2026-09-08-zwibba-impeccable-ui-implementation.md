@@ -58,7 +58,21 @@ Expected: new assertions fail before changes and all pass afterward. Browser che
 
 **Step 3:** Commit: `git commit -m "fix: repair live landing links and mobile navigation"`
 
-### Task 4: Record audit evidence and release checks
+### Task 4: Contain long account content
+
+**Files:**
+- Modify: `App/app.css`
+- Create: `scripts/e2e/ui-account-resilience.mjs`
+- Modify: `scripts/e2e/ui-auth-resilience.mjs`
+
+**Step 1:** Reproduce mobile overflow with a valid 40-character display name and long chat title/message. Add assertions for viewport containment and no JavaScript errors on profile, wallet, inbox and thread in success/503 states. Constrain the flex/grid shell and wrap user text. Extend auth tests to explicitly preserve code and accepted version after503.
+
+**Step 2:** Run: `npm run build`, `node scripts/e2e/ui-account-resilience.mjs`, `node scripts/e2e/ui-auth-resilience.mjs`.
+Expected: account containment fails before the CSS correction and passes afterward; auth preserves code and consent in both engines.
+
+**Step 3:** Commit: `git commit -m "fix: contain long profile and conversation content"`
+
+### Task 5: Record audit evidence and release checks
 
 **Files:**
 - Create: `docs/operations/2026-09-08-impeccable-ui-audit.md`

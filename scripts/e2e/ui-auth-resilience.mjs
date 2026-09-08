@@ -9,7 +9,7 @@ for (const [name, engine] of [['Chromium', chromium], ['WebKit', webkit]]) {
    const errors=[];page.on('pageerror',error=>errors.push(error.message));
    await page.addInitScript(mode=>{
     Object.defineProperty(window,'ZWIBBA_API_BASE_URL',{get:()=> location.origin+'/api-fixture',set:()=>{}});
-    if(mode==='otp')localStorage.setItem('zwibba_app_auth',JSON.stringify({session:null,pendingChallenge:{phoneNumber:'+32499000001',challengeId:'fixture'}}));
+    if(mode==='otp')localStorage.setItem('zwibba_app_auth',JSON.stringify({session:null,pendingChallenge:{phoneNumber:'+32499000001',challengeId:'fixture',legal:{required:true,terms:{kind:'terms',locale:'fr-BE',market:'BE',version:'fixture-v1',hash:'fixture-hash',url:'/legal/fr-BE/terms/',title:'Conditions générales'},documents:[]}}}));
    },mode);
    let requests=0;let release;let observeRequest;
    const requestObserved=new Promise(resolve=>{observeRequest=resolve;});
@@ -25,6 +25,7 @@ for (const [name, engine] of [['Chromium', chromium], ['WebKit', webkit]]) {
    await page.goto(`${baseUrl}/App/#${mode}`);await page.waitForLoadState('networkidle');
    const field=page.locator(`[name=${mode==='phone'?'phoneNumber':'otpCode'}]`);
    await field.fill(mode==='phone'?'+32499000001':'111111');
+   if(mode==='otp')await page.locator('[name=acceptedTerms]').check();
    const form=page.locator(`[data-form=${mode==='phone'?'request-otp':'verify-otp'}]`);
    await form.evaluate(el=>{for(let i=0;i<3;i++)el.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));});
    await page.waitForFunction(()=>document.querySelector('form[aria-busy="true"] button:disabled'));
@@ -33,7 +34,8 @@ for (const [name, engine] of [['Chromium', chromium], ['WebKit', webkit]]) {
    assert.equal(requests,1);
    release();await page.locator('[role=alert]').waitFor();
    assert.equal(await form.locator('button').isEnabled(),true);
-   if(mode==='phone')assert.equal(await field.inputValue(),'+32499000001');
+   assert.equal(await field.inputValue(),mode==='phone'?'+32499000001':'111111');
+   if(mode==='otp')assert.equal(await page.locator('[name=acceptedTerms]').isChecked(),true);
    assert.deepEqual(errors,[]);
    console.log(`PASS ${name}: ${mode} serializes submission and recovers from API failure`);
    await page.close();
