@@ -98,7 +98,20 @@ Expected: outage assertion fails before the change and passes afterward.
 
 **Step 3:** Commit: `git commit -m "fix: avoid historical cards when listings api is unavailable"`
 
-### Task 7: Record audit evidence and release checks
+### Task 7: Distinguish an outage from an empty marketplace
+
+**Files:**
+- Modify: `server.mjs`
+- Modify: `tests/live-listings-server.test.mjs`
+
+**Step 1:** Review identified that an outage must not claim the user is the first seller. Add failing assertions for French/Dutch unavailable messages and retry links on errors; keep the existing true-empty tests. Render a distinct localized outage state.
+
+**Step 2:** Run: `node --test tests/live-listings-server.test.mjs`.
+Expected: new error-state checks fail before correction; all tests pass afterward.
+
+**Step 3:** Commit: `git commit -m "fix: distinguish unavailable listings from empty results"`
+
+### Task 8: Record audit evidence and release checks
 
 **Files:**
 - Create: `docs/operations/2026-09-08-impeccable-ui-audit.md`

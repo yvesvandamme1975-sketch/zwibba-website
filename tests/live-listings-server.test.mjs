@@ -194,7 +194,12 @@ test('server injects live listings into browse pages with empty, fallback and ca
       assert.doesNotMatch(home,/Samsung Galaxy A54 neuf sous emballage/);
       assert.match(home,/data-live-listings-empty-state/);
       assert.match(frBe, /data-live-listings-empty-state/);
-      assert.match(frBe, /Soyez le premier à publier en Belgique\./);
+      assert.doesNotMatch(frBe, /Soyez le premier à publier en Belgique\./);
+      assert.match(frBe, /Impossible de charger les annonces pour le moment/);
+      assert.match(frBe, /href="\/be\/annonces\/">Réessayer/);
+      const nl=await (await fetch(`${baseUrl}/be/nl/annonces/`)).text();
+      assert.match(nl, /De advertenties kunnen momenteel niet worden geladen/);
+      assert.match(nl, /Opnieuw proberen/);
     }, { ZWIBBA_API_BASE_URL: mockBase });
   });
 });

@@ -332,7 +332,13 @@ createServer(async (request, response) => {
       } catch (error) {
         console.warn(`Zwibba live listings unavailable for ${filePath}: ${error.message}`);
         // Historical build-time cards are not evidence of currently available listings.
-        const emptyState = extractEmptyStateTemplate(html) || '';
+        const locale = parseStartMarkers(html)[0]?.locale || 'fr-CD';
+        const isDutch = locale === 'nl-BE';
+        const heading = isDutch
+          ? 'De advertenties kunnen momenteel niet worden geladen.'
+          : 'Impossible de charger les annonces pour le moment.';
+        const retryLabel = isDutch ? 'Opnieuw proberen' : 'Réessayer';
+        const emptyState = `<div class="browse-empty-state" data-live-listings-empty-state role="status"><h3>${escapeHtml(heading)}</h3><a class="button button--primary" href="${escapeHtml(url.pathname + url.search)}">${escapeHtml(retryLabel)}</a></div>`;
         const safeHtml = injectLiveListings(html, {
           featured: '',
           grid: emptyState,
@@ -341,7 +347,10 @@ createServer(async (request, response) => {
           /<script type="application\/ld\+json">(?=[\s\S]*?"@type":"CollectionPage")[\s\S]*?<\/script>/,
           '',
         );
-        body = Buffer.from(safeHtml);
+        body = Buffer.from(safeHtml.replace(
+          /<template\s+data-live-listings-empty>[\s\S]*?<\/template>/,
+          '<template data-live-listings-empty></template>',
+        ));
       }
     }
 
