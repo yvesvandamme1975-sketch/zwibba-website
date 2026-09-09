@@ -51,6 +51,32 @@ Si la production montre le bloc photo avec Acheter actif, relever URL, onglet ac
 
 ### 2. Faire apparaitre les annonces rapidement
 
+#### Topbar : signature de marque validee par Yves
+
+Decision du 9 septembre, apres brainstorming : **symbole Z + Zwibba a gauche, pays separe a droite**. Alternatives comparees : marque centree (plus symetrique, mais concurrence Retour et les actions contextuelles) ; nom sans symbole (compact, mais perd le signe de reconnaissance Z). La signature a gauche est retenue explicitement par Yves.
+
+Cette validation porte sur le positionnement de la marque. Les dimensions, la suppression des elements secondaires et la ligne contextuelle ci-dessous sont les propositions detaillees de ce plan ; elles n'ont pas encore ete implementees.
+
+Audit complementaire des sources et reproduction locale Chromium a 320, 390 et 1440 px, quatre etats (Vendre, Acheter, Messages, fiche en chargement). Les captures sont des reproductions de composants avec fontes locales Manrope/Sora, pas une recette sur telephone physique ou une nouvelle verification de production. Constats :
+
+- `App/app.css:147` : logo, nom/slogan, pays et BETA partagent un meme flex sans protection suffisante des libelles. A 320 px, Belgique et BETA passent sur plusieurs lignes ; le bloc vendeur atteint 57 px contre 40 px sur Acheter dans la reproduction.
+- `App/app.css:175` et `:238` : le nom est rendu a 16 px sur les accueils desktop, puis 14,72 px sur mobile et vues compactes. Le conteneur lumineux du favicon pese visuellement plus que la signature typographique.
+- `App/features/listings/listing-detail-screen.mjs:523` : Retour precede le bloc marque dans un `space-between`, d'ou le deplacement de la marque a droite sur les fiches. Le profil vendeur n'affiche actuellement pas cette marque.
+- `App/components/in-app-brand.mjs:41` : le pays est un lien vers `#buy`, pas un selecteur. Sa hauteur nominale de 24 px ne correspond pas a la cible tactile de 44 px retenue pour l'app. Acheter visiteur ajoute un deuxieme affichage BE/RDC sous l'en-tete.
+- `App/features/home/home-screen.mjs:53` : BETA est une chaine fixe propre a Vendre ; ce badge ne prouve aucun statut runtime de l'auth ou de la production.
+
+Composition recommandee : ligne de marque de 64 px minimum hors safe-area, marges laterales de 16 px sur mobile, alignement sur le contenu en desktop. Symbole Z de 32 px, nom a 24 px sur mobile et 28 px sur desktop, graisse forte et espacement normal. Conserver les signes de la marque existante ; supprimer uniquement la capsule/ombre decorative autour du symbole. Le mot Zwibba reste entier et protege de la traduction automatique (`translate="no"`). La hauteur peut grandir au zoom texte, sans ecraser ni couper les controles.
+
+Separer dans le markup le bloc signature et le contexte pays : ils ne partagent plus le flex interne du nom. Le pays reste lisible sur une ligne, sans compter seulement sur un drapeau. Sur Acheter visiteur, regrouper indicateur et choix de marche dans un seul controle accessible a droite ; conserver les actions BE/CD et leurs regles existantes. Sur les autres etats, afficher simplement le contexte lorsque le changement de marche n'y est pas propose : aucun faux bouton qui renvoie ailleurs. Ne pas ouvrir implicitement le choix de marche aux comptes connectes.
+
+Retirer les slogans variables et BETA de la topbar. Cela concerne la hierarchie visuelle, pas une declaration de sortie de beta pour toutes les fonctions. Les ecrans gardent leurs titres et contenus utiles. Aucun nouveau bouton Vendre en haut : la navigation inferieure porte deja cette destination.
+
+Sur une sous-vue, garder cette meme ligne de marque ; Retour et, si present, Partager occupent une ligne contextuelle compacte dessous. Les fleches/icones ont un libelle accessible et une cible de 44 px ; le retour suit l'origine decrite en section 4. Ne pas dupliquer Partager plus bas. La topbar reste dans le flux, sans nouvelle barre fixe reduisant le catalogue. Les vues loading/error conservent la meme geometrie que l'etat pret.
+
+Implementation privilegiee : reorganiser le markup du composant partage `App/components/in-app-brand.mjs` en signature et contexte distincts, tout en conservant ses appelants ; adapter le positionnement des conteneurs `.app-home__topbar` et `.app-flow__meta`, et ajouter la marque au profil public vendeur. Toute option nouvelle (par exemple affichage du selecteur) doit etre explicite. Ne pas reecrire le shell ou dupliquer une topbar differente par ecran.
+
+Revue d'accessibilite selon les [Web Interface Guidelines recuperees le 9 septembre](https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md) : noms accessibles, focus visible, controle adapte a son action, noms de marque non traduits, dimensions reservees, reflow et safe-area. Les tailles proposees sont des choix de design adaptes a Zwibba, pas des mesures imposees par cette source.
+
 Ordre sur Acheter : marque et marche compacts, recherche, commande « Prix et zone », categories, annonces. La commande de filtres est fermee initialement, accessible en une action et accompagnee d'un nombre de familles actives. Aucun texte explicatif ni panneau promotionnel supplementaire.
 
 La recherche devient un seul champ avec une icone Lucide Search et un libelle accessible propre a l'input. Le nouveau code reste en ESM natif ; si aucun adaptateur Lucide n'existe, ajouter explicitement un module local limite aux icones necessaires, sans React, script CDN ou dependance de framework.
@@ -115,6 +141,7 @@ Verifier contraste des textes ordinaires >=4,5:1, gros textes >=3:1, controles e
 | Scenario | Critere de recette |
 | --- | --- |
 | Entree Acheter | Clic onglet, lien direct et retour d'une fiche issue d'Acheter : Acheter actif, aucun bloc photo, aucun passage impose par capture/auth pour consulter le flux. |
+| Topbar | Z et Zwibba a gauche sur les cinq onglets et sous-vues ; pays a droite ; aucune coupure de Zwibba/Belgique/RDC a 320 px, aucun doublon du pays sur Acheter visiteur. Ligne stable en loading/error/ready, Retour/Partager ne deplacent pas la signature. Tester clavier, focus, zoom, safe-area et absence de controle de marche trompeur en session connectee. |
 | Premier ecran | A 390x844 et 1440x900, avec donnees de test pretes et filtres fermes, une premiere carte montre photo, titre, prix et zone avant de scroller ; pas de titre tronque horizontalement a 320 px. |
 | Categories | Hauteur identique a +/-1 px au zoom normal en plein/vide/chargement, y compris longs libelles ; toute categorie reste accessible tactile/clavier. |
 | Filtres | Combinaisons ET correctes ; 0 distinct de vide ; bornes inclusives ; min > max bloque ; USD/CDF jamais compares ; prix illisible jamais transforme silencieusement. |
@@ -138,3 +165,5 @@ Decision ouverte hors de ce lot : permettre a un compte connecte de choisir le m
 Les exemples de grandes marges et CTA blancs du skill ne sont pas transposes a la PWA. Une suggestion d'ajouter une nouvelle photo dans le panneau vendeur n'est pas retenue : l'intention validee concerne le parcours de prise de photo, pas un nouvel asset. Le contact apres galerie compacte est conserve pour montrer l'objet avant l'action, avec mesure explicite de sa visibilite.
 
 Verification de base executee le 9 septembre : 60 tests existants PASS (`app-buyer-routing`, `app-buyer-home`, `listing-detail-screen`, `app-shell-ui`). Verification documentaire : neuf taches a trois etapes, chemins Modify existants, paire indexee et `git diff --check` propre. Aucun changement de fonctionnalite ni deploiement effectue par cette relecture.
+
+Extension topbar ajoutee apres cette revue Astra : direction de marque choisie par Yves, diagnostic et propositions issus de brainstorming, UI/UX Pro Max et Web Interface Guidelines. Cette extension n'a pas fait l'objet d'une nouvelle delegation a Astra. Le reste du plan reste applicable ; les taches 4, 5, 8 et 9 incluent maintenant l'en-tete partage.

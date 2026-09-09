@@ -2,7 +2,7 @@
 
 # Zwibba Buyer UI Hierarchy Implementation Plan
 
-**Goal:** Rendre les annonces et le contact prioritaires, ajouter prix/zone avec devises explicites et presenter les avis en apercu secondaire.
+**Goal:** Rendre Zwibba identifiable dans une topbar stable, les annonces et le contact prioritaires, ajouter prix/zone avec devises explicites et presenter les avis en apercu secondaire.
 
 **Architecture:** Conserver les renderers ESM purs et le flux public actuel. Ajouter des filtres acheteur purs, un petit composant de formulaire et un etat de retour au catalogue ; raccorder les interactions dans `App/app.js`. La fiche change de hierarchie sans modifier les API de contact ou d'avis. Reutiliser les tokens et les helpers de defilement existants.
 
@@ -94,6 +94,9 @@ git commit -m "feat: filter buyer listings by price and zone"
 - Modify: `tests/app-buyer-home.test.mjs`
 - Modify: `tests/app-tab-shell.test.mjs`
 - Modify: `tests/seller-public-screen.test.mjs`
+- Modify: `tests/in-app-brand.test.mjs`
+- Modify: `tests/country-indicator.test.mjs`
+- Modify: `tests/app-home.test.mjs`
 - Create: `tests/buyer-browse-view-state.test.mjs`
 
 **Step 1: Write the failing tests**
@@ -104,16 +107,18 @@ Specifier le nouveau `App/utils/buyer-browse-view-state.mjs` : capture/restaurat
 
 Ajouter aux tests du profil public les destinations de retour explicites et leur repli `#buy`, dans tous ses etats. Les tests de fiche de Task 6 couvriront l'autre cote de cette chaine.
 
+Ajouter les contrats de la topbar proposes autour du positionnement de marque valide : signature Z + Zwibba distincte du pays, nom non traduisible et intact, absence de slogan/BETA, pays affiche une fois sur Acheter, selecteur semantique pour un visiteur et contexte non trompeur pour un compte connecte. Le composant conserve l'echappement des valeurs. Le profil public doit avoir la marque dans loading/error/ready. Lors de l'execution de ce design, remplacer le test existant qui exige le badge BETA sur Vendre par le nouveau comportement propose, en gardant la protection de l'entree de capture. Aucun test ne doit simplement recopier une declaration CSS.
+
 **Step 2: Verify RED**
 
-Run: `node --test tests/app-buyer-home.test.mjs tests/app-tab-shell.test.mjs tests/seller-public-screen.test.mjs tests/buyer-browse-view-state.test.mjs`
+Run: `node --test tests/app-buyer-home.test.mjs tests/app-tab-shell.test.mjs tests/seller-public-screen.test.mjs tests/buyer-browse-view-state.test.mjs tests/in-app-brand.test.mjs tests/country-indicator.test.mjs tests/app-home.test.mjs`
 
 Expected: FAIL seulement sur nouveaux controles/ARIA/etat absents ; protections photo existantes PASS.
 
 **Step 3: Commit**
 
 ```bash
-git add tests/app-buyer-home.test.mjs tests/app-tab-shell.test.mjs tests/seller-public-screen.test.mjs tests/buyer-browse-view-state.test.mjs
+git add tests/app-buyer-home.test.mjs tests/app-tab-shell.test.mjs tests/seller-public-screen.test.mjs tests/buyer-browse-view-state.test.mjs tests/in-app-brand.test.mjs tests/country-indicator.test.mjs tests/app-home.test.mjs
 git commit -m "test: define buyer filter and return interactions"
 ```
 
@@ -125,6 +130,7 @@ git commit -m "test: define buyer filter and return interactions"
 - Modify: `App/features/home/buy-screen.mjs`
 - Modify: `App/features/home/home-screen.mjs`
 - Modify: `App/components/app-tab-shell.mjs`
+- Modify: `App/components/in-app-brand.mjs`
 - Modify: `App/features/profile/seller-public-screen.mjs`
 - Modify: `App/app.js`
 
@@ -136,16 +142,20 @@ Dans `App/app.js`, ajouter les handlers appliquant/effacant les filtres, la capt
 
 Capturer la vue sous `lastRenderedRouteKey` avant destruction du DOM, sans confondre son origine avec le hash deja change. Restaurer le scroll desktop interne ou le scroll page mobile, le defilement horizontal et le focus au retour fiche/navigateur. Ajouter au renderer du profil public des options `returnRoute`/`returnLabel`, echappees, par defaut `#buy`/« Retour aux annonces », et faire passer le contexte depuis `App/app.js`. Les options analogues de la fiche arrivent en Task 7. Conserver le clic de l'onglet actif qui remonte en haut. Ajouter ARIA selection aux categories des deux ecrans et a la navigation, sans nouvelle abstraction de categories. Ne pas changer les liens generiques ni le routage par defaut.
 
+Reorganiser le composant de marque partage pour separer signature et contexte pays, en conservant un point de rendu commun pour ses appelants. Ajouter `translate="no"` a Zwibba, retirer les slogans/badge de ce rendu et nettoyer leurs arguments dans les deux accueils. Ajouter la marque au profil public. Le pays ne doit plus etre un lien trompeur vers `#buy`. Pour Acheter visiteur, deplacer le choix BE/CD dans ce contexte via une option explicite et supprimer l'ancien affichage duplique ; reutiliser `set-browse-country`, sans changer les regles des comptes connectes. Un details/summary natif et des boutons de choix suffisent, avec focus/fermeture controles ; pas de modal supplementaire. La topbar est un conteneur semantiquement compatible avec les headers deja presents, sans header imbrique.
+
 **Step 2: Verify GREEN**
 
 Run: `node --test tests/app-buyer-home.test.mjs tests/app-tab-shell.test.mjs tests/seller-public-screen.test.mjs tests/buyer-browse-view-state.test.mjs tests/buyer-search-render-state.test.mjs tests/buyer-category-scroll-render-state.test.mjs tests/app-buyer-routing.test.mjs`
+
+Run: `node --test tests/in-app-brand.test.mjs tests/country-indicator.test.mjs tests/app-home.test.mjs`
 
 Expected: PASS ; controle manuel de la saisie complete par l'E2E de Task 9.
 
 **Step 3: Commit**
 
 ```bash
-git add App/features/home/buyer-filter-bar.mjs App/utils/buyer-browse-view-state.mjs App/features/home/buy-screen.mjs App/features/home/home-screen.mjs App/components/app-tab-shell.mjs App/features/profile/seller-public-screen.mjs App/app.js
+git add App/features/home/buyer-filter-bar.mjs App/utils/buyer-browse-view-state.mjs App/features/home/buy-screen.mjs App/features/home/home-screen.mjs App/components/app-tab-shell.mjs App/components/in-app-brand.mjs App/features/profile/seller-public-screen.mjs App/app.js
 git commit -m "feat: add compact buyer filters and restore browsing context"
 ```
 
@@ -229,6 +239,8 @@ Appliquer les fonds `var(--bg)`, `var(--surface)` et couleurs de texte/ligne exi
 
 Les petits ajustements CSS sont verifies visuellement, sans tests qui recopient leurs declarations. Tout changement d'interaction inattendu retourne a une regression comportementale avant correction.
 
+Topbar : appliquer la section 2 du design. Ligne de marque de 64 px minimum hors safe-area, symbole 32 px, nom 24 px mobile/28 px desktop, texte entier, pays a droite. Preserver les tokens et le symbole existants, enlever la capsule/ombre supplementaire ; ne pas retoucher l'identite de marque. Positionner la ligne complete avant les commandes Retour/Partager dans les conteneurs partages, y compris les vues compactes et le profil public. Ces commandes restent dans une ligne contextuelle de 44 px et ne changent pas la position de la signature. La topbar suit le flux et peut grandir au zoom texte. Eviter les ellipses sur Zwibba et les noms de pays. S'assurer que la reserve de hauteur reste compatible avec les criteres premier ecran des annonces et du contact.
+
 **Step 2: Verify**
 
 Run: `npm run build`
@@ -262,6 +274,8 @@ Creer un scenario Playwright avec `UI_TEST_BASE_URL`, sur le modele des scripts 
 Valider tous les criteres du tableau de recette du design. Capturer Chromium/WebKit aux largeurs 320/390/768/1024/1440, hauteur 844 pour mobile et 900 pour desktop. A 390x844, avec titre deux lignes et galerie chargee, verifier que le haut du CTA est dans la zone visible au-dessus du bord superieur de la nav ; verifier qu'un scroll permet de voir le bouton entier. Au zoom 200 % et reflow equivalent 400 %, exiger lisibilite et absence de controles masques, sans imposer le premier ecran.
 
 Verifier images chargees, bounding boxes et scroll reels, focus apres retour et soumission, clavier, volet ferme/ouvert, avis replie et absence d'erreurs console. Forcer un vrai rerendu par changement de categorie pendant un brouillon de filtres ; verifier pays change avec volet ouvert et reponses hors ordre. Couvrir les chaines de navigation catalogue/fiche/profil vendeur et profil personnel/fiche. Saisir un avis, changer de photo, ouvrir/fermer Partager, puis cliquer le vrai bouton Envoyer (pas un submit synthetique) : une seule requete interceptee, erreurs/saisie conservees, succes confirme. Tester aussi clics des formulaires reponse vendeur et signalement ainsi que les actions de clic existantes apres la correction du listener partage.
+
+Ajouter une matrice topbar : cinq onglets, fiche, profil vendeur, capture et authentification, avec loading/error/ready pertinents. A 320 px, mesurer que Zwibba et Belgique/RDC restent entiers, que leurs boites ne se recouvrent pas et que les controles tactiles restent >=44 px. Comparer l'alignement du nom entre les onglets et verifier que Retour/Partager restent sur leur ligne contextuelle. Tester selection BE/CD anonyme par clic/clavier puis absence de faux selecteur connecte. Au zoom/reflow, accepter une ligne plus haute mais aucun contenu masque. Les fontes finales et le symbole doivent etre charges ; les reproductions preliminaires de l'audit ne remplacent pas ces captures de l'app complete.
 
 Ajouter le maintien du contenu pendant 65 secondes avec compteur messages intercepte ; cette protection ne remplace pas les tests de rerendu ci-dessus. Aucune temporisation de refresh globale nouvelle. Ecrire une synthese QA indiquant les scenarios passes, echecs et limites.
 
