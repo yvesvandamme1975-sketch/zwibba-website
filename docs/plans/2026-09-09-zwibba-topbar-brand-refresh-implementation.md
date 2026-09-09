@@ -82,6 +82,29 @@ Expected: PASS. `npm run build` et `git diff --check` passent.
 
 `git commit -m "feat: refresh Zwibba topbar and market control"`
 
+### Task 3b: Stabiliser les erreurs revelees par la recette
+
+Ajout explicite pendant la recette : WebKit a revele que `primeBuyerRouteState` relance les requetes a chaque rendu quand les donnees restent nulles apres erreur. Ce defaut precede la topbar et concerne fiche, vendeur et conversation ; le chargement du profil connecte sur vendeur a la meme condition.
+
+**Files:**
+- Create: `tests/route-load-error-stability.test.mjs`
+- Modify: `App/app.js`
+- Modify: ce plan pour consigner la deviation
+
+**Step 1: Write the failing tests and minimal fix**
+
+Reproduire les relances sur deux rendus avec donnees nulles en loading/error. Respecter le statut explicite et l'identite de la route. Une nouvelle entree utilisateur sur une route en erreur permet une nouvelle tentative ; aucune boucle de rendu. Ne pas changer le polling normal de messagerie.
+
+**Step 2: Verify RED then GREEN**
+
+Run: `node --test tests/route-load-error-stability.test.mjs tests/app-buyer-routing.test.mjs`
+
+Expected: RED observe avant correctif (7 echecs de la nouvelle suite), puis PASS, y compris entree idle, changement d'identite et retour utilisateur apres erreur. Refaire toute la recette de Task 4 apres ce changement.
+
+**Step 3: Commit**
+
+`git commit -m "fix: keep failed route loads stable between renders"`
+
 ### Task 4: Verifier et consigner la recette
 
 **Files:**

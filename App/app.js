@@ -1077,6 +1077,7 @@ if (appRoot) {
   }
 
   function primeBuyerRouteState(route) {
+    const enteredRoute = lastRenderedRouteKey !== getRenderableRouteKey(route);
     if (state.session && state.legalStatusStatus === 'idle') {
       void loadLegalStatus();
     }
@@ -1098,7 +1099,7 @@ if (appRoot) {
       !blockedByTerms &&
       (
         state.profileStatus === 'idle' ||
-        (route.type === 'seller' && !state.profile && state.profileStatus !== 'loading')
+        (route.type === 'seller' && enteredRoute && state.profileStatus === 'error')
       )
     ) {
       void loadProfile();
@@ -1110,18 +1111,18 @@ if (appRoot) {
 
     if (
       route.type === 'listing' &&
-      (!buyerBrowseController.state.detail ||
-        state.currentListingSlug !== route.slug ||
-        buyerBrowseController.state.detailStatus === 'idle')
+      (state.currentListingSlug !== route.slug ||
+        buyerBrowseController.state.detailStatus === 'idle' ||
+        (enteredRoute && buyerBrowseController.state.detailStatus === 'error'))
     ) {
       void loadBuyerListing(route.slug);
     }
 
     if (
       route.type === 'seller' &&
-      (!state.sellerPublic ||
-        state.currentSellerId !== route.sellerId ||
-        state.sellerPublicStatus === 'idle')
+      (state.currentSellerId !== route.sellerId ||
+        state.sellerPublicStatus === 'idle' ||
+        (enteredRoute && state.sellerPublicStatus === 'error'))
     ) {
       void loadPublicSeller(route.sellerId);
     }
@@ -1131,7 +1132,8 @@ if (appRoot) {
     }
 
     if (route.type === 'thread' && state.session && !blockedByTerms) {
-      if (!state.thread || state.currentThreadId !== route.threadId || state.threadStatus === 'idle') {
+      if (state.currentThreadId !== route.threadId || state.threadStatus === 'idle' ||
+        (enteredRoute && state.threadStatus === 'error')) {
         void loadThread(route.threadId);
       }
     }
