@@ -16,8 +16,8 @@ export function renderOtpScreen({
     <section class="app-flow app-flow--auth">
       <header class="app-flow__header">
         <div class="app-flow__meta">
-          <a class="app-flow__back" href="#phone">Retour</a>
           ${renderInAppBrand({ compact: true })}
+          <a class="app-flow__back" href="#phone">Retour</a>
         </div>
         <div>
           <p class="app-flow__eyebrow">Étape 2</p>

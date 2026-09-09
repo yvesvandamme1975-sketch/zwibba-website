@@ -479,8 +479,8 @@ export function renderListingDetailScreen({
       <section class="app-flow app-flow--detail">
         <header class="app-flow__header">
           <div class="app-flow__meta">
-            <a class="app-flow__back" href="#buy">Retour aux annonces</a>
             ${renderInAppBrand({ compact: true })}
+            <a class="app-flow__back" href="#buy">Retour aux annonces</a>
           </div>
           <div>
             <p class="app-flow__eyebrow">Acheter</p>
@@ -496,8 +496,8 @@ export function renderListingDetailScreen({
       <section class="app-flow app-flow--detail">
         <header class="app-flow__header">
           <div class="app-flow__meta">
-            <a class="app-flow__back" href="#buy">Retour aux annonces</a>
             ${renderInAppBrand({ compact: true })}
+            <a class="app-flow__back" href="#buy">Retour aux annonces</a>
           </div>
           <div>
             <p class="app-flow__eyebrow">Acheter</p>
@@ -521,8 +521,8 @@ export function renderListingDetailScreen({
     <section class="app-flow app-flow--detail">
       <header class="app-flow__header">
         <div class="app-flow__meta">
-          <a class="app-flow__back" href="#buy">Retour aux annonces</a>
           ${renderInAppBrand({ compact: true })}
+          <a class="app-flow__back" href="#buy">Retour aux annonces</a>
         </div>
         <div>
           <p class="app-flow__eyebrow">Acheter</p>

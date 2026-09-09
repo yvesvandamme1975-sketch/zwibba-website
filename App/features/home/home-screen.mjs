@@ -50,7 +50,7 @@ export function renderHomeScreen({
   return `
     <section class="app-home app-screen app-screen--home">
       <div class="app-home__topbar">
-        ${renderInAppBrand({ subtitle: 'Vendez en un clic', badge: 'Beta' })}
+        ${renderInAppBrand()}
       </div>
 
       ${renderPostEntryCard({ draft })}

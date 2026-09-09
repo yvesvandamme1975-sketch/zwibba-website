@@ -2,6 +2,7 @@ import { escapeAttribute, escapeHtml, formatListingPrice } from '../../utils/ren
 import { sanitizeListingImageUrl } from '../../utils/image-fallbacks.mjs';
 import { renderRatingStars } from '../../utils/rating-stars.mjs';
 import { sellerMonogram } from '../../utils/seller-monogram.mjs';
+import { renderInAppBrand } from '../../components/in-app-brand.mjs';
 
 function formatMemberSince(value) {
   if (!value) {
@@ -183,6 +184,7 @@ export function renderSellerPublicScreen({
       <section class="app-flow app-screen">
         <header class="app-flow__header">
           <div class="app-flow__meta">
+            ${renderInAppBrand()}
             <a class="app-flow__back" href="#buy">Retour aux annonces</a>
           </div>
           <div>
@@ -199,6 +201,7 @@ export function renderSellerPublicScreen({
       <section class="app-flow app-screen">
         <header class="app-flow__header">
           <div class="app-flow__meta">
+            ${renderInAppBrand()}
             <a class="app-flow__back" href="#buy">Retour aux annonces</a>
           </div>
           <div>
@@ -220,6 +223,7 @@ export function renderSellerPublicScreen({
     <section class="app-flow app-screen">
       <header class="app-flow__header">
         <div class="app-flow__meta">
+          ${renderInAppBrand()}
           <a class="app-flow__back" href="#buy">Retour aux annonces</a>
         </div>
         <div>

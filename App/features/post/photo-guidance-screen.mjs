@@ -190,8 +190,8 @@ export function renderPhotoGuidanceScreen({
     <section class="app-flow app-flow--guidance">
       <header class="app-flow__header">
         <div class="app-flow__meta">
-          <a class="app-flow__back" href="#capture">Retour</a>
           ${renderInAppBrand({ compact: true })}
+          <a class="app-flow__back" href="#capture">Retour</a>
         </div>
         <div>
           <p class="app-flow__eyebrow">Étape 2</p>

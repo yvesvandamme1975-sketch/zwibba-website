@@ -1500,6 +1500,13 @@ if (appRoot) {
     const previousShareAction = document.activeElement?.closest('.app-share-menu') ? document.activeElement.dataset.action : null;
     const route = resolveRenderableRoute();
     const routeKey = getRenderableRouteKey(route);
+    const previousMarketMenu = appRoot.querySelector('[data-market-menu]');
+    const marketMenuState = lastRenderedRouteKey === routeKey && previousMarketMenu ? {
+      country: previousMarketMenu.dataset.country,
+      open: previousMarketMenu.open,
+      focused: previousMarketMenu.contains(document.activeElement),
+      focusCountry: document.activeElement?.dataset.country,
+    } : null;
     const scrollRenderState =
       pendingScrollReset.consume(route.type) ??
       (lastRenderedRouteKey === routeKey ? captureScrollRenderState(appRoot, window) : null);
@@ -1528,6 +1535,15 @@ if (appRoot) {
       }) +
       renderShareMenu(state.shareMenu) +
       (shouldShowCountrySuggestion() ? renderCountrySuggestionBanner() : '');
+    const nextMarketMenu = appRoot.querySelector('[data-market-menu]');
+    if (nextMarketMenu && marketMenuState) {
+      nextMarketMenu.open = marketMenuState.open && nextMarketMenu.dataset.country === marketMenuState.country;
+      if (marketMenuState.focused) {
+        const option = nextMarketMenu.open && [...nextMarketMenu.querySelectorAll('button')]
+          .find(button => button.dataset.country === marketMenuState.focusCountry);
+        (option || nextMarketMenu.querySelector('summary'))?.focus({ preventScroll: true });
+      }
+    }
     if (route.type === 'buy') {
       restoreBuyerSearchRenderState(appRoot, buyerSearchRenderState);
     }
@@ -2728,8 +2744,31 @@ if (appRoot) {
     }
   }
 
+  function closeMarketMenu({ restoreFocus = false } = {}) {
+    const menu = appRoot.querySelector('[data-market-menu][open]');
+    if (!menu) return;
+    menu.open = false;
+    if (restoreFocus) menu.querySelector('summary')?.focus({ preventScroll: true });
+  }
+
+  document.addEventListener('pointerdown', event => {
+    const menu = appRoot.querySelector('[data-market-menu][open]');
+    if (menu && !menu.contains(event.target)) closeMarketMenu();
+  });
+
+  document.addEventListener('focusin', event => {
+    const menu = appRoot.querySelector('[data-market-menu][open]');
+    if (menu && !menu.contains(event.target)) closeMarketMenu();
+  });
+
   document.addEventListener('keydown', event => {
-    if (!state.shareMenu) return;
+    if (!state.shareMenu) {
+      if (event.key === 'Escape' && appRoot.querySelector('[data-market-menu][open]')) {
+        event.preventDefault();
+        closeMarketMenu({ restoreFocus: true });
+      }
+      return;
+    }
     if (event.key === 'Escape') { event.preventDefault(); closeShareMenu(); return; }
     if (event.key !== 'Tab') return;
     const dialog = appRoot.querySelector('[role="dialog"][data-action="share-menu-sheet"]');
@@ -2896,6 +2935,7 @@ if (appRoot) {
     }
 
     if (trigger.dataset.action === 'set-browse-country') {
+      closeMarketMenu({ restoreFocus: true });
       countryPreference.setStoredCountry(trigger.dataset.country);
       void loadBuyerFeed();
       renderApp();
