@@ -333,6 +333,7 @@
 
 .app-home__chip-row {
   display: grid;
+  align-items: center;
   grid-auto-flow: column;
   grid-auto-columns: max-content;
   gap: 10px;
@@ -346,6 +347,11 @@
 }
 
 .app-home__chip {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
   padding: 10px 14px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.04);
