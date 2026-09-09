@@ -4,6 +4,9 @@ This directory is now the active planning location for Zwibba work in `/Users/pc
 
 Current priority docs:
 
+- `2026-09-09-zwibba-topbar-brand-refresh-design.md`
+- `2026-09-09-zwibba-topbar-brand-refresh-implementation.md`
+
 - `2026-09-09-zwibba-buyer-ui-hierarchy-design.md`
 - `2026-09-09-zwibba-buyer-ui-hierarchy-implementation.md`
 
