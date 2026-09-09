@@ -215,6 +215,8 @@ test('buy screen shows the market selector without a session, marking RDC active
   });
 
   assert.match(html, /data-action="set-browse-country"/);
+  assert.equal((html.match(/data-market-toggle/g) || []).length, 1);
+  assert.doesNotMatch(html, /buy-market-switch|Acheter en confiance|data-post-entry-card/);
   assert.match(
     html,
     /data-action="set-browse-country"[^>]*data-country="CD"[^>]*aria-pressed="true"/,

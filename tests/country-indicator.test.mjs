@@ -7,20 +7,20 @@ import { renderInAppBrand } from '../App/components/in-app-brand.mjs';
 
 test('le brand app affiche le pays actif', () => {
   const be = renderInAppBrand({ countryCode: 'BE' });
-  assert.match(be, /🇧🇪/);
   assert.match(be, /Belgique/);
-  assert.match(be, /href="#buy"/);
+  assert.match(be, /data-market-context/);
+  assert.doesNotMatch(be, /<a |<button|<summary/);
 
   const cd = renderInAppBrand({ countryCode: 'CD' });
-  assert.match(cd, /🇨🇩/);
   assert.match(cd, /RDC/);
-  assert.match(cd, /href="#buy"/);
+  assert.doesNotMatch(cd, /<a |<button|<summary/);
 });
 
-test('le brand app conserve la signature compact existante', () => {
+test('le brand app conserve la signature lisible dans les sous-vues', () => {
   const html = renderInAppBrand({ compact: true, countryCode: 'CD' });
-  assert.match(html, /app-brand-mark--compact/);
-  assert.match(html, /🇨🇩/);
+  assert.match(html, /app-topbar/);
+  assert.match(html, /RDC/);
+  assert.doesNotMatch(html, /app-brand-mark--compact/);
 });
 
 test('la vitrine affiche un badge pays statique par locale', () => {

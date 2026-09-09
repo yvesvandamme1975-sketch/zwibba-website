@@ -84,7 +84,7 @@ test('home screen shows the Zwibba in-app brand mark', () => {
   assert.match(html, /Zwibba/);
 });
 
-test('home screen keeps the Beta brand badge without internal audience badges', () => {
+test('home screen keeps the brand free of beta badges and slogans', () => {
   const html = renderHomeScreen({
     draft: null,
     featuredListings,
@@ -92,8 +92,8 @@ test('home screen keeps the Beta brand badge without internal audience badges', 
     categories,
   });
 
-  assert.match(html, /class="app-brand-mark__badge"[^>]*>\s*Beta\s*</);
-  assert.doesNotMatch(html, /Seller-first|app-home__badge/);
+  assert.doesNotMatch(html, /Beta|Vendez en un clic|Seller-first|app-home__badge/);
+  assert.match(html, /Prendre une photo/);
 });
 
 test('home screen renders a real buyer search input and interactive category chips', () => {
