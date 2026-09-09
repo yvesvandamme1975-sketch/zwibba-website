@@ -21,8 +21,8 @@ export function renderThreadScreen({
       <section class="app-flow app-screen">
         <header class="app-flow__header">
           <div class="app-flow__meta">
-            <a class="app-flow__back" href="#messages">Retour aux messages</a>
             ${renderInAppBrand({ compact: true })}
+            <a class="app-flow__back" href="#messages">Retour aux messages</a>
           </div>
           <div>
             <p class="app-flow__eyebrow">Messages</p>
@@ -37,8 +37,8 @@ export function renderThreadScreen({
     <section class="app-flow app-screen">
       <header class="app-flow__header">
         <div class="app-flow__meta">
-          <a class="app-flow__back" href="#messages">Retour aux messages</a>
           ${renderInAppBrand({ compact: true })}
+          <a class="app-flow__back" href="#messages">Retour aux messages</a>
         </div>
         <div>
           <p class="app-flow__eyebrow">Messages</p>

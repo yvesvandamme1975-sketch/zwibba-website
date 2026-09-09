@@ -3,6 +3,14 @@ import test from 'node:test';
 
 import { renderSellerPublicScreen } from '../App/features/profile/seller-public-screen.mjs';
 
+test('public seller keeps the shared brand before its return link in every state', () => {
+  for (const state of ['loading', 'error', 'ready']) {
+    const html = renderSellerPublicScreen({ state });
+    assert.equal((html.match(/data-app-brand/g) || []).length, 1);
+    assert.ok(html.indexOf('data-app-brand') < html.indexOf('Retour aux annonces'));
+  }
+});
+
 test('public seller screen renders identity and active listing cards', () => {
   const html = renderSellerPublicScreen({
     listings: [

@@ -82,8 +82,8 @@ export function renderCaptureResultScreen({
     <section class="app-flow app-flow--capture-result">
       <header class="app-flow__header">
         <div class="app-flow__meta">
-          <a class="app-flow__back" href="#capture">Retour</a>
           ${renderInAppBrand({ compact: true })}
+          <a class="app-flow__back" href="#capture">Retour</a>
         </div>
         <div>
           <p class="app-flow__eyebrow">Étape 1</p>

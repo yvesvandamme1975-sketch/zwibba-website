@@ -67,8 +67,8 @@ export function renderSuccessScreen({
     <section class="app-flow app-flow--success"${storyImageAttribute}>
       <header class="app-flow__header">
         <div class="app-flow__meta">
-          <a class="app-flow__back" href="#publish">Retour</a>
           ${renderInAppBrand({ compact: true })}
+          <a class="app-flow__back" href="#publish">Retour</a>
         </div>
         <div>
           <p class="app-flow__eyebrow">${escapeHtml(content.eyebrow)}</p>

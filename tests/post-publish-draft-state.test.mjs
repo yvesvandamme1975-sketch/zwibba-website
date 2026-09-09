@@ -70,6 +70,10 @@ test('success route falls back to profile when post-publish state is gone', () =
   );
 });
 
+test('public seller browsing does not require a selling draft', () => {
+  assert.equal(resolveDraftlessSellerRoute({ routeType: 'seller' }), 'seller');
+});
+
 test('true draft-only routes still fall back to capture when no draft exists', () => {
   assert.equal(
     resolveDraftlessSellerRoute({

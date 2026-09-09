@@ -137,8 +137,8 @@ export function renderReviewFormScreen({
     <section class="app-flow app-flow--review">
       <header class="app-flow__header">
         <div class="app-flow__meta">
-          <a class="app-flow__back" href="#guidance">Retour</a>
           ${renderInAppBrand({ compact: true })}
+          <a class="app-flow__back" href="#guidance">Retour</a>
         </div>
         <div>
           <p class="app-flow__eyebrow">Étape 3</p>

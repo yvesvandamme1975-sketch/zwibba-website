@@ -1,45 +1,43 @@
 import { escapeAttribute, escapeHtml } from '../utils/rendering.mjs';
 
-function resolveCountryBadge(countryCode) {
+function resolveCountryLabel(countryCode) {
   const normalizedCountry = String(countryCode || '').trim().toUpperCase();
 
   if (normalizedCountry === 'BE') {
-    return {
-      flag: '🇧🇪',
-      label: 'Belgique',
-    };
+    return 'Belgique';
   }
 
   if (normalizedCountry === 'CD') {
-    return {
-      flag: '🇨🇩',
-      label: 'RDC',
-    };
+    return 'RDC';
   }
 
   return null;
 }
 
 export function renderInAppBrand({
-  badge = '',
-  compact = false,
+  allowMarketSwitch = false,
   countryCode = globalThis.ZWIBBA_ACTIVE_COUNTRY_CODE || '',
-  subtitle = '',
 } = {}) {
-  const badgeLabel = String(badge).trim();
-  const country = resolveCountryBadge(countryCode);
+  const country = resolveCountryLabel(countryCode);
+  const activeCountry = country === 'Belgique' ? 'BE' : 'CD';
+  const market = !country ? '' : allowMarketSwitch ? `
+    <details class="app-topbar__market" data-market-menu data-country="${escapeAttribute(activeCountry)}">
+      <summary class="app-topbar__country" data-market-toggle aria-label="${escapeAttribute(`Marché actif : ${country}. Choisir le marché`)}">${escapeHtml(country)}</summary>
+      <div class="app-topbar__markets" role="group" aria-label="Choisir le marché">
+        ${['CD', 'BE'].map((code) => `
+          <button type="button" data-action="set-browse-country" data-country="${escapeAttribute(code)}" aria-pressed="${escapeAttribute(String(code === activeCountry))}">${escapeHtml(resolveCountryLabel(code))}</button>
+        `).join('')}
+      </div>
+    </details>
+  ` : `<span class="app-topbar__country" data-market-context aria-label="${escapeAttribute(`Marché actif : ${country}`)}">${escapeHtml(country)}</span>`;
 
   return `
-    <div class="app-brand-mark${compact ? ' app-brand-mark--compact' : ''}" data-app-brand>
-      <span class="app-brand-mark__icon" aria-hidden="true">
-        <img src="/assets/brand/favicon.svg" alt="" width="28" height="28" />
+    <div class="app-topbar" data-app-brand>
+      <span class="app-brand-mark">
+        <img class="app-brand-mark__icon" src="/assets/brand/favicon.svg" alt="" width="32" height="32" />
+        <strong translate="no">Zwibba</strong>
       </span>
-      <span class="app-brand-mark__copy">
-        <strong>Zwibba</strong>
-        ${subtitle ? `<span>${subtitle}</span>` : ''}
-      </span>
-      ${country ? `<a class="app-brand-mark__country" href="#buy" aria-label="Marché actif : ${escapeAttribute(country.label)}">${country.flag} <span>${escapeHtml(country.label)}</span></a>` : ''}
-      ${badgeLabel ? `<span class="app-brand-mark__badge">${escapeHtml(badgeLabel)}</span>` : ''}
+      ${market}
     </div>
   `;
 }

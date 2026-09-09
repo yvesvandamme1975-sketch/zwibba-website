@@ -7,6 +7,13 @@ import { fileURLToPath } from 'node:url';
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const appStyles = readFileSync(path.join(repoRoot, 'App', 'app.css'), 'utf8');
 
+function readCssBlock(selector) {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = new RegExp(`${escapedSelector}\\s*\\{([\\s\\S]*?)\\n\\}`).exec(appStyles);
+
+  return match?.[1] ?? '';
+}
+
 test('app shell fills the viewport height as a centered column', () => {
   assert.match(
     appStyles,
@@ -25,6 +32,18 @@ test('phone mockup and marketing chrome styles are removed', () => {
 test('buyer chips and bottom navigation have explicit active-state styling', () => {
   assert.match(appStyles, /\.app-home__chip\.is-active\s*\{/);
   assert.match(appStyles, /\.app-tab-shell__nav-item\s*\{[\s\S]*?font-size:\s*0\.82rem;/);
+});
+
+test('buyer category chips keep a stable height across active and empty states', () => {
+  const chipRowBlock = readCssBlock('.app-home__chip-row');
+  const activeChipBlock = readCssBlock('.app-home__chip.is-active');
+
+  assert.match(chipRowBlock, /align-items:\s*center;/);
+  assert.match(
+    appStyles,
+    /\.app-home__chip\s*\{[\s\S]*?box-sizing:\s*border-box;[\s\S]*?display:\s*inline-flex;[\s\S]*?align-items:\s*center;[\s\S]*?justify-content:\s*center;[\s\S]*?min-height:\s*44px;/,
+  );
+  assert.doesNotMatch(activeChipBlock, /(?:padding|min-height|height):/);
 });
 
 test('desktop shell constrains the phone viewport and uses the tab content as the inner scroll area', () => {
