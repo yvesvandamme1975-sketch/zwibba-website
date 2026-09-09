@@ -105,6 +105,29 @@ Expected: RED observe avant correctif (7 echecs de la nouvelle suite), puis PASS
 
 `git commit -m "fix: keep failed route loads stable between renders"`
 
+### Task 3c: Rendre le profil public accessible sans brouillon
+
+Ajout explicite pendant la recette : l'assertion de route a revele que `seller` manquait dans les routes autorisees sans brouillon et redirigeait donc vers capture. Cette correction est necessaire pour verifier et livrer la marque sur le profil public.
+
+**Files:**
+- Modify: `App/utils/post-publish-draft-state.mjs`
+- Modify: `tests/post-publish-draft-state.test.mjs`
+- Modify: ce plan
+
+**Step 1: Write the failing test and minimal fix**
+
+Definir que `seller` reste accessible sans brouillon ; ajouter seulement ce type a l'ensemble existant. Les vrais ecrans de brouillon conservent leur garde.
+
+**Step 2: Verify RED then GREEN**
+
+Run: `node --test tests/post-publish-draft-state.test.mjs`
+
+Expected: nouveau test RED observe (`capture` au lieu de `seller`), puis 7/7 PASS. Refaire la recette de Task 4.
+
+**Step 3: Commit**
+
+`git commit -m "fix: allow public seller browsing without a draft"`
+
 ### Task 4: Verifier et consigner la recette
 
 **Files:**

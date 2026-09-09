@@ -12,6 +12,7 @@ const draftlessAllowedRouteTypes = new Set([
   'phone',
   'profile',
   'sell',
+  'seller',
   'thread',
   'wallet',
 ]);
