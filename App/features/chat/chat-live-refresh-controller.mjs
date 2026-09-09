@@ -1,5 +1,7 @@
 export function createChatLiveRefreshController({
+  counterIntervalMs = 60_000,
   intervalMs = 4_000,
+  isDocumentHiddenFn = () => globalThis.document?.hidden === true,
   setTimeoutFn = globalThis.setTimeout,
   clearTimeoutFn = globalThis.clearTimeout,
 } = {}) {
@@ -16,6 +18,7 @@ export function createChatLiveRefreshController({
   ]);
   let activeConfig = null;
   let activeKey = '';
+  let activeIntervalMs = intervalMs;
   let generation = 0;
   let timerId = null;
   let refreshInFlight = false;
@@ -31,31 +34,49 @@ export function createChatLiveRefreshController({
     generation += 1;
     activeConfig = null;
     activeKey = '';
+    activeIntervalMs = intervalMs;
     refreshInFlight = false;
     clearScheduledRefresh();
   }
 
-  function resolveRouteKey({
+  function resolveRefreshTarget({
+    refreshUnreadMessages,
     route,
     session,
   }) {
     if (!session?.sessionToken) {
-      return '';
+      return null;
     }
 
     if (suspendedRouteTypes.has(route?.type || '')) {
-      return '';
+      return null;
     }
 
     if (route?.type === 'thread' && route.threadId) {
-      return `thread:${route.threadId}`;
+      return {
+        intervalMs,
+        key: `thread:${route.threadId}`,
+        type: 'thread',
+      };
     }
 
     if (route?.type === 'messages') {
-      return 'inbox';
+      return {
+        intervalMs,
+        key: 'inbox',
+        type: 'inbox',
+      };
     }
 
-    return '';
+    if (typeof refreshUnreadMessages === 'function') {
+      return {
+        intervalMs: counterIntervalMs,
+        key: 'unread-counter',
+        type: 'unread-counter',
+      };
+    }
+
+    return null;
   }
 
   function scheduleNextRefresh(expectedGeneration) {
@@ -67,14 +88,23 @@ export function createChatLiveRefreshController({
         return;
       }
 
+      if (isDocumentHiddenFn()) {
+        scheduleNextRefresh(expectedGeneration);
+        return;
+      }
+
       refreshInFlight = true;
 
       try {
-        if (activeConfig.route.type === 'thread' && activeConfig.route.threadId) {
+        if (activeConfig.refreshTarget.type === 'thread' && activeConfig.route.threadId) {
           await activeConfig.refreshThread(activeConfig.route.threadId);
+        } else if (activeConfig.refreshTarget.type === 'unread-counter') {
+          await activeConfig.refreshUnreadMessages();
         } else {
           await activeConfig.refreshInbox();
         }
+      } catch {
+        // Keep polling after transient refresh/render failures.
       } finally {
         refreshInFlight = false;
       }
@@ -82,25 +112,29 @@ export function createChatLiveRefreshController({
       if (expectedGeneration === generation && activeConfig) {
         scheduleNextRefresh(expectedGeneration);
       }
-    }, intervalMs);
+    }, activeIntervalMs);
   }
 
   return {
     stop,
 
     sync(config) {
-      const nextKey = resolveRouteKey(config);
+      const refreshTarget = resolveRefreshTarget(config);
 
-      if (!nextKey) {
+      if (!refreshTarget) {
         stop();
         return;
       }
 
-      activeConfig = config;
+      activeConfig = {
+        ...config,
+        refreshTarget,
+      };
+      activeIntervalMs = refreshTarget.intervalMs;
 
-      if (nextKey !== activeKey) {
+      if (refreshTarget.key !== activeKey) {
         generation += 1;
-        activeKey = nextKey;
+        activeKey = refreshTarget.key;
         refreshInFlight = false;
         scheduleNextRefresh(generation);
         return;

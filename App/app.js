@@ -80,6 +80,7 @@ import {
   captureThreadComposerRenderState,
   restoreThreadComposerRenderState,
 } from './utils/thread-composer-render-state.mjs';
+import { syncUnreadMessagesBadge } from './utils/unread-badge-dom.mjs';
 import {
   captureProfileCityRenderState,
   restoreProfileCityRenderState,
@@ -757,6 +758,34 @@ if (appRoot) {
       });
 
     return state.inboxPromise;
+  }
+
+  async function refreshUnreadMessages() {
+    if (!state.session || state.inboxPromise) {
+      return state.inboxItems;
+    }
+
+    const previousUnreadCount = getTotalUnreadMessages();
+
+    try {
+      const payload = await chatService.fetchInbox({
+        session: state.session,
+      });
+
+      state.inboxItems = payload.items ?? [];
+      state.inboxStatus = 'ready';
+      state.inboxError = '';
+
+      const nextUnreadCount = getTotalUnreadMessages();
+
+      if (nextUnreadCount !== previousUnreadCount) {
+        syncUnreadMessagesBadge(appRoot, nextUnreadCount);
+      }
+    } catch {
+      return state.inboxItems;
+    }
+
+    return state.inboxItems;
   }
 
   async function loadThread(threadId) {
@@ -1487,6 +1516,7 @@ if (appRoot) {
     chatLiveRefreshController.sync({
       refreshInbox: loadInbox,
       refreshThread: loadThread,
+      refreshUnreadMessages,
       route,
       session: state.session,
     });
