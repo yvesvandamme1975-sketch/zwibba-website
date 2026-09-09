@@ -12,20 +12,26 @@ function createFakeTimers() {
       pending.delete(id);
     },
     flushNext() {
-      const [id, callback] = pending.entries().next().value ?? [];
+      const [id, timer] = pending.entries().next().value ?? [];
 
       if (!id) {
         return false;
       }
 
       pending.delete(id);
-      callback();
+      timer.callback();
       return true;
     },
-    setTimeout(callback) {
+    pendingDelays() {
+      return [...pending.values()].map((timer) => timer.delay);
+    },
+    setTimeout(callback, delay) {
       const id = nextId;
       nextId += 1;
-      pending.set(id, callback);
+      pending.set(id, {
+        callback,
+        delay,
+      });
       return id;
     },
   };
@@ -124,6 +130,112 @@ test('thread refresh controller stays quiet on non-message app routes', async ()
   assert.equal(timers.flushNext(), false);
   await Promise.resolve();
   assert.deepEqual(events, []);
+});
+
+test('thread refresh controller refreshes only unread message state on non-message app routes', async () => {
+  const timers = createFakeTimers();
+  const events = [];
+  const controller = createChatLiveRefreshController({
+    clearTimeoutFn: timers.clearTimeout,
+    counterIntervalMs: 120,
+    intervalMs: 10,
+    setTimeoutFn: timers.setTimeout,
+  });
+
+  controller.sync({
+    refreshInbox: async () => {
+      events.push('inbox');
+    },
+    refreshThread: async (threadId) => {
+      events.push(`thread:${threadId}`);
+    },
+    refreshUnreadMessages: async () => {
+      events.push('unread');
+    },
+    route: {
+      type: 'buy',
+    },
+    session: {
+      sessionToken: 'session_live',
+    },
+  });
+
+  assert.deepEqual(timers.pendingDelays(), [120]);
+  assert.equal(timers.flushNext(), true);
+  await Promise.resolve();
+  assert.deepEqual(events, ['unread']);
+});
+
+test('thread refresh controller skips network refresh while the document is hidden', async () => {
+  const timers = createFakeTimers();
+  const events = [];
+  let hidden = true;
+  const controller = createChatLiveRefreshController({
+    clearTimeoutFn: timers.clearTimeout,
+    intervalMs: 10,
+    isDocumentHiddenFn: () => hidden,
+    setTimeoutFn: timers.setTimeout,
+  });
+
+  controller.sync({
+    refreshInbox: async () => {
+      events.push('inbox');
+    },
+    refreshThread: async (threadId) => {
+      events.push(`thread:${threadId}`);
+    },
+    route: {
+      type: 'messages',
+    },
+    session: {
+      sessionToken: 'session_live',
+    },
+  });
+
+  assert.equal(timers.flushNext(), true);
+  await Promise.resolve();
+  assert.deepEqual(events, []);
+
+  hidden = false;
+  assert.equal(timers.flushNext(), true);
+  await Promise.resolve();
+  assert.deepEqual(events, ['inbox']);
+});
+
+test('thread refresh controller keeps polling after a refresh failure', async () => {
+  const timers = createFakeTimers();
+  const events = [];
+  const controller = createChatLiveRefreshController({
+    clearTimeoutFn: timers.clearTimeout,
+    intervalMs: 10,
+    setTimeoutFn: timers.setTimeout,
+  });
+
+  controller.sync({
+    refreshInbox: async () => {
+      events.push('inbox');
+      if (events.length === 1) {
+        throw new Error('temporary failure');
+      }
+    },
+    refreshThread: async (threadId) => {
+      events.push(`thread:${threadId}`);
+    },
+    route: {
+      type: 'messages',
+    },
+    session: {
+      sessionToken: 'session_live',
+    },
+  });
+
+  assert.equal(timers.flushNext(), true);
+  await Promise.resolve();
+  assert.deepEqual(events, ['inbox']);
+
+  assert.equal(timers.flushNext(), true);
+  await Promise.resolve();
+  assert.deepEqual(events, ['inbox', 'inbox']);
 });
 
 test('thread refresh controller stops polling on capture, draft-edit, and profile routes', async () => {
