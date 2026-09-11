@@ -96,7 +96,7 @@ function buildShareButton(detail, { compact = false } = {}) {
     ? 'app-flow__button app-flow__button--icon'
     : 'app-flow__button app-flow__button--share';
 
-  return `
+  const button = `
     <button
       class="${escapeAttribute(className)}"
       type="button"
@@ -111,6 +111,10 @@ function buildShareButton(detail, { compact = false } = {}) {
       ${compact ? '<span aria-hidden="true">↗</span>' : 'Partager'}
     </button>
   `;
+  const storyButton = !compact && detail.storyImageUrl
+    ? button.replace('data-action="open-share-menu"', 'data-action="open-share-menu" data-share-mode="story"').replace('>\n      Partager', '>\n      Partager en story')
+    : '';
+  return button + storyButton;
 }
 
 function buildActionMarkup(action, detail) {

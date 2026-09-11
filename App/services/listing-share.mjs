@@ -39,6 +39,16 @@ export function createListingShareController({
     return prepareImage();
   }
 
+  function start(context, { mode = 'post' } = {}) {
+    void open(context);
+    if (mode === 'story') {
+      state.mode = 'story';
+      changed();
+      return Promise.resolve('menu');
+    }
+    return state.canShareLink ? perform('native-link') : Promise.resolve('menu');
+  }
+
   async function prepareImage() {
     const current = state;
     if (!current?.storyImageUrl) return;
@@ -150,7 +160,7 @@ export function createListingShareController({
   }
 
   return {
-    get state() { return state; }, open, perform, prepareImage,
+    get state() { return state; }, open, start, perform, prepareImage,
     setMode(mode) { if (state && !state.busy) { state.mode = mode === 'story' ? 'story' : 'post'; changed(); } },
     close() { preparationAbort?.abort(); state = null; preparedFile = null; changed(); },
   };

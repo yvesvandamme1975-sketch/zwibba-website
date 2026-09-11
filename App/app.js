@@ -2693,12 +2693,16 @@ if (appRoot) {
     shareReturnTarget = { slug: trigger.dataset.shareSlug || '', index: candidates.indexOf(trigger) };
     const detail = buyerBrowseController.state.detail;
     const matchingDetail = detail?.slug === trigger.dataset.shareSlug ? detail : null;
-    void shareController.open({
+    const pending = shareController.start({
       slug: trigger.dataset.shareSlug || '',
       title: trigger.dataset.shareTitle || matchingDetail?.title || 'Annonce Zwibba',
       url: trigger.dataset.shareUrl || trigger.dataset.listingUrl || '',
       storyImageUrl: trigger.dataset.storyImageUrl || matchingDetail?.storyImageUrl || '',
       primaryImageUrl: trigger.dataset.shareImageUrl || matchingDetail?.primaryImageUrl || '',
+    }, { mode: trigger.dataset.shareMode });
+    const openedMenu = shareController.state;
+    void pending.then(result => {
+      if (shareController.state === openedMenu && ['handed-off', 'cancelled'].includes(result)) closeShareMenu();
     });
   }
 

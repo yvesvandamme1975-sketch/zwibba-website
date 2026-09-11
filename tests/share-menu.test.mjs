@@ -7,29 +7,12 @@ test('renderShareMenu returns nothing when closed', () => {
   assert.equal(renderShareMenu(null), '');
 });
 
-test('renderShareMenu renders WhatsApp, Facebook, Instagram, TikTok and copy options', () => {
-  const html = renderShareMenu({
-    slug: 'mon-annonce',
-    title: 'Belle annonce',
-    url: '/annonce/mon-annonce/',
-    storyImageUrl: 'https://r2/l1/story.png',
-  });
-
-  assert.match(html, /data-action="share-whatsapp-chat"/);
-  assert.match(html, /data-action="share-facebook"/);
-  assert.match(html, /data-action="share-instagram"/);
-  assert.match(html, /data-action="share-tiktok"/);
+test('share menu delegates destination choice to the phone and keeps copy fallback', () => {
+  const html = renderShareMenu({slug: 'mon-annonce', title: 'Belle annonce', url: '/annonce/mon-annonce/', canShareLink: true});
+  assert.match(html, /data-action="share-native-link"/);
   assert.match(html, /data-action="copy-listing-link"/);
   assert.match(html, /data-action="close-share-menu"/);
-  assert.match(html, /data-action="share-menu-sheet"/);
-
-  // Listing context is carried on the options for the share handlers.
-  assert.match(html, /data-listing-url="\/annonce\/mon-annonce\/"/);
-  assert.match(html, /data-story-image-url="https:\/\/r2\/l1\/story\.png"/);
-
-  assert.match(html, />WhatsApp</);
-  assert.match(html, />Instagram</);
-  assert.match(html, />TikTok</);
+  assert.doesNotMatch(html, /data-action="share-(?:whatsapp-chat|facebook|instagram|tiktok)"/);
 });
 
 test('renderShareMenu exposes a post/story mode toggle', () => {
