@@ -47,10 +47,7 @@ export function renderShareMenu(menu = null) {
           <button type="button" class="app-share-menu__seg${mode === 'story' ? ' app-share-menu__seg--active' : ''}" data-action="share-mode-story" aria-pressed="${escapeAttribute(mode === 'story')}" ${menu.busy ? 'disabled' : ''}>En story</button>
         </div>
         <div class="app-share-menu__options">
-          ${menu.canShareLink ? button('share-native-link', 'link', 'Partager avec une application…') : ''}
-          ${mode === 'post' ? button('share-whatsapp-chat', 'whatsapp', 'WhatsApp') + button('share-facebook', 'facebook', 'Facebook') : ''}
-          ${button('share-instagram', 'instagram', 'Instagram')}
-          ${button('share-tiktok', 'tiktok', 'TikTok')}
+          ${menu.canShareLink ? button('share-native-link', 'link', mode === 'story' ? 'Partager le lien…' : 'Partager avec une application…') : ''}
           ${mode === 'story' && menu.imageStatus === 'ready' ?
             (menu.canShareImage ? button('share-native-image', 'link', 'Partager l’image…') : '') +
             button('download-story-image', 'link', 'Enregistrer l’image') : ''}

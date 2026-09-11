@@ -145,3 +145,23 @@ test('only public same-origin listing URLs can be shared', async () => {
   controller.close();
   assert.equal(controller.state, null);
 });
+
+
+test('primary entry opens the native sheet synchronously without waiting for the story image', async () => {
+  const { controller, calls } = setup({ fetchFn: (_url, { signal }) => new Promise((_resolve, reject) => signal.addEventListener('abort', () => reject(new Error('aborted')))) });
+  const result = controller.start({ slug: 'velo', title: 'Vélo', storyImageUrl: 'https://cdn.example/story.png' });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][1].url, 'https://zwibba.com/annonce/velo/');
+  assert.equal(await result, 'handed-off');
+  controller.close();
+});
+
+test('story entry waits for a separate user share action; unsupported entry keeps the menu', async () => {
+  const { controller, calls } = setup();
+  assert.equal(await controller.start({slug: 'velo'}, {mode: 'story'}), 'menu');
+  assert.equal(controller.state.mode, 'story');
+  assert.deepEqual(calls, []);
+  const unsupported = setup({navigatorObject: {}}).controller;
+  assert.equal(await unsupported.start({slug: 'velo'}), 'menu');
+  assert.ok(unsupported.state);
+});
