@@ -172,3 +172,6 @@ Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or 
 
 - [Impeccable UI reliability design](2026-09-08-zwibba-impeccable-ui-design.md)
 - [Impeccable UI reliability implementation](2026-09-08-zwibba-impeccable-ui-implementation.md)
+
+- [Xavier email corrections design](2026-09-11-zwibba-xavier-email-corrections-design.md)
+- [Xavier email corrections implementation](2026-09-11-zwibba-xavier-email-corrections-implementation.md)
