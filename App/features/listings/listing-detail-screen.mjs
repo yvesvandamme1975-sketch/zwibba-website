@@ -117,18 +117,18 @@ function buildShareButton(detail, { compact = false } = {}) {
   return button + storyButton;
 }
 
-function buildActionMarkup(action, detail) {
+function buildActionMarkup(action, detail, contactBusy = false) {
   switch (action) {
     case 'message':
       return `
         <button
           class="app-flow__button"
           type="button"
-          data-action="start-thread"
+          data-action="start-thread" ${contactBusy ? 'disabled aria-busy="true"' : ''}
           data-listing-id="${escapeAttribute(detail.id)}"
           data-listing-slug="${escapeAttribute(detail.slug)}"
         >
-          Envoyer un message
+          ${contactBusy ? 'Ouverture…' : 'Envoyer un message'}
         </button>
       `;
     case 'whatsapp': {
@@ -475,6 +475,8 @@ function renderReviewForm(detail) {
 export function renderListingDetailScreen({
   detail = null,
   errorMessage = '',
+  contactBusy = false,
+  contactError = '',
   selectedImageIndex = 0,
   state = 'loading',
 } = {}) {
@@ -559,6 +561,7 @@ export function renderListingDetailScreen({
         detail.viewerRole === 'owner'
           ? renderOwnerLifecycleCard(detail)
           : `
+            ${contactError ? `<p class="app-flow__error" role="alert">${escapeHtml(contactError)}</p><a href="#messages">Mes messages</a>` : ''}
             <div class="app-flow__actions" data-contact-actions="${escapeAttribute(detail.contactActions.join(','))}">
               ${['message', 'whatsapp', 'call']
                 .filter((action) =>
@@ -566,7 +569,7 @@ export function renderListingDetailScreen({
                     ? Boolean(detail.id)
                     : detail.contactActions.includes(action),
                 )
-                .map((action) => buildActionMarkup(action, detail))
+                .map((action) => buildActionMarkup(action, detail, contactBusy))
                 .join('')}
               ${buildShareButton(detail, { compact: false })}
             </div>

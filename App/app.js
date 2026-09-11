@@ -1,3 +1,4 @@
+import { createThreadStarter } from './services/thread-start.mjs';
 import { renderAppTabShell } from './components/app-tab-shell.mjs';
 import {
   conditionOptions,
@@ -1269,6 +1270,8 @@ if (appRoot) {
         return renderListingDetailScreen({
           detail: buyerBrowseController.state.detail,
           errorMessage: buyerBrowseController.state.detailError,
+          contactBusy: threadStarter.state.busy,
+          contactError: threadStarter.state.listingId === buyerBrowseController.state.detail?.id ? threadStarter.state.error : '',
           selectedImageIndex: state.selectedListingImageIndex,
           state: buyerBrowseController.state.detailStatus,
         });
@@ -1848,6 +1851,8 @@ if (appRoot) {
     }
   }
 
+  const threadStarter = createThreadStarter({ createThread: context => chatService.createThread(context), onChange: () => renderApp() });
+
   async function openThreadFromListing({
     listingId,
     listingSlug = '',
@@ -1856,10 +1861,18 @@ if (appRoot) {
       return;
     }
 
-    const thread = await chatService.createThread({
-      listingId,
-      session: state.session,
-    });
+    const result = await threadStarter.start({ listingId, session: state.session });
+    if (result.status === 'auth-required') {
+      authService.clearSession();
+      state.session = null;
+      beginAuthIntent({ listingId, listingSlug, type: 'message', returnRoute: `#listing/${encodeURIComponent(listingSlug)}` });
+    }
+    if (result.status === 'terms-required') {
+      state.legalStatusStatus = 'idle';
+      void loadLegalStatus();
+    }
+    if (result.status !== 'ready') return;
+    const thread = result.thread;
 
     state.thread = thread;
     state.threadStatus = 'ready';

@@ -25,18 +25,22 @@ try {
     await page.waitForLoadState('networkidle');
     await page.locator('[data-action="open-share-menu"]').first().click();
     const dialog = page.getByRole('dialog', { name: 'Partager l’annonce' });
+    await page.waitForFunction(() => window.shareCalls.length === 1);
+    await dialog.waitFor({ state: 'detached' });
+    assert.equal(await page.locator('[inert]').count(), 0);
+    // Unsupported native sharing keeps the accessible copy fallback.
+    await page.evaluate(() => Object.defineProperty(navigator, 'share', { configurable: true, value: undefined }));
+    // The controller holds navigator itself, so capability is checked at entry.
+    await page.locator('[data-action="open-share-menu"]').first().click();
     await dialog.waitFor();
     assert.equal(await page.evaluate(() => Boolean(document.activeElement.closest('[role="dialog"]'))), true);
-    await page.getByRole('button', { name: 'Partager avec une application…' }).click();
-    assert.equal(await page.evaluate(() => window.shareCalls.length), 1);
-    assert.equal(await page.evaluate(() => document.activeElement.dataset.action), 'share-native-link');
     await page.getByRole('button', { name: 'Copier le lien', exact: true }).click();
     await page.locator('[data-share-manual]').waitFor();
     assert.match(await page.locator('[data-share-manual]').inputValue(), /\/annonce\/velo-test\/$/);
     assert.doesNotMatch(await dialog.innerText(), /Lien copié/);
     await page.locator('[data-share-announcement]').filter({ hasText: 'La copie automatique' }).waitFor({ state: 'attached' });
-    await page.getByRole('button', { name: 'Instagram', exact: true }).click();
-    assert.match(await dialog.innerText(), /Ouvrez ensuite Instagram/);
+    assert.equal(await page.getByRole('button', { name: 'Instagram', exact: true }).count(), 0);
+    await page.getByRole('button', { name: 'En story', exact: true }).click();
     assert.match(await dialog.innerText(), /Copier la légende/);
     await page.screenshot({ path: `/private/tmp/zwibba-sharing-${width}.png`, animations: 'disabled' });
     const bounds = await dialog.boundingBox();
@@ -53,7 +57,7 @@ try {
     assert.equal(await page.locator('[inert]').count(), 0);
     assert.deepEqual(errors, []);
     await page.close();
-    console.log(`PASS sharing browser ${width}px: cancel, clipboard fallback, instructions, keyboard, focus restoration`);
+    console.log(`PASS sharing browser ${width}px: direct native cancel, clipboard fallback, story fallback, keyboard, focus restoration`);
   }
 } finally {
   await browser.close();

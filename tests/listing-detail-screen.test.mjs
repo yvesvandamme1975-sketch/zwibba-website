@@ -604,4 +604,6 @@ test('listing detail screen renders a share button inside the owner card when ed
   }});
   assert.match(html, /data-share-mode="story"/);
   assert.match(html, /Partager en story/);
+  assert.match(html, /role="alert"[^>]*>&lt;échec&gt;/);
+  assert.match(html, /data-action="start-thread"[^>]*disabled/);
 });
