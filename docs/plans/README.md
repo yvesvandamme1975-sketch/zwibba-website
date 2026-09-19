@@ -178,3 +178,6 @@ Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or 
 
 - [Xavier email corrections design](2026-09-11-zwibba-xavier-email-corrections-design.md)
 - [Xavier email corrections implementation](2026-09-11-zwibba-xavier-email-corrections-implementation.md)
+
+- [Social image sharing design](2026-09-20-zwibba-social-image-sharing-design.md)
+- [Social image sharing implementation](2026-09-20-zwibba-social-image-sharing-implementation.md)
