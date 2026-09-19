@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../database/prisma.service';
+import { listingLifecycleStatuses, resolveLifecycleStatus } from '../listings/listing-lifecycle';
 import { R2StorageService } from '../media/r2-storage.service';
 import { composeLinkImage, composeStoryImage } from './compose-story-image';
 
@@ -48,9 +49,10 @@ export class StoryImageService {
   async generateLinkImageForListing(listingId: string): Promise<LinkImageRegeneration> {
     const { listing, imageInput } = await this.loadComposeInput(listingId);
     const previousShareImageUrl = listing.shareImageUrl ?? null;
-    const moderationStatus = (listing as { moderationStatus?: string }).moderationStatus ?? '';
-    if (moderationStatus !== 'approved') {
-      throw new Error(`listing_not_approved: ${listing.id}`);
+    // Scope limitation, not a lifecycle change: only listings the public can
+    // open today (approved, active, not deleted by the seller) get a preview.
+    if (!isPubliclyVisibleForLinkImage(listing)) {
+      throw new Error(`listing_not_public: ${listing.id}`);
     }
     const landscapeBuffer = await composeLinkImage(imageInput);
     // Content-addressed object: a concurrent regeneration can never overwrite
@@ -60,7 +62,14 @@ export class StoryImageService {
     // Compare-and-set on everything the backfill relies on. `updatedAt` alone is
     // not enough because other backfills preserve it on purpose.
     const written = await this.prismaService.listing.updateMany({
-      where: { id: listing.id, updatedAt: listing.updatedAt, shareImageUrl: previousShareImageUrl, moderationStatus: 'approved' },
+      where: {
+        id: listing.id,
+        updatedAt: listing.updatedAt,
+        shareImageUrl: previousShareImageUrl,
+        moderationStatus: 'approved',
+        lifecycleStatus: listingLifecycleStatuses.active,
+        deletedBySellerAt: null,
+      },
       data: { shareImageUrl, updatedAt: listing.updatedAt },
     });
     if (written.count !== 1) {
@@ -136,6 +145,19 @@ export interface LinkImageRegeneration {
   storyImageUrl: string | null;
   updatedAt: Date;
   bytes: number;
+}
+
+/** Mirrors `isPubliclyVisibleListing` (approved + active) plus the seller-deletion mark. */
+export function isPubliclyVisibleForLinkImage(listing: {
+  moderationStatus?: string | null;
+  lifecycleStatus?: string | null;
+  deletedBySellerAt?: Date | null;
+}): boolean {
+  return (
+    listing.moderationStatus === 'approved' &&
+    resolveLifecycleStatus(listing) === listingLifecycleStatuses.active &&
+    !listing.deletedBySellerAt
+  );
 }
 
 /** True when a listing already serves the current branded link preview. */

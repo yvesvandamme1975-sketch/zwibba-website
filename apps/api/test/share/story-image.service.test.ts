@@ -91,7 +91,7 @@ test('generateLinkImageForListing regenerates only the link preview, never story
   const updatedAt = new Date('2026-09-01T10:00:00Z');
   const updateMany: any[] = [];
   const previous = 'https://r2.example.com/listings/l1/share.png';
-  const listing = { id: 'l1', draftId: 'd1', title: 'Bague', area: 'Gombe', priceAmount: 80000, priceCurrency: 'CDF', updatedAt, moderationStatus: 'approved', storyImageUrl: 'https://r2.example.com/listings/l1/story.png', shareImageUrl: previous };
+  const listing = { id: 'l1', draftId: 'd1', title: 'Bague', area: 'Gombe', priceAmount: 80000, priceCurrency: 'CDF', updatedAt, moderationStatus: 'approved', lifecycleStatus: 'active', deletedBySellerAt: null, storyImageUrl: 'https://r2.example.com/listings/l1/story.png', shareImageUrl: previous };
   mocks.prismaService.listing.findUnique = async () => listing;
   (mocks.prismaService.listing as any).updateMany = async (args: any) => { updateMany.push(args); return { count: 1 }; };
   const service = new StoryImageService(mocks.prismaService as any, mocks.r2StorageService as any, { fetchImpl: mocks.fetchImpl as any });
@@ -104,7 +104,7 @@ test('generateLinkImageForListing regenerates only the link preview, never story
   assert.equal(mocks.r2Puts[0].contentType, 'image/jpeg');
   assert.equal(mocks.updates.length, 0, 'no unconditional update');
   assert.equal(updateMany.length, 1);
-  assert.deepEqual(updateMany[0].where, { id: 'l1', updatedAt, shareImageUrl: previous, moderationStatus: 'approved' });
+  assert.deepEqual(updateMany[0].where, { id: 'l1', updatedAt, shareImageUrl: previous, moderationStatus: 'approved', lifecycleStatus: 'active', deletedBySellerAt: null });
   assert.deepEqual(Object.keys(updateMany[0].data).sort(), ['shareImageUrl', 'updatedAt']);
   assert.equal(updateMany[0].data.updatedAt.getTime(), updatedAt.getTime(), 'updatedAt preserved so the feed order does not change');
   assert.equal(result.previousShareImageUrl, previous);
@@ -113,12 +113,24 @@ test('generateLinkImageForListing regenerates only the link preview, never story
   assert.equal(result.bytes, mocks.r2Puts[0].body.length);
 });
 
-test('generateLinkImageForListing refuses non-approved listings before any upload', async () => {
-  const mocks = buildMocks();
-  mocks.prismaService.listing.findUnique = async () => ({ id: 'l1', draftId: 'd1', title: 'Bague', area: 'Gombe', priceAmount: 1, priceCurrency: 'EUR', updatedAt: new Date(), moderationStatus: 'pending', shareImageUrl: null });
-  const service = new StoryImageService(mocks.prismaService as any, mocks.r2StorageService as any, { fetchImpl: mocks.fetchImpl as any });
-  await assert.rejects(() => service.generateLinkImageForListing('l1'), /listing_not_approved/);
-  assert.equal(mocks.r2Puts.length, 0);
+test('generateLinkImageForListing refuses listings that are not publicly visible, before any upload', async () => {
+  const base = { id: 'l1', draftId: 'd1', title: 'Bague', area: 'Gombe', priceAmount: 1, priceCurrency: 'EUR', updatedAt: new Date(), shareImageUrl: null, deletedBySellerAt: null };
+  const cases = [
+    { moderationStatus: 'pending', lifecycleStatus: 'active' },
+    { moderationStatus: 'approved', lifecycleStatus: 'sold' },
+    { moderationStatus: 'approved', lifecycleStatus: 'paused' },
+    { moderationStatus: 'approved', lifecycleStatus: 'deleted_by_seller' },
+    { moderationStatus: 'approved', lifecycleStatus: 'active', deletedBySellerAt: new Date() },
+  ];
+  for (const variant of cases) {
+    const mocks = buildMocks();
+    mocks.prismaService.listing.findUnique = async () => ({ ...base, ...variant });
+    (mocks.prismaService.listing as any).updateMany = async () => { throw new Error('must not be reached'); };
+    const service = new StoryImageService(mocks.prismaService as any, mocks.r2StorageService as any, { fetchImpl: mocks.fetchImpl as any });
+    await assert.rejects(() => service.generateLinkImageForListing('l1'), /listing_not_public/, JSON.stringify(variant));
+    assert.equal(mocks.r2Puts.length, 0, `no upload for ${JSON.stringify(variant)}`);
+    assert.equal(mocks.updates.length, 0);
+  }
 });
 
 test('a concurrent change leaves the referenced object and the database URL untouched', async () => {
@@ -127,7 +139,7 @@ test('a concurrent change leaves the referenced object and the database URL unto
   const referenced = 'https://r2.example.com/listings/l1/share-v2-0123456789abcdef.jpg';
   // Simulates a newer generation that already landed between our read and write.
   const db = { shareImageUrl: referenced, updatedAt };
-  mocks.prismaService.listing.findUnique = async () => ({ id: 'l1', draftId: 'd1', title: 'Bague', area: 'Gombe', priceAmount: 80000, priceCurrency: 'CDF', updatedAt, moderationStatus: 'approved', shareImageUrl: 'https://r2.example.com/listings/l1/share.png' });
+  mocks.prismaService.listing.findUnique = async () => ({ id: 'l1', draftId: 'd1', title: 'Bague', area: 'Gombe', priceAmount: 80000, priceCurrency: 'CDF', updatedAt, moderationStatus: 'approved', lifecycleStatus: 'active', deletedBySellerAt: null, shareImageUrl: 'https://r2.example.com/listings/l1/share.png' });
   (mocks.prismaService.listing as any).updateMany = async (args: any) => {
     const matches = args.where.shareImageUrl === db.shareImageUrl && args.where.updatedAt.getTime() === db.updatedAt.getTime();
     if (matches) db.shareImageUrl = args.data.shareImageUrl;
