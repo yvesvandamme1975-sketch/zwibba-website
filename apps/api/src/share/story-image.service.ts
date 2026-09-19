@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { Inject, Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../database/prisma.service';
@@ -13,6 +15,81 @@ export class StoryImageService {
   ) {}
 
   async generateAndStoreForListing(listingId: string): Promise<{ storyImageUrl: string; shareImageUrl: string }> {
+    const { listing, imageInput } = await this.loadComposeInput(listingId);
+    const pngBuffer = await composeStoryImage(imageInput);
+    const landscapeBuffer = await composeLinkImage(imageInput);
+
+    const objectKey = `listings/${listingId}/story.png`;
+    const { publicUrl } = await this.r2StorageService.putBuffer({
+      body: pngBuffer,
+      contentType: 'image/png',
+      objectKey,
+    });
+    const shareImageUrl = await this.uploadLinkImage(listing.id, landscapeBuffer);
+
+    await this.prismaService.listing.update({
+      where: { id: listingId },
+      data: { storyImageUrl: publicUrl, shareImageUrl },
+    });
+
+    return { storyImageUrl: publicUrl, shareImageUrl };
+  }
+
+  /**
+   * Regenerates ONLY the link preview (`share-v2-<hash>.jpg`) of an approved
+   * listing. `story.png` is neither rendered nor touched. The object key is
+   * content-addressed, so no referenced object is ever overwritten, and the
+   * database write is a compare-and-set on `updatedAt`, the previous
+   * `shareImageUrl` and the approved status: a listing changed between the
+   * read and the write is left untouched and reported. `updatedAt` is
+   * preserved so the browse feed order does not change. Used by the bounded
+   * backfill, whose manifest keeps `previousShareImageUrl` for rollback.
+   */
+  async generateLinkImageForListing(listingId: string): Promise<LinkImageRegeneration> {
+    const { listing, imageInput } = await this.loadComposeInput(listingId);
+    const previousShareImageUrl = listing.shareImageUrl ?? null;
+    const moderationStatus = (listing as { moderationStatus?: string }).moderationStatus ?? '';
+    if (moderationStatus !== 'approved') {
+      throw new Error(`listing_not_approved: ${listing.id}`);
+    }
+    const landscapeBuffer = await composeLinkImage(imageInput);
+    // Content-addressed object: a concurrent regeneration can never overwrite
+    // an object that the database already references.
+    const shareImageUrl = await this.uploadLinkImage(listing.id, landscapeBuffer);
+
+    // Compare-and-set on everything the backfill relies on. `updatedAt` alone is
+    // not enough because other backfills preserve it on purpose.
+    const written = await this.prismaService.listing.updateMany({
+      where: { id: listing.id, updatedAt: listing.updatedAt, shareImageUrl: previousShareImageUrl, moderationStatus: 'approved' },
+      data: { shareImageUrl, updatedAt: listing.updatedAt },
+    });
+    if (written.count !== 1) {
+      throw new Error(`listing_changed_concurrently: ${listing.id}`);
+    }
+
+    return {
+      id: listing.id,
+      previousShareImageUrl,
+      shareImageUrl,
+      storyImageUrl: listing.storyImageUrl ?? null,
+      updatedAt: listing.updatedAt,
+      bytes: landscapeBuffer.length,
+    };
+  }
+
+  private async uploadLinkImage(listingId: string, landscapeBuffer: Buffer): Promise<string> {
+    // Versioned, content-addressed key: Facebook and WhatsApp cache previews per
+    // URL, so a new design must be served from a new address; and identical
+    // bytes map to the same key, so concurrent writers never clobber each other.
+    const { publicUrl } = await this.r2StorageService.putBuffer({
+      body: landscapeBuffer,
+      contentType: 'image/jpeg',
+      objectKey: `listings/${listingId}/${linkImageFilename(landscapeBuffer)}`,
+    });
+    return publicUrl;
+  }
+
+  private async loadComposeInput(listingId: string) {
     const listing = await this.prismaService.listing.findUnique({ where: { id: listingId } });
     if (!listing) {
       throw new Error(`Listing ${listingId} not found`);
@@ -39,28 +116,31 @@ export class StoryImageService {
       zoneLabel: (listing as { zoneLabel?: string | null }).zoneLabel ?? listing.area ?? '',
       priceLabel: formatSharePrice(listing.priceAmount, listing.priceCurrency),
     };
-    const pngBuffer = await composeStoryImage(imageInput);
-    const landscapeBuffer = await composeLinkImage(imageInput);
-
-    const objectKey = `listings/${listingId}/story.png`;
-    const { publicUrl } = await this.r2StorageService.putBuffer({
-      body: pngBuffer,
-      contentType: 'image/png',
-      objectKey,
-    });
-    const { publicUrl: shareImageUrl } = await this.r2StorageService.putBuffer({
-      body: landscapeBuffer,
-      contentType: 'image/png',
-      objectKey: `listings/${listingId}/share.png`,
-    });
-
-    await this.prismaService.listing.update({
-      where: { id: listingId },
-      data: { storyImageUrl: publicUrl, shareImageUrl },
-    });
-
-    return { storyImageUrl: publicUrl, shareImageUrl };
+    return { listing, imageInput };
   }
+}
+
+/** Design version of the branded link preview; bump when the design changes. */
+export const LINK_IMAGE_VERSION = 'share-v2';
+const LINK_IMAGE_FILENAME_PATTERN = new RegExp(`/${LINK_IMAGE_VERSION}-[a-f0-9]{16}\\.jpg$`);
+
+/** Content-addressed file name: `share-v2-<sha256 prefix>.jpg`. */
+export function linkImageFilename(bytes: Buffer): string {
+  return `${LINK_IMAGE_VERSION}-${createHash('sha256').update(bytes).digest('hex').slice(0, 16)}.jpg`;
+}
+
+export interface LinkImageRegeneration {
+  id: string;
+  previousShareImageUrl: string | null;
+  shareImageUrl: string;
+  storyImageUrl: string | null;
+  updatedAt: Date;
+  bytes: number;
+}
+
+/** True when a listing already serves the current branded link preview. */
+export function hasCurrentLinkImage(shareImageUrl: string | null | undefined): boolean {
+  return typeof shareImageUrl === 'string' && LINK_IMAGE_FILENAME_PATTERN.test(shareImageUrl);
 }
 
 const PUBLIC_APP_BASE_URL = 'https://zwibba.com';
