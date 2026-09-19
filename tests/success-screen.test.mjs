@@ -44,6 +44,12 @@ test('success screen embeds the story image URL when present', () => {
   assert.match(html, /data-story-image-url="https:\/\/r2\/l1\/story\.png"/);
 });
 
+test('success screen keeps the story mode of the share sheet through an explicit context', () => {
+  const html = renderSuccessScreen(buildApprovedContext({ storyImageUrl: 'https://r2/l1/story.png' }));
+  const shareButton = html.match(/<button[^>]*data-action="open-share-menu"[^>]*>/s)?.[0] ?? '';
+  assert.match(shareButton, /data-share-context="success"/);
+});
+
 test('success screen renders unified share button even without a story image', () => {
   const html = renderSuccessScreen(buildApprovedContext({ storyImageUrl: '' }));
   assert.match(html, /data-action="open-share-menu"/);

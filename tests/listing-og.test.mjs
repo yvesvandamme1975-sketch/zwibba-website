@@ -20,6 +20,7 @@ test('uses the landscape image and neutral title without cropping the story', ()
   });
   assert.match(html, /property="og:image" content="https:\/\/r2\/listings\/l1\/share\.png"/);
   assert.match(html, /property="og:image:width" content="1200"/);
+  assert.match(html, /property="og:image:type" content="image\/png"/);
   assert.match(html, /property="og:title" content="Bague or blanc \| Zwibba"/);
   assert.match(
     html,
@@ -27,6 +28,17 @@ test('uses the landscape image and neutral title without cropping the story', ()
   );
   assert.match(html, /Gombe, Kinshasa/);
   assert.match(html, /80\s?000/);
+});
+
+test('branded v2 preview is declared as a 1200x630 JPEG for the crawlers', () => {
+  const html = buildListingOgTags({
+    listing: { slug: 'x', title: 'X', priceAmount: 1, priceCurrency: 'EUR', shareImageUrl: 'https://r2/listings/l1/share-v2.jpg' },
+    baseUrl: 'https://zwibba.com',
+  });
+  assert.match(html, /property="og:image" content="https:\/\/r2\/listings\/l1\/share-v2\.jpg"/);
+  assert.match(html, /property="og:image:type" content="image\/jpeg"/);
+  assert.match(html, /property="og:image:width" content="1200"/);
+  assert.match(html, /property="og:image:height" content="630"/);
 });
 
 test('falls back to the raw photo (raster, never svg) when no story image', () => {

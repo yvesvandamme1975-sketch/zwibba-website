@@ -597,13 +597,16 @@ test('listing detail screen renders a share button inside the owner card when ed
   assert.match(html, /data-share-slug="radio-vintage-kinshasa"/);
 });
 
- test('story entry is distinct from link sharing', () => {
+ test('listing menu offers a single share entry, never a story entry', () => {
   const html = renderListingDetailScreen({ state: 'ready', contactBusy: true, contactError: '<échec>', detail: {
     id: 'fixture', slug: 'fixture', title: 'Fixture', contactActions: ['message'], safetyTips: [],
     seller: { name: 'Vendeur' }, storyImageUrl: 'https://example.com/story.png',
   }});
-  assert.match(html, /data-share-mode="story"/);
-  assert.match(html, /Partager en story/);
+  assert.doesNotMatch(html, /data-share-mode="story"/);
+  assert.doesNotMatch(html, /Partager en story/);
+  assert.doesNotMatch(html, /data-share-context="success"/);
+  assert.equal(html.match(/data-action="open-share-menu"/g).length, 1);
+  assert.match(html, /data-story-image-url="https:\/\/example\.com\/story\.png"/);
   assert.match(html, /role="alert"[^>]*>&lt;échec&gt;/);
   assert.match(html, /data-action="start-thread"[^>]*disabled/);
 });

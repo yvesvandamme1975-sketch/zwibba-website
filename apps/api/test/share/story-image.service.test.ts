@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import test from 'node:test';
 
-import { StoryImageService, formatSharePrice } from '../../src/share/story-image.service';
+import { StoryImageService, formatSharePrice, hasCurrentLinkImage, linkImageFilename } from '../../src/share/story-image.service';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PHOTO_BUFFER = readFileSync(path.resolve(__dirname, '../fixtures/sample-product.png'));
@@ -68,14 +68,90 @@ test('generateAndStoreForListing composes, uploads, and persists the URL', async
 
   assert.match(result.storyImageUrl, /listings\/l1\/story\.png$/);
   assert.equal(mocks.r2Puts.length, 2);
-  assert.equal(mocks.r2Puts[1].objectKey, 'listings/l1/share.png');
-  assert.match(mocks.updates[0].data.shareImageUrl, /share\.png/);
+  // Versioned, content-addressed key: Facebook and WhatsApp cache previews per
+  // URL, so a new design must live at a new address; the hash makes the object
+  // immutable. JPEG keeps the preview under 300 KB.
+  assert.match(mocks.r2Puts[1].objectKey, /^listings\/l1\/share-v2-[a-f0-9]{16}\.jpg$/);
+  assert.equal(mocks.r2Puts[1].objectKey, `listings/l1/${linkImageFilename(mocks.r2Puts[1].body)}`);
+  assert.equal(mocks.r2Puts[1].contentType, 'image/jpeg');
+  assert.match(mocks.updates[0].data.shareImageUrl, /listings\/l1\/share-v2-[a-f0-9]{16}\.jpg$/);
+  assert.equal(hasCurrentLinkImage(mocks.updates[0].data.shareImageUrl), true);
+  assert.equal(hasCurrentLinkImage('https://r2/listings/l1/share.png'), false);
+  assert.equal(hasCurrentLinkImage(null), false);
   assert.equal(mocks.r2Puts[0].objectKey, 'listings/l1/story.png');
   assert.equal(mocks.r2Puts[0].contentType, 'image/png');
   assert.equal(mocks.updates.length, 1);
   assert.equal(mocks.updates[0].where.id, 'l1');
   assert.match(mocks.updates[0].data.storyImageUrl, /listings\/l1\/story\.png$/);
   assert.equal(mocks.fetchedUrls[0], 'https://cdn.example.com/photo.jpg');
+});
+
+test('generateLinkImageForListing regenerates only the link preview, never story.png, with a full compare-and-set', async () => {
+  const mocks = buildMocks();
+  const updatedAt = new Date('2026-09-01T10:00:00Z');
+  const updateMany: any[] = [];
+  const previous = 'https://r2.example.com/listings/l1/share.png';
+  const listing = { id: 'l1', draftId: 'd1', title: 'Bague', area: 'Gombe', priceAmount: 80000, priceCurrency: 'CDF', updatedAt, moderationStatus: 'approved', lifecycleStatus: 'active', deletedBySellerAt: null, storyImageUrl: 'https://r2.example.com/listings/l1/story.png', shareImageUrl: previous };
+  mocks.prismaService.listing.findUnique = async () => listing;
+  (mocks.prismaService.listing as any).updateMany = async (args: any) => { updateMany.push(args); return { count: 1 }; };
+  const service = new StoryImageService(mocks.prismaService as any, mocks.r2StorageService as any, { fetchImpl: mocks.fetchImpl as any });
+
+  const result = await service.generateLinkImageForListing('l1');
+
+  assert.equal(mocks.r2Puts.length, 1, 'story.png is not re-rendered nor re-uploaded');
+  assert.match(mocks.r2Puts[0].objectKey, /^listings\/l1\/share-v2-[a-f0-9]{16}\.jpg$/);
+  assert.equal(mocks.r2Puts[0].objectKey, `listings/l1/${linkImageFilename(mocks.r2Puts[0].body)}`, 'object key is derived from the bytes');
+  assert.equal(mocks.r2Puts[0].contentType, 'image/jpeg');
+  assert.equal(mocks.updates.length, 0, 'no unconditional update');
+  assert.equal(updateMany.length, 1);
+  assert.deepEqual(updateMany[0].where, { id: 'l1', updatedAt, shareImageUrl: previous, moderationStatus: 'approved', lifecycleStatus: 'active', deletedBySellerAt: null });
+  assert.deepEqual(Object.keys(updateMany[0].data).sort(), ['shareImageUrl', 'updatedAt']);
+  assert.equal(updateMany[0].data.updatedAt.getTime(), updatedAt.getTime(), 'updatedAt preserved so the feed order does not change');
+  assert.equal(result.previousShareImageUrl, previous);
+  assert.match(result.shareImageUrl, /listings\/l1\/share-v2-[a-f0-9]{16}\.jpg$/);
+  assert.equal(result.storyImageUrl, 'https://r2.example.com/listings/l1/story.png');
+  assert.equal(result.bytes, mocks.r2Puts[0].body.length);
+});
+
+test('generateLinkImageForListing refuses listings that are not publicly visible, before any upload', async () => {
+  const base = { id: 'l1', draftId: 'd1', title: 'Bague', area: 'Gombe', priceAmount: 1, priceCurrency: 'EUR', updatedAt: new Date(), shareImageUrl: null, deletedBySellerAt: null };
+  const cases = [
+    { moderationStatus: 'pending', lifecycleStatus: 'active' },
+    { moderationStatus: 'approved', lifecycleStatus: 'sold' },
+    { moderationStatus: 'approved', lifecycleStatus: 'paused' },
+    { moderationStatus: 'approved', lifecycleStatus: 'deleted_by_seller' },
+    { moderationStatus: 'approved', lifecycleStatus: 'active', deletedBySellerAt: new Date() },
+  ];
+  for (const variant of cases) {
+    const mocks = buildMocks();
+    mocks.prismaService.listing.findUnique = async () => ({ ...base, ...variant });
+    (mocks.prismaService.listing as any).updateMany = async () => { throw new Error('must not be reached'); };
+    const service = new StoryImageService(mocks.prismaService as any, mocks.r2StorageService as any, { fetchImpl: mocks.fetchImpl as any });
+    await assert.rejects(() => service.generateLinkImageForListing('l1'), /listing_not_public/, JSON.stringify(variant));
+    assert.equal(mocks.r2Puts.length, 0, `no upload for ${JSON.stringify(variant)}`);
+    assert.equal(mocks.updates.length, 0);
+  }
+});
+
+test('a concurrent change leaves the referenced object and the database URL untouched', async () => {
+  const mocks = buildMocks();
+  const updatedAt = new Date('2026-09-01T10:00:00Z');
+  const referenced = 'https://r2.example.com/listings/l1/share-v2-0123456789abcdef.jpg';
+  // Simulates a newer generation that already landed between our read and write.
+  const db = { shareImageUrl: referenced, updatedAt };
+  mocks.prismaService.listing.findUnique = async () => ({ id: 'l1', draftId: 'd1', title: 'Bague', area: 'Gombe', priceAmount: 80000, priceCurrency: 'CDF', updatedAt, moderationStatus: 'approved', lifecycleStatus: 'active', deletedBySellerAt: null, shareImageUrl: 'https://r2.example.com/listings/l1/share.png' });
+  (mocks.prismaService.listing as any).updateMany = async (args: any) => {
+    const matches = args.where.shareImageUrl === db.shareImageUrl && args.where.updatedAt.getTime() === db.updatedAt.getTime();
+    if (matches) db.shareImageUrl = args.data.shareImageUrl;
+    return { count: matches ? 1 : 0 };
+  };
+  const service = new StoryImageService(mocks.prismaService as any, mocks.r2StorageService as any, { fetchImpl: mocks.fetchImpl as any });
+
+  await assert.rejects(() => service.generateLinkImageForListing('l1'), /listing_changed_concurrently/);
+  assert.equal(db.shareImageUrl, referenced, 'database URL not altered');
+  assert.equal(mocks.r2Puts.length, 1);
+  assert.notEqual(`https://r2.example.com/${mocks.r2Puts[0].objectKey}`, referenced, 'the referenced object key is never written to');
+  assert.equal(mocks.updates.length, 0);
 });
 
 test('generateAndStoreForListing throws when no uploaded draft photo is available', async () => {

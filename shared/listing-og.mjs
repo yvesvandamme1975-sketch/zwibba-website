@@ -61,6 +61,9 @@ export function buildListingOgTags({ listing, baseUrl }) {
   if (hasLandscape) {
     tags.push(['property', 'og:image:width', '1200']);
     tags.push(['property', 'og:image:height', '630']);
+    // Crawlers (Facebook, WhatsApp) trust a declared type; the branded v2
+    // preview is a JPEG, the historical share.png a PNG.
+    tags.push(['property', 'og:image:type', /\.jpe?g(?:[?#]|$)/i.test(imageUrl) ? 'image/jpeg' : 'image/png']);
   }
 
   tags.push(['property', 'product:price:amount', listing?.priceAmount ?? '']);

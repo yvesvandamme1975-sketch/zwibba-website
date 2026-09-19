@@ -31,6 +31,8 @@ export function createListingShareController({
       slug: context.slug || '', title: context.title || 'Annonce Zwibba', url,
       storyImageUrl: context.storyImageUrl || '',
       primaryImageUrl: context.primaryImageUrl || '',
+      // Story mode is opt-in per caller (post-publication success screen only).
+      storyEnabled: context.storyEnabled === true,
       mode: 'post', busy: false, message: '', manualText: '',
       imageStatus: context.storyImageUrl ? 'preparing' : 'unavailable',
       canShareLink: typeof navigatorObject.share === 'function', canShareImage: false,
@@ -41,7 +43,7 @@ export function createListingShareController({
 
   function start(context, { mode = 'post' } = {}) {
     void open(context);
-    if (mode === 'story') {
+    if (mode === 'story' && state.storyEnabled) {
       state.mode = 'story';
       changed();
       return Promise.resolve('menu');
@@ -161,7 +163,7 @@ export function createListingShareController({
 
   return {
     get state() { return state; }, open, start, perform, prepareImage,
-    setMode(mode) { if (state && !state.busy) { state.mode = mode === 'story' ? 'story' : 'post'; changed(); } },
+    setMode(mode) { if (state && !state.busy) { state.mode = mode === 'story' && state.storyEnabled ? 'story' : 'post'; changed(); } },
     close() { preparationAbort?.abort(); state = null; preparedFile = null; changed(); },
   };
 }

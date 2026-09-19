@@ -156,12 +156,23 @@ test('primary entry opens the native sheet synchronously without waiting for the
   controller.close();
 });
 
-test('story entry waits for a separate user share action; unsupported entry keeps the menu', async () => {
+test('story entry is only honoured for a caller that enables it (success screen); unsupported entry keeps the menu', async () => {
   const { controller, calls } = setup();
-  assert.equal(await controller.start({slug: 'velo'}, {mode: 'story'}), 'menu');
+  assert.equal(await controller.start({slug: 'velo', storyEnabled: true}, {mode: 'story'}), 'menu');
   assert.equal(controller.state.mode, 'story');
+  assert.equal(controller.state.storyEnabled, true);
   assert.deepEqual(calls, []);
   const unsupported = setup({navigatorObject: {}}).controller;
   assert.equal(await unsupported.start({slug: 'velo'}), 'menu');
   assert.ok(unsupported.state);
+});
+
+test('listing entry ignores a story mode request and cannot switch to story mode', async () => {
+  const { controller, calls } = setup();
+  assert.equal(await controller.start({slug: 'velo', storyImageUrl: 'https://cdn.example/story.png'}, {mode: 'story'}), 'handed-off');
+  assert.equal(controller.state.mode, 'post');
+  assert.equal(controller.state.storyEnabled, false);
+  assert.equal(calls.length, 1);
+  controller.setMode('story');
+  assert.equal(controller.state.mode, 'post');
 });
