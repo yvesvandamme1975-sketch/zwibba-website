@@ -1,6 +1,18 @@
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
 
+function socialInstructions(state) {
+  const app = state.destination === 'instagram' ? 'Instagram' : 'TikTok';
+  const lead = state.imageStatus === 'preparing'
+    ? 'Le visuel est en préparation. Patientez avant de le partager.'
+    : state.imageStatus !== 'ready'
+      ? 'Le visuel est indisponible pour le moment. Vous pouvez copier la légende et le lien.'
+      : state.canShareImage
+        ? `Partagez l’image et choisissez ${app} si le téléphone le propose. Sinon, enregistrez l’image puis importez-la dans ${app}.`
+        : `Enregistrez l’image puis importez-la dans ${app}.`;
+  return `${lead} Copiez la légende et ajoutez le lien là où l’application le permet.`;
+}
+
 // Share APIs report a handoff, never proof that a social post was published.
 export function createListingShareController({
   baseUrl,
@@ -30,11 +42,14 @@ export function createListingShareController({
     state = {
       slug: context.slug || '', title: context.title || 'Annonce Zwibba', url,
       storyImageUrl: context.storyImageUrl || '',
+      shareImageUrl: context.shareImageUrl || '',
+      imageUrl: (context.storyEnabled === true ? context.storyImageUrl : context.shareImageUrl) || '',
+      destination: '',
       primaryImageUrl: context.primaryImageUrl || '',
       // Story mode is opt-in per caller (post-publication success screen only).
       storyEnabled: context.storyEnabled === true,
       mode: 'post', busy: false, message: '', manualText: '',
-      imageStatus: context.storyImageUrl ? 'preparing' : 'unavailable',
+      imageStatus: (context.storyEnabled === true ? context.storyImageUrl : context.shareImageUrl) ? 'preparing' : 'unavailable',
       canShareLink: typeof navigatorObject.share === 'function', canShareImage: false,
     };
     changed();
@@ -48,20 +63,21 @@ export function createListingShareController({
       changed();
       return Promise.resolve('menu');
     }
-    return state.canShareLink ? perform('native-link') : Promise.resolve('menu');
+    return state.storyEnabled && state.canShareLink ? perform('native-link') : Promise.resolve('menu');
   }
 
   async function prepareImage() {
     const current = state;
-    if (!current?.storyImageUrl) return;
+    if (!current?.imageUrl) return;
     preparationAbort?.abort();
     const abort = new AbortController();
     preparationAbort = abort;
     const timeout = setTimeout(() => abort.abort(), 15000);
     current.imageStatus = 'preparing';
+    if (current.destination) current.message = socialInstructions(current);
     changed();
     try {
-      const imageUrl = new URL(current.storyImageUrl, baseUrl);
+      const imageUrl = new URL(current.imageUrl, baseUrl);
       const localHttp = imageUrl.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(imageUrl.hostname);
       if (imageUrl.protocol !== 'https:' && !localHttp) throw new Error('Invalid image URL');
       const response = await fetchFn(imageUrl.href, { signal: abort.signal, credentials: 'omit' });
@@ -72,7 +88,7 @@ export function createListingShareController({
       if (!IMAGE_TYPES.has(blob.type) || !blob.size || blob.size > MAX_IMAGE_BYTES) throw new Error('Invalid image');
       if (state !== current || preparationAbort !== abort || abort.signal.aborted) return;
       const extension = blob.type === 'image/jpeg' ? 'jpg' : blob.type.split('/')[1];
-      preparedFile = new File([blob], `zwibba-story.${extension}`, { type: blob.type });
+      preparedFile = new File([blob], `zwibba-${current.storyEnabled ? 'story' : 'annonce'}.${extension}`, { type: blob.type });
       current.canShareImage = typeof navigatorObject.share === 'function' &&
         typeof navigatorObject.canShare === 'function' && navigatorObject.canShare({ files: [preparedFile] });
       current.imageStatus = 'ready';
@@ -83,7 +99,10 @@ export function createListingShareController({
       current.imageStatus = 'unavailable';
     } finally {
       clearTimeout(timeout);
-      if (state === current && preparationAbort === abort) changed();
+      if (state === current && preparationAbort === abort) {
+        if (current.destination) current.message = socialInstructions(current);
+        changed();
+      }
     }
   }
 
@@ -138,8 +157,9 @@ export function createListingShareController({
         current.message = 'Téléchargement demandé. Retrouvez l’image dans vos fichiers.';
         result = 'download-requested';
       } else if (action === 'instagram' || action === 'tiktok') {
-        current.mode = 'story';
-        current.message = `${current.imageStatus === 'ready' ? 'Enregistrez l’image et copiez la légende.' : 'L’image n’est pas encore disponible. Vous pouvez déjà copier la légende.'} Ouvrez ensuite ${action === 'instagram' ? 'Instagram' : 'TikTok'} pour créer votre publication. Ajoutez le lien là où l’application le permet.`;
+        current.destination = action;
+        if (current.storyEnabled) current.mode = 'story';
+        current.message = socialInstructions(current);
         result = 'instructions';
       } else {
         throw new Error('Cette action est indisponible.');

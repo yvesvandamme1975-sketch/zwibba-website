@@ -105,6 +105,7 @@ function buildShareButton(detail, { compact = false } = {}) {
       data-share-title="${escapeAttribute(detail.title)}"
       data-share-image-url="${escapeAttribute(resolveGalleryImages(detail)[0] || '')}"
       data-share-url="${escapeAttribute(shareUrl)}"
+      ${detail.shareImageUrl ? `data-branded-image-url="${escapeAttribute(detail.shareImageUrl)}"` : ''}
       ${detail.storyImageUrl ? `data-story-image-url="${escapeAttribute(detail.storyImageUrl)}"` : ''}
       ${compact ? `aria-label="${escapeAttribute('Partager cette annonce')}"` : ''}
     >

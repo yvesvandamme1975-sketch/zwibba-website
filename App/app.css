@@ -1957,3 +1957,5 @@
   margin: 8px 0 0;
   color: var(--text-muted);
 }
+
+.app-share-menu__photo--branded { float: none; display: block; width: 100%; height: auto; max-height: 34dvh; object-fit: contain; margin: 0 0 12px; }

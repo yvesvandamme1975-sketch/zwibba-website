@@ -610,3 +610,8 @@ test('listing detail screen renders a share button inside the owner card when ed
   assert.match(html, /role="alert"[^>]*>&lt;échec&gt;/);
   assert.match(html, /data-action="start-thread"[^>]*disabled/);
 });
+
+test('detail share entry passes the branded image separately from the primary and story image', () => {
+ const html=renderListingDetailScreen({state:'ready',detail:{id:'fixture',slug:'fixture',title:'Fixture',contactActions:[],safetyTips:[],seller:{name:'Vendeur'},shareImageUrl:'https://cdn.example/branded.jpg',storyImageUrl:'https://cdn.example/story.png'}});
+ assert.match(html,/data-branded-image-url="https:\/\/cdn.example\/branded.jpg"/);
+});
