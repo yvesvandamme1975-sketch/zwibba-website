@@ -7,12 +7,13 @@ test('renderShareMenu returns nothing when closed', () => {
   assert.equal(renderShareMenu(null), '');
 });
 
-test('share menu delegates destination choice to the phone and keeps copy fallback', () => {
+test('share menu offers media destinations and keeps native link and copy fallback', () => {
   const html = renderShareMenu({slug: 'mon-annonce', title: 'Belle annonce', url: '/annonce/mon-annonce/', canShareLink: true});
   assert.match(html, /data-action="share-native-link"/);
   assert.match(html, /data-action="copy-listing-link"/);
   assert.match(html, /data-action="close-share-menu"/);
-  assert.doesNotMatch(html, /data-action="share-(?:whatsapp-chat|facebook|instagram|tiktok)"/);
+  assert.match(html, /data-action="share-instagram"/);
+  assert.match(html, /data-action="share-tiktok"/);
 });
 
 test('listing share sheet is link-only: no story mode even when a story mode is requested', () => {
@@ -73,4 +74,22 @@ test('manual clipboard fallback is selectable and escaped, busy actions disabled
   assert.match(html, /&lt;\/textarea&gt;/);
   assert.doesNotMatch(html, /<script>/);
   assert.match(html, /data-action="copy-listing-link"[^>]*disabled/);
+});
+
+test('listing menu exposes Instagram and TikTok without a story mode toggle', () => {
+  const html=renderShareMenu({canShareLink:true});
+  assert.match(html,/data-action="share-instagram"/);
+  assert.match(html,/data-action="share-tiktok"/);
+  assert.doesNotMatch(html,/share-mode-story|En story/);
+});
+
+test('selected social destination exposes branded preview, files and caption with an honest fallback', () => {
+  const html=renderShareMenu({destination:'tiktok',shareImageUrl:'https://cdn.example/branded.jpg',imageStatus:'ready',canShareImage:true});
+  assert.match(html,/app-share-menu__photo--branded/);
+  assert.match(html,/src="https:\/\/cdn.example\/branded.jpg"/);
+  assert.match(html,/data-action="share-native-image"/);
+  assert.match(html,/data-action="download-story-image"/);
+  assert.match(html,/data-action="copy-share-caption"/);
+  assert.match(html,/TikTok/);
+  assert.doesNotMatch(html,/share-mode-story|En story/);
 });

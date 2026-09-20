@@ -20,14 +20,15 @@ function option(action, iconKey, label, dataCtx, disabled = false) {
   </button>`;
 }
 
-/** The sheet is link-only by default: the receiving application renders the
- * listing card from the page's Open Graph image. Only a caller that opts in
- * explicitly (`storyEnabled`, the post-publication success screen) keeps the
- * story mode and its image handoff. */
+/** Listing shares offer the branded media separately from link sharing.
+ * Only the post-publication success screen retains the story mode toggle. */
 export function renderShareMenu(menu = null) {
   if (!menu) return '';
   const storyEnabled = menu.storyEnabled === true;
   const mode = storyEnabled && menu.mode === 'story' ? 'story' : 'post';
+  const social = !storyEnabled && ['instagram', 'tiktok'].includes(menu.destination);
+  const imageMode = mode === 'story' || social;
+  const previewUrl = social ? menu.shareImageUrl : menu.primaryImageUrl;
   const dataCtx = [
     `data-listing-url="${escapeAttribute(menu.url || '')}"`,
     `data-share-slug="${escapeAttribute(menu.slug || '')}"`,
@@ -45,10 +46,10 @@ export function renderShareMenu(menu = null) {
           <button type="button" class="app-share-menu__seg${mode === 'post' ? ' app-share-menu__seg--active' : ''}" data-action="share-mode-post" aria-pressed="${escapeAttribute(mode === 'post')}" ${menu.busy ? 'disabled' : ''}>En post</button>
           <button type="button" class="app-share-menu__seg${mode === 'story' ? ' app-share-menu__seg--active' : ''}" data-action="share-mode-story" aria-pressed="${escapeAttribute(mode === 'story')}" ${menu.busy ? 'disabled' : ''}>En story</button>
         </div>` : '';
-  const storyOptions = mode === 'story' ? [
+  const storyOptions = imageMode ? [
     menu.imageStatus === 'ready' && menu.canShareImage ? button('share-native-image', 'link', 'Partager l’image…') : '',
     menu.imageStatus === 'ready' ? button('download-story-image', 'link', 'Enregistrer l’image') : '',
-    menu.imageStatus === 'unavailable' && menu.storyImageUrl ? button('retry-share-image', 'link', 'Réessayer de préparer l’image') : '',
+    menu.imageStatus === 'unavailable' && (storyEnabled ? menu.storyImageUrl : menu.shareImageUrl) ? button('retry-share-image', 'link', 'Réessayer de préparer l’image') : '',
     button('copy-share-caption', 'link', 'Copier la légende'),
   ].join('') : '';
   return `
@@ -56,15 +57,16 @@ export function renderShareMenu(menu = null) {
       <div class="app-share-menu__sheet" data-action="share-menu-sheet" role="dialog" aria-modal="true" aria-label="Partager l’annonce" tabindex="-1">
         <span class="app-share-menu__handle" aria-hidden="true"></span>
         <h2 class="app-share-menu__title">Partager</h2>
-        ${menu.primaryImageUrl ? `<img class="app-share-menu__photo" src="${escapeAttribute(menu.primaryImageUrl)}" alt="" />` : ''}
+        ${previewUrl ? `<img class="app-share-menu__photo${social ? ' app-share-menu__photo--branded' : ''}" src="${escapeAttribute(previewUrl)}" alt="" />` : ''}
         <p class="app-share-menu__listing">${escapeHtml(menu.title || 'Annonce Zwibba')}</p>
         ${segmented}
         <div class="app-share-menu__options">
           ${menu.canShareLink ? button('share-native-link', 'link', mode === 'story' ? 'Partager le lien…' : 'Partager avec une application…') : ''}
+          ${!storyEnabled ? button('share-instagram', 'instagram', 'Instagram') + button('share-tiktok', 'tiktok', 'TikTok') : ''}
           ${storyOptions}
           ${button('copy-listing-link', 'link', 'Copier le lien')}
         </div>
-        <p class="app-share-menu__hint">${escapeHtml(mode === 'story' ? imageHint : 'Partagez le lien de cette annonce. L’aperçu dépend de l’application choisie.')}</p>
+        <p class="app-share-menu__hint">${escapeHtml(imageMode ? imageHint : 'Partagez le lien de cette annonce. L’aperçu dépend de l’application choisie.')}</p>
         <p class="app-share-menu__status" role="status" aria-live="polite">${escapeHtml(menu.message || '')}</p>
         ${menu.manualText ? `<label class="app-share-menu__manual">Texte à copier<textarea class="app-share-menu__text" data-share-manual readonly rows="3">${escapeHtml(menu.manualText)}</textarea></label>` : ''}
         <button class="app-share-menu__cancel" type="button" data-action="close-share-menu">Fermer</button>

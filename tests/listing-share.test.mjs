@@ -35,7 +35,7 @@ test('cancellation never opens a network, downloads or records success', async (
 test('WhatsApp uses the selected title, not a seller or unrelated draft claim', async () => {
   const { controller, calls } = setup();
   const promise = controller.perform('whatsapp');
-  assert.match(new URL(calls[0][1]).searchParams.get('text'), /^Vélo de Liège — Zwibba\nhttps:\/\/zwibba.com\/annonce\/velo\/$/);
+  assert.match(new URL(calls[0][1]).searchParams.get('text'), /^Je vends sur Zwibba — Vélo de Liège\nhttps:\/\/zwibba.com\/annonce\/velo\/$/);
   assert.equal(await promise, 'opened');
   assert.doesNotMatch(controller.state.message, /publié|partagé avec succès/i);
 });
@@ -74,7 +74,7 @@ test('double click cannot launch a second native sheet', async () => {
 test('files are prepared before click and native image share performs no fetch', async () => {
   let fetches = 0;
   const { controller, calls } = setup({ fetchFn: async () => { fetches++; return new Response(new Blob(['png'], { type: 'image/png' })); } });
-  await controller.open({ slug: 'velo', title: 'Vélo', storyImageUrl: 'https://cdn.example/story.png' });
+  await controller.open({ slug: 'velo', title: 'Vélo', shareImageUrl: 'https://cdn.example/story.png' });
   assert.equal(controller.state.imageStatus, 'ready');
   const promise = controller.perform('native-image');
   assert.equal(calls.length, 1);
@@ -92,7 +92,7 @@ for (const [label, response] of [
 ]) {
   test(`preparation rejects ${label} and keeps link sharing available`, async () => {
     const { controller } = setup({ fetchFn: async () => response() });
-    await controller.open({ slug: 'velo', storyImageUrl: 'https://cdn.example/story.png' });
+    await controller.open({ slug: 'velo', shareImageUrl: 'https://cdn.example/story.png' });
     assert.equal(controller.state.imageStatus, 'unavailable');
     assert.equal(await controller.perform('native-image'), 'error');
     assert.equal(await controller.perform('copy-link'), 'copied');
@@ -102,7 +102,7 @@ for (const [label, response] of [
 test('stale file fetch does not replace the newly selected listing', async () => {
   let finish;
   const { controller } = setup({ fetchFn: () => new Promise(resolve => { finish = resolve; }) });
-  const stale = controller.open({ slug: 'old', storyImageUrl: 'https://cdn.example/old.png' });
+  const stale = controller.open({ slug: 'old', shareImageUrl: 'https://cdn.example/old.png' });
   await controller.open({ slug: 'new', title: 'Nouvelle annonce' });
   finish(new Response(new Blob(['png'], { type: 'image/png' })));
   await stale;
@@ -113,7 +113,7 @@ test('stale file fetch does not replace the newly selected listing', async () =>
 test('superseded preparation cannot erase a newer file on the same menu', async () => {
   const pending = [];
   const { controller } = setup({ fetchFn: () => new Promise((resolve, reject) => pending.push({ resolve, reject })) });
-  const first = controller.open({ slug: 'velo', storyImageUrl: 'https://cdn.example/story.png' });
+  const first = controller.open({ slug: 'velo', shareImageUrl: 'https://cdn.example/story.png' });
   const second = controller.prepareImage();
   pending[1].resolve(new Response(new Blob(['new'], { type: 'image/png' })));
   await second;
@@ -125,7 +125,7 @@ test('superseded preparation cannot erase a newer file on the same menu', async 
 
 test('local HTTP image fixtures can exercise the real preparation path', async () => {
   const { controller } = setup({ baseUrl: 'http://127.0.0.1:4328' });
-  await controller.open({ slug: 'velo', storyImageUrl: '/story.png' });
+  await controller.open({ slug: 'velo', shareImageUrl: '/story.png' });
   assert.equal(controller.state.imageStatus, 'ready');
 });
 
@@ -147,9 +147,9 @@ test('only public same-origin listing URLs can be shared', async () => {
 });
 
 
-test('primary entry opens the native sheet synchronously without waiting for the story image', async () => {
+test('success entry preserves synchronous native link sharing', async () => {
   const { controller, calls } = setup({ fetchFn: (_url, { signal }) => new Promise((_resolve, reject) => signal.addEventListener('abort', () => reject(new Error('aborted')))) });
-  const result = controller.start({ slug: 'velo', title: 'Vélo', storyImageUrl: 'https://cdn.example/story.png' });
+  const result = controller.start({ slug: 'velo', title: 'Vélo', storyEnabled: true, storyImageUrl: 'https://cdn.example/story.png' });
   assert.equal(calls.length, 1);
   assert.equal(calls[0][1].url, 'https://zwibba.com/annonce/velo/');
   assert.equal(await result, 'handed-off');
@@ -169,10 +169,37 @@ test('story entry is only honoured for a caller that enables it (success screen)
 
 test('listing entry ignores a story mode request and cannot switch to story mode', async () => {
   const { controller, calls } = setup();
-  assert.equal(await controller.start({slug: 'velo', storyImageUrl: 'https://cdn.example/story.png'}, {mode: 'story'}), 'handed-off');
+  assert.equal(await controller.start({slug: 'velo', shareImageUrl: 'https://cdn.example/story.png'}, {mode: 'story'}), 'menu');
   assert.equal(controller.state.mode, 'post');
   assert.equal(controller.state.storyEnabled, false);
-  assert.equal(calls.length, 1);
+  assert.equal(calls.length, 0);
   controller.setMode('story');
   assert.equal(controller.state.mode, 'post');
+});
+
+test('listing starts at destination menu and prepares branded card instead of old story image', async () => {
+  const fetched = [];
+  const {controller,calls} = setup({fetchFn: async url => {fetched.push(url);return new Response(new Blob(['branded'], {type:'image/jpeg'}));}});
+  assert.equal(await controller.start({slug:'velo',shareImageUrl:'https://cdn.example/share-v2.jpg',storyImageUrl:'https://cdn.example/story.png'}), 'menu');
+  await controller.prepareImage();
+  assert.equal(calls.length, 0);
+  assert.ok(fetched.every(url=>url==='https://cdn.example/share-v2.jpg'));
+  assert.equal(await controller.perform('instagram'), 'instructions');
+  assert.equal(controller.state.destination, 'instagram');
+  assert.equal(controller.state.mode, 'post');
+  const result = controller.perform('native-image');
+  assert.equal(calls.length, 1);
+  assert.deepEqual(Object.keys(calls[0][1]), ['files']);
+  assert.equal(await calls[0][1].files[0].text(), 'branded');
+  assert.equal(await result, 'handed-off');
+});
+
+test('TikTok export never silently opens a URL or shares an unbranded story', async () => {
+  const {controller,calls}=setup();
+  await controller.open({slug:'velo',storyImageUrl:'https://cdn.example/old-story.png'});
+  await controller.perform('tiktok');
+  assert.equal(controller.state.destination,'tiktok');
+  assert.equal(controller.state.mode,'post');
+  assert.equal(controller.state.imageStatus,'unavailable');
+  assert.deepEqual(calls,[]);
 });

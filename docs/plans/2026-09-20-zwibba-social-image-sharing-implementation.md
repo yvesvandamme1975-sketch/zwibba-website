@@ -14,7 +14,7 @@ Step 3: Commit: `git commit -m "docs: plan branded social image sharing"`.
 
 ## Task 2: Implement verified image handoff
 
-**Files:** Modify App/services/listing-share.mjs, App/components/share-menu.mjs, App/app.js, App/features/listings/listing-detail-screen.mjs and tests/listing-share.test.mjs, tests/share-menu.test.mjs, tests/listing-detail-screen.test.mjs.
+**Files:** Modify App/services/listing-share.mjs, App/components/share-menu.mjs, App/app.js, App/app.css, App/features/listings/listing-detail-screen.mjs and tests/listing-share.test.mjs, tests/share-menu.test.mjs, tests/listing-detail-screen.test.mjs.
 
 Step 1: Add failing tests for the new menu, branded file source and visible Instagram/TikTok media/export controls. Confirm red before implementing the scoped fix.
 Step 2: Run: `node --test tests/listing-share.test.mjs tests/share-menu.test.mjs tests/listing-detail-screen.test.mjs tests/success-screen.test.mjs`, then `npm test`, `npm run build`, `npm run smoke:production-contracts`. Expected: new tests fail before code and all tests pass after correction; review reports no unresolved critical findings. Release smoke marker: website bundle contains `Choisissez Instagram` and `Choisissez TikTok`, and passes shareImageUrl into the controller.

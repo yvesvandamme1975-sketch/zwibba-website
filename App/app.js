@@ -2711,6 +2711,7 @@ if (appRoot) {
       title: trigger.dataset.shareTitle || matchingDetail?.title || 'Annonce Zwibba',
       url: trigger.dataset.shareUrl || trigger.dataset.listingUrl || '',
       storyImageUrl: trigger.dataset.storyImageUrl || matchingDetail?.storyImageUrl || '',
+      shareImageUrl: trigger.dataset.brandedImageUrl || matchingDetail?.shareImageUrl || '',
       primaryImageUrl: trigger.dataset.shareImageUrl || matchingDetail?.primaryImageUrl || '',
       // Only the post-publication success screen keeps the story mode.
       storyEnabled: trigger.dataset.shareContext === 'success',

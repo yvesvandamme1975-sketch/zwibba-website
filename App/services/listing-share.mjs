@@ -30,11 +30,14 @@ export function createListingShareController({
     state = {
       slug: context.slug || '', title: context.title || 'Annonce Zwibba', url,
       storyImageUrl: context.storyImageUrl || '',
+      shareImageUrl: context.shareImageUrl || '',
+      imageUrl: (context.storyEnabled === true ? context.storyImageUrl : context.shareImageUrl) || '',
+      destination: '',
       primaryImageUrl: context.primaryImageUrl || '',
       // Story mode is opt-in per caller (post-publication success screen only).
       storyEnabled: context.storyEnabled === true,
       mode: 'post', busy: false, message: '', manualText: '',
-      imageStatus: context.storyImageUrl ? 'preparing' : 'unavailable',
+      imageStatus: (context.storyEnabled === true ? context.storyImageUrl : context.shareImageUrl) ? 'preparing' : 'unavailable',
       canShareLink: typeof navigatorObject.share === 'function', canShareImage: false,
     };
     changed();
@@ -48,12 +51,12 @@ export function createListingShareController({
       changed();
       return Promise.resolve('menu');
     }
-    return state.canShareLink ? perform('native-link') : Promise.resolve('menu');
+    return state.storyEnabled && state.canShareLink ? perform('native-link') : Promise.resolve('menu');
   }
 
   async function prepareImage() {
     const current = state;
-    if (!current?.storyImageUrl) return;
+    if (!current?.imageUrl) return;
     preparationAbort?.abort();
     const abort = new AbortController();
     preparationAbort = abort;
@@ -61,7 +64,7 @@ export function createListingShareController({
     current.imageStatus = 'preparing';
     changed();
     try {
-      const imageUrl = new URL(current.storyImageUrl, baseUrl);
+      const imageUrl = new URL(current.imageUrl, baseUrl);
       const localHttp = imageUrl.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(imageUrl.hostname);
       if (imageUrl.protocol !== 'https:' && !localHttp) throw new Error('Invalid image URL');
       const response = await fetchFn(imageUrl.href, { signal: abort.signal, credentials: 'omit' });
@@ -72,7 +75,7 @@ export function createListingShareController({
       if (!IMAGE_TYPES.has(blob.type) || !blob.size || blob.size > MAX_IMAGE_BYTES) throw new Error('Invalid image');
       if (state !== current || preparationAbort !== abort || abort.signal.aborted) return;
       const extension = blob.type === 'image/jpeg' ? 'jpg' : blob.type.split('/')[1];
-      preparedFile = new File([blob], `zwibba-story.${extension}`, { type: blob.type });
+      preparedFile = new File([blob], `zwibba-${current.storyEnabled ? 'story' : 'annonce'}.${extension}`, { type: blob.type });
       current.canShareImage = typeof navigatorObject.share === 'function' &&
         typeof navigatorObject.canShare === 'function' && navigatorObject.canShare({ files: [preparedFile] });
       current.imageStatus = 'ready';
@@ -94,7 +97,7 @@ export function createListingShareController({
     current.busy = true;
     current.message = '';
     current.manualText = '';
-    const caption = `${current.title} — Zwibba\n${current.url}`;
+    const caption = `Je vends sur Zwibba — ${current.title}\n${current.url}`;
     let result;
     try {
       // Invoke activation-gated APIs before the first await. File preparation
@@ -138,8 +141,9 @@ export function createListingShareController({
         current.message = 'Téléchargement demandé. Retrouvez l’image dans vos fichiers.';
         result = 'download-requested';
       } else if (action === 'instagram' || action === 'tiktok') {
-        current.mode = 'story';
-        current.message = `${current.imageStatus === 'ready' ? 'Enregistrez l’image et copiez la légende.' : 'L’image n’est pas encore disponible. Vous pouvez déjà copier la légende.'} Ouvrez ensuite ${action === 'instagram' ? 'Instagram' : 'TikTok'} pour créer votre publication. Ajoutez le lien là où l’application le permet.`;
+        current.destination = action;
+        if (current.storyEnabled) current.mode = 'story';
+        current.message = `${action === 'instagram' ? 'Choisissez Instagram' : 'Choisissez TikTok'} dans le partage du visuel. Si l’application n’est pas proposée, enregistrez l’image puis importez-la pour créer votre publication. Copiez la légende et ajoutez le lien là où l’application le permet.`;
         result = 'instructions';
       } else {
         throw new Error('Cette action est indisponible.');
