@@ -39,7 +39,9 @@ export function renderShareMenu(menu = null) {
   const imageHint = menu.imageStatus === 'preparing'
     ? 'Préparation de l’image… Le lien reste disponible.'
     : menu.imageStatus === 'ready'
-      ? 'Image prête. Partagez-la avec une application ou enregistrez-la dans vos fichiers.'
+      ? menu.canShareImage
+        ? 'Image prête. Partagez-la avec une application ou enregistrez-la dans vos fichiers.'
+        : 'Image prête. Enregistrez-la dans vos fichiers pour la publier dans votre application.'
       : 'L’image est indisponible pour le moment. Vous pouvez partager le lien.';
   const segmented = storyEnabled ? `
         <div class="app-share-menu__segmented" role="group" aria-label="Mode de partage">

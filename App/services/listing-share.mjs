@@ -1,6 +1,18 @@
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
 
+function socialInstructions(state) {
+  const app = state.destination === 'instagram' ? 'Instagram' : 'TikTok';
+  const lead = state.imageStatus === 'preparing'
+    ? 'Le visuel est en préparation. Patientez avant de le partager.'
+    : state.imageStatus !== 'ready'
+      ? 'Le visuel est indisponible pour le moment. Vous pouvez copier la légende et le lien.'
+      : state.canShareImage
+        ? `Partagez l’image et choisissez ${app} si le téléphone le propose. Sinon, enregistrez l’image puis importez-la dans ${app}.`
+        : `Enregistrez l’image puis importez-la dans ${app}.`;
+  return `${lead} Copiez la légende et ajoutez le lien là où l’application le permet.`;
+}
+
 // Share APIs report a handoff, never proof that a social post was published.
 export function createListingShareController({
   baseUrl,
@@ -62,6 +74,7 @@ export function createListingShareController({
     preparationAbort = abort;
     const timeout = setTimeout(() => abort.abort(), 15000);
     current.imageStatus = 'preparing';
+    if (current.destination) current.message = socialInstructions(current);
     changed();
     try {
       const imageUrl = new URL(current.imageUrl, baseUrl);
@@ -86,7 +99,10 @@ export function createListingShareController({
       current.imageStatus = 'unavailable';
     } finally {
       clearTimeout(timeout);
-      if (state === current && preparationAbort === abort) changed();
+      if (state === current && preparationAbort === abort) {
+        if (current.destination) current.message = socialInstructions(current);
+        changed();
+      }
     }
   }
 
@@ -97,7 +113,7 @@ export function createListingShareController({
     current.busy = true;
     current.message = '';
     current.manualText = '';
-    const caption = `Je vends sur Zwibba — ${current.title}\n${current.url}`;
+    const caption = `${current.title} — Zwibba\n${current.url}`;
     let result;
     try {
       // Invoke activation-gated APIs before the first await. File preparation
@@ -143,7 +159,7 @@ export function createListingShareController({
       } else if (action === 'instagram' || action === 'tiktok') {
         current.destination = action;
         if (current.storyEnabled) current.mode = 'story';
-        current.message = `${action === 'instagram' ? 'Choisissez Instagram' : 'Choisissez TikTok'} dans le partage du visuel. Si l’application n’est pas proposée, enregistrez l’image puis importez-la pour créer votre publication. Copiez la légende et ajoutez le lien là où l’application le permet.`;
+        current.message = socialInstructions(current);
         result = 'instructions';
       } else {
         throw new Error('Cette action est indisponible.');

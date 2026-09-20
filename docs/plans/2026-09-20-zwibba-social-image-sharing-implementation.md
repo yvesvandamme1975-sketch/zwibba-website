@@ -17,7 +17,9 @@ Step 3: Commit: `git commit -m "docs: plan branded social image sharing"`.
 **Files:** Modify App/services/listing-share.mjs, App/components/share-menu.mjs, App/app.js, App/app.css, App/features/listings/listing-detail-screen.mjs and tests/listing-share.test.mjs, tests/share-menu.test.mjs, tests/listing-detail-screen.test.mjs.
 
 Step 1: Add failing tests for the new menu, branded file source and visible Instagram/TikTok media/export controls. Confirm red before implementing the scoped fix.
-Step 2: Run: `node --test tests/listing-share.test.mjs tests/share-menu.test.mjs tests/listing-detail-screen.test.mjs tests/success-screen.test.mjs`, then `npm test`, `npm run build`, `npm run smoke:production-contracts`. Expected: new tests fail before code and all tests pass after correction; review reports no unresolved critical findings. Release smoke marker: website bundle contains `Choisissez Instagram` and `Choisissez TikTok`, and passes shareImageUrl into the controller.
+Step 2: Run: `node --test tests/listing-share.test.mjs tests/share-menu.test.mjs tests/listing-detail-screen.test.mjs tests/success-screen.test.mjs`, then `npm test`, `npm run build`, `npm run smoke:production-contracts`. Expected: new tests fail before code and all tests pass after correction; review reports no unresolved critical findings. Release smoke marker: website bundle contains `Partagez l’image et choisissez` and `Enregistrez l’image puis importez-la`, and passes shareImageUrl into the controller.
 Step 3: Commit: `git commit -m "fix: share branded listing images to social apps"`.
 
 Release through a PR targeting codex/website-vitrine-backup. Follow docs/operations/git-and-releases.md, retain previous deployment identity, await CI and website SUCCESS at the merged SHA, verify public bundle/HTTP. No API/data release needed. Distinguish website delivery from phone acceptance and email receipt.
+
+Review follow-up: notification wording follows preparing/unavailable/ready and file-sharing capability. Link captions remain neutral; the explicitly requested brand text remains in the image. Four additional tests fail before this follow-up and pass after it.

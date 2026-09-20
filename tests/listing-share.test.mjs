@@ -35,7 +35,7 @@ test('cancellation never opens a network, downloads or records success', async (
 test('WhatsApp uses the selected title, not a seller or unrelated draft claim', async () => {
   const { controller, calls } = setup();
   const promise = controller.perform('whatsapp');
-  assert.match(new URL(calls[0][1]).searchParams.get('text'), /^Je vends sur Zwibba — Vélo de Liège\nhttps:\/\/zwibba.com\/annonce\/velo\/$/);
+  assert.match(new URL(calls[0][1]).searchParams.get('text'), /^Vélo de Liège — Zwibba\nhttps:\/\/zwibba.com\/annonce\/velo\/$/);
   assert.equal(await promise, 'opened');
   assert.doesNotMatch(controller.state.message, /publié|partagé avec succès/i);
 });
@@ -133,7 +133,7 @@ test('Instagram and TikTok explain export without opening or copying silently', 
   for (const action of ['instagram', 'tiktok']) {
     const { controller, calls } = setup();
     assert.equal(await controller.perform(action), 'instructions');
-    assert.match(controller.state.message, /image.*légende/i);
+    assert.match(controller.state.message, /visuel.*légende/i);
     assert.deepEqual(calls, []);
   }
 });
@@ -203,3 +203,24 @@ test('TikTok export never silently opens a URL or shares an unbranded story', as
   assert.equal(controller.state.imageStatus,'unavailable');
   assert.deepEqual(calls,[]);
 });
+
+for (const destination of ['instagram','tiktok']) {
+ test(`${destination} instructions follow preparation and actual file sharing support`, async () => {
+  let complete;
+  const {controller}=setup({fetchFn:()=>new Promise(resolve=>{complete=resolve;}),navigatorObject:{}});
+  const prepared=controller.open({slug:'velo',shareImageUrl:'https://cdn.example/branded.jpg'});
+  await controller.perform(destination);
+  assert.match(controller.state.message,/préparation/i);
+  assert.doesNotMatch(controller.state.message,/choisissez|enregistrez/i);
+  complete(new Response(new Blob(['jpeg'],{type:'image/jpeg'})));
+  await prepared;
+  assert.match(controller.state.message,/Enregistrez l.image/);
+  assert.doesNotMatch(controller.state.message,/choisissez/i);
+ });
+ test(`${destination} unavailable image never instructs a nonexistent image action`, async () => {
+  const {controller}=setup();
+  await controller.perform(destination);
+  assert.match(controller.state.message,/indisponible/i);
+  assert.doesNotMatch(controller.state.message,/choisissez|enregistrez/i);
+ });
+}
