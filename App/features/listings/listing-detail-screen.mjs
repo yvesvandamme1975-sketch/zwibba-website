@@ -539,6 +539,15 @@ export function renderListingDetailScreen({
         <em>${escapeHtml(formatListingPrice(detail))}</em>
       </div>
 
+      ${renderDetailMedia(detail, selectedImageIndex)}
+
+      <div class="app-auth__card">
+        <strong>Description</strong>
+        <p>${escapeHtml(detail.summary)}</p>
+      </div>
+
+      ${renderAttributeDetails(detail)}
+
       ${renderSellerBlock(detail.seller)}
       ${
         detail.viewerRole === 'owner'
@@ -560,20 +569,7 @@ export function renderListingDetailScreen({
       }
       ${renderSafetyCard(detail)}
 
-      ${renderDetailMedia(detail, selectedImageIndex)}
-
-      <div class="app-auth__card">
-        <strong>Description</strong>
-        <p>${escapeHtml(detail.summary)}</p>
-      </div>
-
-      ${renderAttributeDetails(detail)}
-
-
       ${renderReviewForm(detail)}
-
-
-
     </section>
   `;
 }

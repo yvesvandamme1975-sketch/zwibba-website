@@ -6,7 +6,7 @@ Date : 21 septembre 2026. Direction approuvée : Clean pour les parcours, Friend
 - Un vert dominant par zone de décision. Partage, avis et filtres secondaires restent secondaires.
 - Texte principal 16 px ; navigation mobile 12 px avec quatre destinations. Cibles au moins 44 px dans les nouvelles interfaces.
 - États distincts chargement, vide, erreur avec reprise. Les boutons de catégorie exposent leur sélection.
-- Contact accessible avant photo/description longues et avis. Portefeuille toujours accessible depuis Profil ; routes conservées.
+- Correction explicite du 21 septembre : annonce (photo, description, attributs) avant vendeur ; contact après vendeur et avant avis. Portefeuille toujours accessible depuis Profil ; routes conservées.
 - Marché CD/BE explicite dans les entrées depuis le site. Monnaies, données et préférences existantes conservées.
 - Aucune preuve sociale sans provenance vérifiée, aucune promesse de disponibilité native. Les témoignages historiques restent dans les sources.
 - Réutiliser les composants ESM et les tokens ; ne pas ajouter de framework, de palette parallèle ou de police pour ce raffinement.
