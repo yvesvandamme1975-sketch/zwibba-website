@@ -89,29 +89,16 @@ test('browse pages emit live-listings markers with localized fallback content', 
   assert.match(nlBe, /<template data-live-listings-empty>[\s\S]*Wees de eerste om in België te publiceren\./);
 });
 
-test('landing pages expose market-aware open-app CTAs before download links', () => {
+test('landing pages expose explicit markets and discovery before explanatory sections', () => {
   buildSite();
-
-  const cd = readDist('index.html');
-  assert.match(cd, /<a class="button button--primary" href="\/App\/">Ouvrir l'application<\/a>/);
-  assert.match(cd, /<div class="store-row">\s*<a class="button button--primary" href="\/App\/">Ouvrir l'application<\/a>/);
-  assert.match(cd, /<a class="button button--ghost" href="\/ambassadeur\/">Programme ambassadeur<\/a>/);
-
-  const frBe = readDist('be/index.html');
-  assert.match(frBe, /<a class="button button--primary" href="\/App\/\?country=BE">Ouvrir l'application<\/a>/);
-  assert.match(
-    frBe,
-    /<div class="store-row">\s*<a class="button button--primary" href="\/App\/\?country=BE">Ouvrir l'application<\/a>/,
-  );
-  assert.match(frBe, /<a class="button button--ghost" href="\/be\/ambassadeur\/">Programme ambassadeur<\/a>/);
-
-  const nlBe = readDist('be/nl/index.html');
-  assert.match(nlBe, /<a class="button button--primary" href="\/App\/\?country=BE">App openen<\/a>/);
-  assert.match(
-    nlBe,
-    /<div class="store-row">\s*<a class="button button--primary" href="\/App\/\?country=BE">App openen<\/a>/,
-  );
-  assert.match(nlBe, /<a class="button button--ghost" href="\/be\/nl\/ambassadeur\/">Ambassadeursprogramma<\/a>/);
+  for (const [file, country] of [['index.html','CD'],['be/index.html','BE'],['be/nl/index.html','BE']]) {
+    const html = readDist(file);
+    assert.ok(html.includes(`/App/?country=${country}`));
+    assert.ok(html.includes(`/App/?country=${country}#capture`));
+    assert.ok(html.indexOf('slot="landing"') < html.indexOf('class="step-grid"'));
+    assert.doesNotMatch(html, /class="testimonial-grid"/);
+    assert.match(html, /sans installation|niets te installeren/);
+  }
 });
 
 test('landing cards use live data with a safe fallback and the final CTA opens the PWA', () => {

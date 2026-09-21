@@ -15,6 +15,7 @@ function renderCategoryChips(categories, selectedCategoryId = '') {
         class="app-home__chip${!selectedCategoryId ? ' is-active' : ''}"
         type="button"
         data-action="filter-category"
+        aria-pressed="${escapeAttribute(String(!selectedCategoryId))}"
         data-category-id=""
       >
         Toutes
@@ -29,6 +30,7 @@ function renderCategoryChips(categories, selectedCategoryId = '') {
         class="app-home__chip${category.id === selectedCategoryId ? ' is-active' : ''}"
         type="button"
         data-action="filter-category"
+        aria-pressed="${escapeAttribute(String(category.id === selectedCategoryId))}"
         data-category-id="${escapeAttribute(category.id)}"
       >
         ${escapeHtml(category.label)}

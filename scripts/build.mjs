@@ -276,7 +276,6 @@ function renderNav(content, currentPath) {
         <nav class="site-nav" id="site-nav" data-open="false" aria-label="${escapeHtml(ui.nav.menuLabel)}">
           ${links}
           <a class="button button--primary" href="${appHref(site)}">${ui.nav.openApp}</a>
-          <a class="button button--ghost" href="${localeHref(site, '/ambassadeur/')}">${ui.nav.download}</a>
         </nav>
       </div>
     </header>
@@ -284,7 +283,7 @@ function renderNav(content, currentPath) {
 }
 
 function appHref(site) {
-  return site.market === 'CD' ? '/App/' : '/App/?country=BE';
+  return `/App/?country=${site.market === 'BE' ? 'BE' : 'CD'}`;
 }
 
 function localeCode(currentSite) {
@@ -658,7 +657,6 @@ function renderLandingPage(content) {
   const listingsSection = `
       <section class="section">
         <div class="section__heading">
-          <p class="eyebrow">${landing.listings.eyebrow}</p>
           <h2>${landing.listings.title}</h2>
           <p>${landing.listings.copy}</p>
         </div>
@@ -697,37 +695,21 @@ function renderLandingPage(content) {
 
   const body = `
     <main id="main-content">
-      <section class="hero">
+      <section class="hero hero--market">
         <div class="hero__copy">
-          <p class="eyebrow">${escapeHtml(site.marketLabel)} ${landing.heroEyebrowSuffix}</p>
-          <h1>${landing.heroTitle}</h1>
-          <p class="hero__lede">${escapeHtml(site.description)}</p>
+          <h1>${escapeHtml(landing.heroTitle)}</h1>
+          <p class="hero__lede">${escapeHtml(ui.clarity.intro)}</p>
           <div class="store-row">
-            <a class="button button--primary" href="${appHref(site)}">${ui.nav.openApp}</a>
-            ${renderStoreButtons(site)}
+            <a class="button button--primary" href="${localeHref(site, '/annonces/')}">${escapeHtml(ui.clarity.browse)}</a>
+            <a class="button button--ghost" href="${appHref(site)}#capture">${escapeHtml(ui.clarity.sell)}</a>
           </div>
-          <div class="metric-grid">${renderHeroStats(content)}</div>
-        </div>
-        <div class="hero__stage">
-          <div class="hero-stage-card hero-stage-card--wide">
-            <span class="hero-stage-card__label">${icon('spark')} ${landing.heroStage.aiLabel}</span>
-            <h2>${landing.heroStage.aiTitle}</h2>
-            <p>${landing.heroStage.aiCopy}</p>
-          </div>
-          <div class="hero-stage-card">
-            <span class="hero-stage-card__label">${icon('chat')} ${landing.heroStage.accessLabel}</span>
-            <p>${landing.heroStage.accessCopy}</p>
-          </div>
-          <div class="hero-stage-card">
-            <span class="hero-stage-card__label">${icon('shield')} ${landing.heroStage.lightLabel}</span>
-            <p>${landing.heroStage.lightCopy}</p>
-          </div>
+          <p>${escapeHtml(ui.clarity.web)}</p>
         </div>
       </section>
+${listingsSection}
 
       <section class="section">
         <div class="section__heading">
-          <p class="eyebrow">${landing.flow.eyebrow}</p>
           <h2>${landing.flow.title}</h2>
           <p>${landing.flow.copy}</p>
         </div>
@@ -736,7 +718,6 @@ function renderLandingPage(content) {
 
       <section class="section section--accent">
         <div class="section__heading">
-          <p class="eyebrow">${landing.categories.eyebrow}</p>
           <h2>${landing.categories.title}</h2>
           <p>${landing.categories.copy}</p>
         </div>
@@ -745,24 +726,13 @@ function renderLandingPage(content) {
 
       <section class="section">
         <div class="section__heading">
-          <p class="eyebrow">${landing.why.eyebrow}</p>
           <h2>${landing.why.title}</h2>
         </div>
         <div class="highlight-grid">${renderHighlights(content)}</div>
       </section>
-${listingsSection}
-      <section class="section section--dense">
-        <div class="section__heading">
-          <p class="eyebrow">${landing.testimonials.eyebrow}</p>
-          <h2>${landing.testimonials.title}</h2>
-        </div>
-        <div class="testimonial-grid">${renderTestimonials(content)}</div>
-      </section>
-
       <section class="section section--cta">
         <div class="cta-panel">
           <div>
-            <p class="eyebrow">${landing.cta.eyebrow}</p>
             <h2>${landing.cta.title}</h2>
             <p>${landing.cta.copy}</p>
           </div>
@@ -818,9 +788,8 @@ function renderBrowsePage(content) {
 
   const body = `
     <main id="main-content">
-      <section class="page-hero page-hero--compact">
+      <section class="page-hero page-hero--compact page-hero--browse">
         <div>
-          <p class="eyebrow">${browse.hero.eyebrow}</p>
           <h1>${browse.hero.title}</h1>
           <p>${browse.hero.copy}</p>
         </div>
@@ -840,6 +809,8 @@ function renderBrowsePage(content) {
             <label for="browse-search">${browse.filters.searchLabel}</label>
             <input id="browse-search" type="search" placeholder="${escapeHtml(browse.filters.searchPlaceholder)}" autocomplete="off" />
           </div>
+          <details class="browse-filters">
+            <summary>${escapeHtml(ui.clarity.filters)}</summary>
           <div class="field">
             <label for="browse-category">${browse.filters.categoryLabel}</label>
             <select id="browse-category">
@@ -875,17 +846,18 @@ function renderBrowsePage(content) {
                 .join('\n              ')}
             </select>
           </div>
+          </details>
         </aside>
 
         <div class="browse-results">
-          <div class="chip-row">${chips}</div>
           <div class="browse-results__header">
             <div>
               <p class="eyebrow">${categories.length} ${site.language === 'nl' ? 'categorieën' : 'catégories'}</p>
               <h2 id="results-summary" aria-live="polite">${browse.resultsFallback}</h2>
             </div>
-            <a class="button button--ghost" href="${localeHref(site, '/ambassadeur/')}">${browse.ambassadorCta}</a>
+            <button class="button button--ghost" type="button" data-reset-filters>${escapeHtml(ui.clarity.reset)}</button>
           </div>
+          <p data-filter-empty hidden role="status">${escapeHtml(ui.clarity.empty)}</p>
           <div class="listing-grid" id="browse-results-grid">
             ${liveListingsStartMarker(site, 'grid')}
             ${cards}

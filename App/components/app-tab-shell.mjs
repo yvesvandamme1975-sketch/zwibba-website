@@ -4,7 +4,6 @@ const tabs = [
   { id: 'sell', href: '#sell', label: 'Vendre' },
   { id: 'buy', href: '#buy', label: 'Acheter' },
   { id: 'messages', href: '#messages', label: 'Messages' },
-  { id: 'wallet', href: '#wallet', label: 'Portefeuille' },
   { id: 'profile', href: '#profile', label: 'Profil' },
 ];
 
@@ -26,7 +25,8 @@ export function renderAppTabShell({
       <nav class="app-tab-shell__nav" aria-label="Navigation principale">
         ${tabs.map((tab) => `
           <a
-            class="app-tab-shell__nav-item${tab.id === activeTab ? ' is-active' : ''}"
+            class="app-tab-shell__nav-item${tab.id === (activeTab === 'wallet' ? 'profile' : activeTab) ? ' is-active' : ''}"
+            aria-current="${tab.id === (activeTab === 'wallet' ? 'profile' : activeTab) ? 'page' : 'false'}"
             href="${tab.href}"
             data-tab-id="${tab.id}"
             data-scroll-top-target="${tab.id}"

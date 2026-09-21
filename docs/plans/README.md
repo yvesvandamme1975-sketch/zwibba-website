@@ -4,6 +4,9 @@ This directory is now the active planning location for Zwibba work in `/Users/pc
 
 Current priority docs:
 
+- `2026-09-21-zwibba-contact-clarity-design.md`
+- `2026-09-21-zwibba-contact-clarity-implementation.md`
+
 - `2026-09-19-zwibba-share-visual-brand-design.md`
 - `2026-09-19-zwibba-share-visual-brand-implementation.md`
 
