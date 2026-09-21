@@ -326,6 +326,7 @@ export function renderProfileScreen({
         </div>
 
         <div class="app-flow__actions">
+          <a class="app-flow__button app-flow__button--secondary" href="#wallet">Portefeuille et boosts</a>
           <a
             class="app-flow__button"
             href="#auth-welcome"
@@ -420,6 +421,7 @@ export function renderProfileScreen({
                 ? `<a class="app-flow__button app-flow__button--secondary" href="${escapeAttribute(supportWhatsAppLink)}" target="_blank" rel="noreferrer">Support WhatsApp</a>`
                 : ''
             }
+            <a class="app-flow__button app-flow__button--secondary" href="#wallet">Portefeuille et boosts</a>
             <button class="app-flow__button app-flow__button--secondary" type="button" data-action="logout">
               Déconnexion
             </button>

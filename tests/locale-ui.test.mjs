@@ -16,7 +16,7 @@ test('fr-cd ui.gate exposes the download-gate dialog strings', () => {
 test('fr-cd ui.landing exposes the landing page hero copy', () => {
   assert.equal(
     ui.landing.heroTitle,
-    'La place de marché qui transforme une photo en annonce prête à publier.',
+    'Achetez et vendez à Lubumbashi.',
   );
 });
 

@@ -213,6 +213,8 @@ function initBrowseFilters() {
   }
 
   const cards = Array.from(grid.querySelectorAll('[data-listing-card]'));
+  const filteredEmpty = document.querySelector('[data-filter-empty]');
+  const resetFilters = document.querySelector('[data-reset-filters]');
   const summary = document.querySelector('#results-summary');
   const search = document.querySelector('#browse-search');
   const category = document.querySelector('#browse-category');
@@ -302,6 +304,12 @@ function initBrowseFilters() {
     });
 
     sortCards(visibleCards);
+    if (filteredEmpty) filteredEmpty.hidden = visibleCards.length > 0 || cards.length === 0;
+    chips.forEach((chip) => {
+      const selected = chip.dataset.chip === (category?.value || 'all');
+      chip.classList.toggle('is-active', selected);
+      chip.setAttribute('aria-pressed', String(selected));
+    });
 
     if (summary) {
       summary.textContent = formatResultsSummary(visibleCards.length);
@@ -354,6 +362,13 @@ function initBrowseFilters() {
     }
   });
 
+  resetFilters?.addEventListener('click', () => {
+    if (search) search.value = '';
+    for (const field of [category, condition, price]) if (field) field.value = 'all';
+    if (sort) sort.value = 'recent';
+    applyFilters();
+    search?.focus();
+  });
   applyFilters();
 }
 

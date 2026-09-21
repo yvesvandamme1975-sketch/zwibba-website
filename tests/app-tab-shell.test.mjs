@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import { renderAppTabShell } from '../App/components/app-tab-shell.mjs';
 
-test('app tab shell renders the five persistent beta routes', () => {
+test('app tab shell renders the four primary routes with wallet under profile', () => {
   const html = renderAppTabShell({
     activeTab: 'messages',
     content: '<section>Screen</section>',
@@ -16,8 +16,8 @@ test('app tab shell renders the five persistent beta routes', () => {
   assert.match(html, /data-scroll-top-target="buy"/);
   assert.match(html, /href="#messages"/);
   assert.match(html, /data-scroll-top-target="messages"/);
-  assert.match(html, /href="#wallet"/);
-  assert.match(html, /data-scroll-top-target="wallet"/);
+  assert.doesNotMatch(html, /href="#wallet"/);
+
   assert.match(html, /href="#profile"/);
   assert.match(html, /data-scroll-top-target="profile"/);
   assert.match(html, /Messages/);

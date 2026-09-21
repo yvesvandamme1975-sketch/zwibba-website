@@ -91,10 +91,10 @@ test('mobile shell fixes the tab nav to the viewport bottom and reserves content
   );
 });
 
-test('mobile footer keeps wallet on one line for narrow Android widths', () => {
+test('mobile footer uses readable labels for four primary destinations', () => {
   assert.match(
     appStyles,
-    /@media \(max-width: 640px\) \{[\s\S]*?\.app-tab-shell__nav-item\s*\{[\s\S]*?font-size:\s*0\.62rem;[\s\S]*?\}/i,
+    /@media \(max-width: 640px\) \{[\s\S]*?\.app-tab-shell__nav-item\s*\{[\s\S]*?font-size:\s*0\.75rem;[\s\S]*?\}/i,
   );
   assert.match(
     appStyles,
@@ -124,7 +124,7 @@ test('desktop widens the shell and constrains screens to a readable column', () 
 test('desktop keeps the tab nav compact and centered', () => {
   assert.match(
     appStyles,
-    /@media \(min-width: 920px\) \{[\s\S]*?\.app-tab-shell__nav\s*\{[\s\S]*?grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*110px\)\);[\s\S]*?justify-content:\s*center;/,
+    /@media \(min-width: 920px\) \{[\s\S]*?\.app-tab-shell__nav\s*\{[\s\S]*?grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*110px\)\);[\s\S]*?justify-content:\s*center;/,
   );
 });
 

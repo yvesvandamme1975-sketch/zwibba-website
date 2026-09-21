@@ -50,6 +50,7 @@ export const site = {
 };
 
 export const ui = {
+  clarity: {"browse": "Voir les annonces", "sell": "Vendre un objet", "intro": "Trouvez un objet près de vous. Une photo pour vendre le vôtre.", "web": "Utilisez Zwibba maintenant dans votre navigateur, sans installation.", "filters": "Filtres et tri", "reset": "Voir toutes les annonces", "empty": "Aucune annonce avec ces filtres. Modifiez votre recherche ou affichez toutes les annonces."},
   nav: {
     skipLink: 'Aller au contenu',
     homeAriaLabel: 'Zwibba accueil',
@@ -77,7 +78,7 @@ export const ui = {
   },
   landing: {
     heroEyebrowSuffix: '· Petites annonces pour mobile',
-    heroTitle: 'La place de marché qui transforme une photo en annonce prête à publier.',
+    heroTitle: "Achetez et vendez en Belgique.",
     heroStage: {
       aiLabel: 'Zwibba IA',
       aiTitle: 'Photo → analyse → prix conseillé → publication',
@@ -89,8 +90,8 @@ export const ui = {
     },
     flow: {
       eyebrow: 'Flux central',
-      title: 'Publier une annonce doit être très simple.',
-      copy: "Le parcours doit rester court, clair et pensé pour le mobile. Le site reprend cette idée et mène vers les bons points d'entrée.",
+      title: "Vendez à partir d’une photo.",
+      copy: "Prenez une photo. Vérifiez le titre, la description et le prix proposés. Publiez quand vous êtes prêt.",
     },
     categories: {
       eyebrow: 'Catégories',
@@ -103,8 +104,8 @@ export const ui = {
     },
     listings: {
       eyebrow: 'Annonces en avant',
-      title: 'Une vitrine web légère, claire et facile à partager.',
-      copy: "Les fiches d'annonce sont prêtes pour le partage sur WhatsApp et Facebook, tout en gardant les actions sensibles dans l'application.",
+      title: "Les annonces près de chez vous",
+      copy: "Consultez les photos, le prix et le lieu, puis contactez le vendeur.",
     },
     testimonials: {
       eyebrow: 'Voix du terrain',
@@ -112,8 +113,8 @@ export const ui = {
     },
     cta: {
       eyebrow: 'Prêt pour le lancement',
-      title: 'Téléchargez Zwibba, ouvrez votre appareil photo et publiez.',
-      copy: "Le site s'occupe de la découverte et du partage. L'application garde le contact et la confiance.",
+      title: "Un objet à vendre ?",
+      copy: "Utilisez Zwibba maintenant dans votre navigateur, sans installation.",
     },
   },
   referral: {
@@ -210,8 +211,8 @@ export const ui = {
       "Parcourez les annonces Zwibba : catégories, filtres, prix en euros et fiches d'annonce faciles à partager.",
     hero: {
       eyebrow: 'Petites annonces',
-      title: "Explorez les annonces Zwibba avant d'ouvrir l'application.",
-      copy: 'Recherche, catégories, tri et repères utiles : le site reste simple, rapide et facile à partager.',
+      title: "Annonces en Belgique",
+      copy: "Trouvez un objet et contactez son vendeur.",
     },
     filters: {
       searchLabel: 'Recherche',

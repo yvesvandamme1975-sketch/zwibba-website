@@ -306,7 +306,7 @@ h3 {
 
 h1 {
   font-size: clamp(2.7rem, 7vw, 5.4rem);
-  letter-spacing: -0.05em;
+  letter-spacing: -0.03em;
 }
 
 h2 {
@@ -884,7 +884,7 @@ textarea {
 .referral-redirect strong {
   font-family: 'Sora', sans-serif;
   font-size: clamp(1.8rem, 4vw, 2.6rem);
-  letter-spacing: -0.05em;
+  letter-spacing: -0.03em;
 }
 
 .referral-input-group {
@@ -1220,3 +1220,16 @@ textarea {
     padding: 24px 20px;
   }
 }
+
+/* Marketplace-first refinement: keep the existing Zwibba identity. */
+.hero.hero--market { min-height: 0; grid-template-columns: 1fr; padding-block: 32px 12px; }
+.hero--market h1 { font-size: clamp(2rem, 4.5vw, 3.5rem); max-width: 22ch; text-wrap: balance; }
+.hero--market .hero__copy { gap: 16px; }
+.page-hero--browse { padding-block: 24px 0; }
+.page-hero--browse h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); }
+.browse-filters summary { cursor: pointer; min-height: 48px; display: flex; align-items: center; font-weight: 700; }
+.browse-filters summary::after { content: '+'; margin-inline-start: auto; }
+.browse-filters[open] summary::after { content: '−'; }
+.browse-filters .field { margin-block: 12px; }
+[data-filter-empty]:not([hidden]) { padding: 20px; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+@media (max-width: 760px) { .browse-section { gap: 16px; } .page-hero--browse + .section { padding-block: 0; } }

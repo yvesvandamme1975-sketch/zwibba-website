@@ -55,8 +55,10 @@ function renderFeedBody({
   sectionClassName,
   status,
 }) {
+  if (status === 'error' && !listings.length) return '';
+
   if (status === 'loading') {
-    return `<div class="${sectionClassName} app-home__feed-state">Chargement des annonces...${loadingMessage ? ` ${escapeHtml(loadingMessage)}` : ''}</div>`;
+    return `<div class="${sectionClassName} app-home__feed-state" role="status">Chargement des annonces...${loadingMessage ? ` ${escapeHtml(loadingMessage)}` : ''}</div>`;
   }
 
   if (!listings.length) {
@@ -70,7 +72,7 @@ export function renderRecentFeedSection({
   listings,
   status = 'ready',
 }) {
-  if (status === 'ready' && !listings.length) {
+  if ((status === 'ready' || status === 'error') && !listings.length) {
     return '';
   }
 
@@ -94,7 +96,9 @@ export function renderFeaturedSection({
   listings,
   status = 'ready',
 }) {
+  const error = status === 'error' ? `<div class="app-home__empty-state" role="status"><strong>Impossible de charger les annonces.</strong><span>Vérifiez votre connexion puis réessayez.</span><button class="app-flow__button" type="button" data-action="retry-buyer-feed">Réessayer</button></div>` : '';
   return `
+    ${error}
     <section class="app-home__section">
       <div class="app-home__section-head">
         <h3>En avant</h3>

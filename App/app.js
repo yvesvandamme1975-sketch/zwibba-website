@@ -2826,6 +2826,13 @@ if (appRoot) {
 
     event.preventDefault();
 
+    if (trigger.dataset.action === 'retry-buyer-feed') {
+      const retry = loadBuyerFeed();
+      renderApp();
+      await retry;
+      return;
+    }
+
     if (trigger.dataset.action === 'filter-category') {
       const categoryId = trigger.dataset.categoryId || '';
       const nextCategoryId =

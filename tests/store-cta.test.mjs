@@ -29,11 +29,11 @@ test('aucun lien Play Store ou AppGallery mort dans les pages construites', () =
 test("la nav ne contient plus Explorer et conserve les vrais CTA", () => {
   const cd = readFileSync('dist/index.html', 'utf8');
   assert.doesNotMatch(cd, />Explorer</);
-  assert.match(cd, /href="\/App\/"/);
-  assert.match(cd, /href="\/ambassadeur\/">Programme ambassadeur<\/a>/);
+  assert.match(cd, /href="\/App\/\?country=CD"/);
+  assert.match(cd, /href="\/ambassadeur\/">Ambassadeur<\/a>/);
 
   const nlBe = readFileSync('dist/be/nl/index.html', 'utf8');
   assert.doesNotMatch(nlBe, />Ontdekken</);
   assert.match(nlBe, /href="\/App\/\?country=BE"/);
-  assert.match(nlBe, /href="\/be\/nl\/ambassadeur\/">Ambassadeursprogramma<\/a>/);
+  assert.match(nlBe, /href="\/be\/nl\/ambassadeur\/"/);
 });

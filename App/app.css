@@ -73,7 +73,7 @@
 
 .app-tab-shell__nav {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   padding: 12px 14px 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -1640,7 +1640,7 @@
     min-width: 0;
     min-height: 50px;
     padding: 8px 1px;
-    font-size: 0.62rem;
+    font-size: 0.75rem;
   }
 
   .app-tab-shell__nav-label {
@@ -1889,7 +1889,7 @@
   }
 
   .app-tab-shell__nav {
-    grid-template-columns: repeat(5, minmax(0, 110px));
+    grid-template-columns: repeat(4, minmax(0, 110px));
     justify-content: center;
   }
 
@@ -1959,3 +1959,8 @@
 }
 
 .app-share-menu__photo--branded { float: none; display: block; width: 100%; height: auto; max-height: 34dvh; object-fit: contain; margin: 0 0 12px; }
+
+/* Contact clarity: use existing tokens and keep secondary actions quiet. */
+.app-flow--detail [data-contact-actions] { gap: 10px; }
+.app-flow--detail [data-contact-actions] [data-action="open-share-menu"] { background: var(--surface); color: var(--text); box-shadow: none; }
+.app-home__empty-state .app-flow__button { margin-top: 12px; }

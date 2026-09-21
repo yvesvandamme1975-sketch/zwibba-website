@@ -50,6 +50,7 @@ export const site = {
 };
 
 export const ui = {
+  clarity: {"browse": "Zoekertjes bekijken", "sell": "Een voorwerp verkopen", "intro": "Vind een voorwerp in de buurt. Verkoop het jouwe met een foto.", "web": "Gebruik Zwibba nu in je browser. Je hoeft niets te installeren.", "filters": "Filters en sortering", "reset": "Alle zoekertjes bekijken", "empty": "Geen zoekertjes voor deze filters. Pas je zoekopdracht aan of bekijk alle zoekertjes."},
   nav: {
     skipLink: 'Ga naar de inhoud',
     homeAriaLabel: 'Zwibba home',
@@ -77,7 +78,7 @@ export const ui = {
   },
   landing: {
     heroEyebrowSuffix: '· Zoekertjes voor je smartphone',
-    heroTitle: 'De marktplaats die één foto omzet in een zoekertje dat klaar is om te publiceren.',
+    heroTitle: "Koop en verkoop in België.",
     heroStage: {
       aiLabel: 'Zwibba AI',
       aiTitle: 'Foto → analyse → richtprijs → publicatie',
@@ -89,8 +90,8 @@ export const ui = {
     },
     flow: {
       eyebrow: 'Kernflow',
-      title: 'Een zoekertje plaatsen moet heel eenvoudig zijn.',
-      copy: 'Het parcours blijft kort, helder en gemaakt voor je smartphone. De site volgt datzelfde idee en leidt je naar de juiste startpunten.',
+      title: "Verkoop met een foto.",
+      copy: "Neem een foto. Controleer de titel, beschrijving en prijs. Publiceer wanneer je klaar bent.",
     },
     categories: {
       eyebrow: 'Categorieën',
@@ -103,8 +104,8 @@ export const ui = {
     },
     listings: {
       eyebrow: 'Uitgelichte zoekertjes',
-      title: 'Een lichte webvitrine, helder en makkelijk te delen.',
-      copy: 'De fiches van de zoekertjes zijn klaar om te delen via WhatsApp en Facebook, terwijl de gevoelige acties in de app blijven.',
+      title: "Zoekertjes bij jou in de buurt",
+      copy: "Bekijk de foto’s, prijs en locatie en neem contact op met de verkoper.",
     },
     testimonials: {
       eyebrow: 'Stemmen van gebruikers',
@@ -112,8 +113,8 @@ export const ui = {
     },
     cta: {
       eyebrow: 'Klaar voor de lancering',
-      title: 'Download Zwibba, open je camera en publiceer.',
-      copy: 'De site zorgt voor het ontdekken en het delen. De app bewaakt het contact en het vertrouwen.',
+      title: "Klaar om te verkopen?",
+      copy: "Gebruik Zwibba nu in je browser. Je hoeft niets te installeren.",
     },
   },
   referral: {
@@ -210,8 +211,8 @@ export const ui = {
       'Blader door de Zwibba-zoekertjes: categorieën, filters, prijzen in euro en fiches die je makkelijk deelt.',
     hero: {
       eyebrow: 'Zoekertjes',
-      title: 'Verken de Zwibba-zoekertjes voor je de app opent.',
-      copy: 'Zoeken, categorieën, sorteren en nuttige houvasten: de site blijft eenvoudig, snel en makkelijk te delen.',
+      title: "Zoekertjes in België",
+      copy: "Zoek een voorwerp en neem contact op met de verkoper.",
     },
     filters: {
       searchLabel: 'Zoeken',
