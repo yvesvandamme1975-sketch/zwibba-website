@@ -655,6 +655,17 @@ textarea::placeholder {
   color: var(--text-soft);
 }
 
+select {
+  color-scheme: dark;
+}
+
+/* Native popups need an opaque surface; the field background is translucent. */
+select option,
+select optgroup {
+  background-color: var(--bg-elevated);
+  color: var(--text);
+}
+
 textarea {
   resize: vertical;
 }
