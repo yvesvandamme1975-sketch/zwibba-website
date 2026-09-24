@@ -74,7 +74,7 @@ export function createListingShareController({
     preparationAbort = abort;
     const timeout = setTimeout(() => abort.abort(), 15000);
     current.imageStatus = 'preparing';
-    if (current.destination) current.message = socialInstructions(current);
+    if (current.destination === 'tiktok') current.message = socialInstructions(current);
     changed();
     try {
       const imageUrl = new URL(current.imageUrl, baseUrl);
@@ -100,7 +100,7 @@ export function createListingShareController({
     } finally {
       clearTimeout(timeout);
       if (state === current && preparationAbort === abort) {
-        if (current.destination) current.message = socialInstructions(current);
+        if (current.destination === 'tiktok') current.message = socialInstructions(current);
         changed();
       }
     }
@@ -156,7 +156,33 @@ export function createListingShareController({
         downloadFile(preparedFile);
         current.message = 'Téléchargement demandé. Retrouvez l’image dans vos fichiers.';
         result = 'download-requested';
-      } else if (action === 'instagram' || action === 'tiktok') {
+      } else if (action === 'instagram') {
+        current.destination = 'instagram';
+        if (typeof navigatorObject.share === 'function') {
+          const pending = navigatorObject.share({ url: current.url });
+          changed();
+          await pending;
+          current.message = 'Demande transmise au menu de partage.';
+          result = 'handed-off';
+        } else {
+          // Start both activation-gated operations during the click, before awaiting.
+          let copying;
+          try {
+            copying = navigatorObject.clipboard?.writeText
+              ? Promise.resolve(navigatorObject.clipboard.writeText(current.url)).then(() => true, () => false)
+              : Promise.resolve(false);
+          } catch { copying = Promise.resolve(false); }
+          const opened = openWindow('https://www.instagram.com/direct/inbox/');
+          changed();
+          const copied = await copying;
+          current.message = copied
+            ? 'Lien copié, colle-le dans ta conversation Instagram'
+            : 'Copiez le lien ci-dessous et collez-le dans votre conversation Instagram.';
+          if (!copied) current.manualText = current.url;
+          if (!opened) current.message += ' L’ouverture d’Instagram a été bloquée. Ouvrez Instagram pour continuer.';
+          result = !copied ? 'manual' : opened ? 'opened' : 'copied';
+        }
+      } else if (action === 'tiktok') {
         current.destination = action;
         if (current.storyEnabled) current.mode = 'story';
         current.message = socialInstructions(current);
@@ -169,7 +195,7 @@ export function createListingShareController({
         current.message = '';
         result = 'cancelled';
       } else {
-        current.message = ['native-link', 'native-image'].includes(action)
+        current.message = ['native-link', 'native-image', 'instagram'].includes(action)
           ? 'Le partage n’a pas pu démarrer. Réessayez, copiez le lien ou enregistrez l’image.'
           : error.message || 'Action impossible. Réessayez ou copiez le lien.';
         result = 'error';

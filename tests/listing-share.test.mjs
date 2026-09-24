@@ -129,8 +129,8 @@ test('local HTTP image fixtures can exercise the real preparation path', async (
   assert.equal(controller.state.imageStatus, 'ready');
 });
 
-test('Instagram and TikTok explain export without opening or copying silently', async () => {
-  for (const action of ['instagram', 'tiktok']) {
+test('TikTok explains export without opening or copying silently', async () => {
+  for (const action of ['tiktok']) {
     const { controller, calls } = setup();
     assert.equal(await controller.perform(action), 'instructions');
     assert.match(controller.state.message, /visuel.*légende/i);
@@ -184,13 +184,13 @@ test('listing starts at destination menu and prepares branded card instead of ol
   await controller.prepareImage();
   assert.equal(calls.length, 0);
   assert.ok(fetched.every(url=>url==='https://cdn.example/share-v2.jpg'));
-  assert.equal(await controller.perform('instagram'), 'instructions');
+  assert.equal(await controller.perform('instagram'), 'handed-off');
   assert.equal(controller.state.destination, 'instagram');
   assert.equal(controller.state.mode, 'post');
   const result = controller.perform('native-image');
-  assert.equal(calls.length, 1);
-  assert.deepEqual(Object.keys(calls[0][1]), ['files']);
-  assert.equal(await calls[0][1].files[0].text(), 'branded');
+  assert.equal(calls.length, 2);
+  assert.deepEqual(Object.keys(calls[1][1]), ['files']);
+  assert.equal(await calls[1][1].files[0].text(), 'branded');
   assert.equal(await result, 'handed-off');
 });
 
@@ -204,7 +204,7 @@ test('TikTok export never silently opens a URL or shares an unbranded story', as
   assert.deepEqual(calls,[]);
 });
 
-for (const destination of ['instagram','tiktok']) {
+for (const destination of ['tiktok']) {
  test(`${destination} instructions follow preparation and actual file sharing support`, async () => {
   let complete;
   const {controller}=setup({fetchFn:()=>new Promise(resolve=>{complete=resolve;}),navigatorObject:{}});
@@ -224,3 +224,61 @@ for (const destination of ['instagram','tiktok']) {
   assert.doesNotMatch(controller.state.message,/choisissez|enregistrez/i);
  });
 }
+
+
+test('Instagram synchronously shares only the canonical listing URL', async () => {
+  const {controller,calls}=setup();
+  const pending=controller.perform('instagram');
+  assert.deepEqual(calls,[['native',{url:'https://zwibba.com/annonce/velo/'}]]);
+  assert.equal(await pending,'handed-off');
+  assert.equal(controller.state.destination,'instagram');
+});
+
+test('Instagram desktop starts clipboard and opens inbox before awaiting clipboard', async () => {
+  const events=[]; let complete;
+  const {controller}=setup({navigatorObject:{clipboard:{writeText:url=>{events.push(['copy',url]);return new Promise(resolve=>{complete=resolve;});}}},openWindow:url=>{events.push(['open',url]);return true;}});
+  const pending=controller.perform('instagram');
+  assert.deepEqual(events,[['copy','https://zwibba.com/annonce/velo/'],['open','https://www.instagram.com/direct/inbox/']]);
+  complete();
+  assert.equal(await pending,'opened');
+  assert.equal(controller.state.message,'Lien copié, colle-le dans ta conversation Instagram');
+});
+
+for (const clipboard of [undefined,{writeText:()=>Promise.reject(new Error('denied'))}]) {
+ test('Instagram desktop exposes manual URL if clipboard is unavailable or denied '+Boolean(clipboard),async()=>{
+  const events=[];const {controller}=setup({navigatorObject:{clipboard},openWindow:url=>{events.push(url);return true;}});
+  assert.equal(await controller.perform('instagram'),'manual');
+  assert.equal(controller.state.manualText,'https://zwibba.com/annonce/velo/');
+  assert.doesNotMatch(controller.state.message,/Lien copié/);
+  assert.deepEqual(events,['https://www.instagram.com/direct/inbox/']);
+ });
+}
+
+test('Instagram reports blocked desktop inbox without losing copied link',async()=>{
+ const {controller}=setup({navigatorObject:{clipboard:{writeText:async()=>{}}},openWindow:()=>false});
+ assert.equal(await controller.perform('instagram'),'copied');
+ assert.match(controller.state.message,/Lien copié/);
+ assert.match(controller.state.message,/bloquée/);
+});
+
+test('Instagram cancellation does not fall back to clipboard or browser',async()=>{
+ const events=[];const {controller}=setup({navigatorObject:{share:()=>Promise.reject(new DOMException('cancel','AbortError')),clipboard:{writeText:()=>events.push('copy')}},openWindow:()=>events.push('open')});
+ assert.equal(await controller.perform('instagram'),'cancelled');
+ assert.deepEqual(events,[]);
+});
+
+test('Instagram image completion does not overwrite native handoff status',async()=>{
+ let complete;const {controller}=setup({fetchFn:()=>new Promise(resolve=>{complete=resolve;})});
+ const preparing=controller.open({slug:'velo',shareImageUrl:'https://cdn.example/share.jpg'});
+ await controller.perform('instagram');const message=controller.state.message;
+ complete(new Response(new Blob(['jpeg'],{type:'image/jpeg'})));await preparing;
+ assert.equal(controller.state.message,message);
+ assert.equal(controller.state.imageStatus,'ready');
+});
+
+test('Facebook and WhatsApp preserve their existing URLs and captions',async()=>{
+ const {controller,calls}=setup();
+ await controller.perform('facebook');await controller.perform('whatsapp');
+ assert.equal(calls[0][1],'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent('https://zwibba.com/annonce/velo/'));
+ assert.equal(calls[1][1],'https://api.whatsapp.com/send?text='+encodeURIComponent('Vélo de Liège — Zwibba\nhttps://zwibba.com/annonce/velo/'));
+});
