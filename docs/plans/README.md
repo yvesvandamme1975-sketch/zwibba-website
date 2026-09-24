@@ -190,3 +190,6 @@ Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or 
 
 - [Social image sharing design](2026-09-20-zwibba-social-image-sharing-design.md)
 - [Social image sharing implementation](2026-09-20-zwibba-social-image-sharing-implementation.md)
+
+- [Instagram direct link sharing — design](2026-09-24-zwibba-instagram-direct-design.md)
+- [Instagram direct link sharing — implementation](2026-09-24-zwibba-instagram-direct-implementation.md)
