@@ -13,7 +13,9 @@ function renderListingCard(listing) {
   const locationLabel = listing.location ?? listing.locationLabel ?? 'Localisation à confirmer';
   const publishedAt = listing.publishedAt ?? listing.categoryLabel ?? 'Disponible maintenant';
   const listingHref = listing.slug ? `#listing/${encodeURIComponent(listing.slug)}` : '#home';
-  const imageFallback = buildImageFallbackHandler({
+  const imageFallback = listing.thumbnailUrl && listing.primaryImageUrl
+    ? `this.onerror=null;this.src=${JSON.stringify(sanitizeListingImageUrl(listing.primaryImageUrl))};`
+    : buildImageFallbackHandler({
     categoryId: listing.categoryId,
     categoryLabel: listing.categoryLabel,
   });

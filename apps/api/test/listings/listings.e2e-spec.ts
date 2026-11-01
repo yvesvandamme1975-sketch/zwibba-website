@@ -1554,3 +1554,59 @@ test('public listings hide paused, sold, and seller-deleted listings while owner
   assert.equal(ownerDetailResponse.body.editDraft.photos[0].photoId, 'photo_deleted_listing');
   assert.equal(ownerDetailResponse.body.editDraft.photos[0].objectKey, 'draft-photos/deleted.jpg');
 });
+
+test('detail eligibility requires this buyer message and exposes only factual dates', async (t) => {
+  const { app, prisma } = await createTestContext();
+  t.after(() => app.close());
+  const memberSince = new Date('2026-01-02T00:00:00Z');
+  prisma.users.set('owner', { id: 'owner', phoneNumber: '+243990000001', displayName: 'Alice', createdAt: memberSince });
+  prisma.sessions.set('buyer', { token: 'buyer', user: { phoneNumber: '+243990000002' } });
+  prisma.sessions.set('owner', { token: 'owner', user: { phoneNumber: '+243990000001' } });
+  prisma.listings.set('eligibility', { id: 'eligibility', slug: 'eligibility', draftId: 'draft', ownerPhoneNumber: '+243990000001', moderationStatus: 'approved', title: 'Objet', description: '', categoryId: 'home_garden', area: 'Likasi', priceCdf: 10, createdAt: new Date('2026-01-03T00:00:00Z'), publishedAt: new Date('2026-01-05T00:00:00Z') });
+  let senderRole = '';
+  Object.assign(prisma, { chatThread: { findFirst: async ({ where }: any) => {
+    assert.equal(where.listingId, 'eligibility');
+    assert.equal(where.buyer.phoneNumber, '+243990000002');
+    return senderRole === where.messages.some.senderRole ? { id: 'thread' } : null;
+  } } });
+  const get = (token?: string) => {
+    const req = request(app.getHttpServer()).get('/listings/eligibility');
+    return token ? req.set('authorization', `Bearer ${token}`) : req;
+  };
+  assert.equal((await get().expect(200)).body.canReview, false);
+  assert.equal((await get('owner').expect(200)).body.canReview, false);
+  assert.equal((await get('buyer').expect(200)).body.canReview, false, 'empty thread');
+  senderRole = 'seller';
+  assert.equal((await get('buyer').expect(200)).body.canReview, false, 'seller message alone');
+  senderRole = 'buyer';
+  const eligible = (await get('buyer').expect(200)).body;
+  assert.equal(eligible.canReview, true);
+  assert.equal(eligible.seller.memberSince, memberSince.toISOString());
+  assert.equal(eligible.publishedAt, '2026-01-05T00:00:00.000Z');
+  prisma.listings.get('eligibility')!.publishedAt = null;
+  assert.equal((await get().expect(200)).body.publishedAt, null, 'creation is not proof of publication');
+});
+
+test('thumbnail HTTP route serves WebP and preserves 404/503 outcomes', async (t) => {
+  const { app, prisma } = await createTestContext();
+  t.after(() => app.close());
+  const service = app.get(ListingsService);
+  const source = 'https://cdn.zwibba.example/photo.jpg';
+  const listing = { id: 'thumb', slug: 'thumb', draftId: 'thumb', moderationStatus: 'approved', lifecycleStatus: 'active' };
+  prisma.listings.set('thumb', listing);
+  prisma.drafts.set('thumb', { id: 'thumb' });
+  prisma.draftPhotosByDraftId.set('thumb', [{ publicUrl: source, uploadStatus: 'uploaded' }]);
+  const bytes = Buffer.from('RIFF-thumbnail-fixture');
+  (service as any).thumbnails.set(source, { bytes, at: Date.now() });
+  const response = await request(app.getHttpServer()).get('/listings/thumb/thumbnail').expect(200);
+  assert.match(response.headers['content-type'], /^image\/webp/);
+  assert.equal(response.headers['cache-control'], 'no-store');
+  assert.deepEqual(response.body, bytes);
+  listing.moderationStatus = 'rejected';
+  await request(app.getHttpServer()).get('/listings/thumb/thumbnail').expect(404);
+  await request(app.getHttpServer()).get('/listings/missing/thumbnail').expect(404);
+  listing.moderationStatus = 'approved';
+  (service as any).thumbnails.clear();
+  (service as any).thumbnailJobs = 2;
+  await request(app.getHttpServer()).get('/listings/thumb/thumbnail').expect(503);
+});

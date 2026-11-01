@@ -211,3 +211,16 @@ test('server injects live listings into browse pages with empty, fallback and ca
     }, { ZWIBBA_API_BASE_URL: mockBase });
   });
 });
+
+test('malformed live feed is unavailable rather than a false empty catalogue', async () => {
+  await withMockApi((_request, response) => {
+    response.writeHead(200, { 'content-type': 'application/json' });
+    response.end('{}');
+  }, async mockBase => {
+    await withServer(async base => {
+      const body = await (await fetch(`${base}/annonces/`)).text();
+      assert.match(body, /Impossible de charger les annonces pour le moment/);
+      assert.doesNotMatch(body, />0 annonces visibles</);
+    }, { ZWIBBA_API_BASE_URL: mockBase });
+  });
+});

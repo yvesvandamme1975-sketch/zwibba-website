@@ -349,7 +349,7 @@ async function toListingDetail({
     countryCode: listing.countryCode ?? (price.priceCurrency === 'EUR' ? 'BE' : 'CD'),
     summary: listing.description,
     title: listing.title,
-    publishedAt: (listing.publishedAt ?? listing.createdAt)?.toISOString() ?? null,
+    publishedAt: listing.publishedAt?.toISOString() ?? null,
     viewerRole,
     ...buildLifecyclePayload(listing),
   };
@@ -357,20 +357,14 @@ async function toListingDetail({
 
 @Injectable()
 export class ListingsService {
+  private thumbnailJobs = 0;
   private readonly thumbnails = new Map<string, { bytes: Buffer; at: number }>();
   constructor(
     @Inject(PrismaService) private readonly prismaService: PrismaService,
   ) {}
 
   private async resolveListingImages(listing: PersistedListingRecord) {
-    const draft = await this.prismaService.draft.findUnique({
-      include: {
-        photos: true,
-      },
-      where: {
-        id: listing.draftId,
-      },
-    });
+    const draft = await this.resolveListingDraft(listing);
 
     return getListingImageUrls(
       (draft?.photos ?? []) as PersistedDraftPhotoRecord[],
@@ -477,7 +471,11 @@ export class ListingsService {
     if (!source) throw new NotFoundException('Photo indisponible.');
     const cached = this.thumbnails.get(source);
     if (cached && Date.now() - cached.at < 300_000) return cached.bytes;
-    const bytes = await createListingThumbnail(source, loadEnv().r2.publicBaseUrl);
+    if (this.thumbnailJobs >= 2) throw new Error('thumbnail_busy');
+    this.thumbnailJobs += 1;
+    let bytes: Buffer;
+    try { bytes = await createListingThumbnail(source, loadEnv().r2.publicBaseUrl); }
+    finally { this.thumbnailJobs -= 1; }
     if (this.thumbnails.size >= 32) this.thumbnails.delete(this.thumbnails.keys().next().value!);
     this.thumbnails.set(source, { bytes, at: Date.now() });
     return bytes;

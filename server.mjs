@@ -131,7 +131,8 @@ async function fetchBrowseFeed(market) {
     }
 
     const body = await response.json();
-    const items = Array.isArray(body?.items) ? body.items.map(item => ({ ...item, thumbnailUrl: item.thumbnailPath ? `${apiBaseUrl}${item.thumbnailPath}` : null })) : [];
+    if (!Array.isArray(body?.items)) throw new Error('Invalid listings feed');
+    const items = body.items.map(item => ({ ...item, thumbnailUrl: item.thumbnailPath ? `${apiBaseUrl}${item.thumbnailPath}` : null }));
     liveListingsCache.set(market, { items, fetchedAt: now });
     return items;
   } catch (error) {

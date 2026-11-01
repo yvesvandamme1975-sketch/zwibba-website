@@ -66,7 +66,7 @@ export class ListingsController {
   }
   @Get(':slug/thumbnail')
   @Header('Content-Type', 'image/webp')
-  @Header('Cache-Control', 'public, max-age=60')
+  @Header('Cache-Control', 'no-store')
   async getListingThumbnail(@Param('slug') slug: string) {
     try { return new StreamableFile(await this.listingsService.getListingThumbnail(slug)); }
     catch (error) {

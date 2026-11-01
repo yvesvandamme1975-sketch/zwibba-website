@@ -254,7 +254,7 @@ function initBrowseFilters() {
     if (!select) continue;
     for (const option of [...select.options]) {
       if (option.value === 'all') continue;
-      const count = cards.filter(card => card.dataset[field] === (field === 'condition' ? conditionCode(option.value) : option.value)).length;
+      const count = cards.filter(card => card.dataset[field] === option.value).length;
       if (!count) option.remove();
       else option.textContent += ` (${count})`;
     }

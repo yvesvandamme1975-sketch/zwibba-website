@@ -24,3 +24,10 @@ Task 2 also covers the connected API/service/UI changes: apps/api/src/listings/{
 Yves chose "Un message envoyé dans Zwibba". A buyer must send a message in the thread for this listing before submitting a review. Opening a thread, calling or using WhatsApp is insufficient. Both create and update pass the same check. The existing one-review-per-buyer/listing rule remains.
 
 Additional Step 2 verification: `pnpm -C apps/api build && pnpm -C apps/api test`; expected all tests pass. Capture browser checks for price/locality/reset, responsive layout and no-JavaScript listing content. Red/green evidence is preserved outside the repository. Task 2 commit message remains unchanged.
+
+
+## Task 3: Address the first cross-review findings locally
+**Files:** Modify review eligibility, listing dates/image resolution and thumbnail HTTP headers/concurrency, app image fallback, site filter simplification, related API/UI tests.
+Step 1: Cover detail eligibility (anonymous/owner/empty thread/seller-only/buyer message), factual dates, thumbnail HTTP outcomes and app original-photo fallback; correct the identified gaps. Keep the refused review record intact and do not automatically retry publication review.
+Step 2: Run: `npm test && pnpm -C apps/api build && pnpm -C apps/api test && npm run smoke:production-contracts`. Expected: all checks pass. Browser check thumbnail success/fallback and preserve source excerpts for schema/chat role values.
+Step 3: Commit: `git commit -m "fix: close listing review and thumbnail verification gaps"`.
