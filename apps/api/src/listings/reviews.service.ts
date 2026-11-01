@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 
 import type { SessionRecord } from '../auth/auth.service';
+import { canReviewListing } from './review-eligibility';
 import { normalizeReviewComment } from '../common/review-comment';
 import { PrismaService } from '../database/prisma.service';
 
@@ -89,6 +90,10 @@ export class ReviewsService {
 
     if (!buyer) {
       throw new UnauthorizedException('Session inconnue.');
+    }
+
+    if (!await canReviewListing(this.prismaService, listing.id, session.phoneNumber)) {
+      throw new ForbiddenException('Envoyez un message dans Zwibba avant de laisser un avis.');
     }
 
     return this.prismaService.review.upsert({

@@ -1,10 +1,10 @@
 import { escapeHtml } from '../utils/rendering.mjs';
 
 const tabs = [
-  { id: 'sell', href: '#sell', label: 'Vendre' },
-  { id: 'buy', href: '#buy', label: 'Acheter' },
-  { id: 'messages', href: '#messages', label: 'Messages' },
-  { id: 'profile', href: '#profile', label: 'Profil' },
+  { id: 'sell', href: '#sell', icon: '+', label: 'Vendre' },
+  { id: 'buy', href: '#buy', icon: '⌕', label: 'Acheter' },
+  { id: 'messages', href: '#messages', icon: '✉', label: 'Messages' },
+  { id: 'profile', href: '#profile', icon: '◉', label: 'Profil' },
 ];
 
 export function renderAppTabShell({
@@ -31,6 +31,7 @@ export function renderAppTabShell({
             data-tab-id="${tab.id}"
             data-scroll-top-target="${tab.id}"
           >
+            <span aria-hidden="true">${tab.icon}</span>
             <span class="app-tab-shell__nav-label">${tab.label}</span>
             ${
               tab.id === 'messages' && normalizedUnreadCount > 0

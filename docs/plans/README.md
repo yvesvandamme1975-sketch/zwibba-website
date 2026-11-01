@@ -193,3 +193,6 @@ Legacy docs in `/Users/pc/lubu-classifieds` are reference-only unless copied or 
 
 - [Instagram direct link sharing — design](2026-09-24-zwibba-instagram-direct-design.md)
 - [Instagram direct link sharing — implementation](2026-09-24-zwibba-instagram-direct-implementation.md)
+
+- [Site/app feedback design](2026-11-01-zwibba-site-app-feedback-design.md)
+- [Site/app feedback implementation](2026-11-01-zwibba-site-app-feedback-implementation.md)

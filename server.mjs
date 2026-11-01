@@ -3,7 +3,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { buildListingOgTags } from './shared/listing-og.mjs';
+import { buildListingOgTags, formatPrice } from './shared/listing-og.mjs';
 import { resolveApiBaseUrl } from './shared/api-base-url.mjs';
 import { resolveGeoCountry, buildGeoCookie } from './shared/geo-country.mjs';
 import {
@@ -99,14 +99,6 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
-function resolveBaseUrl(requestUrl) {
-  if (publicDomain) {
-    return `https://${publicDomain.replace(/^https?:\/\//, '').replace(/\/+$/, '')}`;
-  }
-
-  return requestUrl.origin;
-}
-
 async function fetchListing(slug) {
   const response = await fetch(`${apiBaseUrl}/listings/${encodeURIComponent(slug)}`, {
     signal: AbortSignal.timeout(2500),
@@ -139,7 +131,8 @@ async function fetchBrowseFeed(market) {
     }
 
     const body = await response.json();
-    const items = Array.isArray(body?.items) ? body.items : [];
+    if (!Array.isArray(body?.items)) throw new Error('Invalid listings feed');
+    const items = body.items.map(item => ({ ...item, thumbnailUrl: item.thumbnailPath ? `${apiBaseUrl}${item.thumbnailPath}` : null }));
     liveListingsCache.set(market, { items, fetchedAt: now });
     return items;
   } catch (error) {
@@ -176,6 +169,14 @@ async function injectLiveListingsIntoHtml(body) {
       ? renderLiveListingCards({ items: items.slice(0, 4), categories: categoriesByLocale[gridMarker.locale] || [] })
       : extractEmptyStateTemplate(body) || '',
   });
+  injected = injected.replace(/<article class="category-card" data-category-card="([^"]+)">[\s\S]*?<\/article>/g, (card, category) => {
+    const count = items.filter(item => item.categoryId === category).length;
+    return count ? card.replace('</h3>', ` (${count})</h3>`) : '';
+  });
+  const countLabel = gridMarker.locale === 'nl-BE'
+    ? `${items.length} ${items.length === 1 ? 'advertentie zichtbaar' : 'advertenties zichtbaar'}`
+    : `${items.length} ${items.length === 1 ? 'annonce visible' : 'annonces visibles'}`;
+  injected = injected.replace(/(<h2 id="results-summary"[^>]*>)[^<]*(<\/h2>)/, `$1${countLabel}$2`);
   injected = injected.replace(
     /<script type="application\/ld\+json">(?=[\s\S]*?"@type":"CollectionPage")[\s\S]*?<\/script>/,
     '',
@@ -208,7 +209,18 @@ function renderDynamicListingPage({ baseUrl, listing, slug }) {
     <script>location.replace(${JSON.stringify(appRoute)});</script>
   </head>
   <body>
-    <noscript><a href="/App/">Ouvrir l'application Zwibba</a></noscript>
+    <main>
+      <h1>${escapeHtml(listing.title || 'Annonce Zwibba')}</h1>
+      <p>${escapeHtml(formatPrice(listing.priceAmount, listing.priceCurrency))} — ${escapeHtml(listing.locationLabel)}</p>
+      <h2>Description</h2>
+      <p>${escapeHtml(listing.summary)}</p>
+      <h2>Vendeur</h2>
+      <p>${escapeHtml(listing.seller?.name || 'Vendeur Zwibba')}</p>
+      <h2>Conseils de sécurité</h2>
+      <ul>${(listing.safetyTips || []).map(tip => `<li>${escapeHtml(tip)}</li>`).join('')}</ul>
+      <a href="${escapeHtml(appRoute)}">Contacter le vendeur dans la web app</a>
+      <p>La web app s’ouvre dans votre navigateur, sans installation. JavaScript est nécessaire pour contacter le vendeur.</p>
+    </main>
   </body>
 </html>`;
 }
@@ -270,7 +282,7 @@ createServer(async (request, response) => {
   // Historical generated pages must also use the live moderation/lifecycle state.
   if (dynamicListingMatch) {
     const slug = decodeURIComponent(dynamicListingMatch[1]);
-    const baseUrl = resolveBaseUrl(url);
+    const baseUrl = frCd.site.baseUrl;
     let listing;
 
     try {

@@ -34,8 +34,8 @@ export function renderInAppBrand({
   return `
     <div class="app-topbar" data-app-brand>
       <span class="app-brand-mark">
-        <img class="app-brand-mark__icon" src="/assets/brand/favicon.svg" alt="" width="32" height="32" />
-        <strong translate="no">Zwibba</strong>
+        <img class="app-brand-mark__icon" src="/assets/brand/logo-zwibba.svg" alt="" width="112" height="48" />
+        <strong class="sr-only" translate="no">Zwibba</strong>
       </span>
       ${market}
     </div>

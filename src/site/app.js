@@ -219,10 +219,19 @@ function initBrowseFilters() {
   const search = document.querySelector('#browse-search');
   const category = document.querySelector('#browse-category');
   const condition = document.querySelector('#browse-condition');
+  const location = document.querySelector('#browse-location');
   const price = document.querySelector('#browse-price');
   const sort = document.querySelector('#browse-sort');
   const chips = Array.from(document.querySelectorAll('[data-chip]'));
   const url = new URL(window.location.href);
+
+  if (location) {
+    for (const label of [...new Set(cards.map(card => card.dataset.location).filter(Boolean))].sort()) {
+      location.add(new Option(label, label));
+    }
+    location.value = url.searchParams.get('city') || 'all';
+    if (!location.value) location.value = 'all';
+  }
 
   if (search && url.searchParams.get('q')) {
     search.value = url.searchParams.get('q');
@@ -238,6 +247,19 @@ function initBrowseFilters() {
   }
   if (sort && url.searchParams.get('sort')) {
     sort.value = url.searchParams.get('sort');
+  }
+
+  const conditionOptions = condition ? [...condition.options].map(option => ({ value: option.value, label: option.textContent })) : [];
+  for (const [select, field] of [[category, 'category']]) {
+    if (!select) continue;
+    for (const option of [...select.options]) {
+      if (option.value === 'all') continue;
+      const count = cards.filter(card => card.dataset[field] === option.value).length;
+      if (!count) option.remove();
+      else option.textContent += ` (${count})`;
+    }
+    if (!select.value) select.value = 'all';
+    select.closest('.field').hidden = select.options.length <= 1;
   }
 
   function matchesFilters(card) {
@@ -257,12 +279,13 @@ function initBrowseFilters() {
 
     let priceMatch = true;
     if (priceValue !== 'all') {
-      const [min, max] = priceValue.split('-').map((value) => Number(value));
-      // Price filters are denominated in the locale currency; cards in other currencies are hidden while a price filter is active.
-      priceMatch = cardCurrency === localCurrency && cardPrice >= min && cardPrice <= max;
+      const [range, currency = localCurrency] = priceValue.split(':');
+      const [min, max] = range.split('-').map(Number);
+      priceMatch = cardCurrency === currency && cardPrice >= min && cardPrice <= max;
     }
 
-    return searchMatch && categoryMatch && conditionMatch && priceMatch;
+    return searchMatch && categoryMatch && conditionMatch && priceMatch
+      && (!location || location.value === 'all' || card.dataset.location === location.value);
   }
 
   function sortCards(visibleCards) {
@@ -293,6 +316,17 @@ function initBrowseFilters() {
   }
 
   function applyFilters() {
+    if (condition) {
+      const selected = condition.value;
+      const relevantCards = cards.filter(card => !category || category.value === 'all' || card.dataset.category === category.value);
+      condition.replaceChildren(...conditionOptions.flatMap(({ value, label }) => {
+        const count = relevantCards.filter(card => card.dataset.condition === value).length;
+        return value === 'all' || count ? [new Option(value === 'all' ? label : `${label} (${count})`, value)] : [];
+      }));
+      condition.value = selected;
+      if (!condition.value) condition.value = 'all';
+      condition.closest('.field').hidden = condition.options.length <= 1;
+    }
     const visibleCards = [];
 
     cards.forEach((card) => {
@@ -318,6 +352,7 @@ function initBrowseFilters() {
     const nextUrl = new URL(window.location.href);
     const values = [
       ['q', search?.value.trim()],
+      ['city', location?.value !== 'all' ? location?.value : ''],
       ['category', category?.value !== 'all' ? category?.value : ''],
       ['condition', condition?.value !== 'all' ? condition?.value : ''],
       ['price', price?.value !== 'all' ? price?.value : ''],
@@ -332,6 +367,7 @@ function initBrowseFilters() {
       }
     });
 
+    if (resetFilters) resetFilters.hidden = !values.some(([, value]) => Boolean(value));
     window.history.replaceState({}, '', `${nextUrl.pathname}${nextUrl.search}`);
   }
 
@@ -355,7 +391,7 @@ function initBrowseFilters() {
     }
   }
 
-  [search, category, condition, price, sort].forEach((field) => {
+  [search, category, condition, price, sort, location].forEach((field) => {
     if (field) {
       field.addEventListener('input', applyFilters);
       field.addEventListener('change', applyFilters);
@@ -364,7 +400,7 @@ function initBrowseFilters() {
 
   resetFilters?.addEventListener('click', () => {
     if (search) search.value = '';
-    for (const field of [category, condition, price]) if (field) field.value = 'all';
+    for (const field of [category, condition, price, location]) if (field) field.value = 'all';
     if (sort) sort.value = 'recent';
     applyFilters();
     search?.focus();

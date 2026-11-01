@@ -40,15 +40,16 @@ export function renderLiveListingCards({ items = [], categories = [] } = {}) {
       const categoryLabel = labelsBySlug.get(categoryId) || item?.categoryLabel || '';
       const locationLabel = item?.locationLabel || '';
       const priceAmount = item?.priceAmount ?? '';
-      const imageUrl = item?.primaryImageUrl || DEFAULT_IMAGE_URL;
+      const condition = ({ new_item: 'neuf', used_good: 'bon-etat', like_new: 'tres-bon-etat', used_fair: 'etat-correct', used_poor: 'use', for_parts: 'pour-pieces', fresh: 'frais' })[item?.condition] || '';
+      const imageUrl = item?.thumbnailUrl || item?.primaryImageUrl || DEFAULT_IMAGE_URL;
       const price = formatPrice(item?.priceAmount, item?.priceCurrency || 'CDF');
 
       return `
-    <article class="listing-card" data-listing-card data-category="${escapeHtml(categoryId)}" data-condition="" data-price="${escapeHtml(
+    <article class="listing-card" data-listing-card data-category="${escapeHtml(categoryId)}" data-location="${escapeHtml(locationLabel)}" data-condition="${escapeHtml(condition)}" data-currency="${escapeHtml(item?.priceCurrency || 'CDF')}" data-price="${escapeHtml(
         priceAmount,
-      )}" data-title="${escapeHtml(title.toLowerCase())}" data-published="">
+      )}" data-title="${escapeHtml(`${title} ${locationLabel}`.toLowerCase())}" data-published="">
       <a class="listing-card__media" href="/annonce/${escapeHtml(slug)}/">
-        <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}" loading="lazy" width="600" height="400" />
+        <img src="${escapeHtml(imageUrl)}" data-original-image="${escapeHtml(item?.primaryImageUrl || DEFAULT_IMAGE_URL)}" onerror="this.onerror=null;this.src=this.dataset.originalImage" alt="${escapeHtml(title)}" loading="lazy" width="600" height="400" />
       </a>
       <div class="listing-card__content">
         <div class="listing-card__meta">
@@ -56,10 +57,10 @@ export function renderLiveListingCards({ items = [], categories = [] } = {}) {
           <span>${escapeHtml(locationLabel)}</span>
         </div>
         <h3><a href="/annonce/${escapeHtml(slug)}/">${escapeHtml(title)}</a></h3>
-        <p></p>
+
         <div class="listing-card__footer">
           <strong>${escapeHtml(price)}</strong>
-          <span></span>
+
         </div>
       </div>
     </article>

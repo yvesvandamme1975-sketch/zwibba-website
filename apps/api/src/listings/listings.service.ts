@@ -1,3 +1,6 @@
+import { loadEnv } from '../config/env';
+import { createListingThumbnail } from './listing-thumbnail';
+import { canReviewListing } from './review-eligibility';
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import type { SessionRecord } from '../auth/auth.service';
@@ -18,6 +21,8 @@ import {
 
 type PersistedListingRecord = {
   area: string;
+  createdAt?: Date;
+  publishedAt?: Date | null;
   attributesJson?: unknown;
   categoryId: string;
   deletedBySellerAt?: Date | null;
@@ -119,7 +124,8 @@ async function buildSellerProfile({
   const ratingCount = aggregate?._count?._all ?? 0;
 
   return {
-    name: owner?.displayName ?? 'Vendeur Zwibba',
+    name: owner?.displayName?.trim() || 'Nom non renseigné',
+    memberSince: owner?.createdAt?.toISOString() ?? null,
     ratingAverage: ratingCount > 0 ? aggregate?._avg?.rating ?? null : null,
     ratingCount,
     role: 'Vendeur',
@@ -267,6 +273,7 @@ function toListingSummary(
     priceCdf: price.priceCdf,
     priceCurrency: price.priceCurrency,
     primaryImageUrl,
+    thumbnailPath: primaryImageUrl?.startsWith(loadEnv().r2.publicBaseUrl.replace(/\/$/, '') + '/') ? `/listings/${encodeURIComponent(listing.slug)}/thumbnail` : null,
     slug: listing.slug,
     storyImageUrl: listing.storyImageUrl ?? null,
     shareImageUrl: listing.shareImageUrl ?? null,
@@ -342,6 +349,7 @@ async function toListingDetail({
     countryCode: listing.countryCode ?? (price.priceCurrency === 'EUR' ? 'BE' : 'CD'),
     summary: listing.description,
     title: listing.title,
+    publishedAt: listing.publishedAt?.toISOString() ?? null,
     viewerRole,
     ...buildLifecyclePayload(listing),
   };
@@ -349,19 +357,14 @@ async function toListingDetail({
 
 @Injectable()
 export class ListingsService {
+  private thumbnailJobs = 0;
+  private readonly thumbnails = new Map<string, { bytes: Buffer; at: number }>();
   constructor(
     @Inject(PrismaService) private readonly prismaService: PrismaService,
   ) {}
 
   private async resolveListingImages(listing: PersistedListingRecord) {
-    const draft = await this.prismaService.draft.findUnique({
-      include: {
-        photos: true,
-      },
-      where: {
-        id: listing.draftId,
-      },
-    });
+    const draft = await this.resolveListingDraft(listing);
 
     return getListingImageUrls(
       (draft?.photos ?? []) as PersistedDraftPhotoRecord[],
@@ -411,15 +414,15 @@ export class ListingsService {
       });
 
     const listingsWithImages = await Promise.all(
-      visibleListings.map(async (listing) => ({
-        images: await this.resolveListingImages(listing),
-        listing,
-      })),
+      visibleListings.map(async (listing) => {
+        const draft = await this.resolveListingDraft(listing);
+        return { listing, condition: draft?.condition ?? '', images: getListingImageUrls(draft?.photos ?? []) };
+      }),
     );
 
     return {
-      items: listingsWithImages.map(({ listing, images }) =>
-        toListingSummary(listing, images[0] ?? null),
+      items: listingsWithImages.map(({ listing, images, condition }) =>
+        ({ ...toListingSummary(listing, images[0] ?? null), condition }),
       ),
     };
   }
@@ -448,7 +451,7 @@ export class ListingsService {
       this.resolveListingImages(persistedListing),
     ]);
 
-    return await toListingDetail({
+    const detail = await toListingDetail({
       editDraft: draft,
       images,
       listing: persistedListing,
@@ -456,6 +459,26 @@ export class ListingsService {
       prismaService: this.prismaService,
       viewerRole,
     });
+    return { ...detail, canReview: viewerRole !== 'owner' && await canReviewListing(this.prismaService, listing.id, session?.phoneNumber) };
+  }
+
+  async getListingThumbnail(slug: string) {
+    // Check public visibility on every request, even when thumbnail bytes are cached.
+    const listing = await this.prismaService.listing.findUnique({ where: { slug } });
+    if (!listing || !isPubliclyVisibleListing(listing as PersistedListingRecord)) throw new NotFoundException('Annonce indisponible.');
+    const images = await this.resolveListingImages(listing as PersistedListingRecord);
+    const source = images[0];
+    if (!source) throw new NotFoundException('Photo indisponible.');
+    const cached = this.thumbnails.get(source);
+    if (cached && Date.now() - cached.at < 300_000) return cached.bytes;
+    if (this.thumbnailJobs >= 2) throw new Error('thumbnail_busy');
+    this.thumbnailJobs += 1;
+    let bytes: Buffer;
+    try { bytes = await createListingThumbnail(source, loadEnv().r2.publicBaseUrl); }
+    finally { this.thumbnailJobs -= 1; }
+    if (this.thumbnails.size >= 32) this.thumbnails.delete(this.thumbnails.keys().next().value!);
+    this.thumbnails.set(source, { bytes, at: Date.now() });
+    return bytes;
   }
 
   async listSellerListings(session: SessionRecord) {

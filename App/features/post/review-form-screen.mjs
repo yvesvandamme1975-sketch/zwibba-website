@@ -142,7 +142,8 @@ export function renderReviewFormScreen({
         </div>
         <div>
           <p class="app-flow__eyebrow">Étape 3</p>
-          <h2 class="app-flow__title">Corrigez le brouillon</h2>
+          <h2 class="app-flow__title">Vérifiez votre annonce</h2>
+          <p>L’IA peut se tromper. Confirmez le titre, la catégorie et les détails en les comparant à votre produit avant de publier.</p>
         </div>
       </header>
 
@@ -296,7 +297,7 @@ export function renderReviewFormScreen({
         ${renderValidationSummary(validationErrors)}
 
         <div class="app-flow__actions">
-          <button class="app-flow__button" type="submit">Publier l'annonce</button>
+          <button class="app-flow__button" type="submit">Confirmer et publier l'annonce</button>
         </div>
       </form>
     </section>

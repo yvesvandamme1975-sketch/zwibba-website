@@ -186,7 +186,7 @@ export const ui = {
     context: {
       eyebrow: 'Contexte',
       title: "Lubumbashi d'abord, Congo ensuite.",
-      copy: 'Prix en CDF, catégories claires, quartier comme filtre et partage WhatsApp par défaut : le site montre le vrai contexte local.',
+      copy: 'Prix en CDF ou en dollars, catégories claires et partage WhatsApp : le site montre le vrai contexte local.',
       notes: [
         {
           title: 'IA utile',
@@ -206,7 +206,7 @@ export const ui = {
   browse: {
     pageTitle: 'Annonces Zwibba',
     pageDescription:
-      "Parcourez les annonces Zwibba : catégories, filtres, prix en CDF et fiches d'annonce faciles à partager.",
+      "Parcourez les annonces Zwibba : catégories, filtres, prix en CDF ou en dollars et fiches d'annonce faciles à partager.",
     hero: {
       eyebrow: 'Petites annonces',
       title: "Annonces à Lubumbashi",
@@ -232,14 +232,15 @@ export const ui = {
         { value: 'recent', label: 'Plus récents' },
         { value: 'cheap', label: 'Prix croissant' },
         { value: 'expensive', label: 'Prix décroissant' },
-        { value: 'featured', label: "Boostées d'abord" },
       ],
     },
     conditions: [
+      { code: 'etat-correct', label: 'État correct' },
+      { code: 'use', label: 'Usé' },
+      { code: 'pour-pieces', label: 'Pour pièces' },
       { code: 'neuf', label: 'Neuf' },
       { code: 'bon-etat', label: 'Bon état' },
       { code: 'tres-bon-etat', label: 'Très bon état' },
-      { code: 'service', label: 'Service' },
       { code: 'frais', label: 'Frais' },
     ],
     chipAllLabel: 'Tout',
@@ -383,7 +384,7 @@ export const featureSteps = [
 export const platformHighlights = [
   {
     title: 'Conçu pour Lubumbashi',
-    copy: 'Filtres par quartier, prix en CDF et catégories utiles pour le marché local.',
+    copy: 'Recherche par article, prix en CDF ou en dollars et catégories utiles pour le marché local.',
   },
   {
     title: 'Transactions entre utilisateurs',

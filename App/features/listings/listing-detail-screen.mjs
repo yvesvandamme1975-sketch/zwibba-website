@@ -119,13 +119,13 @@ function buildActionMarkup(action, detail, contactBusy = false) {
     case 'message':
       return `
         <button
-          class="app-flow__button"
+          class="app-flow__button app-flow__button--secondary"
           type="button"
           data-action="start-thread" ${contactBusy ? 'disabled aria-busy="true"' : ''}
           data-listing-id="${escapeAttribute(detail.id)}"
           data-listing-slug="${escapeAttribute(detail.slug)}"
         >
-          ${contactBusy ? 'Ouverture…' : 'Envoyer un message'}
+          <span aria-hidden="true">✉</span> ${contactBusy ? 'Ouverture…' : 'Envoyer un message'}
         </button>
       `;
     case 'whatsapp': {
@@ -140,12 +140,12 @@ function buildActionMarkup(action, detail, contactBusy = false) {
 
       return `
         <a
-          class="app-flow__button app-flow__button--secondary"
+          class="app-flow__button"
           href="${escapeAttribute(chatLink)}"
           target="_blank"
           rel="noreferrer"
         >
-          WhatsApp
+          <span aria-hidden="true">↗</span> WhatsApp
         </a>
       `;
     }
@@ -156,7 +156,7 @@ function buildActionMarkup(action, detail, contactBusy = false) {
             class="app-flow__button app-flow__button--secondary"
             href="${escapeAttribute(`tel:${detail.contactPhoneNumber}`)}"
           >
-            Appeler
+            <span aria-hidden="true">☎</span> Appeler
           </a>
         `;
       }
@@ -414,10 +414,13 @@ function renderSafetyCard(detail) {
 function renderSellerBlock(seller = {}) {
   const sellerName = seller.name || 'Vendeur Zwibba';
   const sellerRole = seller.role || 'Vendeur';
+  const memberDate = seller.memberSince && new Date(seller.memberSince);
+  const memberSince = memberDate && Number.isFinite(memberDate.getTime()) ? memberDate.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long' }) : '';
   const sellerId = String(seller.sellerId || '').trim();
   const sellerContent = `
     <strong>${escapeHtml(sellerName)}</strong>
     <span>${escapeHtml(sellerRole)}</span>
+    ${memberSince ? `<span>Membre depuis ${escapeHtml(memberSince)}</span>` : ''}
     ${renderRatingStars({
       average: seller.ratingAverage,
       count: seller.ratingCount,
@@ -444,21 +447,16 @@ function renderReviewForm(detail) {
     return '';
   }
 
+  if (!detail.canReview) return '<p class="app-auth__card">Envoyez un message dans Zwibba avant de laisser un avis.</p>';
+
   return `
     <form class="app-auth__card app-detail__review-form" data-action="submit-review">
       <input type="hidden" name="slug" value="${escapeAttribute(detail.slug)}" />
       <strong>Votre avis</strong>
-      <label class="app-detail__review-field">
-        <span>Note</span>
-        <select name="rating" required>
-          <option value="">Choisir</option>
-          <option value="5">5 étoiles</option>
-          <option value="4">4 étoiles</option>
-          <option value="3">3 étoiles</option>
-          <option value="2">2 étoiles</option>
-          <option value="1">1 étoile</option>
-        </select>
-      </label>
+      <fieldset class="app-detail__rating-input">
+        <legend>Votre note</legend>
+        ${[1,2,3,4,5].map(rating => `<label><input type="radio" name="rating" value="${rating}" required aria-label="${rating} étoile${rating > 1 ? 's' : ''}" /><span aria-hidden="true">★</span></label>`).join('')}
+      </fieldset>
       <label class="app-detail__review-field">
         <span>Commentaire</span>
         <textarea name="comment" rows="3" maxlength="280" placeholder="Optionnel"></textarea>
@@ -524,7 +522,8 @@ export function renderListingDetailScreen({
     <section class="app-flow app-flow--detail">
       <header class="app-flow__header">
         <div class="app-flow__meta">
-          ${renderInAppBrand({ compact: true })}
+          ${renderInAppBrand({ compact: true, countryCode: detail.countryCode })}
+          ${buildShareButton(detail, { compact: true })}
           <a class="app-flow__back" href="#buy">Retour aux annonces</a>
         </div>
         <div>
@@ -539,6 +538,7 @@ export function renderListingDetailScreen({
         <em>${escapeHtml(formatListingPrice(detail))}</em>
       </div>
 
+      ${detail.publishedAt && Number.isFinite(Date.parse(detail.publishedAt)) ? `<p>Annonce publiée le ${escapeHtml(new Date(detail.publishedAt).toLocaleDateString('fr-FR'))}</p>` : ''}
       ${renderDetailMedia(detail, selectedImageIndex)}
 
       <div class="app-auth__card">
@@ -549,13 +549,14 @@ export function renderListingDetailScreen({
       ${renderAttributeDetails(detail)}
 
       ${renderSellerBlock(detail.seller)}
+      ${renderSafetyCard(detail)}
       ${
         detail.viewerRole === 'owner'
           ? renderOwnerLifecycleCard(detail)
           : `
             ${contactError ? `<p class="app-flow__error" role="alert">${escapeHtml(contactError)}</p><a href="#messages">Mes messages</a>` : ''}
             <div class="app-flow__actions" data-contact-actions="${escapeAttribute(detail.contactActions.join(','))}">
-              ${['message', 'whatsapp', 'call']
+              ${['whatsapp', 'message', 'call']
                 .filter((action) =>
                   action === 'message'
                     ? Boolean(detail.id)
@@ -563,11 +564,10 @@ export function renderListingDetailScreen({
                 )
                 .map((action) => buildActionMarkup(action, detail, contactBusy))
                 .join('')}
-              ${buildShareButton(detail, { compact: false })}
+
             </div>
           `
       }
-      ${renderSafetyCard(detail)}
 
       ${renderReviewForm(detail)}
     </section>
