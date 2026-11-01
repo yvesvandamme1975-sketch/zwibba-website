@@ -15,6 +15,7 @@ test('renders a feed item as a listing card with EUR price and locale label', ()
         slug: 'velo-cargo-bruxelles',
         title: 'Vélo cargo électrique',
         categoryId: 'vehicles',
+        condition: 'used_good',
         categoryLabel: 'Véhicules',
         locationLabel: 'Bruxelles',
         priceAmount: 950,
@@ -26,6 +27,9 @@ test('renders a feed item as a listing card with EUR price and locale label', ()
   });
 
   assert.match(html, /data-listing-card/);
+  assert.match(html, /data-condition="bon-etat"/);
+  assert.match(html, /data-location="Bruxelles"/);
+  assert.match(html, /data-currency="EUR"/);
   assert.match(html, /href="\/annonce\/velo-cargo-bruxelles\/"/);
   assert.match(html, /Vélo cargo électrique/);
   assert.match(html, /https:\/\/cdn\.test\/velo\.jpg/);

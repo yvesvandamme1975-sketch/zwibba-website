@@ -80,7 +80,7 @@ test('home screen shows the Zwibba in-app brand mark', () => {
     categories,
   });
 
-  assert.match(html, /\/assets\/brand\/favicon\.svg/);
+  assert.match(html, /\/assets\/brand\/logo-zwibba\.svg/);
   assert.match(html, /Zwibba/);
 });
 

@@ -17,7 +17,7 @@ function renderListingCard(listing) {
     categoryId: listing.categoryId,
     categoryLabel: listing.categoryLabel,
   });
-  const imageUrl = sanitizeListingImageUrl(listing.primaryImageUrl, {
+  const imageUrl = sanitizeListingImageUrl(listing.thumbnailUrl || listing.primaryImageUrl, {
     categoryId: listing.categoryId,
     categoryLabel: listing.categoryLabel,
   });

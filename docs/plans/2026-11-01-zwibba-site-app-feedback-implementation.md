@@ -17,3 +17,10 @@ Step 3: Commit: `git commit -m "docs: scope Xavier site and app feedback"`.
 Step 1: Add failing regressions for live currency, actual counts, readable server listing body, country context and default social image, then make minimal fixes.
 Step 2: Run: `npm test && npm run build && npm run smoke:production-contracts`. Expected: all checks pass; record browser checks for mobile and USD filtering. Release smoke marker: `Contacter le vendeur dans la web app` in public listing HTML.
 Step 3: Commit: `git commit -m "fix: align public discovery with live listings"`.
+
+## Scope amendment — 1 November, full feedback mandate and review decision
+Task 2 also covers the connected API/service/UI changes: apps/api/src/listings/{listings.service,listings.controller,reviews.service,review-eligibility,listing-thumbnail}.ts, API tests, App components/services/styles, the post review form and corresponding tests. The original first-batch scope is extended, not treated as a completed release. Reuse sharp; no migration or media overwrite.
+
+Yves chose "Un message envoyé dans Zwibba". A buyer must send a message in the thread for this listing before submitting a review. Opening a thread, calling or using WhatsApp is insufficient. Both create and update pass the same check. The existing one-review-per-buyer/listing rule remains.
+
+Additional Step 2 verification: `pnpm -C apps/api build && pnpm -C apps/api test`; expected all tests pass. Capture browser checks for price/locality/reset, responsive layout and no-JavaScript listing content. Red/green evidence is preserved outside the repository. Task 2 commit message remains unchanged.

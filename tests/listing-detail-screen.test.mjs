@@ -6,6 +6,7 @@ import { renderListingDetailScreen } from '../App/features/listings/listing-deta
 test('listing detail screen renders the buyer detail state inside /App', () => {
   const html = renderListingDetailScreen({
     detail: {
+      canReview: true,
       categoryLabel: 'Téléphones & Tablettes',
       contactPhoneNumber: '+243990000001',
       contactActions: ['whatsapp', 'sms', 'call'],
@@ -390,7 +391,7 @@ test('listing detail screen renders a whatsapp link for a buyer when the seller 
     html.includes(expectedHref),
     `expected html to include ${expectedHref}`,
   );
-  assert.match(html, /class="app-flow__button app-flow__button--secondary"[^>]*href="https:\/\/wa\.me\/243990000001/);
+  assert.match(html, /class="app-flow__button"[^>]*href="https:\/\/wa\.me\/243990000001/);
   assert.match(html, />\s*WhatsApp\s*</);
 });
 
@@ -614,4 +615,27 @@ test('listing detail screen renders a share button inside the owner card when ed
 test('detail share entry passes the branded image separately from the primary and story image', () => {
  const html=renderListingDetailScreen({state:'ready',detail:{id:'fixture',slug:'fixture',title:'Fixture',contactActions:[],safetyTips:[],seller:{name:'Vendeur'},shareImageUrl:'https://cdn.example/branded.jpg',storyImageUrl:'https://cdn.example/story.png'}});
  assert.match(html,/data-branded-image-url="https:\/\/cdn.example\/branded.jpg"/);
+});
+
+
+test('listing country takes precedence over a different browsing market', () => {
+  globalThis.ZWIBBA_ACTIVE_COUNTRY_CODE = 'BE';
+  try {
+    const html = renderListingDetailScreen({ state: 'ready', detail: {
+      id: 'country-test', slug: 'country-test', title: 'Article', countryCode: 'CD',
+      priceAmount: 6, priceCurrency: 'USD', locationLabel: 'Likasi', summary: 'Article',
+      contactActions: [], images: [], seller: {}, safetyTips: [],
+    }});
+    assert.match(html, /Marché actif : RDC/);
+    assert.doesNotMatch(html, /Marché actif : Belgique/);
+  } finally { delete globalThis.ZWIBBA_ACTIVE_COUNTRY_CODE; }
+});
+
+
+test('review form stays hidden without a verified message and seller dates are factual', () => {
+ const html = renderListingDetailScreen({ state:'ready', detail:{id:'a',slug:'a',title:'Article',summary:'',images:[],contactActions:[],safetyTips:[],seller:{name:'Alice',memberSince:'2026-01-02T00:00:00.000Z'},canReview:false} });
+ assert.doesNotMatch(html, /data-action="submit-review"/);
+ assert.match(html, /Envoyez un message dans Zwibba/);
+ assert.match(html, /Membre depuis/);
+ assert.doesNotMatch(html, /téléphone vérifié/i);
 });

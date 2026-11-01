@@ -168,22 +168,22 @@ test('dist/be/index.html og:image and twitter:image point to the unprefixed root
   buildSite();
 
   const html = readFileSync(path.join(distDir, 'be', 'index.html'), 'utf8');
-  assert.match(html, /<meta property="og:image" content="https:\/\/zwibba\.com\/assets\/brand\/logo-zwibba\.svg" \/>/);
-  assert.match(html, /<meta name="twitter:image" content="https:\/\/zwibba\.com\/assets\/brand\/logo-zwibba\.svg" \/>/);
+  assert.match(html, /<meta property="og:image" content="https:\/\/zwibba\.com\/assets\/brand\/og-default\.png" \/>/);
+  assert.match(html, /<meta name="twitter:image" content="https:\/\/zwibba\.com\/assets\/brand\/og-default\.png" \/>/);
 });
 
 test('dist/be/nl/index.html og:image and twitter:image point to the unprefixed root asset', () => {
   buildSite();
 
   const html = readFileSync(path.join(distDir, 'be', 'nl', 'index.html'), 'utf8');
-  assert.match(html, /<meta property="og:image" content="https:\/\/zwibba\.com\/assets\/brand\/logo-zwibba\.svg" \/>/);
-  assert.match(html, /<meta name="twitter:image" content="https:\/\/zwibba\.com\/assets\/brand\/logo-zwibba\.svg" \/>/);
+  assert.match(html, /<meta property="og:image" content="https:\/\/zwibba\.com\/assets\/brand\/og-default\.png" \/>/);
+  assert.match(html, /<meta name="twitter:image" content="https:\/\/zwibba\.com\/assets\/brand\/og-default\.png" \/>/);
 });
 
-test('dist/index.html og:image is unchanged (root page unaffected by the fix)', () => {
+test('dist/index.html og:image uses the same raster asset as localized pages', () => {
   buildSite();
 
   const html = readFileSync(path.join(distDir, 'index.html'), 'utf8');
-  assert.match(html, /<meta property="og:image" content="https:\/\/zwibba\.com\/assets\/brand\/logo-zwibba\.svg" \/>/);
-  assert.match(html, /<meta name="twitter:image" content="https:\/\/zwibba\.com\/assets\/brand\/logo-zwibba\.svg" \/>/);
+  assert.match(html, /<meta property="og:image" content="https:\/\/zwibba\.com\/assets\/brand\/og-default\.png" \/>/);
+  assert.match(html, /<meta name="twitter:image" content="https:\/\/zwibba\.com\/assets\/brand\/og-default\.png" \/>/);
 });

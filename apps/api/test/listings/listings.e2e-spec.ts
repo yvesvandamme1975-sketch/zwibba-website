@@ -713,12 +713,14 @@ test('listings feed includes approved active system seed listings from the same 
     {
       categoryId: 'food',
       categoryLabel: 'Alimentation',
+      condition: 'fresh',
       id: 'listing_seed_food_listing',
       locationLabel: 'Marché Kenya',
       priceAmount: 12000,
       priceCdf: 12000,
       priceCurrency: 'CDF',
       primaryImageUrl: '/assets/listings/mangues-et-avocats-frais-du-haut-katanga.jpg',
+      thumbnailPath: null,
       slug: 'panier-fruits-frais',
       storyImageUrl: null,
       shareImageUrl: null,
@@ -834,7 +836,7 @@ test('listing detail returns a database-backed published listing with seller met
     (user) => user.phoneNumber === '+243990000002',
   );
   assert.ok(fallbackUser);
-  assert.equal(fallbackResponse.body.seller.name, 'Vendeur Zwibba');
+  assert.equal(fallbackResponse.body.seller.name, 'Nom non renseigné');
   assert.equal(fallbackResponse.body.seller.ratingAverage, null);
   assert.equal(fallbackResponse.body.seller.ratingCount, 0);
   assert.equal(fallbackResponse.body.seller.sellerId, fallbackUser.id);
@@ -872,7 +874,7 @@ test('listing detail returns a database-backed published listing with seller met
     .get('/listings/radio-portable')
     .expect(200);
 
-  assert.equal(orphanResponse.body.seller.name, 'Vendeur Zwibba');
+  assert.equal(orphanResponse.body.seller.name, 'Nom non renseigné');
   assert.equal(orphanResponse.body.seller.ratingAverage, null);
   assert.equal(orphanResponse.body.seller.ratingCount, 0);
   assert.equal(orphanResponse.body.seller.sellerId, null);

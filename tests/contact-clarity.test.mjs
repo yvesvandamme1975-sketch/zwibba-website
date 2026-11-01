@@ -20,7 +20,7 @@ for (const render of [renderBuyScreen, renderHomeScreen]) {
   });
 }
 test('listing content precedes seller while contact stays before optional review', () => {
-  const html = renderListingDetailScreen({ state:'ready', detail:{ id:'item', title:'Objet', summary:'Description', locationLabel:'Bruxelles', priceAmount:10, priceCurrency:'EUR', seller:{name:'Vendeur'}, safetyTips:['Lieu public'], contactActions:['message'], images:[] } });
+  const html = renderListingDetailScreen({ state:'ready', detail:{ canReview:true, id:'item', title:'Objet', summary:'Description', locationLabel:'Bruxelles', priceAmount:10, priceCurrency:'EUR', seller:{name:'Vendeur'}, safetyTips:['Lieu public'], contactActions:['message'], images:[] } });
   assert.ok(html.indexOf('data-contact-actions') < html.indexOf('Votre avis'));
   assert.ok(html.indexOf('Description') < html.indexOf('Vendeur'));
   assert.ok(html.indexOf('app-detail__media') < html.indexOf('Vendeur'));

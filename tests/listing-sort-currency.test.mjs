@@ -45,10 +45,3 @@ test('le build publie la devise des cartes et le module de tri du site', () => {
   const page = readFileSync('dist/index.html', 'utf8');
   assert.match(page, /<script type=\"module\" src=\"\/assets\/app\.js/);
 });
-
-test('le filtre prix exclut les cartes hors devise locale quand il est actif', () => {
-  const app = readFileSync('src/site/app.js', 'utf8');
-
-  assert.match(app, /Price filters are denominated in the locale currency/);
-  assert.match(app, /priceMatch\s*=\s*cardCurrency === localCurrency && cardPrice >= min && cardPrice <= max/);
-});

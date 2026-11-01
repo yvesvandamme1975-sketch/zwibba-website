@@ -7,7 +7,7 @@ test('brand keeps the name untranslated and separate from the market', () => {
   const html = renderInAppBrand({ countryCode: 'BE' });
   assert.match(html, /class="app-topbar"/);
   assert.match(html, /<strong[^>]*translate="no"[^>]*>Zwibba<\/strong>/);
-  assert.match(html, /alt=""[^>]*width="32"[^>]*height="32"/);
+  assert.match(html, /alt=""[^>]*width="112"[^>]*height="48"/);
   assert.ok(html.indexOf('Zwibba</strong>') < html.indexOf('data-market-context'));
 });
 

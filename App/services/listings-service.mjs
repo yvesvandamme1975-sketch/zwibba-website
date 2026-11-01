@@ -62,7 +62,8 @@ export function createListingsService({
         throw await parseError(response, 'Impossible de charger les annonces.');
       }
 
-      return response.json();
+      const data = await response.json();
+      return { ...data, items: data.items.map(item => ({ ...item, thumbnailUrl: item.thumbnailPath ? `${apiBaseUrl}${item.thumbnailPath}` : null })) };
     },
 
     async reportSearchQuery(payload) {

@@ -39,6 +39,14 @@ type SeededReview = {
 };
 
 class _FakePrismaService {
+  sentBuyerMessage = false;
+  readonly chatThread = { findFirst: async ({ where }: any) => {
+    assert.equal(where.messages.some.senderRole, 'buyer');
+    assert.equal(where.buyer.phoneNumber, '+243990000002');
+    assert.equal(where.listingId, 'listing_review_3');
+    return this.sentBuyerMessage ? { id: 'thread_with_buyer_message' } : null;
+  } };
+
   readonly listings = new Map<string, SeededListing>();
   readonly reviews = new Map<string, SeededReview>();
   readonly sessions = new Map<string, SeededSession>();
@@ -291,6 +299,13 @@ test('review submit endpoint creates and updates one review per buyer and listin
     ownerPhoneNumber: '+243990000001',
     slug: 'samsung-a54',
   });
+
+  await request(harness.app.getHttpServer())
+    .post('/listings/samsung-a54/reviews')
+    .set('authorization', 'Bearer buyer_session')
+    .send({ rating: 4, comment: 'Sans échange' }).expect(403);
+  assert.equal(harness.prisma.reviews.size, 0);
+  harness.prisma.sentBuyerMessage = true;
 
   const createResponse = await request(harness.app.getHttpServer())
     .post('/listings/samsung-a54/reviews')

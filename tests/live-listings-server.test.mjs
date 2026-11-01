@@ -86,7 +86,7 @@ test('public listing pages preserve market metadata and do not cache false fallb
   await withMockApi((request, response) => {
     if (request.url === '/listings/belgian') {
       response.setHeader('Content-Type', 'application/json');
-      response.end(JSON.stringify({ ...listing({ slug: 'belgian', title: 'Vélo belge' }), countryCode: 'BE', shareImageUrl: 'https://cdn.test/share.png' }));
+      response.end(JSON.stringify({ ...listing({ slug: 'belgian', title: 'Vélo belge' }), countryCode: 'BE', summary: 'Vélo <révisé> & prêt', seller: { name: 'Alice & Bob' }, shareImageUrl: 'https://cdn.test/share.png' }));
     } else {
       response.statusCode = request.url === '/listings/failure' ? 503 : 404;
       response.end('{}');
@@ -96,6 +96,11 @@ test('public listing pages preserve market metadata and do not cache false fallb
       const live = await fetch(`${baseUrl}/annonce/belgian/`);
       assert.equal(live.status, 200);
       const body = await live.text();
+      assert.match(body, /rel="canonical" href="https:\/\/zwibba\.com\/annonce\/belgian\/"/);
+      assert.match(body, /<h1>Vélo belge<\/h1>/);
+      assert.match(body, /Vélo &lt;révisé&gt; &amp; prêt/);
+      assert.match(body, /Alice &amp; Bob/);
+      assert.match(body, /Contacter le vendeur dans la web app/);
       assert.match(body, /og:locale" content="fr_BE/);
       assert.match(body, /og:image:height" content="630/);
       const missing = await fetch(`${baseUrl}/annonce/missing/`);
@@ -136,6 +141,7 @@ test('server injects live listings into browse pages with empty, fallback and ca
       const frBe = await frBeResponse.text();
       assert.equal(frBeResponse.status, 200);
       assert.match(frBe, /Vélo live Bruxelles/);
+      assert.match(frBe, /id="results-summary"[^>]*>1 annonce visible<\/h2>/);
       assert.doesNotMatch(frBe, /data-live-listings-empty-state/);
       assert.match(
         frBe,
@@ -159,6 +165,8 @@ test('server injects live listings into browse pages with empty, fallback and ca
       for (const [route,title] of [['/','Moto live Lubumbashi'],['/be/','Vélo live Bruxelles'],['/be/nl/','Vélo live Bruxelles']]) {
         const landing=await (await fetch(`${baseUrl}${route}`)).text();
         assert.match(landing,new RegExp(title));
+        assert.equal((landing.match(/data-category-card=/g) || []).length, 1);
+        assert.match(landing, /Véhicules \(1\)|Voertuigen \(1\)/);
         assert.doesNotMatch(landing,/Samsung Galaxy A54 neuf sous emballage/);
       }
 

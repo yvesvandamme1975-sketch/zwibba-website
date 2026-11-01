@@ -36,10 +36,12 @@ test('fr-cd ui.about exposes the context note cards', () => {
 test('fr-cd ui.browse.conditions is a list of {code, label} with ascii-stable codes', () => {
   assert.ok(Array.isArray(ui.browse.conditions));
   assert.deepEqual(ui.browse.conditions, [
+    { code: 'etat-correct', label: 'État correct' },
+    { code: 'use', label: 'Usé' },
+    { code: 'pour-pieces', label: 'Pour pièces' },
     { code: 'neuf', label: 'Neuf' },
     { code: 'bon-etat', label: 'Bon état' },
     { code: 'tres-bon-etat', label: 'Très bon état' },
-    { code: 'service', label: 'Service' },
     { code: 'frais', label: 'Frais' },
   ]);
   assert.equal(ui.browse.hero.eyebrow, 'Petites annonces');

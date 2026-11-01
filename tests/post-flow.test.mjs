@@ -457,7 +457,7 @@ test('capture screen renders a real image picker instead of demo preset cards', 
     draft: null,
   });
 
-  assert.match(html, /\/assets\/brand\/favicon\.svg/);
+  assert.match(html, /\/assets\/brand\/logo-zwibba\.svg/);
   assert.match(html, /Zwibba/);
   assert.match(html, /type="file"/);
   assert.match(html, /accept="image\/\*"/);

@@ -434,9 +434,9 @@ function renderLayout(content, {
   description,
   body,
   canonicalPath = currentPath,
-  ogImage = '/assets/brand/logo-zwibba.svg',
-  ogImageHeight = '',
-  ogImageWidth = '',
+  ogImage = '/assets/brand/og-default.png',
+  ogImageHeight = '630',
+  ogImageWidth = '1200',
   ogTitle = title,
   productPriceAmount = '',
   productPriceCurrency = '',
@@ -529,7 +529,7 @@ function renderCategoryCards(content) {
   return content.categories
     .map(
       (category) => `
-        <article class="category-card">
+        <article class="category-card" data-category-card="${escapeHtml(category.slug)}">
           <span class="category-card__icon">${icon(category.icon)}</span>
           <h3>${escapeHtml(category.label)}</h3>
           <p>${escapeHtml(category.hint)}</p>
@@ -821,6 +821,10 @@ function renderBrowsePage(content) {
             </select>
           </div>
           <div class="field">
+            <label for="browse-location">${site.locale === 'nl-BE' ? 'Plaats' : 'Localité'}</label>
+            <select id="browse-location"><option value="all">${site.locale === 'nl-BE' ? 'Alle plaatsen' : 'Toutes les localités'}</option></select>
+          </div>
+          <div class="field">
             <label for="browse-condition">${browse.filters.conditionLabel}</label>
             <select id="browse-condition">
               <option value="all">${browse.filters.conditionAllLabel}</option>
@@ -833,7 +837,12 @@ function renderBrowsePage(content) {
             <label for="browse-price">${browse.filters.priceLabel}</label>
             <select id="browse-price">
               <option value="all">${browse.filters.priceAllLabel}</option>
-              ${browse.filters.priceOptions
+              ${[...(site.market === 'CD' ? [
+        { value: '0-25:USD', label: '0 - 25 US$' },
+        { value: '25.01-100:USD', label: '25,01 - 100 US$' },
+        { value: '100.01-500:USD', label: '100,01 - 500 US$' },
+        { value: '500.01-999999999:USD', label: 'Plus de 500 US$' },
+] : []), ...browse.filters.priceOptions]
                 .map((option) => `<option value="${option.value}">${escapeHtml(option.label)}</option>`)
                 .join('\n              ')}
             </select>
@@ -852,7 +861,7 @@ function renderBrowsePage(content) {
         <div class="browse-results">
           <div class="browse-results__header">
             <div>
-              <p class="eyebrow">${categories.length} ${site.language === 'nl' ? 'categorieën' : 'catégories'}</p>
+
               <h2 id="results-summary" aria-live="polite">${browse.resultsFallback}</h2>
             </div>
             <button class="button button--ghost" type="button" data-reset-filters>${escapeHtml(ui.clarity.reset)}</button>

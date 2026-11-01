@@ -1,3 +1,4 @@
+import { Header, StreamableFile, ServiceUnavailableException } from '@nestjs/common';
 import {
   Body,
   Controller,
@@ -63,6 +64,17 @@ export class ListingsController {
     } catch {}
     return { ok: true };
   }
+  @Get(':slug/thumbnail')
+  @Header('Content-Type', 'image/webp')
+  @Header('Cache-Control', 'public, max-age=60')
+  async getListingThumbnail(@Param('slug') slug: string) {
+    try { return new StreamableFile(await this.listingsService.getListingThumbnail(slug)); }
+    catch (error) {
+      if (error instanceof Error && 'getStatus' in error) throw error;
+      throw new ServiceUnavailableException('Miniature temporairement indisponible.');
+    }
+  }
+
   @Get(':slug')
   async getListingDetail(
     @Headers('authorization') authorization: string | undefined,

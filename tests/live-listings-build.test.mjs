@@ -111,3 +111,11 @@ test('landing cards use live data with a safe fallback and the final CTA opens t
     assert.match(html,/<section class="section section--cta">[\s\S]*?href="\/App\//);
   }
 });
+
+
+test('public social previews use the existing raster image', () => {
+  buildSite();
+  for (const file of ['index.html', 'annonces/index.html', 'be/index.html', 'be/nl/index.html']) {
+    assert.match(readDist(file), /property="og:image" content="[^" ]+og-default\.png"/);
+  }
+});
