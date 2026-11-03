@@ -96,7 +96,24 @@ function buildShareButton(detail, { compact = false } = {}) {
     ? 'app-flow__button app-flow__button--icon'
     : 'app-flow__button app-flow__button--share';
 
-  return `
+  // Story entry opts into the success-screen story mode (Xavier, 02/11 request).
+  const storyButton = compact && detail.storyImageUrl ? `
+    <button
+      class="app-flow__button app-flow__button--share"
+      type="button"
+      data-action="open-share-menu"
+      data-share-mode="story"
+      data-share-context="story"
+      data-share-slug="${escapeAttribute(detail.slug)}"
+      data-share-title="${escapeAttribute(detail.title)}"
+      data-share-url="${escapeAttribute(shareUrl)}"
+      data-story-image-url="${escapeAttribute(detail.storyImageUrl)}"
+    >
+      Partager en story
+    </button>
+  ` : '';
+
+  return storyButton + `
     <button
       class="${escapeAttribute(className)}"
       type="button"

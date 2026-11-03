@@ -2713,8 +2713,8 @@ if (appRoot) {
       storyImageUrl: trigger.dataset.storyImageUrl || matchingDetail?.storyImageUrl || '',
       shareImageUrl: trigger.dataset.brandedImageUrl || matchingDetail?.shareImageUrl || '',
       primaryImageUrl: trigger.dataset.shareImageUrl || matchingDetail?.primaryImageUrl || '',
-      // Only the post-publication success screen keeps the story mode.
-      storyEnabled: trigger.dataset.shareContext === 'success',
+      // Story mode: post-publication success screen and the explicit listing story entry.
+      storyEnabled: ['success', 'story'].includes(trigger.dataset.shareContext),
     }, { mode: trigger.dataset.shareMode });
     const openedMenu = shareController.state;
     void pending.then(result => {
