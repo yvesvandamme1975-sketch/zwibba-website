@@ -489,6 +489,8 @@ test('chat send persists a seller reply on the authenticated thread', async (t) 
   assert.equal(sendResponse.body.messages.length, 2);
   assert.equal(sendResponse.body.messages.at(-1).body, 'Oui, toujours disponible.');
   assert.equal(sendResponse.body.messages.at(-1).senderRole, 'seller');
+  // The real send time travels with the message, so the app never shows a frozen "Maintenant".
+  assert.equal(sendResponse.body.messages.at(-1).sentAt, new Date(2 * 60_000 + 1_000_000).toISOString());
   assert.equal(
     prisma.chatMessagesByThreadId.get('thread_listing_1')?.length,
     2,

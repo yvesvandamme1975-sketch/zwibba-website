@@ -31,3 +31,20 @@ test('thumbnail never serves an unpublished listing, including a previously cach
   visible = false;
   await assert.rejects(() => service.getListingThumbnail('a'), /Annonce indisponible/);
 });
+
+test('thumbnail requests beyond the two concurrent jobs wait their turn instead of failing', async () => {
+  const service = new ListingsService({
+    listing: { findUnique: async ({ where }: any) => ({ slug: where.slug, draftId: where.slug, moderationStatus: 'approved', lifecycleStatus: 'active' }) },
+    draft: { findUnique: async ({ where }: any) => ({ photos: [{ publicUrl: `https://cdn.zwibba.example/draft-photos/${where.id}.jpg`, uploadStatus: 'uploaded' }] }) },
+  } as any);
+  let running = 0; let peak = 0;
+  (service as any).renderThumbnail = async (source: string) => {
+    running += 1; peak = Math.max(peak, running);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    running -= 1;
+    return Buffer.from(source);
+  };
+  const results = await Promise.all(['a', 'b', 'c', 'd', 'e'].map((slug) => service.getListingThumbnail(slug)));
+  assert.deepEqual(results.map(String), ['a', 'b', 'c', 'd', 'e'].map((id) => `https://cdn.zwibba.example/draft-photos/${id}.jpg`));
+  assert.equal(peak, 2);
+});

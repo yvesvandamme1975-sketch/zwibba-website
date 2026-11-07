@@ -1608,5 +1608,7 @@ test('thumbnail HTTP route serves WebP and preserves 404/503 outcomes', async (t
   listing.moderationStatus = 'approved';
   (service as any).thumbnails.clear();
   (service as any).thumbnailJobs = 2;
+  // Busy now means both slots taken and the waiting queue full.
+  (service as any).thumbnailWaiters.push(...Array.from({ length: 24 }, () => () => {}));
   await request(app.getHttpServer()).get('/listings/thumb/thumbnail').expect(503);
 });

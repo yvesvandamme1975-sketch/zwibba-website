@@ -1,12 +1,23 @@
 import { renderInAppBrand } from '../../components/in-app-brand.mjs';
 import { escapeAttribute, escapeHtml } from '../../utils/rendering.mjs';
 
+// sentAtLabel is fixed when stored ("Maintenant"); the real time comes from sentAt, in the viewer's timezone.
+function formatSentAt(message, now = new Date()) {
+  const sentAt = message.sentAt ? new Date(message.sentAt) : null;
+  if (!sentAt || Number.isNaN(sentAt.getTime())) return message.sentAtLabel ?? '';
+  const pad = (value) => String(value).padStart(2, '0');
+  const time = `${pad(sentAt.getHours())}:${pad(sentAt.getMinutes())}`;
+  if (sentAt.toDateString() === now.toDateString()) return time;
+  const day = `${pad(sentAt.getDate())}/${pad(sentAt.getMonth() + 1)}`;
+  return sentAt.getFullYear() === now.getFullYear() ? `${day} ${time}` : `${day}/${sentAt.getFullYear()} ${time}`;
+}
+
 function renderMessage(message) {
   return `
     <article class="app-thread__bubble app-thread__bubble--${escapeAttribute(message.senderRole)}">
       <strong>${escapeHtml(message.senderRole === 'buyer' ? 'Acheteur' : 'Vendeur')}</strong>
       <p>${escapeHtml(message.body)}</p>
-      <small>${escapeHtml(message.sentAtLabel)}</small>
+      <small>${escapeHtml(formatSentAt(message))}</small>
     </article>
   `;
 }

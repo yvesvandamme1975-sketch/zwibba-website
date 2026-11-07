@@ -54,6 +54,7 @@ function toThreadPayload(
       body: message.body,
       id: message.id,
       senderRole: message.senderRole,
+      sentAt: message.createdAt?.toISOString(),
       sentAtLabel: message.sentAtLabel,
     })),
     participantName: buildParticipantName({
