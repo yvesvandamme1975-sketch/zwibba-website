@@ -103,3 +103,23 @@ test('thread screen renders buyer and seller messages with a send form', () => {
   assert.doesNotMatch(html, /class="app-home__search"/);
   assert.match(html, /Envoyer/);
 });
+
+test('thread screen shows each message send time instead of the stored "Maintenant" label', () => {
+  const today = new Date();
+  today.setHours(9, 5, 0, 0);
+  const html = renderThreadScreen({
+    thread: {
+      id: 'thread_1',
+      listingTitle: 'Samsung Galaxy A54',
+      messages: [
+        { body: 'Ancien', id: 'm1', senderRole: 'buyer', sentAt: new Date(2020, 0, 2, 14, 30).toISOString(), sentAtLabel: 'Maintenant' },
+        { body: 'Récent', id: 'm2', senderRole: 'seller', sentAt: today.toISOString(), sentAtLabel: 'Maintenant' },
+      ],
+      participantName: 'Acheteur Zwibba',
+    },
+  });
+
+  assert.doesNotMatch(html, /Maintenant/);
+  assert.match(html, /02\/01\/2020 14:30/);
+  assert.match(html, /<small>09:05<\/small>/);
+});

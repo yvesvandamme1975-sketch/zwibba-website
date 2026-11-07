@@ -358,6 +358,7 @@ async function toListingDetail({
 @Injectable()
 export class ListingsService {
   private thumbnailJobs = 0;
+  private readonly thumbnailWaiters: Array<() => void> = [];
   private readonly thumbnails = new Map<string, { bytes: Buffer; at: number }>();
   constructor(
     @Inject(PrismaService) private readonly prismaService: PrismaService,
@@ -471,14 +472,27 @@ export class ListingsService {
     if (!source) throw new NotFoundException('Photo indisponible.');
     const cached = this.thumbnails.get(source);
     if (cached && Date.now() - cached.at < 300_000) return cached.bytes;
-    if (this.thumbnailJobs >= 2) throw new Error('thumbnail_busy');
-    this.thumbnailJobs += 1;
+    // At most 2 sharp jobs at once; a feed asks for many, so extra requests queue instead of failing.
+    if (this.thumbnailJobs >= 2) {
+      if (this.thumbnailWaiters.length >= 24) throw new Error('thumbnail_busy');
+      await new Promise<void>((resolve) => this.thumbnailWaiters.push(resolve));
+    } else this.thumbnailJobs += 1;
     let bytes: Buffer;
-    try { bytes = await createListingThumbnail(source, loadEnv().r2.publicBaseUrl); }
-    finally { this.thumbnailJobs -= 1; }
+    try {
+      const ready = this.thumbnails.get(source);
+      bytes = ready && Date.now() - ready.at < 300_000 ? ready.bytes : await this.renderThumbnail(source);
+    } finally {
+      // Hand the slot straight to the next waiter, otherwise free it.
+      const next = this.thumbnailWaiters.shift();
+      if (next) next(); else this.thumbnailJobs -= 1;
+    }
     if (this.thumbnails.size >= 32) this.thumbnails.delete(this.thumbnails.keys().next().value!);
     this.thumbnails.set(source, { bytes, at: Date.now() });
     return bytes;
+  }
+
+  private renderThumbnail(source: string) {
+    return createListingThumbnail(source, loadEnv().r2.publicBaseUrl);
   }
 
   async listSellerListings(session: SessionRecord) {

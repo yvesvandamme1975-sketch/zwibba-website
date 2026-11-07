@@ -242,6 +242,21 @@ function hasStrongEducationSignal(haystack: string) {
   ]);
 }
 
+// Laptops are not phones or tablets, and "notebook" alone would otherwise read as school supplies.
+// "computer" alone is left out: vision labels tablets "Tablet computer".
+function hasStrongComputerSignal(haystack: string) {
+  return hasAnyPattern(haystack, [
+    'ordinateur',
+    'laptop',
+    'netbook',
+    'pc portable',
+    'macbook',
+    'chromebook',
+    'thinkpad',
+    'elitebook',
+  ]);
+}
+
 export function disambiguateVisionCategory({
   draftPatch,
   signals,
@@ -297,6 +312,16 @@ export function disambiguateVisionCategory({
     return {
       ...draftPatch,
       categoryId: 'agriculture',
+    };
+  }
+
+  const isBook = hasAnyPattern(haystack, ['livre', 'manuel'])
+    || [...signals.labels, ...signals.objects].some((value) => normalizeText(value) === 'book');
+  if (hasStrongComputerSignal(haystack) && !isBook
+    && ['phones_tablets', 'education', 'electronics'].includes(draftPatch.categoryId)) {
+    return {
+      ...draftPatch,
+      categoryId: 'electronics',
     };
   }
 

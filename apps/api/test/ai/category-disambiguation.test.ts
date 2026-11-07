@@ -608,3 +608,44 @@ test('does not promote generic office items to education on weak evidence', () =
 
   assert.equal(result.categoryId, 'electronics');
 });
+
+test('moves a laptop the model filed under phones_tablets back to electronics', () => {
+  const result = disambiguateVisionCategory({
+    draftPatch: {
+      categoryId: 'phones_tablets',
+      condition: 'used_good',
+      description: 'Ordinateur portable argenté avec clavier et écran.',
+      title: 'Ordinateur portable argenté',
+    },
+    signals: { labels: ['Laptop', 'Netbook', 'Notebook'], logos: ['HP'], objects: ['Laptop'], ocrText: '' },
+  });
+
+  assert.equal(result.categoryId, 'electronics');
+});
+
+test('keeps a tablet in phones_tablets even when vision calls it a tablet computer', () => {
+  const result = disambiguateVisionCategory({
+    draftPatch: { categoryId: 'phones_tablets', condition: 'used_good', description: 'Tablette noire.', title: 'Tablette Samsung' },
+    signals: { labels: ['Tablet computer', 'Gadget'], logos: [], objects: ['Tablet computer'], ocrText: '' },
+  });
+
+  assert.equal(result.categoryId, 'phones_tablets');
+});
+
+test('keeps a laptop already filed under electronics out of education despite the Notebook label', () => {
+  const result = disambiguateVisionCategory({
+    draftPatch: { categoryId: 'electronics', condition: 'used_good', description: 'Portable en bon état.', title: 'Ordinateur portable HP' },
+    signals: { labels: ['Laptop', 'Notebook'], logos: [], objects: ['Laptop'], ocrText: '' },
+  });
+
+  assert.equal(result.categoryId, 'electronics');
+});
+
+test('keeps a book about computers in education', () => {
+  const result = disambiguateVisionCategory({
+    draftPatch: { categoryId: 'education', condition: 'used_good', description: 'Manuel débutant.', title: 'Livre pour apprendre à utiliser un ordinateur' },
+    signals: { labels: ['Book'], logos: [], objects: ['Book'], ocrText: '' },
+  });
+
+  assert.equal(result.categoryId, 'education');
+});
