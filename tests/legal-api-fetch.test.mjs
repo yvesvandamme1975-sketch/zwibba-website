@@ -23,3 +23,13 @@ test('public requests and ordinary failures do not initiate acceptance', async()
  await fetchFn('https://api.example/profile',{headers:new Headers({authorization:'Bearer current'})});
  assert.equal(refreshed,0);
 });
+
+test('a 401 on the current session signs the app out once, other sessions and public calls never do', async()=>{
+ let token='current';let rejected=0;let status=401;
+ const fetchFn=createLegalAwareFetch({fetchFn:async()=>new Response(null,{status}),getSessionToken:()=>token,onTermsRequired:()=>{},onSessionRejected:()=>{rejected++;token='';}});
+ await fetchFn('https://api.example/profile',{headers:{authorization:'Bearer current'}});
+ await fetchFn('https://api.example/drafts/sync',{headers:{authorization:'Bearer current'}});
+ await fetchFn('https://api.example/profile',{headers:{authorization:'Bearer old'}});
+ await fetchFn('https://api.example/auth/verify-otp');
+ assert.equal(rejected,1);
+});
