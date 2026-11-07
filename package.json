@@ -31,5 +31,11 @@
   },
   "dependencies": {
     "esbuild": "^0.28.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "multer": "^2.5.0",
+      "deepmerge-ts": "^8.0.2"
+    }
   }
 }
