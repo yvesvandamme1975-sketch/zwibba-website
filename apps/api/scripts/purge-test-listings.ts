@@ -33,21 +33,6 @@ const seedSlugs = new Set([
   ...buildSystemSeedDefinitions().map((definition) => definition.listing.slug),
 ]);
 
-function normalizeText(value = '') {
-  return String(value)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
-}
-
-function recordTime(record: ListingCandidate) {
-  const value = record.publishedAt ?? record.createdAt;
-  const time = value ? new Date(value).getTime() : 0;
-  return Number.isFinite(time) ? time : 0;
-}
-
 export function isTestListing(record: ListingCandidate) {
   const slug = String(record.slug || '');
   const title = String(record.title || '');
@@ -66,51 +51,6 @@ export function isTestListing(record: ListingCandidate) {
   );
 }
 
-function dedupeGalaxyA54(listings: PurgeCandidate[]) {
-  const groups = new Map<string, PurgeCandidate[]>();
-
-  for (const listing of listings) {
-    if (seedSlugs.has(listing.slug)) {
-      continue;
-    }
-
-    if (!/samsung galaxy a54 128 go/i.test(normalizeText(listing.title))) {
-      continue;
-    }
-
-    const key = `${normalizeText(listing.title)}::${listing.ownerPhoneNumber}`;
-    const group = groups.get(key) ?? [];
-    group.push(listing);
-    groups.set(key, group);
-  }
-
-  return [...groups.values()].flatMap((group) => {
-    if (group.length < 2) {
-      return [];
-    }
-
-    return group
-      .sort((left, right) => recordTime(right) - recordTime(left))
-      .slice(1);
-  });
-}
-
-function uniqueCandidates(candidates: PurgeCandidate[]) {
-  const seen = new Set<string>();
-  const unique: PurgeCandidate[] = [];
-
-  for (const candidate of candidates) {
-    if (seen.has(candidate.id)) {
-      continue;
-    }
-
-    seen.add(candidate.id);
-    unique.push(candidate);
-  }
-
-  return unique;
-}
-
 export async function runPurgeOnce(prisma: PrismaLike, { apply = false } = {}) {
   const listings = await prisma.listing.findMany({
     where: {
@@ -120,16 +60,14 @@ export async function runPurgeOnce(prisma: PrismaLike, { apply = false } = {}) {
         { slug: { contains: 'zwibba-test', mode: 'insensitive' } },
         { slug: { contains: 'verification-live', mode: 'insensitive' } },
         { title: { contains: 'Zwibba beta seller', mode: 'insensitive' } },
-        { title: { contains: 'Samsung Galaxy A54 128 Go', mode: 'insensitive' } },
         { ownerPhoneNumber: { startsWith: '+243990' } },
       ],
     },
     orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
   }) as PurgeCandidate[];
 
-  const flagged = listings.filter(isTestListing);
-  const duplicateGalaxy = dedupeGalaxyA54(listings);
-  const candidates = uniqueCandidates([...flagged, ...duplicateGalaxy]);
+  // Only isTestListing decides: a title/phone duplicate cannot tell a test posting from a real seller's.
+  const candidates = listings.filter(isTestListing);
   const applied: Array<{ id: string; slug: string }> = [];
 
   if (apply) {
