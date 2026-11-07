@@ -147,6 +147,8 @@ if (appRoot) {
       state.legalStatusStatus = 'idle';
       void loadLegalStatus();
     },
+    // An expired or unknown session must not keep showing "Session vérifiée".
+    onSessionRejected: () => handleLogout(),
   });
   const listingsService = createListingsService({
     apiBaseUrl: apiConfig.apiBaseUrl,
