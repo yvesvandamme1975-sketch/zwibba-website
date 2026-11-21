@@ -487,14 +487,16 @@ test('listings feed returns newly approved database-backed listings only', async
     priceCdf: 4256000,
     title: 'Samsung Galaxy A54 128 Go',
   });
-  await publishListing(app, {
+  const blockedResponse = await publishListing(app, {
     area: 'Bel Air',
     categoryId: 'vehicles',
-    description: 'SUV fiable avec papiers en ordre et entretien suivi.',
+    description: '',
     phoneNumber: '+243990000002',
     priceCdf: 18500000,
     title: 'Toyota Hilux 2019 4x4',
   });
+
+  assert.equal(blockedResponse.body.status, 'blocked_needs_fix');
 
   const response = await request(app.getHttpServer())
     .get('/listings')

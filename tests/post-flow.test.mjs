@@ -5,6 +5,7 @@ import { renderCaptureScreen } from '../App/features/post/capture-screen.mjs';
 import { renderCaptureResultScreen } from '../App/features/post/capture-result-screen.mjs';
 import { renderPhotoGuidanceScreen } from '../App/features/post/photo-guidance-screen.mjs';
 import { renderReviewFormScreen } from '../App/features/post/review-form-screen.mjs';
+import { buildReviewDraftDetails } from '../App/utils/review-draft-form.mjs';
 import { sellerCategories } from '../App/demo-content.mjs';
 import {
   MAX_PRICE_CDF,
@@ -12,6 +13,7 @@ import {
   buildStoryShareText,
   createPostFlowController,
   createReadyDraft,
+  decidePublishGate,
   getMissingRequiredPhotoPrompts,
   refreshReviewValidationErrors,
   shareStoryImageNative,
@@ -674,7 +676,7 @@ test('failed guided upload stays retryable and does not satisfy the required pro
   assert.ok(getMissingRequiredPhotoPrompts(failedDraft).some((prompt) => prompt.id === 'face'));
 });
 
-test('required categories block publish until all required photos are present', () => {
+test('recommended photo prompts track completion without blocking publication', () => {
   const draft = createReadyDraft({
     categoryId: 'phones_tablets',
   });
@@ -1230,7 +1232,7 @@ test('review form hides the fashion size select until a type with a size grid is
   assert.doesNotMatch(html, /name="fashionSize"/);
 });
 
-test('publish validation requires item type and size for Mode listings', () => {
+test('publish validation requires a known item type before requesting a Mode size', () => {
   const errors = validateDraftForPublish(
     createReadyDraft({
       categoryId: 'fashion',
@@ -1247,7 +1249,7 @@ test('publish validation requires item type and size for Mode listings', () => {
     errors
       .filter((error) => error.field === 'fashion_item_type' || error.field === 'fashion_size')
       .map((error) => error.field),
-    ['fashion_item_type', 'fashion_size'],
+    ['fashion_item_type'],
   );
 });
 
@@ -1293,7 +1295,7 @@ test('services guidance suggests a business card or company logo', () => {
 
   assert.match(html, /Carte de visite ou logo/i);
   assert.match(html, /Ajouter cette photo/i);
-  assert.match(html, /la publication reste possible pendant la bêta/i);
+  assert.match(html, /Une photo principale valide suffit pour publier/i);
 });
 
 test('emploi guidance suggests a company visual or logo', () => {
@@ -1314,10 +1316,10 @@ test('emploi guidance suggests a company visual or logo', () => {
 
   assert.match(html, /Logo ou visuel de l(?:&#39;|')entreprise/i);
   assert.match(html, /Ajouter cette photo/i);
-  assert.match(html, /la publication reste possible pendant la bêta/i);
+  assert.match(html, /Une photo principale valide suffit pour publier/i);
 });
 
-test('vehicle guidance requires five specific photos', () => {
+test('vehicle guidance recommends five specific photos', () => {
   const html = renderPhotoGuidanceScreen({
     draft: createReadyDraft({
       categoryId: 'vehicles',
@@ -1340,54 +1342,21 @@ test('vehicle guidance requires five specific photos', () => {
   assert.match(html, />Intérieur</);
 });
 
-test('vehicle publish requires avant, arrière, droite, gauche and intérieur photos', () => {
-  const validationErrors = validateDraftForPublish(
-    createReadyDraft({
-      categoryId: 'vehicles',
-      photos: [
-        {
-          id: 'photo-primary',
-          kind: 'primary',
-          uploadStatus: 'uploaded',
-          url: 'https://pub.example.test/draft-photos/capture/photo_1-vehicle.jpg',
-        },
-        {
-          id: 'photo-avant',
-          kind: 'guided',
-          promptId: 'avant',
-          uploadStatus: 'uploaded',
-          url: 'https://pub.example.test/draft-photos/avant.jpg',
-        },
-        {
-          id: 'photo-arriere',
-          kind: 'guided',
-          promptId: 'arriere',
-          uploadStatus: 'uploaded',
-          url: 'https://pub.example.test/draft-photos/arriere.jpg',
-        },
-        {
-          id: 'photo-droite',
-          kind: 'guided',
-          promptId: 'droite',
-          uploadStatus: 'uploaded',
-          url: 'https://pub.example.test/draft-photos/droite.jpg',
-        },
-        {
-          id: 'photo-gauche',
-          kind: 'guided',
-          promptId: 'gauche',
-          uploadStatus: 'uploaded',
-          url: 'https://pub.example.test/draft-photos/gauche.jpg',
-        },
-      ],
-    }),
-  );
-
-  assert.ok(validationErrors.some((error) => error.field === 'guided_photos'));
-  assert.match(
-    validationErrors.find((error) => error.field === 'guided_photos')?.message || '',
-    /intérieur/i,
-  );
+test('one valid primary photo suffices for every seller category', () => {
+  for (const category of sellerCategories) {
+    const draft = createReadyDraft({ categoryId: category.id, condition: 'like_new',
+      attributesJson: { fashion: { itemType: 'jewelry_necklace', size: '' } } });
+    assert.deepEqual(validateDraftForPublish(draft), [], category.id);
+    const guidance = renderPhotoGuidanceScreen({ draft });
+    assert.doesNotMatch(guidance, /obligatoire/i);
+    const review = renderReviewFormScreen({ draft, categories: sellerCategories, conditionOptions: [] });
+    assert.doesNotMatch(review, /Photos guidées encore attendues/);
+    if (getMissingRequiredPhotoPrompts(draft).length) assert.match(review, /Photos complémentaires facultatives/);
+    for (const photos of [[], [{ ...draft.photos[0], uploadStatus: 'failed' }],
+      [{ ...draft.photos[0], uploadStatus: 'uploading' }]]) {
+      assert.ok(validateDraftForPublish({ ...draft, photos }).some(error => error.field === 'photo'));
+    }
+  }
 });
 
 test('food guidance suggests an overview and packaging label photo', () => {
@@ -1503,4 +1472,66 @@ test('buildStoryShareText produces the share text with title and URL', () => {
   assert.match(text, /Je vends sur Zwibba/);
   assert.match(text, /Radio vintage/);
   assert.match(text, /\/annonce\/radio-vintage-kinshasa\//);
+});
+
+for (const itemType of ['jewelry_necklace', 'jewelry_earrings', 'jewelry_bracelet', 'jewelry_watch']) {
+  test(`publish accepts ${itemType} without an invisible size field and preserves the draft`, () => {
+    const draft = createReadyDraft({
+      title: 'Collier en perles fantaisie', categoryId: 'fashion', condition: 'like_new',
+      priceAmount: 30, priceCurrency: 'EUR', area: 'La Louvière',
+      attributesJson: { fashion: { itemType, size: '' } },
+    });
+    const original = structuredClone(draft);
+    const html = renderReviewFormScreen({ draft, categories: sellerCategories, conditionOptions: [] });
+    assert.doesNotMatch(html, /name="fashionSize"/);
+    assert.deepEqual(validateDraftForPublish(draft), []);
+    assert.equal(decidePublishGate({ draft, session: {} }).status, 'ready_for_submission');
+    assert.equal(decidePublishGate({ draft, session: null }).status, 'needs_auth');
+    assert.deepEqual(refreshReviewValidationErrors([{ field: 'fashion_size' }], draft), []);
+    assert.deepEqual(draft, original);
+  });
+}
+
+for (const [itemType, validSize] of [
+  ['tops', 'M'], ['pants', '40'], ['dress_skirt', 'S'], ['jacket_sweater', 'L'],
+  ['shoes', '42'], ['jewelry_ring', '54'],
+]) {
+  test(`publish still requires a valid size for ${itemType}`, () => {
+    for (const size of ['', 'invalid', validSize]) {
+      const draft = createReadyDraft({
+        categoryId: 'fashion', condition: 'like_new',
+        attributesJson: { fashion: { itemType, size } },
+      });
+      assert.match(renderReviewFormScreen({ draft, categories: sellerCategories, conditionOptions: [] }), /name="fashionSize"/);
+      assert.deepEqual(validateDraftForPublish(draft).map(error => error.field),
+        size === validSize ? [] : ['fashion_size']);
+      assert.equal(decidePublishGate({ draft, session: {} }).status,
+        size === validSize ? 'ready_for_submission' : 'validation_error');
+    }
+  });
+}
+
+test('changing fashion type clears incompatible sizes and restores the correct publish requirement', () => {
+  let draft = createReadyDraft({ categoryId: 'fashion', condition: 'like_new',
+    attributesJson: { fashion: { itemType: 'tops', size: 'M' } } });
+  for (const [itemType, staleSize, expectedErrors] of [
+    ['jewelry_necklace', 'M', []], ['jewelry_ring', '', ['fashion_size']],
+    ['shoes', '54', ['fashion_size']], ['tops', '42', ['fashion_size']],
+    ['unknown', 'M', ['fashion_item_type']], ['', '', ['fashion_item_type']],
+  ]) {
+    draft = { ...draft, details: buildReviewDraftDetails({ existingDetails: draft.details,
+      values: { ...draft.details, fashionItemType: itemType, fashionSize: staleSize } }) };
+    assert.equal(draft.details.attributesJson?.fashion?.size ?? '', '');
+    assert.deepEqual(validateDraftForPublish(draft).map(error => error.field), expectedErrors);
+  }
+});
+
+test('all other seller categories ignore fashion size even when stale attributes remain', () => {
+  for (const category of sellerCategories.filter(category => category.id !== 'fashion')) {
+    const draft = createReadyDraft({ categoryId: category.id, condition: 'like_new',
+      attributesJson: { fashion: { itemType: 'tops', size: '' } } });
+    assert.equal(validateDraftForPublish(draft).some(error => error.field.startsWith('fashion_')), false);
+    assert.doesNotMatch(renderReviewFormScreen({ draft, categories: sellerCategories, conditionOptions: [] }),
+      /name="fashionSize"/);
+  }
 });

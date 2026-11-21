@@ -124,11 +124,9 @@ function renderPrompt(prompt) {
         ? 'Téléversement en cours'
         : prompt.completed
           ? 'Photo téléversée'
-          : prompt.publishRequired
-            ? 'Photo obligatoire pour publier'
-            : prompt.required
-              ? 'Photo conseillée pour rassurer les acheteurs'
-            : 'Photo recommandée';
+          : prompt.required
+            ? 'Photo facultative pour rassurer les acheteurs'
+            : 'Photo facultative';
 
   return `
     <li class="app-guidance__item${prompt.completed ? ' is-complete' : ''}${
@@ -171,20 +169,15 @@ export function renderPhotoGuidanceScreen({
   uploadsBusy = false,
 }) {
   const prompts = getGuidedPhotoPrompts(draft);
-  const blockingPrompts = prompts.filter((prompt) => prompt.publishRequired && !prompt.completed);
   const incompletePrompts = prompts.filter((prompt) => !prompt.completed);
   const hasUploadingPrompt = prompts.some((prompt) => prompt.uploadStatus === 'uploading');
   const isLocked = uploadsBusy || hasUploadingPrompt;
-  const statusTitle = blockingPrompts.length
-    ? 'Photos obligatoires manquantes'
-    : incompletePrompts.length
-      ? 'Photos complémentaires recommandées'
-      : 'Photos complémentaires prêtes';
-  const statusBody = blockingPrompts.length
-    ? `${blockingPrompts.length} vue(s) sont obligatoires avant la publication.`
-    : incompletePrompts.length
-      ? `${incompletePrompts.length} vue(s) recommandée(s) manquent encore, mais la publication reste possible pendant la bêta.`
-      : 'Vous pouvez continuer vers le brouillon ou ajouter encore quelques vues.';
+  const statusTitle = incompletePrompts.length
+    ? 'Photos complémentaires facultatives'
+    : 'Photos complémentaires prêtes';
+  const statusBody = incompletePrompts.length
+    ? 'Une photo principale valide suffit pour publier. Les autres vues sont facultatives.'
+    : 'Vous pouvez continuer vers le brouillon ou ajouter encore quelques vues.';
 
   return `
     <section class="app-flow app-flow--guidance">

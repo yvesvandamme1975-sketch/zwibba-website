@@ -182,7 +182,8 @@ export function renderReviewFormScreen({
         missingPrompts.length
           ? `
             <div class="app-review__missing">
-              <strong>Photos guidées encore attendues</strong>
+              <strong>Photos complémentaires facultatives</strong>
+              <span>Une photo principale valide suffit pour publier.</span>
               <span>${escapeHtml(missingPrompts.map((prompt) => prompt.label).join(', '))}</span>
             </div>
           `
