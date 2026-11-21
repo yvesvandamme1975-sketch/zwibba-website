@@ -40,9 +40,8 @@ export function createListingShareController({
     } catch { /* Use the canonical slug instead of an unsafe input URL. */ }
     url ||= new URL(`/annonce/${encodeURIComponent(context.slug || '')}/`, origin).href;
     // Give a newly shared portrait preview its own page cache key.
-    if (/\/share-v3-portrait-[a-f0-9]{16}\.jpg(?:[?#]|$)/.test(context.shareImageUrl || '')) {
-      url += '?preview=portrait-v3';
-    }
+    const previewVersion = /\/share-v([34])-portrait-[a-f0-9]{16}\.jpg(?:[?#]|$)/.exec(context.shareImageUrl || '')?.[1];
+    if (previewVersion) url += previewVersion === '4' ? '?v=4' : '?preview=portrait-v3';
     state = {
       slug: context.slug || '', title: context.title || 'Annonce Zwibba', url,
       storyImageUrl: context.storyImageUrl || '',
@@ -129,7 +128,7 @@ export function createListingShareController({
         if (typeof navigatorObject.share !== 'function') throw new Error('Copiez le lien pour partager cette annonce.');
         const pending = navigatorObject.share(action === 'native-image'
           ? { files: [preparedFile] }
-          : { title: current.title, text: `${current.title} — Zwibba`, url: current.url });
+          : { url: current.url });
         changed();
         await pending;
         current.message = 'Demande transmise au menu de partage.';
@@ -150,7 +149,7 @@ export function createListingShareController({
         }
       } else if (action === 'whatsapp' || action === 'facebook') {
         const target = action === 'whatsapp'
-          ? `https://api.whatsapp.com/send?text=${encodeURIComponent(caption)}`
+          ? `https://api.whatsapp.com/send?text=${encodeURIComponent(current.url)}`
           : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(current.url)}`;
         if (!openWindow(target)) throw new Error('La fenêtre a été bloquée. Autorisez son ouverture ou copiez le lien.');
         current.message = 'Terminez le partage dans la fenêtre ouverte.';

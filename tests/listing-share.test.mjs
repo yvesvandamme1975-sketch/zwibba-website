@@ -20,7 +20,7 @@ test('native link share is invoked synchronously with the selected listing conte
   const { controller, calls } = setup();
   const promise = controller.perform('native-link');
   assert.equal(calls.length, 1);
-  assert.deepEqual(calls[0], ['native', { title: 'Vélo de Liège', text: 'Vélo de Liège — Zwibba', url: 'https://zwibba.com/annonce/velo/' }]);
+  assert.deepEqual(calls[0], ['native', { url: 'https://zwibba.com/annonce/velo/' }]);
   assert.equal(await promise, 'handed-off');
   assert.doesNotMatch(controller.state.message, /publié|succès/i);
 });
@@ -32,10 +32,10 @@ test('cancellation never opens a network, downloads or records success', async (
   assert.deepEqual(calls, []);
 });
 
-test('WhatsApp uses the selected title, not a seller or unrelated draft claim', async () => {
+test('WhatsApp shares only the clickable URL without a duplicated caption', async () => {
   const { controller, calls } = setup();
   const promise = controller.perform('whatsapp');
-  assert.match(new URL(calls[0][1]).searchParams.get('text'), /^Vélo de Liège — Zwibba\nhttps:\/\/zwibba.com\/annonce\/velo\/$/);
+  assert.match(new URL(calls[0][1]).searchParams.get('text'), /^https:\/\/zwibba.com\/annonce\/velo\/$/);
   assert.equal(await promise, 'opened');
   assert.doesNotMatch(controller.state.message, /publié|partagé avec succès/i);
 });
@@ -281,7 +281,7 @@ test('Facebook and WhatsApp preserve their existing URLs and captions',async()=>
  const {controller,calls}=setup();
  await controller.perform('facebook');await controller.perform('whatsapp');
  assert.equal(calls[0][1],'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent('https://zwibba.com/annonce/velo/'));
- assert.equal(calls[1][1],'https://api.whatsapp.com/send?text='+encodeURIComponent('Vélo de Liège — Zwibba\nhttps://zwibba.com/annonce/velo/'));
+ assert.equal(calls[1][1],'https://api.whatsapp.com/send?text='+encodeURIComponent('https://zwibba.com/annonce/velo/'));
 });
 
 test('listing native sharing keeps an actionable fallback on rejection', async () => {
@@ -317,4 +317,12 @@ test('link sharing does not prepare a story; selecting story generates it on dem
   await controller.start({slug:'velo',storyEnabled:true,storyImageUrl:'https://api.zwibba.com/share/velo/story.png'}, {mode:'story'});
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(fetched.length,2,'reopening story makes a fresh request');
+});
+
+
+test('compact portrait shares a fresh short cache key and no text caption', async () => {
+  const {controller,calls}=setup();
+  await controller.open({slug:'velo',shareImageUrl:'https://cdn/share-v4-portrait-0123456789abcdef.jpg'});
+  await controller.perform('native-link');
+  assert.deepEqual(calls[0][1],{url:'https://zwibba.com/annonce/velo/?v=4'});
 });

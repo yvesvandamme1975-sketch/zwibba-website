@@ -12,7 +12,7 @@ const at = new Date('2026-09-01T10:00:00Z');
 const listings = [
   { id: 'a', slug: 'a', moderationStatus: 'approved', lifecycleStatus: 'active', deletedBySellerAt: null, shareImageUrl: null, storyImageUrl: 'https://r2/listings/a/story.png', updatedAt: at },
   { id: 'b', slug: 'b', moderationStatus: 'approved', lifecycleStatus: null, deletedBySellerAt: null, shareImageUrl: 'https://r2/listings/b/share.png', storyImageUrl: null, updatedAt: at },
-  { id: 'c', slug: 'c', moderationStatus: 'approved', lifecycleStatus: 'active', deletedBySellerAt: null, shareImageUrl: 'https://r2/listings/c/share-v3-portrait-0123456789abcdef.jpg', storyImageUrl: null, updatedAt: at },
+  { id: 'c', slug: 'c', moderationStatus: 'approved', lifecycleStatus: 'active', deletedBySellerAt: null, shareImageUrl: 'https://r2/listings/c/share-v4-portrait-0123456789abcdef.jpg', storyImageUrl: null, updatedAt: at },
   { id: 'd', slug: 'd', moderationStatus: 'pending', lifecycleStatus: 'active', deletedBySellerAt: null, shareImageUrl: null, storyImageUrl: null, updatedAt: at },
   { id: 'e', slug: 'e', moderationStatus: 'approved', lifecycleStatus: 'active', deletedBySellerAt: null, shareImageUrl: null, storyImageUrl: null, updatedAt: at },
   { id: 'sold', slug: 'sold', moderationStatus: 'approved', lifecycleStatus: 'sold', deletedBySellerAt: null, shareImageUrl: null, storyImageUrl: null, updatedAt: at },
@@ -42,7 +42,7 @@ function fakes(overrides: { generate?: (id: string) => Promise<any> } = {}) {
     generateLinkImageForListing: async (id: string) => {
       calls.push(id);
       if (overrides.generate) return overrides.generate(id);
-      return { id, previousShareImageUrl: null, shareImageUrl: `https://r2/listings/${id}/share-v3-portrait-abcdefabcdefabcd.jpg`, storyImageUrl: null, updatedAt: at, bytes: 1234 };
+      return { id, previousShareImageUrl: null, shareImageUrl: `https://r2/listings/${id}/share-v4-portrait-abcdefabcdefabcd.jpg`, storyImageUrl: null, updatedAt: at, bytes: 1234 };
     },
   };
   return { prisma, service, calls };
@@ -62,7 +62,7 @@ test('apply regenerates once per planned listing, records before/after in the ma
   const { prisma, service, calls } = fakes({
     generate: async (id) => {
       if (id === 'b') throw new Error('listing_changed_concurrently: b');
-      return { id, previousShareImageUrl: null, shareImageUrl: `https://r2/listings/${id}/share-v3-portrait-abcdefabcdefabcd.jpg`, storyImageUrl: null, updatedAt: at, bytes: 1234 };
+      return { id, previousShareImageUrl: null, shareImageUrl: `https://r2/listings/${id}/share-v4-portrait-abcdefabcdefabcd.jpg`, storyImageUrl: null, updatedAt: at, bytes: 1234 };
     },
   });
   const result = await runLinkImageBackfill(prisma as any, service as any, { apply: true, limit: 10, now: at });
@@ -87,7 +87,7 @@ test('the manifest is persisted before the first write, then after every result 
   const { prisma, service, calls } = fakes({
     generate: async (id) => {
       if (id === 'e') throw new Error('boom');
-      return { id, previousShareImageUrl: null, shareImageUrl: `https://r2/listings/${id}/share-v3-portrait-abcdefabcdefabcd.jpg`, storyImageUrl: null, updatedAt: at, bytes: 1 };
+      return { id, previousShareImageUrl: null, shareImageUrl: `https://r2/listings/${id}/share-v4-portrait-abcdefabcdefabcd.jpg`, storyImageUrl: null, updatedAt: at, bytes: 1 };
     },
   });
   await runLinkImageBackfill(prisma as any, service as any, {
@@ -123,13 +123,13 @@ test('rollback restores the previous URL only where the database still points at
     planned: [{ id: 'a', slug: 'a', previousShareImageUrl: null }, { id: 'b', slug: 'b', previousShareImageUrl: 'https://r2/listings/b/share.png' }],
     failed: [],
     entries: [
-      { id: 'a', slug: 'a', previousShareImageUrl: null, shareImageUrl: 'https://r2/listings/a/share-v3-portrait-1.jpg', storyImageUrl: null, updatedAt: at.toISOString(), bytes: 1 },
-      { id: 'b', slug: 'b', previousShareImageUrl: 'https://r2/listings/b/share.png', shareImageUrl: 'https://r2/listings/b/share-v3-portrait-1.jpg', storyImageUrl: null, updatedAt: at.toISOString(), bytes: 1 },
+      { id: 'a', slug: 'a', previousShareImageUrl: null, shareImageUrl: 'https://r2/listings/a/share-v4-portrait-1.jpg', storyImageUrl: null, updatedAt: at.toISOString(), bytes: 1 },
+      { id: 'b', slug: 'b', previousShareImageUrl: 'https://r2/listings/b/share.png', shareImageUrl: 'https://r2/listings/b/share-v4-portrait-1.jpg', storyImageUrl: null, updatedAt: at.toISOString(), bytes: 1 },
     ],
   };
   const result = await rollbackLinkImageBackfill(prisma as any, manifest);
   assert.equal(writes.length, 2);
-  assert.deepEqual(writes[0].where, { id: 'a', shareImageUrl: 'https://r2/listings/a/share-v3-portrait-1.jpg', updatedAt: at });
+  assert.deepEqual(writes[0].where, { id: 'a', shareImageUrl: 'https://r2/listings/a/share-v4-portrait-1.jpg', updatedAt: at });
   assert.deepEqual(writes[0].data, { shareImageUrl: null, updatedAt: at });
   assert.deepEqual(writes[1].data, { shareImageUrl: 'https://r2/listings/b/share.png', updatedAt: at });
   assert.deepEqual(result, { restored: ['a'], skipped: ['b'] });

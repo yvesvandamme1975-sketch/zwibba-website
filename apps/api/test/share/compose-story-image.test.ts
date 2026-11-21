@@ -43,11 +43,11 @@ test('composeStoryImage tolerates very long titles without throwing', async () =
 });
 
 
-test('composeLinkImage produces a 1080x1920 portrait JPEG under the WhatsApp preview limit, with escaped long text', async () => {
+test('composeLinkImage produces a 1080x1440 portrait JPEG under the WhatsApp preview limit, with escaped long text', async () => {
   const result = await composeLinkImage({ photoBuffer: readFileSync(FIXTURE), title: '<Vélo & accessoires> '.repeat(8), zoneLabel: 'Liège & environs', priceLabel: '0 €' });
   const meta = await sharp(result).metadata();
   assert.equal(meta.width, 1080);
-  assert.equal(meta.height, 1920);
+  assert.equal(meta.height, 1440);
   assert.equal(meta.format, 'jpeg');
   assert.ok(result.length < 300_000, `link image must stay under 300 KB, got ${result.length}`);
 });
@@ -73,7 +73,7 @@ test('EXIF orientation 6/8 phone photos are laid out on their oriented (portrait
     const result = await composeLinkImage({ photoBuffer: await solidJpeg(1200, 600, orientation), title: 'Téléphone', zoneLabel: 'Mons', priceLabel: '5 €' });
     const meta = await sharp(result).metadata();
     assert.equal(meta.width, 1080);
-    assert.equal(meta.height, 1920);
+    assert.equal(meta.height, 1440);
     // Portrait fit: the photo is narrower than its box, so the box edges show the darkened backdrop.
     assert.ok(!isMagenta(await pixel(result, box.left + 12, midY)), `orientation ${orientation}: photo stretched to the box edge`);
     assert.ok(isMagenta(await pixel(result, Math.round(LINK_WIDTH / 2), midY)), `orientation ${orientation}: photo missing at the centre`);
@@ -114,4 +114,13 @@ test('link image layout keeps the photo undistorted and the lockup inside the po
     assert.ok(layout.photo.width === layout.photoBox.width || layout.photo.height === layout.photoBox.height, 'photo fills its box on one axis');
     assert.ok(layout.photo.width <= layout.photoBox.width && layout.photo.height <= layout.photoBox.height, 'photo stays inside its box');
   }
+});
+
+
+test('wide uppercase titles fit within the header instead of clipping at the right edge', async () => {
+  const result=await composeLinkImage({photoBuffer:await solidJpeg(600,800),title:'W'.repeat(32)+' '+ 'W'.repeat(25),zoneLabel:'',priceLabel:'700 €'});
+  const right=await sharp(await sharp(result).extract({left:1040,top:30,width:40,height:150}).toBuffer()).stats();
+  assert.ok(right.channels.every(channel=>channel.max<200),'no title glyph may enter the right margin');
+  const header=await sharp(await sharp(result).extract({left:40,top:30,width:980,height:150}).toBuffer()).stats();
+  assert.ok(header.channels.every(channel=>channel.max>230),'title is rendered, not silently omitted');
 });

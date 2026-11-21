@@ -78,9 +78,10 @@ test('story generation reads current data on each request without uploads or dat
   assert.notDeepEqual(first, second);
   assert.equal(mocks.fetchedUrls.length, 2);
   assert.deepEqual(mocks.r2Puts, []); assert.deepEqual(mocks.updates, []);
-  assert.equal(hasCurrentLinkImage('https://r2/listings/l1/share-v3-portrait-0123456789abcdef.jpg'), true);
+  assert.equal(hasCurrentLinkImage('https://r2/listings/l1/share-v4-portrait-0123456789abcdef.jpg'), true);
   assert.equal(hasCurrentLinkImage('https://r2/listings/l1/share.png'), false);
   assert.equal(hasCurrentLinkImage(null), false);
+  assert.equal(hasCurrentLinkImage('https://r2/listings/l1/share-v3-portrait-0123456789abcdef.jpg'), false);
   assert.equal(hasCurrentLinkImage('https://r2/listings/l1/share-v2-0123456789abcdef.jpg'), false);
 });
 
@@ -97,7 +98,7 @@ test('generateLinkImageForListing regenerates only the link preview, never story
   const result = await service.generateLinkImageForListing('l1');
 
   assert.equal(mocks.r2Puts.length, 1, 'story.png is not re-rendered nor re-uploaded');
-  assert.match(mocks.r2Puts[0].objectKey, /^listings\/l1\/share-v3-portrait-[a-f0-9]{16}\.jpg$/);
+  assert.match(mocks.r2Puts[0].objectKey, /^listings\/l1\/share-v4-portrait-[a-f0-9]{16}\.jpg$/);
   assert.equal(mocks.r2Puts[0].objectKey, `listings/l1/${linkImageFilename(mocks.r2Puts[0].body)}`, 'object key is derived from the bytes');
   assert.equal(mocks.r2Puts[0].contentType, 'image/jpeg');
   assert.equal(mocks.updates.length, 0, 'no unconditional update');
@@ -106,7 +107,7 @@ test('generateLinkImageForListing regenerates only the link preview, never story
   assert.deepEqual(Object.keys(updateMany[0].data).sort(), ['shareImageUrl', 'updatedAt']);
   assert.equal(updateMany[0].data.updatedAt.getTime(), updatedAt.getTime(), 'updatedAt preserved so the feed order does not change');
   assert.equal(result.previousShareImageUrl, previous);
-  assert.match(result.shareImageUrl, /listings\/l1\/share-v3-portrait-[a-f0-9]{16}\.jpg$/);
+  assert.match(result.shareImageUrl, /listings\/l1\/share-v4-portrait-[a-f0-9]{16}\.jpg$/);
   assert.equal(result.storyImageUrl, 'https://r2.example.com/listings/l1/story.png');
   assert.equal(result.bytes, mocks.r2Puts[0].body.length);
 });
@@ -134,7 +135,7 @@ test('generateLinkImageForListing refuses listings that are not publicly visible
 test('a concurrent change leaves the referenced object and the database URL untouched', async () => {
   const mocks = buildMocks();
   const updatedAt = new Date('2026-09-01T10:00:00Z');
-  const referenced = 'https://r2.example.com/listings/l1/share-v3-portrait-0123456789abcdef.jpg';
+  const referenced = 'https://r2.example.com/listings/l1/share-v4-portrait-0123456789abcdef.jpg';
   // Simulates a newer generation that already landed between our read and write.
   const db = { shareImageUrl: referenced, updatedAt };
   mocks.prismaService.listing.findUnique = async () => ({ id: 'l1', draftId: 'd1', title: 'Bague', area: 'Gombe', priceAmount: 80000, priceCurrency: 'CDF', updatedAt, moderationStatus: 'approved', lifecycleStatus: 'active', deletedBySellerAt: null, shareImageUrl: 'https://r2.example.com/listings/l1/share.png' });
