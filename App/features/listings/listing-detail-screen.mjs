@@ -98,7 +98,7 @@ function buildShareButton(detail, { compact = false, story = false } = {}) {
     : 'app-flow__button app-flow__button--share';
 
   // Keep the explicit story export separate from native link sharing.
-  if (story) return detail.storyImageUrl ? `
+  if (story) return resolveGalleryImages(detail).length ? `
     <button
       class="app-flow__button app-flow__button--secondary app-detail__story"
       type="button"
@@ -108,7 +108,6 @@ function buildShareButton(detail, { compact = false, story = false } = {}) {
       data-share-slug="${escapeAttribute(detail.slug)}"
       data-share-title="${escapeAttribute(detail.title)}"
       data-share-url="${escapeAttribute(shareUrl)}"
-      data-story-image-url="${escapeAttribute(detail.storyImageUrl)}"
     >
       Partager en story
     </button>

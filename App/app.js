@@ -349,7 +349,6 @@ if (appRoot) {
     walletStatus: 'idle',
   };
   let lastRenderedRouteKey = '';
-  let storyImagePollToken = 0;
 
   if (!window.location.hash) {
     window.location.hash = '#sell';
@@ -2296,60 +2295,12 @@ if (appRoot) {
         buyerBrowseController.state.feedStatus = 'idle';
       }
       window.location.hash = '#success';
-      if (
-        result.outcome?.status === 'approved' &&
-        !result.outcome.storyImageUrl &&
-        result.outcome.listingSlug
-      ) {
-        startStoryImagePolling(result.outcome.listingSlug);
-      }
     } catch (error) {
       state.busyLabel = '';
       state.publishError =
         error instanceof Error ? error.message : "Impossible d'envoyer l'annonce.";
       renderApp();
     }
-  }
-
-  function startStoryImagePolling(listingSlug) {
-    const token = ++storyImagePollToken;
-    const maxAttempts = 5;
-    const intervalMs = 2000;
-
-    const poll = async (attempt) => {
-      if (token !== storyImagePollToken || getRoute().type !== 'success') {
-        return;
-      }
-
-      try {
-        const detail = await listingsService.getListingDetail(listingSlug, {
-          session: state.session,
-        });
-        const storyImageUrl = detail?.storyImageUrl || '';
-
-        if (storyImageUrl) {
-          if (state.publishOutcome?.listingSlug === listingSlug) {
-            state.publishOutcome = {
-              ...state.publishOutcome,
-              storyImageUrl,
-            };
-            renderApp();
-          }
-
-          return;
-        }
-      } catch {}
-
-      if (attempt < maxAttempts && token === storyImagePollToken && getRoute().type === 'success') {
-        window.setTimeout(() => {
-          void poll(attempt + 1);
-        }, intervalMs);
-      }
-    };
-
-    window.setTimeout(() => {
-      void poll(1);
-    }, intervalMs);
   }
 
   async function handleBoost(listingId) {
@@ -2723,7 +2674,7 @@ if (appRoot) {
       slug: trigger.dataset.shareSlug || '',
       title: trigger.dataset.shareTitle || matchingDetail?.title || 'Annonce Zwibba',
       url: trigger.dataset.shareUrl || trigger.dataset.listingUrl || '',
-      storyImageUrl: trigger.dataset.storyImageUrl || matchingDetail?.storyImageUrl || '',
+      storyImageUrl: `${apiConfig.apiBaseUrl}/share/${encodeURIComponent(trigger.dataset.shareSlug || '')}/story.png`,
       shareImageUrl: trigger.dataset.brandedImageUrl || matchingDetail?.shareImageUrl || '',
       primaryImageUrl: trigger.dataset.shareImageUrl || matchingDetail?.primaryImageUrl || '',
       // Story mode: post-publication success screen and the explicit listing story entry.
@@ -3252,9 +3203,6 @@ if (appRoot) {
   });
 
   window.addEventListener('hashchange', () => {
-    if (getRoute().type !== 'success') {
-      storyImagePollToken += 1;
-    }
     renderApp();
   });
 

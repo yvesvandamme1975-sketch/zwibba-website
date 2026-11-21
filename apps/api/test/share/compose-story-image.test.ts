@@ -43,11 +43,11 @@ test('composeStoryImage tolerates very long titles without throwing', async () =
 });
 
 
-test('composeLinkImage produces a 1200x630 JPEG under the WhatsApp preview limit, with escaped long text', async () => {
+test('composeLinkImage produces a 1080x1920 portrait JPEG under the WhatsApp preview limit, with escaped long text', async () => {
   const result = await composeLinkImage({ photoBuffer: readFileSync(FIXTURE), title: '<Vélo & accessoires> '.repeat(8), zoneLabel: 'Liège & environs', priceLabel: '0 €' });
   const meta = await sharp(result).metadata();
-  assert.equal(meta.width, 1200);
-  assert.equal(meta.height, 630);
+  assert.equal(meta.width, 1080);
+  assert.equal(meta.height, 1920);
   assert.equal(meta.format, 'jpeg');
   assert.ok(result.length < 300_000, `link image must stay under 300 KB, got ${result.length}`);
 });
@@ -72,8 +72,8 @@ test('EXIF orientation 6/8 phone photos are laid out on their oriented (portrait
     // Stored landscape 1200x600, displayed portrait 600x1200 once oriented.
     const result = await composeLinkImage({ photoBuffer: await solidJpeg(1200, 600, orientation), title: 'Téléphone', zoneLabel: 'Mons', priceLabel: '5 €' });
     const meta = await sharp(result).metadata();
-    assert.equal(meta.width, 1200);
-    assert.equal(meta.height, 630);
+    assert.equal(meta.width, 1080);
+    assert.equal(meta.height, 1920);
     // Portrait fit: the photo is narrower than its box, so the box edges show the darkened backdrop.
     assert.ok(!isMagenta(await pixel(result, box.left + 12, midY)), `orientation ${orientation}: photo stretched to the box edge`);
     assert.ok(isMagenta(await pixel(result, Math.round(LINK_WIDTH / 2), midY)), `orientation ${orientation}: photo missing at the centre`);
@@ -100,14 +100,14 @@ test('link image lockup reads "Je vends sur" with the Zwibba logo', () => {
   assert.match(buildLinkLockupSvg(), /Zwibba|zwibba/i);
 });
 
-test('link image layout keeps the photo undistorted and the lockup inside the central square crop', () => {
-  const square = { left: (LINK_WIDTH - LINK_HEIGHT) / 2, right: (LINK_WIDTH + LINK_HEIGHT) / 2 };
+test('link image layout keeps the photo undistorted and the lockup inside the portrait canvas', () => {
+  const canvas = { left: 0, right: LINK_WIDTH };
   const inside = (box: { left: number; top: number; width: number; height: number }) =>
-    box.left >= square.left && box.left + box.width <= square.right && box.top >= 0 && box.top + box.height <= LINK_HEIGHT;
+    box.left >= canvas.left && box.left + box.width <= canvas.right && box.top >= 0 && box.top + box.height <= LINK_HEIGHT;
   for (const photo of [{ width: 4000, height: 3000 }, { width: 1080, height: 1080 }, { width: 600, height: 1200 }, { width: 3000, height: 800 }]) {
     const layout = linkImageLayout(photo);
-    assert.ok(inside(layout.photo), `photo box escapes the safe square for ${photo.width}x${photo.height}`);
-    assert.ok(inside(layout.lockup), `lockup escapes the safe square for ${photo.width}x${photo.height}`);
+    assert.ok(inside(layout.photo), `photo box escapes the portrait canvas for ${photo.width}x${photo.height}`);
+    assert.ok(inside(layout.lockup), `lockup escapes the portrait canvas for ${photo.width}x${photo.height}`);
     assert.ok(layout.lockup.top >= layout.photo.top + layout.photo.height, 'lockup sits below the photo');
     const ratio = layout.photo.width / layout.photo.height;
     assert.ok(Math.abs(ratio - photo.width / photo.height) < 0.02, `aspect ratio changed for ${photo.width}x${photo.height}`);

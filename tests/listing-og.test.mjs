@@ -173,3 +173,12 @@ test('legacy story is never used as a link preview when landscape is missing', (
   assert.match(html, /og:image" content="https:\/\/cdn\/photo.jpg/);
   assert.doesNotMatch(html, /story.png|1920/);
 });
+
+
+test('portrait v3 link preview declares its actual dimensions and keeps the canonical page URL', () => {
+  const html = buildListingOgTags({listing:{slug:'bouteille',title:'Bouteille',shareImageUrl:'https://r2/listings/l1/share-v3-portrait-0123456789abcdef.jpg'},baseUrl:'https://zwibba.com'});
+  assert.match(html,/og:image:width" content="1080/);
+  assert.match(html,/og:image:height" content="1920/);
+  assert.match(html,/og:image:type" content="image\/jpeg/);
+  assert.match(html,/og:url" content="https:\/\/zwibba.com\/annonce\/bouteille\/"/);
+});

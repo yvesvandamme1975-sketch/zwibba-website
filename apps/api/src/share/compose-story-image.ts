@@ -36,7 +36,8 @@ export async function composeStoryImage(input: ComposeStoryImageInput): Promise<
   const photoMask = Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${PHOTO_SIZE}" height="${PHOTO_SIZE}"><rect width="${PHOTO_SIZE}" height="${PHOTO_SIZE}" rx="${PHOTO_RADIUS}" ry="${PHOTO_RADIUS}" fill="#ffffff"/></svg>`,
   );
-  const photo = await sharp(input.photoBuffer)
+  const photo = await sharp(input.photoBuffer, { limitInputPixels: 40_000_000 })
+    .rotate()
     .resize(PHOTO_SIZE, PHOTO_SIZE, { fit: 'cover' })
     .composite([{ input: photoMask, blend: 'dest-in' }])
     .png()
@@ -70,18 +71,13 @@ export async function composeStoryImage(input: ComposeStoryImageInput): Promise<
     .toBuffer();
 }
 
-/** Landscape link preview (Open Graph) for WhatsApp, Facebook and the
- * Instagram link sticker. Those applications crop towards the centre, often to
- * a square, so the photo and the "Je vends sur Zwibba" lockup both live inside
- * the central 630x630 band; the side panels only carry secondary text. The
- * photo is fitted, never stretched or cropped. Output is a JPEG under 300 KB
- * because WhatsApp refuses larger preview images. */
-export const LINK_WIDTH = 1200;
-export const LINK_HEIGHT = 630;
-const LINK_SAFE_LEFT = (LINK_WIDTH - LINK_HEIGHT) / 2; // 285
-const LINK_PHOTO_BOX = { left: LINK_SAFE_LEFT + 35, top: 36, width: 560, height: 372 };
-const LINK_LOCKUP = { left: LINK_SAFE_LEFT + 15, top: 430, width: 600, height: 170 };
-const LINK_LOCKUP_LOGO_WIDTH = 300;
+/** Portrait link preview. Receiving apps still control the card's crop.
+ * Keep the entire EXIF-oriented product photo and the existing JPEG budget. */
+export const LINK_WIDTH = 1080;
+export const LINK_HEIGHT = 1920;
+const LINK_PHOTO_BOX = { left: 60, top: 360, width: 960, height: 1120 };
+const LINK_LOCKUP = { left: 0, top: 1550, width: 1080, height: 240 };
+const LINK_LOCKUP_LOGO_WIDTH = 500;
 const LINK_JPEG_QUALITY = 82;
 const LINK_MAX_BYTES = 300_000;
 
@@ -92,7 +88,7 @@ export interface LinkImageBox {
   height: number;
 }
 
-/** Pure geometry so the safe-crop guarantees can be tested without rendering. */
+/** Pure geometry so photo proportions and bounds can be tested without rendering. */
 export function linkImageLayout(photo: { width: number; height: number }): { photoBox: LinkImageBox; photo: LinkImageBox; lockup: LinkImageBox } {
   const width = Math.max(1, photo.width);
   const height = Math.max(1, photo.height);
@@ -115,26 +111,25 @@ export function linkImageLayout(photo: { width: number; height: number }): { pho
 export function buildLinkLockupSvg(): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${LINK_LOCKUP.width}" height="${LINK_LOCKUP.height}" viewBox="0 0 ${LINK_LOCKUP.width} ${LINK_LOCKUP.height}">
     <title>Je vends sur Zwibba</title>
-    <text x="${LINK_LOCKUP.width / 2}" y="46" fill="#9aff8f" font-family="Manrope" font-size="42" font-weight="700" letter-spacing="0.5" text-anchor="middle">Je vends sur</text>
+    <text x="${LINK_LOCKUP.width / 2}" y="68" fill="#9aff8f" font-family="Manrope" font-size="64" font-weight="700" letter-spacing="0.5" text-anchor="middle">Je vends sur</text>
   </svg>`;
 }
 
-function buildLinkSidePanelSvg(input: ComposeStoryImageInput): string {
+function buildLinkDetailsSvg(input: ComposeStoryImageInput): string {
   const words = truncate(input.title, 60).split(' ');
   const lines: string[] = [''];
   for (const word of words) {
     const last = lines.length - 1;
-    if (`${lines[last]} ${word}`.trim().length > 16 && lines[last]) lines.push(word);
+    if (`${lines[last]} ${word}`.trim().length > 20 && lines[last]) lines.push(word);
     else lines[last] = `${lines[last]} ${word}`.trim();
   }
-  const titleLines = lines.slice(0, 3).map((line, index) =>
-    `<text x="36" y="${140 + index * 40}" font-family="Manrope" font-size="28" font-weight="700" fill="#ffffff">${escapeXml(truncate(line, 17))}${index === 2 && lines.length > 3 ? '…' : ''}</text>`,
+  const titleLines = lines.slice(0, 2).map((line, index) =>
+    `<text x="60" y="${120 + index * 68}" font-family="Manrope" font-size="48" font-weight="700" fill="#ffffff">${escapeXml(truncate(line + (index === 1 && lines.length > 2 ? '…' : ''), 20))}</text>`,
   ).join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${LINK_SAFE_LEFT}" height="${LINK_HEIGHT}" viewBox="0 0 ${LINK_SAFE_LEFT} ${LINK_HEIGHT}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${LINK_WIDTH}" height="${LINK_HEIGHT}" viewBox="0 0 ${LINK_WIDTH} ${LINK_HEIGHT}">
     ${titleLines}
-    <text x="36" y="320" font-family="Manrope" font-size="22" fill="#c2cec2">${escapeXml(truncate(input.zoneLabel, 22))}</text>
-    <text x="36" y="392" font-family="Sora" font-size="40" font-weight="700" fill="#9aff8f">${escapeXml(truncate(input.priceLabel, 14))}</text>
-    <text x="36" y="580" font-family="Manrope" font-size="20" fill="#c2cec2">zwibba.com</text>
+    <text x="60" y="294" font-family="Sora" font-size="64" font-weight="700" fill="#9aff8f">${escapeXml(truncate(input.priceLabel, 14))}</text>
+    <text x="540" y="1860" font-family="Manrope" font-size="36" text-anchor="middle" fill="#c2cec2">${escapeXml(truncate(input.zoneLabel, 26))}</text>
   </svg>`;
 }
 
@@ -148,7 +143,7 @@ export async function composeLinkImage(input: ComposeStoryImageInput): Promise<B
   });
 
   // Full-bleed blurred, darkened copy of the photo: fills the canvas without
-  // deforming the visible photo and keeps the side panels on-brand.
+  // deforming the visible photo and keeps the typography readable.
   const backdrop = await sharp(input.photoBuffer).rotate()
     .resize(LINK_WIDTH, LINK_HEIGHT, { fit: 'cover' })
     .blur(28)
@@ -173,7 +168,7 @@ export async function composeLinkImage(input: ComposeStoryImageInput): Promise<B
     .resize({ width: LINK_LOCKUP_LOGO_WIDTH })
     .png().toBuffer();
   const logoHeight = (await sharp(logo).metadata()).height ?? 90;
-  const logoTop = layout.lockup.top + 62;
+  const logoTop = layout.lockup.top + 90;
   const logoLeft = Math.round((LINK_WIDTH - LINK_LOCKUP_LOGO_WIDTH) / 2);
   if (logoTop + logoHeight > layout.lockup.top + layout.lockup.height) {
     throw new Error('link_lockup_overflow');
@@ -181,7 +176,7 @@ export async function composeLinkImage(input: ComposeStoryImageInput): Promise<B
 
   const render = (quality: number) => sharp(backdrop)
     .composite([
-      { input: Buffer.from(buildLinkSidePanelSvg(input)), left: 0, top: 0 },
+      { input: Buffer.from(buildLinkDetailsSvg(input)), left: 0, top: 0 },
       { input: roundedPhoto, left: photoLeft, top: photoTop },
       { input: Buffer.from(buildLinkLockupSvg()), left: layout.lockup.left, top: layout.lockup.top },
       { input: logo, left: logoLeft, top: logoTop },

@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, GoneException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { normalizeMarketCountryCode, type MarketCountryCode } from '../auth/phone-country';
@@ -321,9 +321,9 @@ export class ModerationService {
 
     if (status === 'approved') {
       void this.storyImageService
-        .generateAndStoreForListing(listing.id)
+        .generateLinkImageForListing(listing.id)
         .catch((error) => {
-          console.warn(`[moderation] story image generation failed for ${listing.id}`, error);
+          console.warn(`[moderation] link preview generation failed for ${listing.id}`, error);
         });
     }
 
@@ -412,9 +412,9 @@ export class ModerationService {
     // Fire-and-forget: the admin approval path should not wait on photo
     // download, sharp composition, and R2 upload.
     void this.storyImageService
-      .generateAndStoreForListing(listingId)
+      .generateLinkImageForListing(listingId)
       .catch((error) => {
-        console.warn(`[moderation] story image generation failed for ${listingId}`, error);
+        console.warn(`[moderation] link preview generation failed for ${listingId}`, error);
       });
 
     return {
@@ -425,33 +425,8 @@ export class ModerationService {
     };
   }
 
-  async regenerateStory(listingId: string) {
-    const listing = await this.prismaService.listing.findUnique({
-      where: { id: listingId },
-      select: { id: true, updatedAt: true },
-    });
-
-    if (!listing) {
-      throw new NotFoundException('Annonce introuvable.');
-    }
-
-    try {
-      await this.storyImageService.generateAndStoreForListing(listingId);
-    } catch (error) {
-      return {
-        id: listingId,
-        reason: error instanceof Error ? error.message : 'unknown',
-        status: 'skipped' as const,
-      };
-    }
-
-    // generateAndStoreForListing writes storyImageUrl, which bumps updatedAt.
-    // Restore the original updatedAt so a bulk regeneration does not reorder
-    // the browse feed (which is sorted by updatedAt desc).
-    await this.prismaService
-      .$executeRaw`UPDATE "Listing" SET "updatedAt" = ${listing.updatedAt} WHERE id = ${listingId}`;
-
-    return { id: listingId, status: 'regenerated' as const };
+  async regenerateStory(_listingId: string) {
+    throw new GoneException('Les stories sont générées au moment du partage.');
   }
 
   async block(listingId: string, rawReasonSummary: string) {

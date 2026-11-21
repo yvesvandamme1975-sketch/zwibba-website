@@ -87,6 +87,9 @@ test('public listing pages preserve market metadata and do not cache false fallb
     if (request.url === '/listings/belgian') {
       response.setHeader('Content-Type', 'application/json');
       response.end(JSON.stringify({ ...listing({ slug: 'belgian', title: 'Vélo belge' }), countryCode: 'BE', summary: 'Vélo <révisé> & prêt', seller: { name: 'Alice & Bob' }, shareImageUrl: 'https://cdn.test/share.png' }));
+    } else if (request.url === '/listings/portrait') {
+      response.setHeader('Content-Type', 'application/json');
+      response.end(JSON.stringify({ ...listing({slug:'portrait',title:'Portrait'}), shareImageUrl:'https://cdn.test/share-v3-portrait-0123456789abcdef.jpg' }));
     } else {
       response.statusCode = request.url === '/listings/failure' ? 503 : 404;
       response.end('{}');
@@ -103,6 +106,12 @@ test('public listing pages preserve market metadata and do not cache false fallb
       assert.match(body, /Contacter le vendeur dans la web app/);
       assert.match(body, /og:locale" content="fr_BE/);
       assert.match(body, /og:image:height" content="630/);
+      const portrait = await fetch(`${baseUrl}/annonce/portrait/?preview=portrait-v3`);
+      assert.equal(portrait.status, 200);
+      const portraitHtml = await portrait.text();
+      assert.match(portraitHtml, /og:image:width" content="1080/);
+      assert.match(portraitHtml, /og:image:height" content="1920/);
+      assert.match(portraitHtml, /rel="canonical" href="https:\/\/zwibba\.com\/annonce\/portrait\/"/);
       const missing = await fetch(`${baseUrl}/annonce/missing/`);
       assert.equal(missing.status, 404);
       assert.doesNotMatch(await missing.text(), /og:description|RDC|CDF/);
