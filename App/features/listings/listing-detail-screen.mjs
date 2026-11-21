@@ -432,10 +432,12 @@ function renderSellerBlock(seller = {}, { compact = false } = {}) {
   `;
 }
 
-function renderReviewForm(detail) {
+function renderReviewForm(detail, review = {}) {
   if (detail.viewerRole === 'owner') {
     return '';
   }
+
+  if (review.status === 'saved') return '<p class="app-auth__card app-detail__review-message" role="status" data-review-message tabindex="-1">Votre avis a bien été enregistré.</p>';
 
   if (!detail.canReview) return '<p class="app-auth__card">Envoyez un message dans Zwibba avant de laisser un avis.</p>';
 
@@ -443,16 +445,16 @@ function renderReviewForm(detail) {
     <form class="app-auth__card app-detail__review-form" data-action="submit-review">
       <input type="hidden" name="slug" value="${escapeAttribute(detail.slug)}" />
       <strong>Votre avis</strong>
-      <fieldset class="app-detail__rating-input">
+      <fieldset class="app-detail__rating-input"${review.status === 'sending' ? ' disabled' : ''}>
         <legend>Votre note</legend>
-        ${[1,2,3,4,5].map(rating => `<label><input type="radio" name="rating" value="${rating}" required aria-label="${rating} étoile${rating > 1 ? 's' : ''}" /><span aria-hidden="true">★</span></label>`).join('')}
+        ${[1,2,3,4,5].map(rating => `<label><input type="radio" name="rating" value="${escapeAttribute(rating)}"${review.rating === rating ? ' checked' : ''} required aria-label="${escapeAttribute(`${rating} étoile${rating > 1 ? 's' : ''}`)}" /><span aria-hidden="true">★</span></label>`).join('')}
       </fieldset>
       <label class="app-detail__review-field">
         <span>Commentaire</span>
-        <textarea name="comment" rows="3" maxlength="280" placeholder="Optionnel"></textarea>
+        <textarea name="comment" rows="3" maxlength="280" placeholder="Optionnel"${review.status === 'sending' ? ' disabled' : ''}>${escapeHtml(review.comment ?? '')}</textarea>
       </label>
-      <button class="app-flow__button" type="submit">Envoyer l’avis</button>
-      <p class="app-detail__review-message" data-review-message></p>
+      <button class="app-flow__button" type="submit"${review.status === 'sending' ? ' disabled' : ''}>Envoyer l’avis</button>
+      <p class="app-detail__review-message" role="${review.status === 'error' ? 'alert' : 'status'}" data-review-message tabindex="-1">${escapeHtml(review.message ?? '')}</p>
     </form>
   `;
 }
@@ -479,6 +481,7 @@ export function renderListingDetailScreen({
   showOwnerActions = true,
   ownerBusy = false,
   selectedImageIndex = 0,
+  review = {},
   state = 'loading',
 } = {}) {
   if (state === 'loading') {
@@ -512,6 +515,7 @@ export function renderListingDetailScreen({
           </div>
         </header>
 
+        ${review.status === 'saved' ? '<p class="app-detail__review-message" role="status" data-review-message tabindex="-1">Votre avis a bien été enregistré.</p>' : ''}
         <div class="app-review__error-summary" data-review-errors>
           <strong>Impossible d'ouvrir cette annonce</strong>
           <ul class="app-review__errors">
@@ -558,7 +562,7 @@ export function renderListingDetailScreen({
         ${renderAttributeDetails(detail)}
         ${renderSellerBlock(detail.seller)}
         ${renderSafetyCard(detail)}
-        ${renderReviewForm(detail)}
+        ${renderReviewForm(detail, review)}
       </div>
     </section>
   `;

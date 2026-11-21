@@ -324,6 +324,7 @@ if (appRoot) {
     publishedListingRoute: '',
     publishedListingUrl: '',
     reviewErrors: [],
+    listingReview: null,
     selectedListingImageIndex: 0,
     currentSellerId: '',
     sellerListings: [],
@@ -1079,6 +1080,7 @@ if (appRoot) {
 
   function primeBuyerRouteState(route) {
     const enteredRoute = lastRenderedRouteKey !== getRenderableRouteKey(route);
+    if (enteredRoute && state.listingReview?.status !== 'sending') state.listingReview = null;
     if (state.session && state.legalStatusStatus === 'idle') {
       void loadLegalStatus();
     }
@@ -1273,6 +1275,7 @@ if (appRoot) {
           ownerBusy: state.listingLifecycleBusyId === buyerBrowseController.state.detail?.id,
           detail: buyerBrowseController.state.detail,
           errorMessage: buyerBrowseController.state.detailError,
+          review: state.listingReview?.slug === state.currentListingSlug ? state.listingReview : undefined,
           contactBusy: threadStarter.state.busy,
           contactError: threadStarter.state.listingId === buyerBrowseController.state.detail?.id ? threadStarter.state.error : '',
           selectedImageIndex: state.selectedListingImageIndex,
@@ -1947,6 +1950,7 @@ if (appRoot) {
     state.legalStatusError = '';
     state.legalStatusPromise = null;
     state.legalStatusStatus = 'idle';
+    state.listingReview = null;
     buyerBrowseController.state.detail = null;
     buyerBrowseController.state.detailError = '';
     buyerBrowseController.state.detailStatus = 'idle';
@@ -2457,16 +2461,13 @@ if (appRoot) {
   }
 
   async function handleListingReviewSubmit(form) {
+    if (state.listingReview?.status === 'sending') return;
     const formData = new FormData(form);
     const slug = String(formData.get('slug') || state.currentListingSlug || '').trim();
     const rating = Number(formData.get('rating'));
     const comment = String(formData.get('comment') ?? '').trim();
-    const messageTarget = form.querySelector('[data-review-message]');
 
-    if (!slug) {
-      return;
-    }
-
+    if (!slug) return;
     if (!state.session) {
       beginAuthIntent({
         returnRoute: `#listing/${encodeURIComponent(slug)}`,
@@ -2475,26 +2476,25 @@ if (appRoot) {
       return;
     }
 
-    if (messageTarget) {
-      messageTarget.textContent = 'Envoi de votre avis...';
-    }
-
+    const session = state.session;
+    const review = { slug, rating, comment, status: 'sending', message: 'Envoi de votre avis...' };
+    state.listingReview = review;
+    renderApp();
     try {
-      await reviewsService.submitReview({
-        comment,
-        rating,
-        session: state.session,
-        slug,
-      });
-
+      await reviewsService.submitReview({ comment, rating, session, slug });
+      if (state.session !== session) return;
+      review.status = 'saved';
+      review.message = 'Votre avis a bien été enregistré.';
       buyerBrowseController.state.detailStatus = 'idle';
-      await loadBuyerListing(slug);
-      renderApp();
+      if (parseAppRoute(window.location.hash).slug === slug) await loadBuyerListing(slug);
     } catch (error) {
-      if (messageTarget) {
-        messageTarget.textContent =
-          error instanceof Error ? error.message : 'Impossible d’envoyer votre avis.';
-      }
+      if (state.session !== session) return;
+      review.status = 'error';
+      review.message = error instanceof Error ? error.message : 'Impossible d’envoyer votre avis.';
+    }
+    renderApp();
+    if (parseAppRoute(window.location.hash).slug === slug) {
+      appRoot.querySelector('[data-review-message]')?.focus();
     }
   }
 
@@ -2624,6 +2624,8 @@ if (appRoot) {
       state.thread = thread;
       state.threadStatus = 'ready';
       state.threadDraftMessage = '';
+      // Recheck review eligibility on return; only the API grants it.
+      buyerBrowseController.state.detailStatus = 'idle';
       state.inboxStatus = 'idle';
       void loadInbox();
       renderApp();
