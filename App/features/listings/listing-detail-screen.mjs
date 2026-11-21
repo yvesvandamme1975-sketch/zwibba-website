@@ -86,20 +86,20 @@ function buildEditListingButton(detail) {
   `;
 }
 
-function buildShareButton(detail, { compact = false } = {}) {
+function buildShareButton(detail, { compact = false, story = false } = {}) {
   if (!detail.slug) {
     return '';
   }
 
   const shareUrl = `/annonce/${detail.slug}/`;
   const className = compact
-    ? 'app-flow__button app-flow__button--icon'
+    ? 'app-flow__button app-flow__button--secondary app-detail__share'
     : 'app-flow__button app-flow__button--share';
 
-  // Story entry opts into the success-screen story mode (Xavier, 02/11 request).
-  const storyButton = compact && detail.storyImageUrl ? `
+  // Keep the explicit story export separate from native link sharing.
+  if (story) return detail.storyImageUrl ? `
     <button
-      class="app-flow__button app-flow__button--share"
+      class="app-flow__button app-flow__button--secondary app-detail__story"
       type="button"
       data-action="open-share-menu"
       data-share-mode="story"
@@ -113,7 +113,7 @@ function buildShareButton(detail, { compact = false } = {}) {
     </button>
   ` : '';
 
-  return storyButton + `
+  return `
     <button
       class="${escapeAttribute(className)}"
       type="button"
@@ -126,7 +126,7 @@ function buildShareButton(detail, { compact = false } = {}) {
       ${detail.storyImageUrl ? `data-story-image-url="${escapeAttribute(detail.storyImageUrl)}"` : ''}
       ${compact ? `aria-label="${escapeAttribute('Partager cette annonce')}"` : ''}
     >
-      ${compact ? '<span aria-hidden="true">↗</span>' : 'Partager'}
+      ${compact ? '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 16V3m-4 4 4-4 4 4M5 13v7h14v-7"/></svg>' : ''} Partager
     </button>
   `;
 }
@@ -136,13 +136,13 @@ function buildActionMarkup(action, detail, contactBusy = false) {
     case 'message':
       return `
         <button
-          class="app-flow__button app-flow__button--secondary"
+          class="app-flow__button"
           type="button"
           data-action="start-thread" ${contactBusy ? 'disabled aria-busy="true"' : ''}
           data-listing-id="${escapeAttribute(detail.id)}"
           data-listing-slug="${escapeAttribute(detail.slug)}"
         >
-          <span aria-hidden="true">✉</span> ${contactBusy ? 'Ouverture…' : 'Envoyer un message'}
+          ${contactBusy ? 'Ouverture…' : 'Envoyer un message'}
         </button>
       `;
     case 'whatsapp': {
@@ -157,12 +157,12 @@ function buildActionMarkup(action, detail, contactBusy = false) {
 
       return `
         <a
-          class="app-flow__button"
+          class="app-flow__button app-flow__button--secondary"
           href="${escapeAttribute(chatLink)}"
           target="_blank"
           rel="noreferrer"
         >
-          <span aria-hidden="true">↗</span> WhatsApp
+          WhatsApp
         </a>
       `;
     }
@@ -173,7 +173,7 @@ function buildActionMarkup(action, detail, contactBusy = false) {
             class="app-flow__button app-flow__button--secondary"
             href="${escapeAttribute(`tel:${detail.contactPhoneNumber}`)}"
           >
-            <span aria-hidden="true">☎</span> Appeler
+            Appeler
           </a>
         `;
       }
@@ -363,14 +363,13 @@ function renderDetailMedia(detail, selectedImageIndex = 0) {
         ${
           images.length > 1
             ? `
-              <div class="app-detail__thumbstrip" role="list" aria-label="Autres photos">
+              <div class="app-detail__thumbstrip" role="group" aria-label="Autres photos">
                 ${images
                   .map(
                     (thumbnailUrl, index) => `
                       <button
                         class="app-detail__thumbnail${index === activeIndex ? ' is-active' : ''}"
                         type="button"
-                        role="listitem"
                         aria-pressed="${index === activeIndex ? 'true' : 'false'}"
                         data-action="select-listing-image"
                         data-image-index="${escapeAttribute(String(index))}"
@@ -446,14 +445,14 @@ function renderSellerBlock(seller = {}) {
 
   if (!sellerId) {
     return `
-      <div class="app-publish__status is-verified">
+      <div class="app-publish__status app-detail__seller">
         ${sellerContent}
       </div>
     `;
   }
 
   return `
-    <a class="app-publish__status is-verified app-detail__seller-link" href="#seller/${escapeAttribute(sellerId)}">
+    <a class="app-publish__status app-detail__seller app-detail__seller-link" href="#seller/${escapeAttribute(sellerId)}">
       ${sellerContent}
     </a>
   `;
@@ -538,55 +537,49 @@ export function renderListingDetailScreen({
   return `
     <section class="app-flow app-flow--detail">
       <header class="app-flow__header">
-        <div class="app-flow__meta">
-          ${renderInAppBrand({ compact: true, countryCode: detail.countryCode })}
-          ${buildShareButton(detail, { compact: true })}
+        ${renderInAppBrand({ compact: true, countryCode: detail.countryCode })}
+        <div class="app-detail__toolbar">
           <a class="app-flow__back" href="#buy">Retour aux annonces</a>
-        </div>
-        <div>
-          <p class="app-flow__eyebrow">Acheter</p>
-          <h2 class="app-flow__title">${escapeHtml(detail.title)}</h2>
+          ${buildShareButton(detail, { compact: true })}
         </div>
       </header>
 
-      <div class="app-publish__summary">
-        <strong>${escapeHtml(detail.locationLabel)}</strong>
-        <span>${escapeHtml(categoryLabel)}</span>
-        <em>${escapeHtml(formatListingPrice(detail))}</em>
+      <div class="app-detail__layout">
+        ${renderDetailMedia(detail, selectedImageIndex)}
+        <div class="app-detail__overview">
+          <div class="app-detail__heading">
+            <h2 class="app-flow__title">${escapeHtml(detail.title)}</h2>
+            <p class="app-detail__price">${escapeHtml(formatListingPrice(detail))}</p>
+            <p class="app-detail__location"><span>${escapeHtml(detail.locationLabel)}</span> · <span>${escapeHtml(categoryLabel)}</span></p>
+          </div>
+          ${
+            detail.viewerRole === 'owner'
+              ? renderOwnerLifecycleCard(detail)
+              : `
+                ${contactError ? `<p class="app-flow__error" role="alert">${escapeHtml(contactError)}</p><a href="#messages">Mes messages</a>` : ''}
+                <div class="app-flow__actions" role="group" aria-label="Contacter le vendeur" data-contact-actions="${escapeAttribute(detail.contactActions.join(','))}">
+                  ${['message', 'whatsapp', 'call']
+                    .filter((action) => action === 'message' ? Boolean(detail.id) : detail.contactActions.includes(action))
+                    .map((action) => buildActionMarkup(action, detail, contactBusy))
+                    .join('')}
+                </div>
+              `
+          }
+          ${buildShareButton(detail, { story: true })}
+          ${detail.publishedAt && Number.isFinite(Date.parse(detail.publishedAt)) ? `<p class="app-detail__date">Annonce publiée le ${escapeHtml(new Date(detail.publishedAt).toLocaleDateString('fr-FR'))}</p>` : ''}
+        </div>
       </div>
 
-      ${detail.publishedAt && Number.isFinite(Date.parse(detail.publishedAt)) ? `<p>Annonce publiée le ${escapeHtml(new Date(detail.publishedAt).toLocaleDateString('fr-FR'))}</p>` : ''}
-      ${renderDetailMedia(detail, selectedImageIndex)}
-
-      <div class="app-auth__card">
-        <strong>Description</strong>
-        <p>${escapeHtml(detail.summary)}</p>
+      <div class="app-detail__information">
+        <section class="app-auth__card">
+          <h3>Description</h3>
+          <p>${escapeHtml(detail.summary)}</p>
+        </section>
+        ${renderAttributeDetails(detail)}
+        ${renderSellerBlock(detail.seller)}
+        ${renderSafetyCard(detail)}
+        ${renderReviewForm(detail)}
       </div>
-
-      ${renderAttributeDetails(detail)}
-
-      ${renderSellerBlock(detail.seller)}
-      ${renderSafetyCard(detail)}
-      ${
-        detail.viewerRole === 'owner'
-          ? renderOwnerLifecycleCard(detail)
-          : `
-            ${contactError ? `<p class="app-flow__error" role="alert">${escapeHtml(contactError)}</p><a href="#messages">Mes messages</a>` : ''}
-            <div class="app-flow__actions" data-contact-actions="${escapeAttribute(detail.contactActions.join(','))}">
-              ${['whatsapp', 'message', 'call']
-                .filter((action) =>
-                  action === 'message'
-                    ? Boolean(detail.id)
-                    : detail.contactActions.includes(action),
-                )
-                .map((action) => buildActionMarkup(action, detail, contactBusy))
-                .join('')}
-
-            </div>
-          `
-      }
-
-      ${renderReviewForm(detail)}
     </section>
   `;
 }

@@ -58,12 +58,14 @@ export function createListingShareController({
 
   function start(context, { mode = 'post' } = {}) {
     void open(context);
-    if (mode === 'story' && state.storyEnabled) {
-      state.mode = 'story';
-      changed();
+    if (mode === 'story') {
+      if (state.storyEnabled) {
+        state.mode = 'story';
+        changed();
+      }
       return Promise.resolve('menu');
     }
-    return state.storyEnabled && state.canShareLink ? perform('native-link') : Promise.resolve('menu');
+    return state.canShareLink ? perform('native-link') : Promise.resolve('menu');
   }
 
   async function prepareImage() {

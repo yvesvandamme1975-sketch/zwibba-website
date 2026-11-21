@@ -177,20 +177,21 @@ test('listing entry ignores a story mode request and cannot switch to story mode
   assert.equal(controller.state.mode, 'post');
 });
 
-test('listing starts at destination menu and prepares branded card instead of old story image', async () => {
+test('listing directly shares its link and keeps branded media for fallback', async () => {
   const fetched = [];
   const {controller,calls} = setup({fetchFn: async url => {fetched.push(url);return new Response(new Blob(['branded'], {type:'image/jpeg'}));}});
-  assert.equal(await controller.start({slug:'velo',shareImageUrl:'https://cdn.example/share-v2.jpg',storyImageUrl:'https://cdn.example/story.png'}), 'menu');
+  assert.equal(await controller.start({slug:'velo',shareImageUrl:'https://cdn.example/share-v2.jpg',storyImageUrl:'https://cdn.example/story.png'}), 'handed-off');
   await controller.prepareImage();
-  assert.equal(calls.length, 0);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][1].url, 'https://zwibba.com/annonce/velo/');
   assert.ok(fetched.every(url=>url==='https://cdn.example/share-v2.jpg'));
   assert.equal(await controller.perform('instagram'), 'handed-off');
   assert.equal(controller.state.destination, 'instagram');
   assert.equal(controller.state.mode, 'post');
   const result = controller.perform('native-image');
-  assert.equal(calls.length, 2);
-  assert.deepEqual(Object.keys(calls[1][1]), ['files']);
-  assert.equal(await calls[1][1].files[0].text(), 'branded');
+  assert.equal(calls.length, 3);
+  assert.deepEqual(Object.keys(calls[2][1]), ['files']);
+  assert.equal(await calls[2][1].files[0].text(), 'branded');
   assert.equal(await result, 'handed-off');
 });
 
@@ -281,4 +282,11 @@ test('Facebook and WhatsApp preserve their existing URLs and captions',async()=>
  await controller.perform('facebook');await controller.perform('whatsapp');
  assert.equal(calls[0][1],'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent('https://zwibba.com/annonce/velo/'));
  assert.equal(calls[1][1],'https://api.whatsapp.com/send?text='+encodeURIComponent('Vélo de Liège — Zwibba\nhttps://zwibba.com/annonce/velo/'));
+});
+
+test('listing native sharing keeps an actionable fallback on rejection', async () => {
+  const { controller } = setup({ navigatorObject: { share: () => Promise.reject(new DOMException('denied', 'NotAllowedError')) } });
+  assert.equal(await controller.start({ slug: 'velo' }), 'error');
+  assert.match(controller.state.message, /copiez le lien/);
+  assert.equal(controller.state.busy, false);
 });

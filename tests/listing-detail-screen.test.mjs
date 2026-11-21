@@ -391,7 +391,7 @@ test('listing detail screen renders a whatsapp link for a buyer when the seller 
     html.includes(expectedHref),
     `expected html to include ${expectedHref}`,
   );
-  assert.match(html, /class="app-flow__button"[^>]*href="https:\/\/wa\.me\/243990000001/);
+  assert.match(html, /class="app-flow__button app-flow__button--secondary"[^>]*href="https:\/\/wa\.me\/243990000001/);
   assert.match(html, />\s*WhatsApp\s*</);
 });
 
@@ -643,4 +643,18 @@ test('review form stays hidden without a verified message and seller dates are f
  assert.match(html, /Envoyez un message dans Zwibba/);
  assert.match(html, /Membre depuis/);
  assert.doesNotMatch(html, /téléphone vérifié/i);
+});
+
+test('buyer detail prioritises photos, price and contact before description, seller and safety', () => {
+ const html = renderListingDetailScreen({ state: 'ready', detail: {
+  id: 'logical', slug: 'logical', title: 'Article', priceAmount: 20, priceCurrency: 'EUR',
+  images: ['https://example.com/photo.jpg'], storyImageUrl: 'https://example.com/story.png',
+  summary: 'Description de test', contactActions: ['message','whatsapp','call'], contactPhoneNumber: '+243990000001',
+  seller: { name: 'Vendeur' }, safetyTips: ['Conseil de test'],
+ }});
+ const ordered = ['app-detail__gallery', 'app-detail__overview', 'data-contact-actions', 'Description de test', 'app-detail__seller', 'app-detail__safety-card'];
+ for (let i = 1; i < ordered.length; i++) assert.ok(html.indexOf(ordered[i-1]) < html.indexOf(ordered[i]), ordered.join(' → '));
+ assert.ok(html.indexOf('data-action="start-thread"') < html.indexOf('href="https://wa.me/'));
+ assert.ok(html.indexOf('Partager en story') > html.indexOf('data-contact-actions'));
+ assert.match(html, /aria-label="Partager cette annonce"/);
 });

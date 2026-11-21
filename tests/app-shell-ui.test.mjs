@@ -117,7 +117,7 @@ test('desktop widens the shell and constrains screens to a readable column', () 
   );
   assert.match(
     appStyles,
-    /@media \(min-width: 920px\) \{[\s\S]*?\.app-flow--detail\s*\{[\s\S]*?max-width:\s*760px;/,
+    /@media \(min-width: 920px\) \{[\s\S]*?\.app-flow--detail\s*\{[\s\S]*?max-width:\s*1100px;/,
   );
 });
 
@@ -139,9 +139,8 @@ test('desktop feed becomes a fluid multi-column grid', () => {
   );
 });
 
-test('desktop listing detail gets a taller primary photo', () => {
-  assert.match(
-    appStyles,
-    /@media \(min-width: 920px\) \{[\s\S]*?\.app-flow--detail \.app-detail__media,\s*\.app-flow--detail \.app-detail__image\s*\{[\s\S]*?min-height:\s*380px;/,
-  );
+test('listing photos preserve their full frame and use a two-column desktop layout', () => {
+  assert.match(appStyles, /\.app-detail__media\s*\{[^}]*aspect-ratio:\s*4 \/ 3;/);
+  assert.match(appStyles, /\.app-detail__image\s*\{[^}]*object-fit:\s*contain;/);
+  assert.match(appStyles, /@media \(min-width: 920px\)[\s\S]*?\.app-detail__layout[^}]*grid-template-columns:/);
 });
