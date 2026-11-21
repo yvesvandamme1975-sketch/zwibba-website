@@ -27,6 +27,14 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npm run smoke:production-contracts
+      - name: Review flow on Android and iPhone browser profiles
+        run: |
+          pnpm exec playwright install --with-deps chromium webkit
+          PORT=4351 node server.mjs &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for attempt in {1..30}; do curl -fsS http://127.0.0.1:4351/ >/dev/null && break; sleep 1; done
+          npm run test:e2e:reviews
       - name: Verify api/admin healthcheck stays on /healthz
         run: |
           node -e "const c=require(\"./apps/api/railway.json\");if(c.deploy.healthcheckPath!==\"/healthz\"){console.error(\"api healthcheckPath must be /healthz\");process.exit(1)}"

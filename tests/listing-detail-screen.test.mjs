@@ -709,3 +709,36 @@ test('owner dock reflects permissions, busy state and escaped lifecycle feedback
     assert.doesNotMatch(html, /data-action="edit-listing"|data-lifecycle-action="pause"/);
   }
 });
+
+test('listing review confirms a saved review in an accessible status message', () => {
+  const html = renderListingDetailScreen({
+    state: 'ready', review: { status: 'saved' },
+    detail: { slug: 'local-review', title: 'Recette', images: [], canReview: true, seller: {} },
+  });
+  assert.match(html, /role="status"[^>]*data-review-message/);
+  assert.match(html, /Votre avis a bien été enregistré\./);
+});
+
+test('saved review confirmation survives a failed listing refresh', () => {
+  const html = renderListingDetailScreen({ state: 'error', review: { status: 'saved' }, errorMessage: 'Indisponible' });
+  assert.match(html, /Votre avis a bien été enregistré\./);
+  assert.match(html, /Indisponible/);
+});
+
+test('review submission survives rerender with fields retained and disabled', () => {
+  const html = renderListingDetailScreen({ state: 'ready',
+    detail: { slug: 'review', title: 'Recette', images: [], canReview: true, seller: {} },
+    review: { status: 'sending', rating: 4, comment: '<local>', message: 'Envoi de votre avis...' },
+  });
+  assert.match(html, /value="4" checked/);
+  assert.match(html, /type="submit" disabled/);
+  assert.match(html, /disabled>&lt;local&gt;<\/textarea>/);
+});
+
+test('saved review confirmation does not depend on renewed eligibility', () => {
+  const html = renderListingDetailScreen({ state: 'ready', review: { status: 'saved' },
+    detail: { slug: 'review', title: 'Recette', images: [], canReview: false, seller: {} },
+  });
+  assert.match(html, /Votre avis a bien été enregistré\./);
+  assert.doesNotMatch(html, /data-action="submit-review"/);
+});
