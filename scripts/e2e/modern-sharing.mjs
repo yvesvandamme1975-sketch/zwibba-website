@@ -24,13 +24,14 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
       });
       let storyRequests = 0;
       let failStory = false;
+      let withoutPhoto = false;
       await page.route('https://api.test.invalid/**', route => {
         if (new URL(route.request().url()).pathname === '/share/velo-test/story.png') {
           storyRequests++;
           if (failStory) return route.fulfill({status: 503, json: {message: "Image indisponible"}});
           return route.fulfill({ contentType:'image/png', headers:{'cache-control':'no-store'}, body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==','base64') });
         }
-        const detail = { id: 'velo', slug: 'velo-test', title: 'Vélo de Liège', categoryId: 'sports', priceAmount: 120, priceCurrency: 'EUR', locationLabel: 'Liège', images: ['https://image.test.invalid/photo.png'], storyImageUrl: null, viewerRole: 'buyer', contactActions: [], safetyTips: [], summary: 'Vélo de test', seller: { displayName: 'Vendeur', area: 'Liège' } };
+        const detail = { id: 'velo', slug: 'velo-test', title: 'Vélo de Liège', categoryId: 'sports', priceAmount: 120, priceCurrency: 'EUR', locationLabel: 'Liège', images: withoutPhoto ? [] : ['https://image.test.invalid/photo.png'], storyImageUrl: null, viewerRole: 'buyer', contactActions: [], safetyTips: [], summary: 'Vélo de test', seller: { displayName: 'Vendeur', area: 'Liège' } };
         return route.fulfill({ json: new URL(route.request().url()).pathname === '/listings/velo-test' ? detail : { items: [] } });
       });
       await page.route('https://image.test.invalid/photo.png', route => route.fulfill({ contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==', 'base64') }));
@@ -127,6 +128,13 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
       assert.equal(await manual.inputValue(), `${new URL(baseUrl).origin}/annonce/velo-test/`);
       await page.keyboard.press('Escape');
       assert.equal(storyRequests, 3, 'one initial story, one failed explicit open and one explicit retry');
+      withoutPhoto = true;
+      await page.reload();
+      await share.click();
+      await dialog.waitFor();
+      assert.equal(await dialog.getByRole('button', { name: 'Story Instagram', exact: true }).count(), 0, 'a listing without a photo cannot offer a story');
+      assert.equal(storyRequests, 3);
+      await page.keyboard.press('Escape');
       assert.deepEqual(errors, []);
       await page.close();
       console.log(`PASS ${engineName} ${width}px: share menu entry, URL-only link, cancel/focus, error/copy, story file, unsupported fallback, keyboard (OS boundary simulated)`);
