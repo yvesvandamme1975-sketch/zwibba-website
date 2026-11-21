@@ -32,7 +32,8 @@ export function formatPrice(amount, currency) {
 
 export function buildListingOgTags({ listing, baseUrl }) {
   const normalizedBaseUrl = String(baseUrl || '').replace(/\/+$/, '');
-  const hasLandscape = Boolean(listing?.shareImageUrl);
+  const hasLinkImage = Boolean(listing?.shareImageUrl);
+  const isPortrait = /\/share-v3-portrait-[a-f0-9]{16}\.jpg(?:[?#]|$)/.test(listing?.shareImageUrl || '');
   const isBelgium = listing?.countryCode === 'BE' || (!listing?.countryCode && listing?.priceCurrency === 'EUR');
   const rawImageUrl =
     listing?.shareImageUrl ||
@@ -58,10 +59,10 @@ export function buildListingOgTags({ listing, baseUrl }) {
     ['property', 'og:image', imageUrl],
   ];
 
-  if (hasLandscape) {
-    tags.push(['property', 'og:image:width', '1200']);
-    tags.push(['property', 'og:image:height', '630']);
-    // Crawlers (Facebook, WhatsApp) trust a declared type; the branded v2
+  if (hasLinkImage) {
+    tags.push(['property', 'og:image:width', isPortrait ? '1080' : '1200']);
+    tags.push(['property', 'og:image:height', isPortrait ? '1920' : '630']);
+    // Crawlers (Facebook, WhatsApp) trust a declared type; the branded
     // preview is a JPEG, the historical share.png a PNG.
     tags.push(['property', 'og:image:type', /\.jpe?g(?:[?#]|$)/i.test(imageUrl) ? 'image/jpeg' : 'image/png']);
   }

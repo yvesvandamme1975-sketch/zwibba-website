@@ -290,3 +290,13 @@ test('listing native sharing keeps an actionable fallback on rejection', async (
   assert.match(controller.state.message, /copiez le lien/);
   assert.equal(controller.state.busy, false);
 });
+
+
+test('portrait previews share a fresh link URL while stripping untrusted query parameters', async () => {
+  const {controller,calls}=setup();
+  await controller.open({slug:'velo',url:'/annonce/velo/?tracking=private',shareImageUrl:'https://cdn/share-v3-portrait-0123456789abcdef.jpg'});
+  await controller.perform('native-link');
+  assert.equal(calls[0][1].url,'https://zwibba.com/annonce/velo/?preview=portrait-v3');
+  await controller.perform('copy-link');
+  assert.equal(calls[1][1],'https://zwibba.com/annonce/velo/?preview=portrait-v3');
+});

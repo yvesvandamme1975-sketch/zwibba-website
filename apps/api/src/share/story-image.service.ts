@@ -18,7 +18,7 @@ export class StoryImageService {
   async generateAndStoreForListing(listingId: string): Promise<{ storyImageUrl: string; shareImageUrl: string }> {
     const { listing, imageInput } = await this.loadComposeInput(listingId);
     const pngBuffer = await composeStoryImage(imageInput);
-    const landscapeBuffer = await composeLinkImage(imageInput);
+    const previewBuffer = await composeLinkImage(imageInput);
 
     const objectKey = `listings/${listingId}/story.png`;
     const { publicUrl } = await this.r2StorageService.putBuffer({
@@ -26,7 +26,7 @@ export class StoryImageService {
       contentType: 'image/png',
       objectKey,
     });
-    const shareImageUrl = await this.uploadLinkImage(listing.id, landscapeBuffer);
+    const shareImageUrl = await this.uploadLinkImage(listing.id, previewBuffer);
 
     await this.prismaService.listing.update({
       where: { id: listingId },
@@ -37,7 +37,7 @@ export class StoryImageService {
   }
 
   /**
-   * Regenerates ONLY the link preview (`share-v2-<hash>.jpg`) of an approved
+   * Regenerates ONLY the link preview (`share-v3-portrait-<hash>.jpg`) of an approved
    * listing. `story.png` is neither rendered nor touched. The object key is
    * content-addressed, so no referenced object is ever overwritten, and the
    * database write is a compare-and-set on `updatedAt`, the previous
@@ -54,10 +54,10 @@ export class StoryImageService {
     if (!isPubliclyVisibleForLinkImage(listing)) {
       throw new Error(`listing_not_public: ${listing.id}`);
     }
-    const landscapeBuffer = await composeLinkImage(imageInput);
+    const previewBuffer = await composeLinkImage(imageInput);
     // Content-addressed object: a concurrent regeneration can never overwrite
     // an object that the database already references.
-    const shareImageUrl = await this.uploadLinkImage(listing.id, landscapeBuffer);
+    const shareImageUrl = await this.uploadLinkImage(listing.id, previewBuffer);
 
     // Compare-and-set on everything the backfill relies on. `updatedAt` alone is
     // not enough because other backfills preserve it on purpose.
@@ -82,18 +82,18 @@ export class StoryImageService {
       shareImageUrl,
       storyImageUrl: listing.storyImageUrl ?? null,
       updatedAt: listing.updatedAt,
-      bytes: landscapeBuffer.length,
+      bytes: previewBuffer.length,
     };
   }
 
-  private async uploadLinkImage(listingId: string, landscapeBuffer: Buffer): Promise<string> {
+  private async uploadLinkImage(listingId: string, previewBuffer: Buffer): Promise<string> {
     // Versioned, content-addressed key: Facebook and WhatsApp cache previews per
     // URL, so a new design must be served from a new address; and identical
     // bytes map to the same key, so concurrent writers never clobber each other.
     const { publicUrl } = await this.r2StorageService.putBuffer({
-      body: landscapeBuffer,
+      body: previewBuffer,
       contentType: 'image/jpeg',
-      objectKey: `listings/${listingId}/${linkImageFilename(landscapeBuffer)}`,
+      objectKey: `listings/${listingId}/${linkImageFilename(previewBuffer)}`,
     });
     return publicUrl;
   }
@@ -130,10 +130,10 @@ export class StoryImageService {
 }
 
 /** Design version of the branded link preview; bump when the design changes. */
-export const LINK_IMAGE_VERSION = 'share-v2';
+export const LINK_IMAGE_VERSION = 'share-v3-portrait';
 const LINK_IMAGE_FILENAME_PATTERN = new RegExp(`/${LINK_IMAGE_VERSION}-[a-f0-9]{16}\\.jpg$`);
 
-/** Content-addressed file name: `share-v2-<sha256 prefix>.jpg`. */
+/** Content-addressed file name: `share-v3-portrait-<sha256 prefix>.jpg`. */
 export function linkImageFilename(bytes: Buffer): string {
   return `${LINK_IMAGE_VERSION}-${createHash('sha256').update(bytes).digest('hex').slice(0, 16)}.jpg`;
 }

@@ -39,6 +39,10 @@ export function createListingShareController({
       }
     } catch { /* Use the canonical slug instead of an unsafe input URL. */ }
     url ||= new URL(`/annonce/${encodeURIComponent(context.slug || '')}/`, origin).href;
+    // Give a newly shared portrait preview its own page cache key.
+    if (/\/share-v3-portrait-[a-f0-9]{16}\.jpg(?:[?#]|$)/.test(context.shareImageUrl || '')) {
+      url += '?preview=portrait-v3';
+    }
     state = {
       slug: context.slug || '', title: context.title || 'Annonce Zwibba', url,
       storyImageUrl: context.storyImageUrl || '',
