@@ -25,7 +25,7 @@ export function renderShareMenu(menu = null) {
   if (!menu) return '';
   const storyEnabled = menu.storyEnabled === true;
   const mode = storyEnabled && menu.mode === 'story' ? 'story' : 'post';
-  const social = mode !== 'story' && ['instagram', 'tiktok'].includes(menu.destination);
+  const social = !storyEnabled && ['instagram', 'tiktok'].includes(menu.destination);
   const imageMode = mode === 'story' || social;
   const previewUrl = social ? menu.shareImageUrl : menu.primaryImageUrl;
   const dataCtx = [
@@ -42,7 +42,7 @@ export function renderShareMenu(menu = null) {
         ? 'Image prête. Partagez-la avec une application ou enregistrez-la dans vos fichiers.'
         : 'Image prête. Enregistrez-la dans vos fichiers pour la publier dans votre application.'
       : 'L’image est indisponible pour le moment. Vous pouvez partager le lien.';
-  const segmented = storyEnabled && mode === 'story' ? `
+  const segmented = storyEnabled ? `
         <div class="app-share-menu__segmented" role="group" aria-label="Mode de partage">
           <button type="button" class="app-share-menu__seg${mode === 'post' ? ' app-share-menu__seg--active' : ''}" data-action="share-mode-post" aria-pressed="${escapeAttribute(mode === 'post')}" ${menu.busy ? 'disabled' : ''}>En post</button>
           <button type="button" class="app-share-menu__seg${mode === 'story' ? ' app-share-menu__seg--active' : ''}" data-action="share-mode-story" aria-pressed="${escapeAttribute(mode === 'story')}" ${menu.busy ? 'disabled' : ''}>En story</button>
@@ -63,8 +63,7 @@ export function renderShareMenu(menu = null) {
         ${segmented}
         <div class="app-share-menu__options">
           ${menu.canShareLink ? button('share-native-link', 'link', 'Partager le lien') : ''}
-          ${mode === 'post' ? button('share-instagram', 'instagram', 'Instagram') + button('share-tiktok', 'tiktok', 'TikTok') : ''}
-          ${storyEnabled && mode === 'post' ? button('share-mode-story', 'instagram', 'Story Instagram') : ''}
+          ${!storyEnabled ? button('share-instagram', 'instagram', 'Instagram') + button('share-tiktok', 'tiktok', 'TikTok') : ''}
           ${storyOptions}
           ${button('copy-listing-link', 'link', 'Copier le lien')}
         </div>

@@ -29,12 +29,11 @@ test('listing share sheet is link-only: no story mode even when a story mode is 
   }
 });
 
-test('share menu offers Story Instagram alongside existing post destinations', () => {
+test('success context keeps the post/story mode toggle (non-regression)', () => {
   const post = renderShareMenu({ url: '/annonce/x/', mode: 'post', storyEnabled: true });
-  assert.match(post, /data-action="share-instagram"/);
-  assert.match(post, /data-action="share-tiktok"/);
+  assert.match(post, /data-action="share-mode-post"/);
   assert.match(post, /data-action="share-mode-story"/);
-  assert.match(post, /Story Instagram/);
+  assert.match(post, /share-mode-post"[^>]*aria-pressed="true"/);
 
   const story = renderShareMenu({ url: '/annonce/x/', mode: 'story', storyEnabled: true });
   assert.match(story, /share-mode-story"[^>]*aria-pressed="true"/);

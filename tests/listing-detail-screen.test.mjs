@@ -603,10 +603,10 @@ test('listing detail screen keeps the shared toolbar for the owner when editDraf
     id: 'fixture', slug: 'fixture', title: 'Fixture', contactActions: ['message'], safetyTips: [],
     seller: { name: 'Vendeur' }, primaryImageUrl: 'https://example.com/photo.jpg', storyImageUrl: null,
   }});
-  assert.match(html, /data-share-context="listing"/);
-  assert.doesNotMatch(html, /Story Instagram/);
+  assert.match(html, /data-share-mode="story"[^>]*data-share-context="story"/);
+  assert.match(html, /Story Instagram/);
   assert.doesNotMatch(html, /data-share-context="success"/);
-  assert.equal(html.match(/data-action="open-share-menu"/g).length, 1);
+  assert.equal(html.match(/data-action="open-share-menu"/g).length, 2);
   const withoutStory = renderListingDetailScreen({ state: 'ready', detail: {
     id: 'fixture', slug: 'fixture', title: 'Fixture', contactActions: [], safetyTips: [], seller: { name: 'Vendeur' },
   }});
@@ -655,7 +655,7 @@ test('buyer detail prioritises photos, price and compact seller before full deta
  const ordered = ['app-detail__gallery', 'app-detail__overview', 'app-detail__summary', 'app-detail__seller', 'data-contact-actions', 'app-detail__information', 'app-detail__safety-card'];
  for (let i = 1; i < ordered.length; i++) assert.ok(html.indexOf(ordered[i-1]) < html.indexOf(ordered[i]), ordered.join(' → '));
  assert.ok(html.indexOf('data-action="start-thread"') < html.indexOf('href="https://wa.me/'));
- assert.doesNotMatch(html, /app-detail__story/);
+ assert.ok(html.indexOf('Story Instagram') < html.indexOf('app-detail__gallery'));
  assert.match(html, /aria-label="Partager cette annonce"/);
 });
 

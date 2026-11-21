@@ -87,7 +87,7 @@ function buildEditListingButton(detail) {
   `;
 }
 
-function buildShareButton(detail, { compact = false } = {}) {
+function buildShareButton(detail, { compact = false, story = false } = {}) {
   if (!detail.slug) {
     return '';
   }
@@ -97,12 +97,27 @@ function buildShareButton(detail, { compact = false } = {}) {
     ? 'app-flow__button app-flow__button--secondary app-detail__share'
     : 'app-flow__button app-flow__button--share';
 
+  // Keep the explicit story export separate from native link sharing.
+  if (story) return resolveGalleryImages(detail).length ? `
+    <button
+      class="app-flow__button app-flow__button--secondary app-detail__story"
+      type="button"
+      data-action="open-share-menu"
+      data-share-mode="story"
+      data-share-context="story"
+      data-share-slug="${escapeAttribute(detail.slug)}"
+      data-share-title="${escapeAttribute(detail.title)}"
+      data-share-url="${escapeAttribute(shareUrl)}"
+    >
+      Story Instagram
+    </button>
+  ` : '';
+
   return `
     <button
       class="${escapeAttribute(className)}"
       type="button"
       data-action="open-share-menu"
-      data-share-context="listing"
       data-share-slug="${escapeAttribute(detail.slug)}"
       data-share-title="${escapeAttribute(detail.title)}"
       data-share-image-url="${escapeAttribute(resolveGalleryImages(detail)[0] || '')}"
@@ -535,6 +550,7 @@ export function renderListingDetailScreen({
         <div class="app-detail__toolbar">
           <a class="app-flow__back" href="${detail.viewerRole === 'owner' ? '#profile' : '#buy'}" aria-label="${detail.viewerRole === 'owner' ? 'Retour à mes annonces' : 'Retour aux annonces'}">${detail.viewerRole === 'owner' ? 'Mes annonces' : 'Retour'}</a>
           ${buildShareButton(detail, { compact: true })}
+          ${buildShareButton(detail, { story: true })}
         </div>
       </header>
 
