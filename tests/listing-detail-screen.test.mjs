@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { renderListingDetailScreen } from '../App/features/listings/listing-detail-screen.mjs';
+import { renderListingDetailScreen, renderListingContactActions } from '../App/features/listings/listing-detail-screen.mjs';
 
 test('listing detail screen renders the buyer detail state inside /App', () => {
   const html = renderListingDetailScreen({
@@ -47,7 +47,7 @@ test('listing detail screen renders the buyer detail state inside /App', () => {
   assert.match(html, /★★★★☆/);
   assert.match(html, /href="#seller\/user_0001"/);
   assert.match(html, /Conseils de sécurité/);
-  assert.match(html, /Attention/);
+  assert.doesNotMatch(html, /<span>Attention<\/span>/);
   assert.match(html, /Envoyer un message/);
   assert.match(html, /data-action="start-thread"/);
   assert.match(html, /data-listing-id="listing_1"/);
@@ -184,10 +184,10 @@ test('listing detail screen renders fashion item type and size details when prov
     state: 'ready',
   });
 
-  assert.match(html, /<strong>D[ée]tails<\/strong>/);
+  assert.match(html, /<h3>D[ée]tails<\/h3>/);
   assert.match(html, /Type d(?:&#39;|')article/i);
   assert.match(html, /Chaussures/);
-  assert.match(html, /<span>39<\/span>/);
+  assert.match(html, /<dd>39<\/dd>/);
 });
 
 test('listing detail screen swaps legacy dead CDN image URLs for a local preview before render', () => {
@@ -645,16 +645,37 @@ test('review form stays hidden without a verified message and seller dates are f
  assert.doesNotMatch(html, /téléphone vérifié/i);
 });
 
-test('buyer detail prioritises photos, price and contact before description, seller and safety', () => {
+test('buyer detail prioritises photos, price and compact seller before full details', () => {
  const html = renderListingDetailScreen({ state: 'ready', detail: {
   id: 'logical', slug: 'logical', title: 'Article', priceAmount: 20, priceCurrency: 'EUR',
   images: ['https://example.com/photo.jpg'], storyImageUrl: 'https://example.com/story.png',
   summary: 'Description de test', contactActions: ['message','whatsapp','call'], contactPhoneNumber: '+243990000001',
   seller: { name: 'Vendeur' }, safetyTips: ['Conseil de test'],
  }});
- const ordered = ['app-detail__gallery', 'app-detail__overview', 'data-contact-actions', 'Description de test', 'app-detail__seller', 'app-detail__safety-card'];
+ const ordered = ['app-detail__gallery', 'app-detail__overview', 'app-detail__summary', 'app-detail__seller', 'data-contact-actions', 'app-detail__information', 'app-detail__safety-card'];
  for (let i = 1; i < ordered.length; i++) assert.ok(html.indexOf(ordered[i-1]) < html.indexOf(ordered[i]), ordered.join(' → '));
  assert.ok(html.indexOf('data-action="start-thread"') < html.indexOf('href="https://wa.me/'));
  assert.ok(html.indexOf('Partager en story') > html.indexOf('data-contact-actions'));
  assert.match(html, /aria-label="Partager cette annonce"/);
+});
+
+
+test('standalone contact dock preserves errors and omits owner actions', () => {
+  const detail = { id: 'dock', slug: 'dock', title: 'Article', contactActions: ['message', 'whatsapp', 'call'], contactPhoneNumber: '+32470000000' };
+  const html = renderListingContactActions({ detail, contactBusy: true, contactError: '<Erreur>' });
+  assert.match(html, /role="alert">&lt;Erreur&gt;/);
+  assert.match(html, /data-action="start-thread"[^>]*disabled aria-busy="true"/);
+  assert.match(html, /href="tel:\+32470000000"/);
+  assert.match(html, /href="https:\/\/wa.me\/32470000000/);
+  assert.equal(renderListingContactActions({detail: {...detail, viewerRole: 'owner'}}), '');
+  assert.equal(renderListingContactActions({}), '');
+  const noPhone = renderListingContactActions({ detail: {...detail, contactPhoneNumber: ''} });
+  assert.doesNotMatch(noPhone, /wa.me|href="tel:/);
+});
+
+test('shell contact placement does not duplicate the contact buttons in the listing', () => {
+  const detail = {id: 'dock', slug: 'dock', title: 'Article', contactActions: ['message'], seller: {}, safetyTips: []};
+  const content = renderListingDetailScreen({state: 'ready', detail, showContactActions: false});
+  assert.doesNotMatch(content, /data-action="start-thread"/);
+  assert.match(content + renderListingContactActions({detail}), /data-action="start-thread"/);
 });

@@ -91,14 +91,14 @@ test('mobile shell fixes the tab nav to the viewport bottom and reserves content
   );
 });
 
-test('mobile footer uses readable labels for four primary destinations', () => {
+test('mobile footer keeps labels readable with enlarged text for four destinations', () => {
   assert.match(
     appStyles,
     /@media \(max-width: 640px\) \{[\s\S]*?\.app-tab-shell__nav-item\s*\{[\s\S]*?font-size:\s*0\.75rem;[\s\S]*?\}/i,
   );
   assert.match(
     appStyles,
-    /@media \(max-width: 640px\) \{[\s\S]*?\.app-tab-shell__nav-label\s*\{[\s\S]*?white-space:\s*nowrap;[\s\S]*?overflow-wrap:\s*normal;[\s\S]*?word-break:\s*normal;[\s\S]*?\}/i,
+    /@media \(max-width: 640px\) \{[\s\S]*?\.app-tab-shell__nav-label\s*\{[\s\S]*?white-space:\s*normal;[\s\S]*?overflow-wrap:\s*anywhere;[\s\S]*?word-break:\s*normal;[\s\S]*?\}/i,
   );
 });
 

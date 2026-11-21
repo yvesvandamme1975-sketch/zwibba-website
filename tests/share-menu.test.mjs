@@ -10,6 +10,7 @@ test('renderShareMenu returns nothing when closed', () => {
 test('share menu offers media destinations and keeps native link and copy fallback', () => {
   const html = renderShareMenu({slug: 'mon-annonce', title: 'Belle annonce', url: '/annonce/mon-annonce/', canShareLink: true});
   assert.match(html, /data-action="share-native-link"/);
+  assert.doesNotMatch(html, /Partager avec une application/);
   assert.match(html, /data-action="copy-listing-link"/);
   assert.match(html, /data-action="close-share-menu"/);
   assert.match(html, /data-action="share-instagram"/);

@@ -8,6 +8,7 @@ import {
   buildImageFallbackHandler,
   sanitizeListingImageUrl,
 } from '../../utils/image-fallbacks.mjs';
+import { sellerMonogram } from '../../utils/seller-monogram.mjs';
 import { renderRatingStars } from '../../utils/rating-stars.mjs';
 import {
   getFashionAttributes,
@@ -131,7 +132,14 @@ function buildShareButton(detail, { compact = false, story = false } = {}) {
   `;
 }
 
+const contactIcons = {
+  message: '<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/>',
+  whatsapp: '<path d="m3 21 1.6-5A9 9 0 1 1 8 20Z"/><path d="M8 7c0 5 4 9 9 9l1-3-3-1-1 1-3-3 1-1-1-3Z"/>',
+  call: '<path d="M8 3H4a1 1 0 0 0-1 1c0 9.4 7.6 17 17 17a1 1 0 0 0 1-1v-4l-5-2-2 2a14 14 0 0 1-6-6l2-2Z"/>',
+};
+
 function buildActionMarkup(action, detail, contactBusy = false) {
+  const icon = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${contactIcons[action] || ''}</svg>`;
   switch (action) {
     case 'message':
       return `
@@ -142,7 +150,7 @@ function buildActionMarkup(action, detail, contactBusy = false) {
           data-listing-id="${escapeAttribute(detail.id)}"
           data-listing-slug="${escapeAttribute(detail.slug)}"
         >
-          ${contactBusy ? 'Ouverture…' : 'Envoyer un message'}
+          ${icon}<span>${contactBusy ? 'Ouverture…' : 'Envoyer un message'}</span>
         </button>
       `;
     case 'whatsapp': {
@@ -162,7 +170,7 @@ function buildActionMarkup(action, detail, contactBusy = false) {
           target="_blank"
           rel="noreferrer"
         >
-          WhatsApp
+          ${icon}<span>WhatsApp</span>
         </a>
       `;
     }
@@ -173,7 +181,7 @@ function buildActionMarkup(action, detail, contactBusy = false) {
             class="app-flow__button app-flow__button--secondary"
             href="${escapeAttribute(`tel:${detail.contactPhoneNumber}`)}"
           >
-            Appeler
+            ${icon}<span>Appeler</span>
           </a>
         `;
       }
@@ -293,32 +301,15 @@ function resolveCategoryLabel(detail) {
 }
 
 function renderAttributeDetails(detail) {
-  if (detail.categoryId !== 'fashion') {
-    return '';
-  }
-
-  const fashionAttributes = getFashionAttributes(detail.attributesJson);
-  const itemTypeLabel = getFashionItemTypeLabel(fashionAttributes.itemType);
-
-  if (!itemTypeLabel && !fashionAttributes.size) {
-    return '';
-  }
-
-  return `
-    <div class="app-auth__card">
-      <strong>Détails</strong>
-      ${
-        itemTypeLabel
-          ? `<p><strong>Type d'article :</strong> ${escapeHtml(itemTypeLabel)}</p>`
-          : ''
-      }
-      ${
-        fashionAttributes.size
-          ? `<p><strong>Taille :</strong> <span>${escapeHtml(fashionAttributes.size)}</span></p>`
-          : ''
-      }
-    </div>
-  `;
+  const fashion = detail.categoryId === 'fashion' ? getFashionAttributes(detail.attributesJson) : {};
+  const rows = [
+    ['Catégorie', resolveCategoryLabel(detail)],
+    ['Localisation', detail.locationLabel],
+    ["Type d'article", getFashionItemTypeLabel(fashion.itemType)],
+    ['Taille', fashion.size],
+  ].filter(([, value]) => value);
+  return `<section class="app-detail__section"><h3>Détails</h3><dl class="app-detail__attributes">${rows.map(([label, value]) =>
+    `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl></section>`;
 }
 
 function resolveGalleryImages(detail) {
@@ -359,6 +350,7 @@ function renderDetailMedia(detail, selectedImageIndex = 0) {
             loading="eager"
             onerror="${escapeAttribute(imageFallback)}"
           />
+          <span class="app-detail__photo-count" aria-live="polite">${escapeHtml(`${activeIndex + 1} / ${images.length}`)}</span>
         </div>
         ${
           images.length > 1
@@ -366,21 +358,15 @@ function renderDetailMedia(detail, selectedImageIndex = 0) {
               <div class="app-detail__thumbstrip" role="group" aria-label="Autres photos">
                 ${images
                   .map(
-                    (thumbnailUrl, index) => `
+                    (_, index) => `
                       <button
                         class="app-detail__thumbnail${index === activeIndex ? ' is-active' : ''}"
                         type="button"
+                        aria-label="${escapeAttribute(`Voir la photo ${index + 1}`)}"
                         aria-pressed="${index === activeIndex ? 'true' : 'false'}"
                         data-action="select-listing-image"
                         data-image-index="${escapeAttribute(String(index))}"
                       >
-                        <img
-                          class="app-detail__thumbnail-image"
-                          src="${escapeAttribute(thumbnailUrl)}"
-                          alt="${escapeAttribute(`${detail.title} photo ${index + 1}`)}"
-                          loading="lazy"
-                          onerror="${escapeAttribute(imageFallback)}"
-                        />
                       </button>
                     `,
                   )
@@ -408,10 +394,9 @@ function renderSafetyCard(detail) {
   return `
     <section class="app-detail__safety-card" aria-label="Conseils de sécurité">
       <div class="app-detail__safety-head">
-        <span class="app-detail__safety-icon" aria-hidden="true">!</span>
+        <svg class="app-detail__safety-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m12 2 9 4v6c0 5-9 10-9 10S3 17 3 12V6Z"/><path d="m8 11 3 3 5-5"/></svg>
         <div class="app-detail__safety-copy">
           <strong>Conseils de sécurité</strong>
-          <span>Attention</span>
         </div>
       </div>
       <ul class="app-detail__safety-list">
@@ -427,32 +412,36 @@ function renderSafetyCard(detail) {
   `;
 }
 
-function renderSellerBlock(seller = {}) {
+function renderSellerBlock(seller = {}, { compact = false } = {}) {
   const sellerName = seller.name || 'Vendeur Zwibba';
   const sellerRole = seller.role || 'Vendeur';
   const memberDate = seller.memberSince && new Date(seller.memberSince);
   const memberSince = memberDate && Number.isFinite(memberDate.getTime()) ? memberDate.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long' }) : '';
   const sellerId = String(seller.sellerId || '').trim();
   const sellerContent = `
+    <span class="app-detail__avatar" aria-hidden="true">${escapeHtml(sellerMonogram(sellerName))}</span>
+    <span class="app-detail__seller-copy">
     <strong>${escapeHtml(sellerName)}</strong>
-    <span>${escapeHtml(sellerRole)}</span>
-    ${memberSince ? `<span>Membre depuis ${escapeHtml(memberSince)}</span>` : ''}
+    ${!compact && sellerRole !== 'Vendeur' ? `<span>${escapeHtml(sellerRole)}</span>` : ''}
+    ${!compact && memberSince ? `<span>Membre depuis ${escapeHtml(memberSince)}</span>` : ''}
     ${renderRatingStars({
       average: seller.ratingAverage,
       count: seller.ratingCount,
     })}
+    </span>
+    ${sellerId ? '<span class="app-detail__seller-chevron" aria-hidden="true">›</span>' : ''}
   `;
 
   if (!sellerId) {
     return `
-      <div class="app-publish__status app-detail__seller">
+      <div class="app-detail__seller">
         ${sellerContent}
       </div>
     `;
   }
 
   return `
-    <a class="app-publish__status app-detail__seller app-detail__seller-link" href="#seller/${escapeAttribute(sellerId)}">
+    <a class="app-detail__seller app-detail__seller-link" href="#seller/${escapeAttribute(sellerId)}">
       ${sellerContent}
     </a>
   `;
@@ -483,11 +472,25 @@ function renderReviewForm(detail) {
   `;
 }
 
+export function renderListingContactActions({ detail, contactBusy = false, contactError = '' } = {}) {
+  if (!detail || detail.viewerRole === 'owner') return '';
+  const actions = ['message', 'whatsapp', 'call'].filter(action =>
+    action === 'message' ? Boolean(detail.id) : (detail.contactActions || []).includes(action));
+  if (!actions.length) return '';
+  return `<div class="app-detail__contact-dock">
+    ${contactError ? `<p class="app-flow__error" role="alert">${escapeHtml(contactError)}</p><a href="#messages">Mes messages</a>` : ''}
+    <div class="app-flow__actions" role="group" aria-label="Contacter le vendeur" data-contact-actions="${escapeAttribute((detail.contactActions || []).join(','))}">
+      ${actions.map(action => buildActionMarkup(action, detail, contactBusy)).join('')}
+    </div>
+  </div>`;
+}
+
 export function renderListingDetailScreen({
   detail = null,
   errorMessage = '',
   contactBusy = false,
   contactError = '',
+  showContactActions = true,
   selectedImageIndex = 0,
   state = 'loading',
 } = {}) {
@@ -539,7 +542,7 @@ export function renderListingDetailScreen({
       <header class="app-flow__header">
         ${renderInAppBrand({ compact: true, countryCode: detail.countryCode })}
         <div class="app-detail__toolbar">
-          <a class="app-flow__back" href="#buy">Retour aux annonces</a>
+          <a class="app-flow__back" href="#buy" aria-label="Retour aux annonces">Retour</a>
           ${buildShareButton(detail, { compact: true })}
         </div>
       </header>
@@ -552,26 +555,17 @@ export function renderListingDetailScreen({
             <p class="app-detail__price">${escapeHtml(formatListingPrice(detail))}</p>
             <p class="app-detail__location"><span>${escapeHtml(detail.locationLabel)}</span> · <span>${escapeHtml(categoryLabel)}</span></p>
           </div>
-          ${
-            detail.viewerRole === 'owner'
-              ? renderOwnerLifecycleCard(detail)
-              : `
-                ${contactError ? `<p class="app-flow__error" role="alert">${escapeHtml(contactError)}</p><a href="#messages">Mes messages</a>` : ''}
-                <div class="app-flow__actions" role="group" aria-label="Contacter le vendeur" data-contact-actions="${escapeAttribute(detail.contactActions.join(','))}">
-                  ${['message', 'whatsapp', 'call']
-                    .filter((action) => action === 'message' ? Boolean(detail.id) : detail.contactActions.includes(action))
-                    .map((action) => buildActionMarkup(action, detail, contactBusy))
-                    .join('')}
-                </div>
-              `
-          }
+          ${detail.summary ? `<p class="app-detail__summary">${escapeHtml(detail.summary)}</p>` : ''}
+          ${renderSellerBlock(detail.seller, { compact: true })}
+          ${detail.viewerRole === 'owner' ? renderOwnerLifecycleCard(detail) :
+            showContactActions ? renderListingContactActions({ detail, contactBusy, contactError }) : ''}
           ${buildShareButton(detail, { story: true })}
           ${detail.publishedAt && Number.isFinite(Date.parse(detail.publishedAt)) ? `<p class="app-detail__date">Annonce publiée le ${escapeHtml(new Date(detail.publishedAt).toLocaleDateString('fr-FR'))}</p>` : ''}
         </div>
       </div>
 
       <div class="app-detail__information">
-        <section class="app-auth__card">
+        <section class="app-detail__section">
           <h3>Description</h3>
           <p>${escapeHtml(detail.summary)}</p>
         </section>

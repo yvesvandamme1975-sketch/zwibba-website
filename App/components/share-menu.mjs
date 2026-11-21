@@ -63,7 +63,7 @@ export function renderShareMenu(menu = null) {
         <p class="app-share-menu__listing">${escapeHtml(menu.title || 'Annonce Zwibba')}</p>
         ${segmented}
         <div class="app-share-menu__options">
-          ${menu.canShareLink ? button('share-native-link', 'link', mode === 'story' ? 'Partager le lien…' : 'Partager avec une application…') : ''}
+          ${menu.canShareLink ? button('share-native-link', 'link', 'Partager le lien') : ''}
           ${!storyEnabled ? button('share-instagram', 'instagram', 'Instagram') + button('share-tiktok', 'tiktok', 'TikTok') : ''}
           ${storyOptions}
           ${button('copy-listing-link', 'link', 'Copier le lien')}
