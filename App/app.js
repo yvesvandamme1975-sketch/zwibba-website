@@ -25,7 +25,7 @@ import {
   parseAppRoute,
 } from './features/home/buyer-browse-controller.mjs';
 import { renderHomeScreen } from './features/home/home-screen.mjs';
-import { renderListingDetailScreen } from './features/listings/listing-detail-screen.mjs';
+import { renderListingDetailScreen, renderListingContactActions } from './features/listings/listing-detail-screen.mjs';
 import { renderCaptureScreen } from './features/post/capture-screen.mjs';
 import { renderCaptureResultScreen } from './features/post/capture-result-screen.mjs';
 import { renderPhotoGuidanceScreen } from './features/post/photo-guidance-screen.mjs';
@@ -1270,6 +1270,7 @@ if (appRoot) {
         }
       case 'listing':
         return renderListingDetailScreen({
+          showContactActions: false,
           detail: buyerBrowseController.state.detail,
           errorMessage: buyerBrowseController.state.detailError,
           contactBusy: threadStarter.state.busy,
@@ -1534,14 +1535,21 @@ if (appRoot) {
       route,
       session: state.session,
     });
+    const countrySuggestion = shouldShowCountrySuggestion() ? renderCountrySuggestionBanner() : '';
     appRoot.innerHTML =
       renderAppTabShell({
         activeTab: getActiveTab(route),
-        content: renderRoute(route),
+        content: renderRoute(route) + (route.type === 'listing' ? countrySuggestion : ''),
+        footer: route.type === 'listing' && buyerBrowseController.state.detailStatus === 'ready'
+          ? renderListingContactActions({
+            detail: buyerBrowseController.state.detail,
+            contactBusy: threadStarter.state.busy,
+            contactError: threadStarter.state.listingId === buyerBrowseController.state.detail?.id ? threadStarter.state.error : '',
+          }) : '',
         unreadMessagesCount: getTotalUnreadMessages(),
       }) +
       renderShareMenu(state.shareMenu) +
-      (shouldShowCountrySuggestion() ? renderCountrySuggestionBanner() : '');
+      (route.type === 'listing' ? '' : countrySuggestion);
     const nextMarketMenu = appRoot.querySelector('[data-market-menu]');
     if (nextMarketMenu && marketMenuState) {
       nextMarketMenu.open = marketMenuState.open && nextMarketMenu.dataset.country === marketMenuState.country;
@@ -2822,7 +2830,7 @@ if (appRoot) {
 
     const trigger = event.target.closest('[data-action]');
 
-    if (!trigger) {
+    if (!trigger || trigger instanceof HTMLFormElement) {
       return;
     }
 
@@ -2997,6 +3005,7 @@ if (appRoot) {
     if (trigger.dataset.action === 'select-listing-image') {
       state.selectedListingImageIndex = Number.parseInt(trigger.dataset.imageIndex || '0', 10) || 0;
       renderApp();
+      appRoot.querySelector(`[data-action="select-listing-image"][data-image-index="${state.selectedListingImageIndex}"]`)?.focus({ preventScroll: true });
       return;
     }
 

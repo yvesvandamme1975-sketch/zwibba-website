@@ -26,3 +26,13 @@ test('app tab shell renders the four primary routes with wallet under profile', 
   assert.match(html, />3</);
   assert.match(html, /app-tab-shell__nav-item is-active/);
 });
+
+
+test('contact footer is outside the scroll content and before navigation, without changing unread navigation', () => {
+  const html = renderAppTabShell({content: '<main>Annonce</main>', footer: '<aside>Contacts</aside>', activeTab: 'buy', unreadMessagesCount: 105});
+  assert.match(html, /app-tab-shell--with-footer/);
+  assert.match(html, /<\/main>\s*<\/div>\s*<aside>Contacts<\/aside>\s*<nav/);
+  assert.match(html, /99\+/);
+  assert.equal((html.match(/<svg /g) || []).length, 4);
+  assert.doesNotMatch(renderAppTabShell(), /app-tab-shell--with-footer/);
+});
