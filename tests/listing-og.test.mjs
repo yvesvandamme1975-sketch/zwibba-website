@@ -182,3 +182,10 @@ test('portrait v3 link preview declares its actual dimensions and keeps the cano
   assert.match(html,/og:image:type" content="image\/jpeg/);
   assert.match(html,/og:url" content="https:\/\/zwibba.com\/annonce\/bouteille\/"/);
 });
+
+
+test('compact portrait declares 1080x1440 without changing historical v3 metadata', () => {
+  const html=buildListingOgTags({listing:{slug:'drone',shareImageUrl:'https://cdn/share-v4-portrait-0123456789abcdef.jpg'},baseUrl:'https://zwibba.com'});
+  assert.match(html,/og:image:width" content="1080/);
+  assert.match(html,/og:image:height" content="1440/);
+});

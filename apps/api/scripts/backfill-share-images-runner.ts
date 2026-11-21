@@ -2,7 +2,7 @@ import { listingLifecycleStatuses } from '../src/listings/listing-lifecycle';
 import { hasCurrentLinkImage, isPubliclyVisibleForLinkImage, type LinkImageRegeneration } from '../src/share/story-image.service';
 
 /**
- * Bounded backfill of the branded link preview (`share-v3-portrait-<hash>.jpg`).
+ * Bounded backfill of the branded link preview (`share-v4-portrait-<hash>.jpg`).
  *
  * Only listings that are publicly visible today (approved, lifecycle active,
  * not deleted by the seller) and do not yet serve the current design are

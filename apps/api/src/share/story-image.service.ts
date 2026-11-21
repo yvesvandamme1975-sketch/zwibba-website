@@ -29,7 +29,7 @@ export class StoryImageService {
   }
 
   /**
-   * Regenerates ONLY the link preview (`share-v3-portrait-<hash>.jpg`) of an approved
+   * Regenerates ONLY the link preview (`share-v4-portrait-<hash>.jpg`) of an approved
    * listing. `story.png` is neither rendered nor touched. The object key is
    * content-addressed, so no referenced object is ever overwritten, and the
    * database write is a compare-and-set on `updatedAt`, the previous
@@ -133,10 +133,10 @@ export class StoryImageService {
 }
 
 /** Design version of the branded link preview; bump when the design changes. */
-export const LINK_IMAGE_VERSION = 'share-v3-portrait';
+export const LINK_IMAGE_VERSION = 'share-v4-portrait';
 const LINK_IMAGE_FILENAME_PATTERN = new RegExp(`/${LINK_IMAGE_VERSION}-[a-f0-9]{16}\\.jpg$`);
 
-/** Content-addressed file name: `share-v3-portrait-<sha256 prefix>.jpg`. */
+/** Content-addressed file name: `share-v4-portrait-<sha256 prefix>.jpg`. */
 export function linkImageFilename(bytes: Buffer): string {
   return `${LINK_IMAGE_VERSION}-${createHash('sha256').update(bytes).digest('hex').slice(0, 16)}.jpg`;
 }
