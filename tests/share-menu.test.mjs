@@ -94,3 +94,16 @@ test('selected social destination exposes branded preview, files and caption wit
   assert.match(html,/TikTok/);
   assert.doesNotMatch(html,/share-mode-story|En story/);
 });
+
+test('story mode exposes an explicit Instagram action and an import fallback', () => {
+  for (const canShareImage of [true, false]) {
+    const html = renderShareMenu({ storyEnabled: true, mode: 'story', imageStatus: 'ready', canShareImage });
+    assert.match(html, /Instagram/);
+    assert.match(html, /Créer une story/);
+    assert.match(html, /autocollant Lien/);
+    assert.match(html, /Fichiers/);
+    assert.match(html, /data-action="download-story-image"/);
+    assert.match(html, /data-action="copy-listing-link"/);
+    assert.doesNotMatch(html, /data-action="share-instagram"/);
+  }
+});

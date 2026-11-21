@@ -42,6 +42,7 @@ function renderCategoryChips(categories, selectedCategoryId = '') {
 
 export function renderHomeScreen({
   draft,
+  activeCountry = 'CD',
   categories,
   feedStatus = 'ready',
   featuredListings,
@@ -52,7 +53,7 @@ export function renderHomeScreen({
   return `
     <section class="app-home app-screen app-screen--home">
       <div class="app-home__topbar">
-        ${renderInAppBrand()}
+        ${renderInAppBrand({ countryCode: activeCountry, allowMarketSwitch: true })}
       </div>
 
       ${renderPostEntryCard({ draft })}

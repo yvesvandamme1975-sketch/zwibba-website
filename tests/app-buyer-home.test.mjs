@@ -247,7 +247,7 @@ test('buy screen marks Belgique active when the active browse country is BE', ()
   );
 });
 
-test('buy screen hides the market selector once a session exists', () => {
+test('buy screen keeps the market selector accessible with a session', () => {
   const html = renderBuyScreen({
     categories,
     featuredListings: [],
@@ -256,7 +256,7 @@ test('buy screen hides the market selector once a session exists', () => {
     recentListings: [],
   });
 
-  assert.doesNotMatch(html, /data-action="set-browse-country"/);
+  assert.match(html, /data-action="set-browse-country"/);
 });
 
 test('buyer listing cards keep the media placeholder when no image is available', () => {

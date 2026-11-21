@@ -25,7 +25,7 @@ import {
   parseAppRoute,
 } from './features/home/buyer-browse-controller.mjs';
 import { renderHomeScreen } from './features/home/home-screen.mjs';
-import { renderListingDetailScreen, renderListingContactActions } from './features/listings/listing-detail-screen.mjs';
+import { renderListingDetailScreen, renderListingContactActions, renderListingOwnerActions } from './features/listings/listing-detail-screen.mjs';
 import { renderCaptureScreen } from './features/post/capture-screen.mjs';
 import { renderCaptureResultScreen } from './features/post/capture-result-screen.mjs';
 import { renderPhotoGuidanceScreen } from './features/post/photo-guidance-screen.mjs';
@@ -295,6 +295,7 @@ if (appRoot) {
     legalStatusStatus: 'idle',
     listingLifecycleBusyId: '',
     listingLifecycleMessage: '',
+    listingLifecycleMessageId: '',
     otpBusy: false,
     otpError: '',
     pendingChallenge: authService.getPendingChallenge(),
@@ -549,8 +550,9 @@ if (appRoot) {
 
   function getActiveTab(route) {
     switch (route.type) {
-      case 'buy':
       case 'listing':
+        return buyerBrowseController.state.detail?.viewerRole === 'owner' ? 'profile' : 'buy';
+      case 'buy':
       case 'seller':
         return 'buy';
       case 'messages':
@@ -620,11 +622,8 @@ if (appRoot) {
   }
 
   function resolveBrowseCountry() {
-    if (state.session) {
-      return resolvePhoneCountry(state.session.phoneNumber);
-    }
-
-    return countryPreference.getStoredCountry() ?? 'CD';
+    return countryPreference.getStoredCountry()
+      ?? (state.session ? resolvePhoneCountry(state.session.phoneNumber) : 'CD');
   }
 
   function resolveSupportWhatsAppLink() {
@@ -1270,6 +1269,8 @@ if (appRoot) {
       case 'listing':
         return renderListingDetailScreen({
           showContactActions: false,
+          showOwnerActions: false,
+          ownerBusy: state.listingLifecycleBusyId === buyerBrowseController.state.detail?.id,
           detail: buyerBrowseController.state.detail,
           errorMessage: buyerBrowseController.state.detailError,
           contactBusy: threadStarter.state.busy,
@@ -1364,7 +1365,6 @@ if (appRoot) {
           categories: sellerCategories,
           featuredListings: homeSections.featuredListings,
           feedStatus: homeFeedStatus,
-          hasSession: Boolean(state.session),
           recentListings: homeSections.recentListings,
           searchQuery: buyerBrowseController.state.searchQuery,
           selectedCategoryId: buyerBrowseController.state.selectedCategoryId,
@@ -1372,6 +1372,7 @@ if (appRoot) {
       case 'sell':
       default:
         return renderHomeScreen({
+          activeCountry: resolveBrowseCountry(),
           draft: state.draft,
           categories: sellerCategories,
           featuredListings: homeSections.featuredListings,
@@ -1524,7 +1525,8 @@ if (appRoot) {
     const profileCityRenderState = captureProfileCityRenderState(document.activeElement);
     const legalFormRenderState = captureLegalFormRenderState(appRoot, document.activeElement);
 
-    window.ZWIBBA_ACTIVE_COUNTRY_CODE = resolveBrowseCountry();
+    window.ZWIBBA_ACTIVE_COUNTRY_CODE = state.session && !['buy', 'sell', 'listing', 'seller'].includes(route.type)
+      ? resolvePhoneCountry(state.session.phoneNumber) : resolveBrowseCountry();
 
     primeBuyerRouteState(route);
     chatLiveRefreshController.sync({
@@ -1540,7 +1542,13 @@ if (appRoot) {
         activeTab: getActiveTab(route),
         content: renderRoute(route) + (route.type === 'listing' ? countrySuggestion : ''),
         footer: route.type === 'listing' && buyerBrowseController.state.detailStatus === 'ready'
-          ? renderListingContactActions({
+          ? buyerBrowseController.state.detail?.viewerRole === 'owner'
+            ? renderListingOwnerActions({
+              detail: buyerBrowseController.state.detail,
+              busy: state.listingLifecycleBusyId === buyerBrowseController.state.detail?.id,
+              message: state.listingLifecycleMessageId === buyerBrowseController.state.detail?.id ? state.listingLifecycleMessage : '',
+            })
+            : renderListingContactActions({
             detail: buyerBrowseController.state.detail,
             contactBusy: threadStarter.state.busy,
             contactError: threadStarter.state.listingId === buyerBrowseController.state.detail?.id ? threadStarter.state.error : '',
@@ -2338,7 +2346,7 @@ if (appRoot) {
     listingId,
     listingSlug,
   }) {
-    if (!state.session || !listingId || !action) {
+    if (!state.session || !listingId || !action || state.listingLifecycleBusyId) {
       return;
     }
 
@@ -2374,6 +2382,7 @@ if (appRoot) {
     }
 
     state.listingLifecycleBusyId = listingId;
+    state.listingLifecycleMessageId = listingId;
     state.listingLifecycleMessage = '';
     renderApp();
 

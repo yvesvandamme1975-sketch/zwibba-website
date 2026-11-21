@@ -30,7 +30,15 @@ test('la vitrine affiche un badge pays statique par locale', () => {
   assert.match(readFileSync('dist/be/nl/index.html', 'utf8'), /site-country-badge[^>]*>\s*🇧🇪\s*<span>België<\/span>/);
 });
 
-test('app.js expose le pays actif au brand depuis resolveBrowseCountry', () => {
+test('app.js distingue le marché consulté du pays du compte dans les en-têtes', () => {
   const src = readFileSync('App/app.js', 'utf8');
-  assert.match(src, /ZWIBBA_ACTIVE_COUNTRY_CODE\s*=\s*resolveBrowseCountry\(\)/);
+  const expression = src.match(/window\.ZWIBBA_ACTIVE_COUNTRY_CODE\s*=([^;]+);/)[1];
+  const country = new Function('state', 'route', 'resolvePhoneCountry', 'resolveBrowseCountry', `return ${expression}`);
+  for (const type of ['buy', 'sell', 'listing', 'seller']) {
+    assert.equal(country({ session: { phoneNumber: '+32' } }, { type }, () => 'BE', () => 'CD'), 'CD');
+  }
+  for (const type of ['profile', 'wallet', 'messages', 'capture', 'review', 'publish']) {
+    assert.equal(country({ session: { phoneNumber: '+32' } }, { type }, () => 'BE', () => 'CD'), 'BE');
+    assert.equal(country({ session: null }, { type }, () => 'BE', () => 'CD'), 'CD');
+  }
 });

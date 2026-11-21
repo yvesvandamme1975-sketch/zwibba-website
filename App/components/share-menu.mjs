@@ -20,8 +20,7 @@ function option(action, iconKey, label, dataCtx, disabled = false) {
   </button>`;
 }
 
-/** Listing shares offer the branded media separately from link sharing.
- * Only the post-publication success screen retains the story mode toggle. */
+// The explicit story entry and publication success reuse the same image actions.
 export function renderShareMenu(menu = null) {
   if (!menu) return '';
   const storyEnabled = menu.storyEnabled === true;
@@ -49,7 +48,7 @@ export function renderShareMenu(menu = null) {
           <button type="button" class="app-share-menu__seg${mode === 'story' ? ' app-share-menu__seg--active' : ''}" data-action="share-mode-story" aria-pressed="${escapeAttribute(mode === 'story')}" ${menu.busy ? 'disabled' : ''}>En story</button>
         </div>` : '';
   const storyOptions = imageMode ? [
-    menu.imageStatus === 'ready' && menu.canShareImage ? button('share-native-image', 'link', 'Partager l’image…') : '',
+    menu.imageStatus === 'ready' && menu.canShareImage ? button('share-native-image', mode === 'story' ? 'instagram' : 'link', mode === 'story' ? 'Instagram ou autre application…' : 'Partager l’image…') : '',
     menu.imageStatus === 'ready' ? button('download-story-image', 'link', 'Enregistrer l’image') : '',
     menu.imageStatus === 'unavailable' && (storyEnabled ? menu.storyImageUrl : menu.shareImageUrl) ? button('retry-share-image', 'link', 'Réessayer de préparer l’image') : '',
     button('copy-share-caption', 'link', 'Copier la légende'),
@@ -58,7 +57,7 @@ export function renderShareMenu(menu = null) {
     <div class="app-share-menu" data-action="close-share-menu" role="presentation">
       <div class="app-share-menu__sheet" data-action="share-menu-sheet" role="dialog" aria-modal="true" aria-label="Partager l’annonce" tabindex="-1">
         <span class="app-share-menu__handle" aria-hidden="true"></span>
-        <h2 class="app-share-menu__title">Partager</h2>
+        <h2 class="app-share-menu__title">${mode === 'story' ? 'Story Instagram' : 'Partager'}</h2>
         ${previewUrl ? `<img class="app-share-menu__photo${social ? ' app-share-menu__photo--branded' : ''}" src="${escapeAttribute(previewUrl)}" alt="" />` : ''}
         <p class="app-share-menu__listing">${escapeHtml(menu.title || 'Annonce Zwibba')}</p>
         ${segmented}
@@ -68,6 +67,13 @@ export function renderShareMenu(menu = null) {
           ${storyOptions}
           ${button('copy-listing-link', 'link', 'Copier le lien')}
         </div>
+        ${mode === 'story' ? `
+          <ol class="app-share-menu__instructions">
+            <li>${menu.canShareImage ? 'Partagez l’image et choisissez Instagram si votre téléphone le propose. Sinon, utilisez « Enregistrer l’image ».' : 'Utilisez « Enregistrer l’image » dès que l’image est prête.'}</li>
+            <li>Si l’image est dans Fichiers ou Téléchargements, ouvrez-la et enregistrez-la dans Photos ou la Galerie.</li>
+            <li>Dans Instagram : Créer une story, puis choisir l’image dans la galerie.</li>
+            <li>Pour rendre l’annonce cliquable, utilisez « Copier le lien », puis ajoutez l’autocollant Lien dans Instagram et collez-le.</li>
+          </ol>` : ''}
         <p class="app-share-menu__hint">${escapeHtml(imageMode ? imageHint : 'Partagez le lien de cette annonce. L’aperçu dépend de l’application choisie.')}</p>
         <p class="app-share-menu__status" role="status" aria-live="polite">${escapeHtml(menu.message || '')}</p>
         ${menu.manualText ? `<label class="app-share-menu__manual">Texte à copier<textarea class="app-share-menu__text" data-share-manual readonly rows="3">${escapeHtml(menu.manualText)}</textarea></label>` : ''}

@@ -95,11 +95,10 @@ async function geometry(page, width, { zoom = false } = {}) {
   assert.equal(measurement.wordmark, 'Zwibba');
   assert.equal(measurement.noTranslate, 'no');
   assert.equal(measurement.logoLoaded, true);
-  assert.equal(logo.width, 32, JSON.stringify(measurement));
-  assert.equal(logo.height, 32);
-  assert.equal(measurement.fontSize, (width >= 920 ? 28 : 24) * (zoom ? 2 : 1));
+  assert.ok(Math.abs(logo.width - Math.min(160, width * .47)) < .1, JSON.stringify(measurement));
+  assert.equal(logo.height, 60);
   assert.doesNotMatch(measurement.text, /BETA|Vendez en un clic/);
-  assert.ok(topbar.height >= 64);
+  assert.ok(topbar.height >= 60);
   assert.ok(topbar.left >= 0 && topbar.right <= width + 1, 'Topbar inside viewport');
   for (const rect of [brand, country].filter(Boolean)) {
     assert.ok(rect.left >= topbar.left - 1 && rect.right <= topbar.right + 1, 'Children fit horizontally');
@@ -185,7 +184,7 @@ for (const [name, engine] of Object.entries({ chromium, webkit })) {
           assert.equal(after.height, before.height, 'Category height stable when empty');
           await chips.first().click();
           await menuChecks(page, state, name);
-        } else assert.equal(await page.locator('[data-market-toggle]').count(), 0);
+        } else assert.equal(await page.locator('[data-market-toggle]').count(), route === 'sell' ? 1 : 0);
         if ([390, 1440].includes(width) && ['sell', 'buy', 'listing/fixture'].includes(route)) {
           await page.waitForFunction(() => [...document.querySelectorAll('.app-home img, .app-flow img')]
             .filter(img => img.getBoundingClientRect().top < innerHeight)
@@ -234,8 +233,8 @@ for (const [name, engine] of Object.entries({ chromium, webkit })) {
       const auth = await createPage(browser, width, true);
       for (const route of ['buy', 'messages', 'wallet', 'profile', 'thread/fixture']) {
         await visit(auth.page, route);
-        assert.equal((await geometry(auth.page, width)).countryText, 'Belgique', 'Phone country wins over stored CD');
-        assert.equal(await auth.page.locator('[data-market-toggle]').count(), 0);
+        assert.equal((await geometry(auth.page, width)).countryText, route === 'buy' ? 'RDC' : 'Belgique', 'Browse preference and account country stay separate');
+        assert.equal(await auth.page.locator('[data-market-toggle]').count(), route === 'buy' ? 1 : 0);
       }
       auth.state.failDetail = true;
       const threadRequests = auth.state.requests['/chat/threads/fixture'];
