@@ -7,6 +7,7 @@ import { normalizePriceCurrency } from '../../utils/price-input.mjs';
 import { formatListingPrice } from '../../utils/rendering.mjs';
 import {
   getFashionAttributes,
+  getFashionSizeOptions,
   isFashionCategory,
   updateFashionAttributes,
 } from '../../utils/fashion-attributes.mjs';
@@ -57,17 +58,12 @@ function hasPromptPhoto(draft, promptId) {
   );
 }
 
-function isVehicleCategory(draft) {
-  return draft.details.categoryId === 'vehicles';
-}
-
 function buildPrompt(promptId, required, draft) {
   const photo = draft.photos.find((entry) => entry.promptId === promptId);
 
   return {
     id: promptId,
     label: promptLabels[promptId] ?? promptId,
-    publishRequired: required && isVehicleCategory(draft),
     required,
     completed: hasPromptPhoto(draft, promptId),
     previewUrl: resolvePhotoRenderUrl(photo),
@@ -402,19 +398,6 @@ export function validateDraftForPublish(
     });
   }
 
-  if (isVehicleCategory(draft)) {
-    const missingVehiclePrompts = getMissingRequiredPhotoPrompts(draft);
-
-    if (missingVehiclePrompts.length) {
-      errors.push({
-        field: 'guided_photos',
-        message: `Ajoutez ces vues avant de publier : ${missingVehiclePrompts
-          .map((prompt) => prompt.label)
-          .join(', ')}.`,
-      });
-    }
-  }
-
   if (!draft.details.categoryId) {
     errors.push({
       field: 'category',
@@ -439,7 +422,7 @@ export function validateDraftForPublish(
       });
     }
 
-    if (!fashionAttributes.size) {
+    if (getFashionSizeOptions(fashionAttributes.itemType).length > 0 && !fashionAttributes.size) {
       errors.push({
         field: 'fashion_size',
         message: 'Choisissez une taille pour la rubrique Mode.',

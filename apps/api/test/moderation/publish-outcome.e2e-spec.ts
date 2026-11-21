@@ -379,6 +379,7 @@ async function syncDraft(
   body: {
     area: string;
     categoryId: string;
+    attributesJson?: Record<string, unknown>;
     photos?: Array<Record<string, unknown>>;
     priceAmount?: number;
     priceCdf?: number;
@@ -623,7 +624,7 @@ test('publishing a complete synced vehicle draft auto-approves the listing', asy
   assert.equal(queueResponse.body.items.length, 0);
 });
 
-test('publishing an incomplete synced vehicle draft blocks the listing with a clear photo error', async (t) => {
+test('publishing a vehicle with only its primary photo succeeds', async (t) => {
   const prisma = new _FakePrismaService();
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
@@ -654,13 +655,6 @@ test('publishing an incomplete synced vehicle draft blocks the listing with a cl
         sourcePresetId: 'capture',
         uploadStatus: 'uploaded',
       },
-      {
-        objectKey: 'draft-photos/vehicle-avant.jpg',
-        photoId: 'photo_vehicle_avant',
-        publicUrl: 'https://cdn.zwibba.example/draft-photos/vehicle-avant.jpg',
-        sourcePresetId: 'avant',
-        uploadStatus: 'uploaded',
-      },
     ],
     priceAmount: 65000,
     priceCurrency: 'USD',
@@ -675,11 +669,10 @@ test('publishing an incomplete synced vehicle draft blocks the listing with a cl
     })
     .expect(201);
 
-  assert.equal(publishResponse.body.status, 'blocked_needs_fix');
-  assert.match(publishResponse.body.reasonSummary, /vue/i);
+  assert.equal(publishResponse.body.status, 'approved');
 
   const persistedListing = getPersistedListing(prisma, publishResponse.body.id);
-  assert.equal(persistedListing.moderationStatus, 'blocked_needs_fix');
+  assert.equal(persistedListing.moderationStatus, 'approved');
 });
 
 test('publishing a synced USD draft persists amount and currency on the listing', async (t) => {
@@ -995,4 +988,55 @@ test('publishing a DRC draft priced in CDF still publishes fine', async (t) => {
 
   assert.equal(publishResponse.body.status, 'approved');
   assert.equal(prisma.lastListingUpsertCreate?.countryCode, 'CD');
+});
+
+test('publishing jewelry without a size grid preserves its synced attributes', async (t) => {
+  const prisma = new _FakePrismaService();
+  const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+    .overrideProvider(LEGAL_POLICY).useValue(inactiveLegalPolicy)
+    .overrideProvider(PrismaService).useValue(prisma)
+    .overrideProvider(OtpService).useValue(new _FakeOtpService())
+    .compile();
+  const app = moduleRef.createNestApplication();
+  await app.init();
+  t.after(async () => { await app.close(); });
+  const sessionToken = await createSellerSession(app, '+32470000001');
+  for (const itemType of ['jewelry_necklace', 'jewelry_earrings', 'jewelry_bracelet', 'jewelry_watch']) {
+    const attributesJson = { fashion: { itemType, size: '' } };
+    const syncedDraft = await syncDraft(app, sessionToken, {
+      title: 'Bijou fantaisie', categoryId: 'fashion', area: 'La Louvière',
+      priceAmount: 30, priceCurrency: 'EUR', attributesJson,
+    });
+    const response = await request(app.getHttpServer())
+      .post('/moderation/publish')
+      .set('authorization', `Bearer ${sessionToken}`)
+      .send({ ...syncedDraft, description: 'Bijou en très bon état, disponible immédiatement.' })
+      .expect(201);
+    assert.equal(response.body.status, 'approved');
+    assert.deepEqual(prisma.lastListingUpsertCreate?.attributesJson, attributesJson);
+    assert.equal(prisma.lastListingUpsertCreate?.priceAmount, 30);
+    assert.equal(prisma.lastListingUpsertCreate?.priceCurrency, 'EUR');
+  }
+});
+
+test('every category accepts one uploaded photo and still rejects missing or failed photos', async (t) => {
+  const app = await createTestApp();
+  t.after(async () => { await app.close(); });
+  const sessionToken = await createSellerSession(app, '+32470000001');
+  const { sellerCategories } = await import('../../../../App/demo-content.mjs');
+  for (const { id: categoryId } of sellerCategories) {
+    for (const uploadStatus of ['uploaded', 'failed', 'missing']) {
+      const syncedDraft = await syncDraft(app, sessionToken, {
+        title: 'Article de recette', categoryId, area: 'La Louvière', priceAmount: 30, priceCurrency: 'EUR',
+        photos: uploadStatus === 'missing' ? [] : [{ photoId: 'primary', objectKey: 'draft-photos/primary.jpg',
+          publicUrl: 'https://cdn.zwibba.example/draft-photos/primary.jpg', sourcePresetId: 'capture', uploadStatus }],
+      });
+      const response = await request(app.getHttpServer())
+        .post('/moderation/publish').set('authorization', `Bearer ${sessionToken}`)
+        .send({ ...syncedDraft, description: 'Article disponible en très bon état.' }).expect(201);
+      assert.equal(response.body.status === 'blocked_needs_fix', uploadStatus !== 'uploaded',
+        `${categoryId}: ${uploadStatus}`);
+      if (uploadStatus !== 'uploaded') assert.match(response.body.reasonSummary, /photo valide/);
+    }
+  }
 });
