@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { chromium, webkit } from 'playwright';
 
 const baseUrl = process.env.ZWIBBA_E2E_BASE_URL || 'http://127.0.0.1:4328';
@@ -22,9 +23,11 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
         Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: () => Promise.reject(new Error('Denied')) } });
       });
       let storyRequests = 0;
+      let failStory = false;
       await page.route('https://api.test.invalid/**', route => {
         if (new URL(route.request().url()).pathname === '/share/velo-test/story.png') {
           storyRequests++;
+          if (failStory) return route.fulfill({status: 503, json: {message: "Image indisponible"}});
           return route.fulfill({ contentType:'image/png', headers:{'cache-control':'no-store'}, body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==','base64') });
         }
         const detail = { id: 'velo', slug: 'velo-test', title: 'Vélo de Liège', categoryId: 'sports', priceAmount: 120, priceCurrency: 'EUR', locationLabel: 'Liège', images: ['https://image.test.invalid/photo.png'], storyImageUrl: null, viewerRole: 'buyer', contactActions: [], safetyTips: [], summary: 'Vélo de test', seller: { displayName: 'Vendeur', area: 'Liège' } };
@@ -67,12 +70,12 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
 
       assert.equal(storyRequests, 0, 'browsing and link sharing must not generate a story');
       const beforeStory = await page.evaluate(() => window.shareCalls.length);
-      await page.getByRole('button', { name: 'Partager en story', exact: true }).click();
-      await page.getByRole('button', { name: 'Partager l’image…', exact: true }).waitFor();
+      await page.getByRole('button', { name: 'Story Instagram', exact: true }).click();
+      await page.getByRole('button', { name: 'Instagram ou autre application…', exact: true }).waitFor();
       assert.equal(await page.evaluate(() => window.shareCalls.length), beforeStory);
       assert.equal(storyRequests, 1, 'story is requested only after the story entry is opened');
       await page.evaluate(() => { window.shareOutcome = 'success'; });
-      await page.getByRole('button', { name: 'Partager l’image…', exact: true }).click();
+      await page.getByRole('button', { name: 'Instagram ou autre application…', exact: true }).click();
       await page.waitForFunction(() => document.querySelector('[role="dialog"]')?.innerText.includes('Demande transmise'));
       calls = await page.evaluate(() => window.shareCalls.map(c => ({ active: c.active, url: c.url, files: c.files?.map(f => ({ size: f.size, type: f.type })) })));
       assert.equal(calls.at(-1).active, true);
@@ -96,6 +99,27 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
       await page.keyboard.press('Tab');
       assert.equal(await page.evaluate(() => Boolean(document.activeElement.closest('[role="dialog"]'))), true);
       await page.keyboard.press('Escape');
+      // No file-sharing support: save the generated story and import it manually.
+      failStory = true;
+      await page.getByRole('button', { name: 'Story Instagram', exact: true }).click();
+      await page.getByRole('button', { name: 'Réessayer de préparer l’image', exact: true }).waitFor();
+      assert.equal(await page.getByRole('button', { name: 'Enregistrer l’image', exact: true }).count(), 0);
+      failStory = false;
+      await page.getByRole('button', { name: 'Réessayer de préparer l’image', exact: true }).click();
+      await page.getByRole('button', { name: 'Enregistrer l’image', exact: true }).waitFor();
+      assert.equal(await page.getByRole('button', { name: 'Instagram ou autre application…', exact: true }).count(), 0);
+      assert.match(await dialog.innerText(), /Créer une story/);
+      assert.match(await dialog.innerText(), /autocollant Lien/);
+      const downloadPromise = page.waitForEvent('download');
+      await page.getByRole('button', { name: 'Enregistrer l’image', exact: true }).click();
+      const download = await downloadPromise;
+      assert.equal(download.suggestedFilename(), 'zwibba-story.png');
+      const bytes = await readFile(await download.path());
+      assert.equal(bytes.subarray(1,4).toString(), 'PNG');
+      await page.getByRole('button', { name: 'Copier le lien', exact: true }).click();
+      assert.equal(await manual.inputValue(), `${new URL(baseUrl).origin}/annonce/velo-test/`);
+      await page.keyboard.press('Escape');
+      assert.equal(storyRequests, 3, 'one initial story, one failed explicit open and one explicit retry');
       assert.deepEqual(errors, []);
       await page.close();
       console.log(`PASS ${engineName} ${width}px: direct link, cancel/focus, error/copy, story file, unsupported fallback, keyboard (OS boundary simulated)`);

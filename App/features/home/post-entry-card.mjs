@@ -8,11 +8,12 @@ export function renderPostEntryCard({ draft }) {
 
   return `
     <section class="app-home__post-entry" data-post-entry-card>
-      <strong>Vendeur d’abord</strong>
+      <strong>Vendre sur Zwibba</strong>
       <h2>${title}</h2>
       <p>${description}</p>
       <div class="app-home__post-entry-actions">
         <a href="${href}">${title}</a>
+        <a class="app-flow__button app-flow__button--secondary" href="#profile">Mes annonces</a>
         ${
           hasDraft
             ? '<button class="app-flow__button app-flow__button--danger" type="button" data-action="discard-draft">Abandonner mon brouillon</button>'

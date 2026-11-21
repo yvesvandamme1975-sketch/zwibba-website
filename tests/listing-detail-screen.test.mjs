@@ -565,7 +565,7 @@ test('listing detail screen renders a share button for non-owner viewers', () =>
   assert.match(html, /data-share-url="\/annonce\/radio-vintage-kinshasa\/"/);
 });
 
-test('listing detail screen renders a share button inside the owner card when editDraft is present', () => {
+test('listing detail screen keeps the shared toolbar for the owner when editDraft is present', () => {
   const html = renderListingDetailScreen({
     detail: {
       categoryId: 'electronics',
@@ -604,13 +604,13 @@ test('listing detail screen renders a share button inside the owner card when ed
     seller: { name: 'Vendeur' }, primaryImageUrl: 'https://example.com/photo.jpg', storyImageUrl: null,
   }});
   assert.match(html, /data-share-mode="story"[^>]*data-share-context="story"/);
-  assert.match(html, /Partager en story/);
+  assert.match(html, /Story Instagram/);
   assert.doesNotMatch(html, /data-share-context="success"/);
   assert.equal(html.match(/data-action="open-share-menu"/g).length, 2);
   const withoutStory = renderListingDetailScreen({ state: 'ready', detail: {
     id: 'fixture', slug: 'fixture', title: 'Fixture', contactActions: [], safetyTips: [], seller: { name: 'Vendeur' },
   }});
-  assert.doesNotMatch(withoutStory, /Partager en story/);
+  assert.doesNotMatch(withoutStory, /Story Instagram/);
   assert.equal(withoutStory.match(/data-action="open-share-menu"/g).length, 1);
   assert.doesNotMatch(html, /data-story-image-url/);
   assert.match(html, /role="alert"[^>]*>&lt;échec&gt;/);
@@ -655,7 +655,7 @@ test('buyer detail prioritises photos, price and compact seller before full deta
  const ordered = ['app-detail__gallery', 'app-detail__overview', 'app-detail__summary', 'app-detail__seller', 'data-contact-actions', 'app-detail__information', 'app-detail__safety-card'];
  for (let i = 1; i < ordered.length; i++) assert.ok(html.indexOf(ordered[i-1]) < html.indexOf(ordered[i]), ordered.join(' → '));
  assert.ok(html.indexOf('data-action="start-thread"') < html.indexOf('href="https://wa.me/'));
- assert.ok(html.indexOf('Partager en story') > html.indexOf('data-contact-actions'));
+ assert.ok(html.indexOf('Story Instagram') < html.indexOf('app-detail__gallery'));
  assert.match(html, /aria-label="Partager cette annonce"/);
 });
 
@@ -678,4 +678,34 @@ test('shell contact placement does not duplicate the contact buttons in the list
   const content = renderListingDetailScreen({state: 'ready', detail, showContactActions: false});
   assert.doesNotMatch(content, /data-action="start-thread"/);
   assert.match(content + renderListingContactActions({detail}), /data-action="start-thread"/);
+});
+
+
+test('owner actions use the reserved dock and keep deletion in the management section', async () => {
+  const { renderListingOwnerActions } = await import('../App/features/listings/listing-detail-screen.mjs');
+  const detail = { id: 'owner', slug: 'owner', title: 'Mon vélo', viewerRole: 'owner',
+    editDraft: {}, canPause: true, canMarkSold: true, canDelete: true, seller: {}, safetyTips: [] };
+  const dock = renderListingOwnerActions({ detail });
+  assert.match(dock, /app-detail__owner-dock/);
+  for (const action of ['edit-listing', 'pause', 'mark_sold']) assert.ok(dock.includes(action));
+  assert.doesNotMatch(dock, /open-share-menu|Supprimer|start-thread/);
+  const html = renderListingDetailScreen({ detail, state: 'ready', showOwnerActions: false });
+  assert.match(html, /href="#profile"[^>]*>Mes annonces/);
+  assert.match(html, /Supprimer l’annonce/);
+  assert.doesNotMatch(html, /data-action="edit-listing"|data-lifecycle-action="pause"/);
+  assert.equal(renderListingOwnerActions({ detail: { ...detail, viewerRole: 'buyer' } }), '');
+  assert.equal(renderListingOwnerActions(), '');
+});
+
+test('owner dock reflects permissions, busy state and escaped lifecycle feedback', async () => {
+  const { renderListingOwnerActions } = await import('../App/features/listings/listing-detail-screen.mjs');
+  for (const [permission, action] of [['canResume','resume'], ['canRelist','relist'], ['canRestore','restore']]) {
+    const html = renderListingOwnerActions({ detail: { id: 'owner', viewerRole: 'owner', [permission]: true },
+      busy: true, message: '<script>échec</script>' });
+    assert.match(html, new RegExp('data-lifecycle-action="' + action + '"'));
+    assert.match(html, /<fieldset[^>]*disabled[^>]*aria-busy="true"/);
+    assert.match(html, /role="status"/);
+    assert.match(html, /&lt;script&gt;échec&lt;\/script&gt;/);
+    assert.doesNotMatch(html, /data-action="edit-listing"|data-lifecycle-action="pause"/);
+  }
 });

@@ -38,7 +38,6 @@ export function renderBuyScreen({
   categories,
   featuredListings,
   feedStatus = 'ready',
-  hasSession = false,
   recentListings,
   searchQuery = '',
   selectedCategoryId = '',
@@ -46,7 +45,7 @@ export function renderBuyScreen({
   return `
     <section class="app-home app-screen app-screen--home">
       <div class="app-home__topbar">
-        ${renderInAppBrand({ countryCode: activeCountry, allowMarketSwitch: !hasSession })}
+        ${renderInAppBrand({ countryCode: activeCountry, allowMarketSwitch: true })}
       </div>
 
       <label class="app-home__search" aria-label="Recherche">

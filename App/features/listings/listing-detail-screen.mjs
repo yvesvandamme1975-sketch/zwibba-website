@@ -53,7 +53,7 @@ function buildLifecycleActionButton({
   action,
   detail,
   label,
-  tone = 'primary',
+  tone = 'secondary',
 } = {}) {
   const className =
     tone === 'secondary'
@@ -109,7 +109,7 @@ function buildShareButton(detail, { compact = false, story = false } = {}) {
       data-share-title="${escapeAttribute(detail.title)}"
       data-share-url="${escapeAttribute(shareUrl)}"
     >
-      Partager en story
+      Story Instagram
     </button>
   ` : '';
 
@@ -195,15 +195,13 @@ function buildActionMarkup(action, detail, contactBusy = false) {
   }
 }
 
-function renderOwnerLifecycleCard(detail) {
+export function renderListingOwnerActions({ detail = null, busy = false, message = '' } = {}) {
+  if (detail?.viewerRole !== 'owner') return '';
+
   const actions = [];
 
   if (detail.editDraft) {
     actions.push(buildEditListingButton(detail));
-
-    if (detail.slug) {
-      actions.push(buildShareButton(detail, { compact: false }));
-    }
   }
 
   if (detail.canPause) {
@@ -256,17 +254,19 @@ function renderOwnerLifecycleCard(detail) {
     );
   }
 
-  if (detail.canDelete) {
-    actions.push(
-      buildLifecycleActionButton({
-        action: 'delete',
-        detail,
-        label: 'Supprimer l’annonce',
-        tone: 'secondary',
-      }),
-    );
-  }
+  if (!actions.length && !message) return '';
+  return `
+    <div class="app-detail__contact-dock app-detail__owner-dock" aria-label="Actions de mon annonce">
+      ${message ? `<p class="app-detail__owner-feedback" role="status">${escapeHtml(message)}</p>` : ''}
+      <fieldset class="app-flow__actions" ${busy ? 'disabled aria-busy="true"' : ''}>
+        <legend class="sr-only">Gérer mon annonce</legend>
+        ${actions.join('')}
+      </fieldset>
+    </div>
+  `;
+}
 
+function renderOwnerLifecycleCard(detail, { showActions, busy } = {}) {
   return `
     <div class="app-auth__card app-detail__owner-card">
       <strong>Gérer mon annonce</strong>
@@ -286,11 +286,12 @@ function renderOwnerLifecycleCard(detail) {
           ? `<span class="app-detail__owner-meta">Restaurable jusqu’au ${escapeHtml(new Date(detail.restoreUntil).toLocaleDateString('fr-FR'))}</span>`
           : ''
       }
-      ${
-        actions.length
-          ? `<div class="app-flow__actions app-flow__actions--stacked app-flow__actions--row">${actions.join('')}</div>`
-          : ''
-      }
+      ${detail.canDelete ? `
+        <fieldset class="app-detail__owner-delete" ${busy ? 'disabled aria-busy="true"' : ''}>
+          <legend class="sr-only">Retirer mon annonce</legend>
+          ${buildLifecycleActionButton({ action: 'delete', detail, label: 'Supprimer l’annonce', tone: 'secondary' })}
+        </fieldset>` : ''}
+      ${showActions ? renderListingOwnerActions({ detail, busy }) : ''}
     </div>
   `;
 }
@@ -490,6 +491,8 @@ export function renderListingDetailScreen({
   contactBusy = false,
   contactError = '',
   showContactActions = true,
+  showOwnerActions = true,
+  ownerBusy = false,
   selectedImageIndex = 0,
   state = 'loading',
 } = {}) {
@@ -541,8 +544,9 @@ export function renderListingDetailScreen({
       <header class="app-flow__header">
         ${renderInAppBrand({ compact: true, countryCode: detail.countryCode })}
         <div class="app-detail__toolbar">
-          <a class="app-flow__back" href="#buy" aria-label="Retour aux annonces">Retour</a>
+          <a class="app-flow__back" href="${detail.viewerRole === 'owner' ? '#profile' : '#buy'}" aria-label="${detail.viewerRole === 'owner' ? 'Retour à mes annonces' : 'Retour aux annonces'}">${detail.viewerRole === 'owner' ? 'Mes annonces' : 'Retour'}</a>
           ${buildShareButton(detail, { compact: true })}
+          ${buildShareButton(detail, { story: true })}
         </div>
       </header>
 
@@ -556,9 +560,8 @@ export function renderListingDetailScreen({
           </div>
           ${detail.summary ? `<p class="app-detail__summary">${escapeHtml(detail.summary)}</p>` : ''}
           ${renderSellerBlock(detail.seller, { compact: true })}
-          ${detail.viewerRole === 'owner' ? renderOwnerLifecycleCard(detail) :
+          ${detail.viewerRole === 'owner' ? renderOwnerLifecycleCard(detail, { showActions: showOwnerActions, busy: ownerBusy }) :
             showContactActions ? renderListingContactActions({ detail, contactBusy, contactError }) : ''}
-          ${buildShareButton(detail, { story: true })}
           ${detail.publishedAt && Number.isFinite(Date.parse(detail.publishedAt)) ? `<p class="app-detail__date">Annonce publiée le ${escapeHtml(new Date(detail.publishedAt).toLocaleDateString('fr-FR'))}</p>` : ''}
         </div>
       </div>

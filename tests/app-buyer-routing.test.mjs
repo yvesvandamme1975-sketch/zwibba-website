@@ -200,16 +200,20 @@ test('resolveBrowseCountry falls back to CD when there is no session and no stor
   assert.equal(result, 'CD');
 });
 
-test('resolveBrowseCountry lets an active +243 session win over a stored BE preference', async () => {
+test('resolveBrowseCountry keeps an explicit BE preference for an active CD account', async () => {
   const resolveBrowseCountry = await loadResolveBrowseCountry();
-
-  const result = resolveBrowseCountry(
+  assert.equal(resolveBrowseCountry(
     { session: { phoneNumber: '+243990000001' } },
-    { getStoredCountry: () => 'BE' },
-    resolvePhoneCountry,
-  );
+    { getStoredCountry: () => 'BE' }, resolvePhoneCountry,
+  ), 'BE');
+});
 
-  assert.equal(result, 'CD');
+test('resolveBrowseCountry uses the account country only without an explicit preference', async () => {
+  const resolveBrowseCountry = await loadResolveBrowseCountry();
+  for (const [phoneNumber, country] of [['+243990000001', 'CD'], ['+32470000001', 'BE']]) {
+    assert.equal(resolveBrowseCountry({ session: { phoneNumber } },
+      { getStoredCountry: () => null }, resolvePhoneCountry), country);
+  }
 });
 
 test('loadBuyerFeed resolves the active browse country through resolveBrowseCountry', async () => {

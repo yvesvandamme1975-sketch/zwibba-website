@@ -89,8 +89,9 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
       await dock.waitFor(); assert.equal(await dock.locator('a[href^="https://wa.me"],a[href^="tel:"]').count(),0);
       owner = true;
       await page.goto(`${baseUrl}/App/?country=BE#listing/layout-owner`);
-      await page.getByText('Gérer mon annonce',{exact:true}).waitFor();
-      assert.equal(await dock.count(),0); assert.equal(await page.getByText('Mettre en pause',{exact:true}).count(),1);
+      await page.locator('.app-detail__owner-card > strong').waitFor();
+      assert.equal(await page.locator('.app-detail__owner-dock').count(),1); assert.equal(await page.getByText('Mettre en pause',{exact:true}).count(),1);
+      assert.equal(await nav.locator('[aria-current="page"]').getAttribute('href'),'#profile');
       if (width === 390) {
         owner = false;
         await page.context().addCookies([{name: 'zwibba_geo', value: 'BE', url: baseUrl}]);

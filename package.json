@@ -22,7 +22,8 @@
     "test:e2e:messages:beta": "node scripts/e2e/internal-beta-messaging-flow.mjs",
     "test:e2e:matrix:beta": "node scripts/e2e/internal-beta-device-matrix.mjs",
     "test:e2e:beta": "npm run test:e2e:seller:beta && npm run test:e2e:messages:beta && npm run test:e2e:matrix:beta",
-    "test:e2e:listing": "node scripts/e2e/listing-layout.mjs"
+    "test:e2e:listing": "node scripts/e2e/listing-layout.mjs",
+    "test:e2e:seller-ui": "node scripts/e2e/seller-interface.mjs"
   },
   "engines": {
     "node": ">=18"

@@ -112,3 +112,15 @@ test('home screen renders a real buyer search input and interactive category chi
   assert.match(html, /data-category-id="phones_tablets"/);
   assert.match(html, /app-home__chip is-active/);
 });
+
+
+test('seller home exposes existing listing management beside the photo entry', () => {
+  const html = renderHomeScreen({ draft: null, categories, featuredListings, recentListings });
+  assert.match(html, /href="#profile"[^>]*>Mes annonces/);
+  assert.doesNotMatch(html, /Vendeur d’abord/);
+});
+
+test('seller home always offers the market selector', () => {
+  const html = renderHomeScreen({ draft: null, categories, featuredListings, recentListings });
+  assert.match(html, /data-market-toggle/);
+});
