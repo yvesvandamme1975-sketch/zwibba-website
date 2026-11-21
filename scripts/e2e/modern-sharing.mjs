@@ -24,42 +24,46 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
       });
       let storyRequests = 0;
       let failStory = false;
+      let withoutPhoto = false;
       await page.route('https://api.test.invalid/**', route => {
         if (new URL(route.request().url()).pathname === '/share/velo-test/story.png') {
           storyRequests++;
           if (failStory) return route.fulfill({status: 503, json: {message: "Image indisponible"}});
           return route.fulfill({ contentType:'image/png', headers:{'cache-control':'no-store'}, body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==','base64') });
         }
-        const detail = { id: 'velo', slug: 'velo-test', title: 'Vélo de Liège', categoryId: 'sports', priceAmount: 120, priceCurrency: 'EUR', locationLabel: 'Liège', images: ['https://image.test.invalid/photo.png'], storyImageUrl: null, viewerRole: 'buyer', contactActions: [], safetyTips: [], summary: 'Vélo de test', seller: { displayName: 'Vendeur', area: 'Liège' } };
+        const detail = { id: 'velo', slug: 'velo-test', title: 'Vélo de Liège', categoryId: 'sports', priceAmount: 120, priceCurrency: 'EUR', locationLabel: 'Liège', images: withoutPhoto ? [] : ['https://image.test.invalid/photo.png'], storyImageUrl: null, viewerRole: 'buyer', contactActions: [], safetyTips: [], summary: 'Vélo de test', seller: { displayName: 'Vendeur', area: 'Liège' } };
         return route.fulfill({ json: new URL(route.request().url()).pathname === '/listings/velo-test' ? detail : { items: [] } });
       });
       await page.route('https://image.test.invalid/photo.png', route => route.fulfill({ contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==', 'base64') }));
       await page.goto(`${baseUrl}/App/#listing/velo-test`);
       const share = page.getByRole('button', { name: 'Partager cette annonce', exact: true });
       const dialog = page.getByRole('dialog', { name: 'Partager l’annonce' });
+      assert.equal(await page.getByRole('button', { name: 'Story Instagram', exact: true }).count(), 0);
       await share.click();
+      await dialog.waitFor();
+      assert.equal(await page.evaluate(() => window.shareCalls.length), 0, 'share opens the menu even when native sharing exists');
+      assert.equal(storyRequests, 0, 'opening the menu must not generate a story');
+      const nativeLink = dialog.getByRole('button', { name: 'Partager le lien', exact: true });
+      await nativeLink.click();
       await page.waitForFunction(() => window.shareCalls.length === 1);
-      assert.equal(await dialog.count(), 0, 'native share must not show a second Zwibba panel');
-      assert.equal(await page.locator('[inert]').count(), 0);
-      await share.click();
-      assert.equal(await page.evaluate(() => window.shareCalls.length), 1, 'pending share ignores repeated clicks');
+      assert.equal(await nativeLink.isDisabled(), true, 'pending share prevents repeated activation');
       await page.evaluate(() => window.cancelShare(new DOMException('cancelled','AbortError')));
-      await dialog.waitFor({ state: 'detached' });
-      assert.equal(await page.locator('[inert]').count(), 0);
+      await nativeLink.waitFor({ state: 'visible' });
+      await page.waitForFunction(() => !document.querySelector('[data-action="share-native-link"]').disabled);
       let calls = await page.evaluate(() => window.shareCalls);
+      assert.deepEqual(Object.keys(calls[0]).sort(), ['active','url']);
       assert.equal(calls[0].url, `${new URL(baseUrl).origin}/annonce/velo-test/`);
       assert.equal(calls[0].active, true);
-      assert.equal(await share.evaluate(el => document.activeElement === el), true);
+      assert.equal(await dialog.count(), 1, 'cancellation keeps the menu usable');
 
       await page.evaluate(() => { window.shareOutcome = 'success'; });
-      await share.click();
+      await nativeLink.click();
       await page.waitForFunction(() => window.shareCalls.length === 2);
-      await dialog.waitFor({ state: 'detached' });
-      assert.equal(await page.locator('[inert]').count(), 0);
-      assert.equal(await share.evaluate(el => document.activeElement === el), true);
+      await page.waitForFunction(() => document.querySelector('[role="dialog"]')?.innerText.includes('Demande transmise'));
+      assert.equal(await dialog.count(), 1);
 
       await page.evaluate(() => { window.shareOutcome = 'NotAllowedError'; });
-      await share.click();
+      await nativeLink.click();
       await page.waitForFunction(() => document.querySelector('[role="dialog"]')?.innerText.includes('Le partage n’a pas pu démarrer'));
       await page.getByRole('button', { name: 'Copier le lien', exact: true }).click();
       const manual = page.locator('[data-share-manual]');
@@ -70,8 +74,10 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
 
       assert.equal(storyRequests, 0, 'browsing and link sharing must not generate a story');
       const beforeStory = await page.evaluate(() => window.shareCalls.length);
-      await page.getByRole('button', { name: 'Story Instagram', exact: true }).click();
+      await share.click();
+      await dialog.getByRole('button', { name: 'Story Instagram', exact: true }).click();
       await page.getByRole('button', { name: 'Instagram ou autre application…', exact: true }).waitFor();
+      assert.equal(await page.evaluate(() => Boolean(document.activeElement.closest('[role="dialog"]'))), true, 'story mode keeps focus inside the share menu');
       assert.equal(await page.evaluate(() => window.shareCalls.length), beforeStory);
       assert.equal(storyRequests, 1, 'story is requested only after the story entry is opened');
       await page.evaluate(() => { window.shareOutcome = 'success'; });
@@ -85,6 +91,7 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
       await page.keyboard.press('Escape');
       assert.equal(await dialog.count(), 0);
       assert.equal(await page.locator('[inert]').count(), 0);
+      assert.equal(await share.evaluate(el => document.activeElement === el), true);
 
       await page.evaluate(() => Object.defineProperty(navigator, 'share', { configurable: true, value: undefined }));
       await share.click();
@@ -101,7 +108,8 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
       await page.keyboard.press('Escape');
       // No file-sharing support: save the generated story and import it manually.
       failStory = true;
-      await page.getByRole('button', { name: 'Story Instagram', exact: true }).click();
+      await share.click();
+      await dialog.getByRole('button', { name: 'Story Instagram', exact: true }).click();
       await page.getByRole('button', { name: 'Réessayer de préparer l’image', exact: true }).waitFor();
       assert.equal(await page.getByRole('button', { name: 'Enregistrer l’image', exact: true }).count(), 0);
       failStory = false;
@@ -120,9 +128,16 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
       assert.equal(await manual.inputValue(), `${new URL(baseUrl).origin}/annonce/velo-test/`);
       await page.keyboard.press('Escape');
       assert.equal(storyRequests, 3, 'one initial story, one failed explicit open and one explicit retry');
+      withoutPhoto = true;
+      await page.reload();
+      await share.click();
+      await dialog.waitFor();
+      assert.equal(await dialog.getByRole('button', { name: 'Story Instagram', exact: true }).count(), 0, 'a listing without a photo cannot offer a story');
+      assert.equal(storyRequests, 3);
+      await page.keyboard.press('Escape');
       assert.deepEqual(errors, []);
       await page.close();
-      console.log(`PASS ${engineName} ${width}px: direct link, cancel/focus, error/copy, story file, unsupported fallback, keyboard (OS boundary simulated)`);
+      console.log(`PASS ${engineName} ${width}px: share menu entry, URL-only link, cancel/focus, error/copy, story file, unsupported fallback, keyboard (OS boundary simulated)`);
     }
   } finally { await browser.close(); }
 }
