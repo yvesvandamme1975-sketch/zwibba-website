@@ -2674,21 +2674,25 @@ if (appRoot) {
 
   function openShareMenu(trigger) {
     if (shareController.state?.busy) return;
-    directSharePending = trigger.dataset.shareMode !== 'story' && typeof navigator.share === 'function';
+    const listingMenu = trigger.dataset.shareContext === 'listing';
+    directSharePending = !listingMenu && trigger.dataset.shareMode !== 'story' && typeof navigator.share === 'function';
     const candidates = [...appRoot.querySelectorAll('[data-action="open-share-menu"]')];
     shareReturnTarget = { slug: trigger.dataset.shareSlug || '', index: candidates.indexOf(trigger) };
     const detail = buyerBrowseController.state.detail;
     const matchingDetail = detail?.slug === trigger.dataset.shareSlug ? detail : null;
-    const pending = shareController.start({
+    const context = {
       slug: trigger.dataset.shareSlug || '',
       title: trigger.dataset.shareTitle || matchingDetail?.title || 'Annonce Zwibba',
       url: trigger.dataset.shareUrl || trigger.dataset.listingUrl || '',
       storyImageUrl: `${apiConfig.apiBaseUrl}/share/${encodeURIComponent(trigger.dataset.shareSlug || '')}/story.png`,
       shareImageUrl: trigger.dataset.brandedImageUrl || matchingDetail?.shareImageUrl || '',
       primaryImageUrl: trigger.dataset.shareImageUrl || matchingDetail?.primaryImageUrl || '',
-      // Story mode: post-publication success screen and the explicit listing story entry.
-      storyEnabled: ['success', 'story'].includes(trigger.dataset.shareContext),
-    }, { mode: trigger.dataset.shareMode });
+      // The listing menu offers story export only when the listing has a photo.
+      storyEnabled: trigger.dataset.shareContext === 'success' || (listingMenu && Boolean(trigger.dataset.shareImageUrl)),
+    };
+    const pending = listingMenu
+      ? shareController.open(context)
+      : shareController.start(context, { mode: trigger.dataset.shareMode });
     const openedMenu = shareController.state;
     void pending.then(result => {
       if (shareController.state !== openedMenu) return;

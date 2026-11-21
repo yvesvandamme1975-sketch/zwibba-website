@@ -326,3 +326,18 @@ test('compact portrait shares a fresh short cache key and no text caption', asyn
   await controller.perform('native-link');
   assert.deepEqual(calls[0][1],{url:'https://zwibba.com/annonce/velo/?v=4'});
 });
+
+
+test('opening the combined share menu never generates a story before its explicit selection', async () => {
+  const fetched = [];
+  const {controller, calls} = setup({fetchFn: async url => { fetched.push(url); return new Response(new Blob(['image'], {type:'image/png'})); }});
+  await controller.open({slug:'velo', storyEnabled:true, shareImageUrl:'https://cdn.example/post.png', storyImageUrl:'https://cdn.example/story.png'});
+  assert.deepEqual(calls, []);
+  await controller.perform('instagram');
+  assert.deepEqual(calls, [['native', {url:'https://zwibba.com/annonce/velo/'}]]);
+  await controller.perform('tiktok');
+  assert.equal(controller.state.mode, 'post');
+  assert.deepEqual(fetched, ['https://cdn.example/post.png']);
+  await controller.setMode('story');
+  assert.deepEqual(fetched, ['https://cdn.example/post.png', 'https://cdn.example/story.png']);
+});

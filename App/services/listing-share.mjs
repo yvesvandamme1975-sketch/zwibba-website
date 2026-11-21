@@ -187,7 +187,6 @@ export function createListingShareController({
         }
       } else if (action === 'tiktok') {
         current.destination = action;
-        if (current.storyEnabled && current.mode !== 'story') { current.mode = 'story'; void prepareImage(); }
         current.message = socialInstructions(current);
         result = 'instructions';
       } else {
