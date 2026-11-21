@@ -2676,6 +2676,7 @@ if (appRoot) {
   }
 
   let shareReturnTarget = null;
+  let directSharePending = false;
   let shareLastAction = null;
   let shareLastAnnouncement = '';
   const shareAnnouncement = document.createElement('p');
@@ -2708,10 +2709,12 @@ if (appRoot) {
       link.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 30000);
     },
-    onChange(menu) { state.shareMenu = menu; renderApp(); },
+    onChange(menu) { if (!directSharePending) { state.shareMenu = menu; renderApp(); } },
   });
 
   function openShareMenu(trigger) {
+    if (shareController.state?.busy) return;
+    directSharePending = trigger.dataset.shareMode !== 'story' && typeof navigator.share === 'function';
     const candidates = [...appRoot.querySelectorAll('[data-action="open-share-menu"]')];
     shareReturnTarget = { slug: trigger.dataset.shareSlug || '', index: candidates.indexOf(trigger) };
     const detail = buyerBrowseController.state.detail;
@@ -2728,12 +2731,16 @@ if (appRoot) {
     }, { mode: trigger.dataset.shareMode });
     const openedMenu = shareController.state;
     void pending.then(result => {
-      if (shareController.state === openedMenu && ['handed-off', 'cancelled'].includes(result)) closeShareMenu();
+      if (shareController.state !== openedMenu) return;
+      directSharePending = false;
+      if (['handed-off', 'cancelled'].includes(result)) closeShareMenu();
+      else { state.shareMenu = shareController.state; renderApp(); }
     });
   }
 
   function closeShareMenu() {
-    if (!state.shareMenu) return;
+    if (!shareController.state) return;
+    directSharePending = false;
     shareController.close();
     for (const [element, wasInert] of shareInertElements) element.inert = wasInert;
     shareInertElements.clear();

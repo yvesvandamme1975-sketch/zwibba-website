@@ -12,10 +12,11 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
       await page.addInitScript(() => {
         Object.defineProperty(window, 'ZWIBBA_API_BASE_URL', { get: () => 'https://api.test.invalid', set: () => {} });
         window.shareCalls = [];
-        window.shareOutcome = 'AbortError';
+        window.shareOutcome = 'pending';
         Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
         Object.defineProperty(navigator, 'share', { configurable: true, value: data => {
           window.shareCalls.push({ ...data, active: navigator.userActivation.isActive });
+          if (window.shareOutcome === 'pending') return new Promise((resolve,reject) => { window.finishShare = resolve; window.cancelShare = reject; });
           return window.shareOutcome === 'success' ? Promise.resolve() : Promise.reject(new DOMException('test', window.shareOutcome));
         } });
         Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: () => Promise.reject(new Error('Denied')) } });
@@ -30,6 +31,11 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
       const dialog = page.getByRole('dialog', { name: 'Partager l’annonce' });
       await share.click();
       await page.waitForFunction(() => window.shareCalls.length === 1);
+      assert.equal(await dialog.count(), 0, 'native share must not show a second Zwibba panel');
+      assert.equal(await page.locator('[inert]').count(), 0);
+      await share.click();
+      assert.equal(await page.evaluate(() => window.shareCalls.length), 1, 'pending share ignores repeated clicks');
+      await page.evaluate(() => window.cancelShare(new DOMException('cancelled','AbortError')));
       await dialog.waitFor({ state: 'detached' });
       assert.equal(await page.locator('[inert]').count(), 0);
       let calls = await page.evaluate(() => window.shareCalls);
@@ -74,7 +80,7 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
       await share.click();
       await dialog.waitFor();
       assert.equal(await page.getByRole('button', { name: 'Copier le lien', exact: true }).isVisible(), true);
-      assert.equal(await page.getByRole('button', { name: 'Partager avec une application…', exact: true }).count(), 0);
+      assert.equal(await page.getByRole('button', { name: 'Partager le lien', exact: true }).count(), 0);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       const first = dialog.locator('button:enabled').first();
       await first.focus();
