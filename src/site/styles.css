@@ -150,7 +150,7 @@ textarea {
 }
 
 .brandmark img {
-  width: 148px;
+  width: 170px;
   height: auto;
 }
 
@@ -1261,7 +1261,7 @@ textarea {
 
 @media (max-width: 760px) {
   .site-header__inner { padding: 8px 0; gap: 10px; }
-  .brandmark img { width: 112px; }
+  .brandmark img { width: 140px; }
   .page-hero--browse { padding-top: 18px; padding-bottom: 18px; }
   .browse-section { gap: 12px; }
   .filter-panel, .browse-results { padding: 14px; }
