@@ -300,3 +300,21 @@ test('portrait previews share a fresh link URL while stripping untrusted query p
   await controller.perform('copy-link');
   assert.equal(calls[1][1],'https://zwibba.com/annonce/velo/?preview=portrait-v3');
 });
+
+test('link sharing does not prepare a story; selecting story generates it on demand', async () => {
+  const fetched = [];
+  const { controller, calls } = setup({ fetchFn: async (url, options) => {
+    fetched.push({ url, cache: options.cache });
+    return new Response(new Blob(['png'], { type: 'image/png' }));
+  }});
+  await controller.start({ slug: 'velo', storyEnabled: true, storyImageUrl: 'https://api.zwibba.com/share/velo/story.png' });
+  assert.deepEqual(fetched, []);
+  assert.equal(calls[0][0], 'native');
+  await controller.setMode('story');
+  assert.deepEqual(fetched, [{url:'https://api.zwibba.com/share/velo/story.png',cache:'no-store'}]);
+  assert.equal(controller.state.imageStatus, 'ready');
+  controller.close();
+  await controller.start({slug:'velo',storyEnabled:true,storyImageUrl:'https://api.zwibba.com/share/velo/story.png'}, {mode:'story'});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(fetched.length,2,'reopening story makes a fresh request');
+});

@@ -25,8 +25,12 @@ Delete `storyButton`. The share sheet is link-only by default; the post-publicat
 
 ## 21 November 2026 — Portrait link preview supersedes the landscape layout
 
-Yves requests9:16 for the automatic link thumbnail only, confirmed by an iMessage capture after PR83. `composeLinkImage` now produces1080×1920 JPEGs within the existing300KB budget, with the full oriented photo, title/price, existing Zwibba lockup and location. Receiving apps retain control of crop and card dimensions. `composeStoryImage` is unchanged.
+Yves requests9:16 for the automatic link thumbnail only, confirmed by an iMessage capture after PR83. `composeLinkImage` now produces1080×1920 JPEGs within the existing300KB budget, with the full oriented photo, title/price, existing Zwibba lockup and location. Receiving apps retain control of crop and card dimensions. `composeStoryImage` retains its layout; the on-demand change below also adds EXIF orientation and a40Mpx input guard.
 
 Version `share-v3-portrait` creates new content-addressed objects. Open Graph declares1080×1920 only for these keys; historical images keep1200×630. Sharing a v3 link adds `?preview=portrait-v3` to avoid reusing the old page cache key; canonical URLs remain unchanged and no arbitrary query is retained. Existing public listings use the bounded backfill and its rollback manifest. No migration, lifecycle changes or media-service subscription.
 
 Apple reference: https://developer.apple.com/documentation/technotes/tn3156-create-rich-previews-for-messages (checked21November2026): direct server metadata, image width≥900px, presentation varies with device. Actual iMessage/WhatsApp receipt is a separate physical-device check; no promise to resize already-sent messages.
+
+### Précision Yves du 21 novembre — génération story à la demande
+
+La génération à l’ouverture du partage concerne uniquement « Partager en story ». La vignette automatique du lien reste précomposée et son backfill portrait reste autorisé. La publication et l’approbation ne génèrent plus de PNG de story ; un endpoint public borné vérifie la visibilité, compose depuis les informations actuelles et renvoie le PNG sans cache ni écriture en base/R2. Le menu ne demande cette image qu’en mode story. Le polling de story après publication est supprimé. L’ancienne commande admin de régénération story retourne 410 pour empêcher les préparations anticipées. Aucun ancien fichier n’est supprimé.

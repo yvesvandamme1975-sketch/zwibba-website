@@ -3,6 +3,9 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import test from 'node:test';
+import sharp from 'sharp';
+
+process.env.R2_PUBLIC_BASE_URL = 'https://cdn.example.com';
 
 import { StoryImageService, formatSharePrice, hasCurrentLinkImage, linkImageFilename } from '../../src/share/story-image.service';
 
@@ -19,6 +22,9 @@ function buildMocks() {
       findUnique: async () => ({
         id: 'l1',
         draftId: 'd1',
+        moderationStatus: 'approved',
+        lifecycleStatus: 'active',
+        deletedBySellerAt: null,
         title: 'Bague or blanc motif losanges',
         area: 'Gombe, Kinshasa',
         priceAmount: 80000,
@@ -54,37 +60,28 @@ function buildMocks() {
   // sharp composite is the real pipeline; we'll feed a tiny photo via fetch mock
   const fetchImpl = async (url: string) => {
     fetchedUrls.push(url);
-    return { ok: true, arrayBuffer: async () => PHOTO_BUFFER };
+    return new Response(PHOTO_BUFFER);
   };
 
   return { prismaService, r2StorageService, updates, r2Puts, fetchedUrls, fetchImpl };
 }
 
-test('generateAndStoreForListing composes, uploads, and persists the URL', async () => {
+test('story generation reads current data on each request without uploads or database writes', async () => {
   const mocks = buildMocks();
   const service = new StoryImageService(mocks.prismaService as any, mocks.r2StorageService as any, { fetchImpl: mocks.fetchImpl as any });
-
-  const result = await service.generateAndStoreForListing('l1');
-
-  assert.match(result.storyImageUrl, /listings\/l1\/story\.png$/);
-  assert.equal(mocks.r2Puts.length, 2);
-  // Versioned, content-addressed key: Facebook and WhatsApp cache previews per
-  // URL, so a new design must live at a new address; the hash makes the object
-  // immutable. JPEG keeps the preview under 300 KB.
-  assert.match(mocks.r2Puts[1].objectKey, /^listings\/l1\/share-v3-portrait-[a-f0-9]{16}\.jpg$/);
-  assert.equal(mocks.r2Puts[1].objectKey, `listings/l1/${linkImageFilename(mocks.r2Puts[1].body)}`);
-  assert.equal(mocks.r2Puts[1].contentType, 'image/jpeg');
-  assert.match(mocks.updates[0].data.shareImageUrl, /listings\/l1\/share-v3-portrait-[a-f0-9]{16}\.jpg$/);
-  assert.equal(hasCurrentLinkImage(mocks.updates[0].data.shareImageUrl), true);
+  const first = await service.generateStoryForSlug('bague');
+  const original = await mocks.prismaService.listing.findUnique();
+  mocks.prismaService.listing.findUnique = async () => ({ ...original, title: 'Nouveau titre', priceAmount: 42 });
+  const second = await service.generateStoryForSlug('bague');
+  const metadata = await sharp(second).metadata();
+  assert.equal(metadata.width, 1080); assert.equal(metadata.height, 1920); assert.equal(metadata.format, 'png');
+  assert.notDeepEqual(first, second);
+  assert.equal(mocks.fetchedUrls.length, 2);
+  assert.deepEqual(mocks.r2Puts, []); assert.deepEqual(mocks.updates, []);
+  assert.equal(hasCurrentLinkImage('https://r2/listings/l1/share-v3-portrait-0123456789abcdef.jpg'), true);
   assert.equal(hasCurrentLinkImage('https://r2/listings/l1/share.png'), false);
   assert.equal(hasCurrentLinkImage(null), false);
   assert.equal(hasCurrentLinkImage('https://r2/listings/l1/share-v2-0123456789abcdef.jpg'), false);
-  assert.equal(mocks.r2Puts[0].objectKey, 'listings/l1/story.png');
-  assert.equal(mocks.r2Puts[0].contentType, 'image/png');
-  assert.equal(mocks.updates.length, 1);
-  assert.equal(mocks.updates[0].where.id, 'l1');
-  assert.match(mocks.updates[0].data.storyImageUrl, /listings\/l1\/story\.png$/);
-  assert.equal(mocks.fetchedUrls[0], 'https://cdn.example.com/photo.jpg');
 });
 
 test('generateLinkImageForListing regenerates only the link preview, never story.png, with a full compare-and-set', async () => {
@@ -155,28 +152,28 @@ test('a concurrent change leaves the referenced object and the database URL unto
   assert.equal(mocks.updates.length, 0);
 });
 
-test('generateAndStoreForListing throws when no uploaded draft photo is available', async () => {
+test('generateStoryForSlug throws when no uploaded draft photo is available', async () => {
   const mocks = buildMocks();
   mocks.prismaService.draft.findUnique = async () => ({ id: 'd1', photos: [] });
   const service = new StoryImageService(mocks.prismaService as any, mocks.r2StorageService as any, { fetchImpl: mocks.fetchImpl as any });
 
-  await assert.rejects(() => service.generateAndStoreForListing('l1'), /image/i);
+  await assert.rejects(() => service.generateStoryForSlug('l1'), /image/i);
   assert.equal(mocks.r2Puts.length, 0);
   assert.equal(mocks.updates.length, 0);
 });
 
-test('generateAndStoreForListing throws when the listing is not found', async () => {
+test('generateStoryForSlug throws when the listing is not found', async () => {
   const mocks = buildMocks();
   mocks.prismaService.listing.findUnique = async () => null;
   const service = new StoryImageService(mocks.prismaService as any, mocks.r2StorageService as any, { fetchImpl: mocks.fetchImpl as any });
-  await assert.rejects(() => service.generateAndStoreForListing('unknown'), /not found/i);
+  await assert.rejects(() => service.generateStoryForSlug('unknown'), /not found/i);
 });
 
 
 test('failed photo fetch never composes or uploads an error document', async () => {
   const mocks = buildMocks();
-  const service = new StoryImageService(mocks.prismaService as any, mocks.r2StorageService as any, { fetchImpl: (async () => ({ ok: false, status: 503, arrayBuffer: async () => PHOTO_BUFFER })) as any });
-  await assert.rejects(() => service.generateAndStoreForListing('l1'), /503/);
+  const service = new StoryImageService(mocks.prismaService as any, mocks.r2StorageService as any, { fetchImpl: (async () => (new Response('unavailable', { status: 503 }))) as any });
+  await assert.rejects(() => service.generateStoryForSlug('l1'), /503/);
   assert.equal(mocks.r2Puts.length, 0);
   assert.equal(mocks.updates.length, 0);
 });
@@ -199,7 +196,7 @@ test('relative draft photo urls resolve against the configured application origi
     appBaseUrl: 'https://zwibba.com/App/',
   });
 
-  await service.generateAndStoreForListing('l1');
+  await service.generateStoryForSlug('l1');
 
   assert.equal(
     mocks.fetchedUrls[0],
@@ -222,7 +219,7 @@ test('relative draft photo urls fall back to APP_BASE_URL then to the public sit
     withEnv.prismaService.draft.findUnique = async () => ({ id: 'd1', photos: [relativePhoto] });
     await new StoryImageService(withEnv.prismaService as any, withEnv.r2StorageService as any, {
       fetchImpl: withEnv.fetchImpl as any,
-    }).generateAndStoreForListing('l1');
+    }).generateStoryForSlug('l1');
     assert.equal(
       withEnv.fetchedUrls[0],
       'https://staging.zwibba.example/assets/listings/mangues-et-avocats-frais-du-haut-katanga.jpg',
@@ -233,7 +230,7 @@ test('relative draft photo urls fall back to APP_BASE_URL then to the public sit
     withoutEnv.prismaService.draft.findUnique = async () => ({ id: 'd1', photos: [relativePhoto] });
     await new StoryImageService(withoutEnv.prismaService as any, withoutEnv.r2StorageService as any, {
       fetchImpl: withoutEnv.fetchImpl as any,
-    }).generateAndStoreForListing('l1');
+    }).generateStoryForSlug('l1');
     assert.equal(
       withoutEnv.fetchedUrls[0],
       'https://zwibba.com/assets/listings/mangues-et-avocats-frais-du-haut-katanga.jpg',
@@ -251,7 +248,7 @@ test('absolute photo urls are fetched unchanged whatever the application origin'
     appBaseUrl: 'https://zwibba.com/App/',
   });
 
-  await service.generateAndStoreForListing('l1');
+  await service.generateStoryForSlug('l1');
 
   assert.equal(mocks.fetchedUrls[0], 'https://cdn.example.com/photo.jpg');
 });
@@ -262,4 +259,37 @@ test('share prices preserve zero and format currencies for both markets', () => 
   assert.equal(formatSharePrice(50, 'USD'), '50 US$');
   assert.equal(formatSharePrice(500, 'CDF'), '500 CDF');
   assert.equal(formatSharePrice(null, 'CDF'), '');
+});
+
+
+test('stories reject hidden listings before downloading a photo', async () => {
+  for (const variant of [{moderationStatus:'pending'}, {lifecycleStatus:'sold'}, {lifecycleStatus:'paused'}, {deletedBySellerAt:new Date()}]) {
+    const mocks=buildMocks(); const original=await mocks.prismaService.listing.findUnique();
+    mocks.prismaService.listing.findUnique=async()=>({...original,...variant});
+    const service=new StoryImageService(mocks.prismaService as any,mocks.r2StorageService as any,{fetchImpl:mocks.fetchImpl as any});
+    await assert.rejects(()=>service.generateStoryForSlug('bague'),/listing_not_public/);
+    assert.deepEqual(mocks.fetchedUrls,[]); assert.deepEqual(mocks.r2Puts,[]);
+  }
+});
+
+test('story rendering limits parallel work and frees a failed slot', async () => {
+  const mocks=buildMocks();const pending: Array<() => void>=[];
+  const service=new StoryImageService(mocks.prismaService as any,mocks.r2StorageService as any,{fetchImpl:(()=>new Promise(resolve=>pending.push(()=>resolve(new Response('fail',{status:503})))) ) as any});
+  const first=service.generateStoryForSlug('a'); const second=service.generateStoryForSlug('b');
+  const failures=Promise.all([assert.rejects(()=>first,/503/),assert.rejects(()=>second,/503/)]);
+  await assert.rejects(()=>service.generateStoryForSlug('c'),/occupée/);
+  await new Promise(resolve=>setImmediate(resolve));pending.splice(0).forEach(done=>done());await failures;
+  const next=service.generateStoryForSlug('d');const failure=assert.rejects(()=>next,/503/);
+  await new Promise(resolve=>setImmediate(resolve));pending.splice(0).forEach(done=>done());await failure;
+});
+
+test('story photo loading rejects foreign URLs, redirects and oversized data', async () => {
+  const mocks=buildMocks();
+  mocks.prismaService.draft.findUnique=async()=>({id:'d1',photos:[{publicUrl:'http://127.0.0.1/private',uploadStatus:'uploaded',sourcePresetId:'capture',createdAt:new Date()}]});
+  const service=new StoryImageService(mocks.prismaService as any,mocks.r2StorageService as any,{fetchImpl:mocks.fetchImpl as any});
+  await assert.rejects(()=>service.generateStoryForSlug('a'),/source_not_allowed/);assert.deepEqual(mocks.fetchedUrls,[]);
+  for(const response of [new Response(null,{status:302}),new Response(new Uint8Array(8_000_001))]){
+    const valid=buildMocks();const guarded=new StoryImageService(valid.prismaService as any,valid.r2StorageService as any,{fetchImpl:(async (_url:any, options:any)=>{assert.equal(options.redirect,'error');return response;}) as any});
+    await assert.rejects(()=>guarded.generateStoryForSlug('a'),/302|too large/);
+  }
 });

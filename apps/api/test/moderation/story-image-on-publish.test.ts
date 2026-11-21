@@ -68,12 +68,13 @@ function buildPrismaService() {
   };
 }
 
-test('publish schedules story image generation fire-and-forget for an approved listing', async () => {
+test('publish schedules link preview generation only fire-and-forget for an approved listing', async () => {
   const calls: string[] = [];
   const storyImageService = {
-    generateAndStoreForListing: async (id: string) => {
+    generateStoryForSlug: () => { assert.fail('story must wait for a sharing request'); },
+    generateLinkImageForListing: async (id: string) => {
       calls.push(id);
-      return { storyImageUrl: 'u' };
+      return { shareImageUrl: 'u' };
     },
   };
   const draftsService = {
@@ -92,12 +93,13 @@ test('publish schedules story image generation fire-and-forget for an approved l
   assert.deepEqual(calls, ['l1']);
 });
 
-test('publish does not generate a story image when the listing is not approved', async () => {
+test('publish does not generate a link preview when the listing is not approved', async () => {
   const calls: string[] = [];
   const storyImageService = {
-    generateAndStoreForListing: async (id: string) => {
+    generateStoryForSlug: () => { assert.fail('story must wait for a sharing request'); },
+    generateLinkImageForListing: async (id: string) => {
       calls.push(id);
-      return { storyImageUrl: 'u' };
+      return { shareImageUrl: 'u' };
     },
   };
   const draftsService = {
@@ -116,9 +118,10 @@ test('publish does not generate a story image when the listing is not approved',
   assert.deepEqual(calls, []);
 });
 
-test('publish returns ok even if story image generation throws', async () => {
+test('publish returns ok even if link preview generation only throws', async () => {
   const storyImageService = {
-    generateAndStoreForListing: async () => {
+    generateStoryForSlug: () => { assert.fail('story must wait for a sharing request'); },
+    generateLinkImageForListing: async () => {
       throw new Error('R2 unreachable');
     },
   };

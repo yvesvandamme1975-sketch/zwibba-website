@@ -4,10 +4,10 @@ const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: {width:390,height:844} });
 const errors=[]; page.on('pageerror', e=>errors.push(e.stack));
 let postStatus=503, posts=0;
-const detail={id:'fixture',slug:'fixture',title:'Annonce de test',contactActions:['message'],safetyTips:[],seller:{name:'Vendeur'},storyImageUrl:'http://127.0.0.1:4328/story.png',priceAmount:100,priceCurrency:'EUR',locationLabel:'Bruxelles'};
+const detail={id:'fixture',slug:'fixture',title:'Annonce de test',contactActions:['message'],safetyTips:[],seller:{name:'Vendeur'},primaryImageUrl:'http://127.0.0.1:4328/story.png',storyImageUrl:null,priceAmount:100,priceCurrency:'EUR',locationLabel:'Bruxelles'};
 await page.route('**/*', async route=>{
  const url=new URL(route.request().url());
- if(url.pathname==='/story.png') return route.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a7f8AAAAASUVORK5CYII=','base64')});
+ if(url.pathname==='/story.png'||url.pathname==='/share/fixture/story.png') return route.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a7f8AAAAASUVORK5CYII=','base64')});
  if(url.host==='127.0.0.1:4328') return route.continue();
  let body={}; let status=200;
  if(url.pathname.endsWith('/listings/fixture')) body=detail;

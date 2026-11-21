@@ -27,7 +27,7 @@ export function createListingShareController({
   let preparationAbort = null;
   const changed = () => onChange(state);
 
-  function open(context = {}) {
+  function open(context = {}, { mode = 'post' } = {}) {
     preparationAbort?.abort();
     preparedFile = null;
     const origin = new URL(baseUrl).origin;
@@ -47,13 +47,13 @@ export function createListingShareController({
       slug: context.slug || '', title: context.title || 'Annonce Zwibba', url,
       storyImageUrl: context.storyImageUrl || '',
       shareImageUrl: context.shareImageUrl || '',
-      imageUrl: (context.storyEnabled === true ? context.storyImageUrl : context.shareImageUrl) || '',
+      imageUrl: '',
       destination: '',
       primaryImageUrl: context.primaryImageUrl || '',
-      // Story mode is opt-in per caller (post-publication success screen only).
+      // Story generation starts only from an explicit story entry or mode switch.
       storyEnabled: context.storyEnabled === true,
-      mode: 'post', busy: false, message: '', manualText: '',
-      imageStatus: (context.storyEnabled === true ? context.storyImageUrl : context.shareImageUrl) ? 'preparing' : 'unavailable',
+      mode: mode === 'story' && context.storyEnabled === true ? 'story' : 'post', busy: false, message: '', manualText: '',
+      imageStatus: 'unavailable',
       canShareLink: typeof navigatorObject.share === 'function', canShareImage: false,
     };
     changed();
@@ -61,21 +61,19 @@ export function createListingShareController({
   }
 
   function start(context, { mode = 'post' } = {}) {
-    void open(context);
-    if (mode === 'story') {
-      if (state.storyEnabled) {
-        state.mode = 'story';
-        changed();
-      }
-      return Promise.resolve('menu');
-    }
+    void open(context, { mode });
+    if (mode === 'story') return Promise.resolve('menu');
     return state.canShareLink ? perform('native-link') : Promise.resolve('menu');
   }
 
   async function prepareImage() {
     const current = state;
-    if (!current?.imageUrl) return;
+    if (!current) return;
     preparationAbort?.abort();
+    preparedFile = null;
+    current.canShareImage = false;
+    current.imageUrl = (current.mode === 'story' ? current.storyImageUrl : current.shareImageUrl) || '';
+    if (!current.imageUrl) { current.imageStatus = 'unavailable'; changed(); return; }
     const abort = new AbortController();
     preparationAbort = abort;
     const timeout = setTimeout(() => abort.abort(), 15000);
@@ -86,7 +84,7 @@ export function createListingShareController({
       const imageUrl = new URL(current.imageUrl, baseUrl);
       const localHttp = imageUrl.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(imageUrl.hostname);
       if (imageUrl.protocol !== 'https:' && !localHttp) throw new Error('Invalid image URL');
-      const response = await fetchFn(imageUrl.href, { signal: abort.signal, credentials: 'omit' });
+      const response = await fetchFn(imageUrl.href, { signal: abort.signal, credentials: 'omit', ...(current.mode === 'story' ? { cache: 'no-store' } : {}) });
       if (!response.ok || Number(response.headers?.get('content-length')) > MAX_IMAGE_BYTES) {
         throw new Error('Image unavailable');
       }
@@ -94,7 +92,7 @@ export function createListingShareController({
       if (!IMAGE_TYPES.has(blob.type) || !blob.size || blob.size > MAX_IMAGE_BYTES) throw new Error('Invalid image');
       if (state !== current || preparationAbort !== abort || abort.signal.aborted) return;
       const extension = blob.type === 'image/jpeg' ? 'jpg' : blob.type.split('/')[1];
-      preparedFile = new File([blob], `zwibba-${current.storyEnabled ? 'story' : 'annonce'}.${extension}`, { type: blob.type });
+      preparedFile = new File([blob], `zwibba-${current.mode === 'story' ? 'story' : 'annonce'}.${extension}`, { type: blob.type });
       current.canShareImage = typeof navigatorObject.share === 'function' &&
         typeof navigatorObject.canShare === 'function' && navigatorObject.canShare({ files: [preparedFile] });
       current.imageStatus = 'ready';
@@ -190,7 +188,7 @@ export function createListingShareController({
         }
       } else if (action === 'tiktok') {
         current.destination = action;
-        if (current.storyEnabled) current.mode = 'story';
+        if (current.storyEnabled && current.mode !== 'story') { current.mode = 'story'; void prepareImage(); }
         current.message = socialInstructions(current);
         result = 'instructions';
       } else {
@@ -215,7 +213,13 @@ export function createListingShareController({
 
   return {
     get state() { return state; }, open, start, perform, prepareImage,
-    setMode(mode) { if (state && !state.busy) { state.mode = mode === 'story' && state.storyEnabled ? 'story' : 'post'; changed(); } },
+    setMode(mode) {
+      if (!state || state.busy) return;
+      const next = mode === 'story' && state.storyEnabled ? 'story' : 'post';
+      if (state.mode === next) return;
+      state.mode = next;
+      return prepareImage();
+    },
     close() { preparationAbort?.abort(); state = null; preparedFile = null; changed(); },
   };
 }

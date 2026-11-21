@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 
 import { PrismaService } from '../database/prisma.service';
 import { listingLifecycleStatuses, resolveLifecycleStatus } from '../listings/listing-lifecycle';
@@ -15,25 +15,17 @@ export class StoryImageService {
     private readonly options: { fetchImpl?: typeof fetch; appBaseUrl?: string } = {},
   ) {}
 
-  async generateAndStoreForListing(listingId: string): Promise<{ storyImageUrl: string; shareImageUrl: string }> {
-    const { listing, imageInput } = await this.loadComposeInput(listingId);
-    const pngBuffer = await composeStoryImage(imageInput);
-    const previewBuffer = await composeLinkImage(imageInput);
+  private storyJobs = 0;
 
-    const objectKey = `listings/${listingId}/story.png`;
-    const { publicUrl } = await this.r2StorageService.putBuffer({
-      body: pngBuffer,
-      contentType: 'image/png',
-      objectKey,
-    });
-    const shareImageUrl = await this.uploadLinkImage(listing.id, previewBuffer);
-
-    await this.prismaService.listing.update({
-      where: { id: listingId },
-      data: { storyImageUrl: publicUrl, shareImageUrl },
-    });
-
-    return { storyImageUrl: publicUrl, shareImageUrl };
+  async generateStoryForSlug(slug: string): Promise<Buffer> {
+    if (this.storyJobs >= 2) throw new ServiceUnavailableException('Préparation occupée. Réessayez dans un instant.');
+    this.storyJobs += 1;
+    try {
+      const { imageInput } = await this.loadComposeInput({ slug });
+      return await composeStoryImage(imageInput);
+    } finally {
+      this.storyJobs -= 1;
+    }
   }
 
   /**
@@ -47,13 +39,8 @@ export class StoryImageService {
    * backfill, whose manifest keeps `previousShareImageUrl` for rollback.
    */
   async generateLinkImageForListing(listingId: string): Promise<LinkImageRegeneration> {
-    const { listing, imageInput } = await this.loadComposeInput(listingId);
+    const { listing, imageInput } = await this.loadComposeInput({ id: listingId });
     const previousShareImageUrl = listing.shareImageUrl ?? null;
-    // Scope limitation, not a lifecycle change: only listings the public can
-    // open today (approved, active, not deleted by the seller) get a preview.
-    if (!isPubliclyVisibleForLinkImage(listing)) {
-      throw new Error(`listing_not_public: ${listing.id}`);
-    }
     const previewBuffer = await composeLinkImage(imageInput);
     // Content-addressed object: a concurrent regeneration can never overwrite
     // an object that the database already references.
@@ -98,11 +85,13 @@ export class StoryImageService {
     return publicUrl;
   }
 
-  private async loadComposeInput(listingId: string) {
-    const listing = await this.prismaService.listing.findUnique({ where: { id: listingId } });
+  private async loadComposeInput(where: { id: string } | { slug: string }) {
+    const listing = await this.prismaService.listing.findUnique({ where });
     if (!listing) {
-      throw new Error(`Listing ${listingId} not found`);
+      throw new NotFoundException('Listing not found');
     }
+
+    if (!isPubliclyVisibleForLinkImage(listing)) throw new NotFoundException(`listing_not_public: ${listing.id}`);
 
     const draft = await this.prismaService.draft.findUnique({
       where: { id: listing.draftId },
@@ -110,14 +99,28 @@ export class StoryImageService {
     });
     const primaryImageUrl = resolvePrimaryPhotoUrl(draft?.photos ?? []);
     if (!primaryImageUrl) {
-      throw new Error(`No primary image for listing ${listingId}`);
+      throw new Error(`No primary image for listing ${listing.id}`);
     }
 
     const fetchImpl = this.options.fetchImpl ?? fetch;
     const photoUrl = resolvePhotoFetchUrl(primaryImageUrl, this.options.appBaseUrl);
-    const photoResponse = await fetchImpl(photoUrl, { signal: AbortSignal.timeout(15000) });
+    const source = new URL(photoUrl);
+    const allowedOrigins = [process.env.R2_PUBLIC_BASE_URL, this.options.appBaseUrl || process.env.APP_BASE_URL || PUBLIC_APP_BASE_URL]
+      .filter(Boolean).map((url) => new URL(url!).origin);
+    if (source.protocol !== 'https:' || source.username || source.password || !allowedOrigins.includes(source.origin)) {
+      throw new Error('photo_source_not_allowed');
+    }
+    const photoResponse = await fetchImpl(photoUrl, { redirect: 'error', signal: AbortSignal.timeout(15000) });
     if (!photoResponse.ok) throw new Error(`Photo download failed: ${photoResponse.status}`);
-    const photoBuffer = Buffer.from(await photoResponse.arrayBuffer());
+    if (!photoResponse.body) throw new Error('Photo download empty');
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    for await (const chunk of photoResponse.body) {
+      size += chunk.length;
+      if (size > 8_000_000) throw new Error('Photo download too large');
+      chunks.push(chunk);
+    }
+    const photoBuffer = Buffer.concat(chunks);
 
     const imageInput = {
       photoBuffer,

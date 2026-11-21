@@ -36,7 +36,8 @@ export async function composeStoryImage(input: ComposeStoryImageInput): Promise<
   const photoMask = Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${PHOTO_SIZE}" height="${PHOTO_SIZE}"><rect width="${PHOTO_SIZE}" height="${PHOTO_SIZE}" rx="${PHOTO_RADIUS}" ry="${PHOTO_RADIUS}" fill="#ffffff"/></svg>`,
   );
-  const photo = await sharp(input.photoBuffer)
+  const photo = await sharp(input.photoBuffer, { limitInputPixels: 40_000_000 })
+    .rotate()
     .resize(PHOTO_SIZE, PHOTO_SIZE, { fit: 'cover' })
     .composite([{ input: photoMask, blend: 'dest-in' }])
     .png()

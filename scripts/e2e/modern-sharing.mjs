@@ -21,11 +21,16 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
         } });
         Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: () => Promise.reject(new Error('Denied')) } });
       });
+      let storyRequests = 0;
       await page.route('https://api.test.invalid/**', route => {
-        const detail = { id: 'velo', slug: 'velo-test', title: 'Vélo de Liège', categoryId: 'sports', priceAmount: 120, priceCurrency: 'EUR', locationLabel: 'Liège', images: [], storyImageUrl: 'https://image.test.invalid/story.png', viewerRole: 'buyer', contactActions: [], safetyTips: [], summary: 'Vélo de test', seller: { displayName: 'Vendeur', area: 'Liège' } };
+        if (new URL(route.request().url()).pathname === '/share/velo-test/story.png') {
+          storyRequests++;
+          return route.fulfill({ contentType:'image/png', headers:{'cache-control':'no-store'}, body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==','base64') });
+        }
+        const detail = { id: 'velo', slug: 'velo-test', title: 'Vélo de Liège', categoryId: 'sports', priceAmount: 120, priceCurrency: 'EUR', locationLabel: 'Liège', images: ['https://image.test.invalid/photo.png'], storyImageUrl: null, viewerRole: 'buyer', contactActions: [], safetyTips: [], summary: 'Vélo de test', seller: { displayName: 'Vendeur', area: 'Liège' } };
         return route.fulfill({ json: new URL(route.request().url()).pathname === '/listings/velo-test' ? detail : { items: [] } });
       });
-      await page.route('https://image.test.invalid/story.png', route => route.fulfill({ contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==', 'base64') }));
+      await page.route('https://image.test.invalid/photo.png', route => route.fulfill({ contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==', 'base64') }));
       await page.goto(`${baseUrl}/App/#listing/velo-test`);
       const share = page.getByRole('button', { name: 'Partager cette annonce', exact: true });
       const dialog = page.getByRole('dialog', { name: 'Partager l’annonce' });
@@ -60,10 +65,12 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
       assert.doesNotMatch(await dialog.innerText(), /Lien copié/);
       await page.getByRole('button', { name: 'Fermer', exact: true }).click();
 
+      assert.equal(storyRequests, 0, 'browsing and link sharing must not generate a story');
       const beforeStory = await page.evaluate(() => window.shareCalls.length);
       await page.getByRole('button', { name: 'Partager en story', exact: true }).click();
       await page.getByRole('button', { name: 'Partager l’image…', exact: true }).waitFor();
       assert.equal(await page.evaluate(() => window.shareCalls.length), beforeStory);
+      assert.equal(storyRequests, 1, 'story is requested only after the story entry is opened');
       await page.evaluate(() => { window.shareOutcome = 'success'; });
       await page.getByRole('button', { name: 'Partager l’image…', exact: true }).click();
       await page.waitForFunction(() => document.querySelector('[role="dialog"]')?.innerText.includes('Demande transmise'));

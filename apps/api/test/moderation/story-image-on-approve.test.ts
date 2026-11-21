@@ -7,12 +7,13 @@ async function flushMicrotasks() {
   await new Promise((resolve) => setImmediate(resolve));
 }
 
-test('approve schedules storyImageService.generateAndStoreForListing fire-and-forget', async () => {
+test('approve schedules storyImageService.generateLinkImageForListing fire-and-forget', async () => {
   const calls: string[] = [];
   const mockStoryImageService = {
-    generateAndStoreForListing: async (id: string) => {
+    generateStoryForSlug: () => { assert.fail('story must wait for a sharing request'); },
+    generateLinkImageForListing: async (id: string) => {
       calls.push(id);
-      return { storyImageUrl: 'https://r2/listings/' + id + '/story.png' };
+      return { shareImageUrl: 'https://r2/listings/' + id + '/story.png' };
     },
   };
   const mockPrismaService = {
@@ -35,7 +36,8 @@ test('approve schedules storyImageService.generateAndStoreForListing fire-and-fo
 
 test('approve returns successfully even when storyImageService throws', async () => {
   const mockStoryImageService = {
-    generateAndStoreForListing: async () => { throw new Error('R2 unreachable'); },
+    generateStoryForSlug: () => { assert.fail('story must wait for a sharing request'); },
+    generateLinkImageForListing: async () => { throw new Error('R2 unreachable'); },
   };
   const mockPrismaService = {
     listing: {
@@ -49,4 +51,9 @@ test('approve returns successfully even when storyImageService throws', async ()
   await assert.doesNotReject(() => service.approve('l1'));
   await flushMicrotasks();
   // No unhandled rejection should occur — the catch in the implementation must swallow the error.
+});
+
+test('legacy story regeneration cannot prepare an image ahead of sharing', async () => {
+  const service=new ModerationService({} as any,{} as any,{} as any);
+  await assert.rejects(()=>service.regenerateStory('l1'), (error:any)=>error.getStatus()===410);
 });
