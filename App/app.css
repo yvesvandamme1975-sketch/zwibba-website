@@ -703,7 +703,9 @@
 .app-detail__attributes dt { color: var(--text-muted); }
 .app-flow--detail .app-flow__button { gap: 8px; box-shadow: none; border-radius: var(--radius-sm); }
 .app-detail__share { flex-shrink: 0; padding-inline: 12px; font-size: 0.85rem; }
+.app-detail__toolbar .app-detail__story { min-height: 44px; padding: 10px 12px; font-size: 0.85rem; }
 .app-share-menu__instructions { display: grid; gap: 8px; padding-left: 22px; color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; }
+.app-flow--detail .app-detail__story { color: var(--text-muted); font-weight: 600; background: transparent; border: 1px solid var(--line); }
 .app-flow--detail .app-flow__header { gap: 0; }
 .app-detail__information > p.app-auth__card { padding: 16px 0; background: transparent; border: 0; border-top: 1px solid var(--line); border-radius: 0; }
 .app-flow--detail .app-topbar { min-height: 60px; }

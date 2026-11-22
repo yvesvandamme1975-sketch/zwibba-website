@@ -38,32 +38,30 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
       await page.goto(`${baseUrl}/App/#listing/velo-test`);
       const share = page.getByRole('button', { name: 'Partager cette annonce', exact: true });
       const dialog = page.getByRole('dialog', { name: 'Partager l’annonce' });
-      assert.equal(await page.getByRole('button', { name: 'Story Instagram', exact: true }).count(), 0);
       await share.click();
-      await dialog.waitFor();
-      assert.equal(await page.evaluate(() => window.shareCalls.length), 0, 'share opens the menu even when native sharing exists');
-      assert.equal(storyRequests, 0, 'opening the menu must not generate a story');
-      const nativeLink = dialog.getByRole('button', { name: 'Partager le lien', exact: true });
-      await nativeLink.click();
       await page.waitForFunction(() => window.shareCalls.length === 1);
-      assert.equal(await nativeLink.isDisabled(), true, 'pending share prevents repeated activation');
+      assert.equal(await dialog.count(), 0, 'native share must not show a second Zwibba panel');
+      assert.equal(await page.locator('[inert]').count(), 0);
+      await share.click();
+      assert.equal(await page.evaluate(() => window.shareCalls.length), 1, 'pending share ignores repeated clicks');
       await page.evaluate(() => window.cancelShare(new DOMException('cancelled','AbortError')));
-      await nativeLink.waitFor({ state: 'visible' });
-      await page.waitForFunction(() => !document.querySelector('[data-action="share-native-link"]').disabled);
+      await dialog.waitFor({ state: 'detached' });
+      assert.equal(await page.locator('[inert]').count(), 0);
       let calls = await page.evaluate(() => window.shareCalls);
-      assert.deepEqual(Object.keys(calls[0]).sort(), ['active','url']);
+      assert.deepEqual(Object.keys(calls[0]).sort(), ['active', 'url']);
       assert.equal(calls[0].url, `${new URL(baseUrl).origin}/annonce/velo-test/`);
       assert.equal(calls[0].active, true);
-      assert.equal(await dialog.count(), 1, 'cancellation keeps the menu usable');
+      assert.equal(await share.evaluate(el => document.activeElement === el), true);
 
       await page.evaluate(() => { window.shareOutcome = 'success'; });
-      await nativeLink.click();
+      await share.click();
       await page.waitForFunction(() => window.shareCalls.length === 2);
-      await page.waitForFunction(() => document.querySelector('[role="dialog"]')?.innerText.includes('Demande transmise'));
-      assert.equal(await dialog.count(), 1);
+      await dialog.waitFor({ state: 'detached' });
+      assert.equal(await page.locator('[inert]').count(), 0);
+      assert.equal(await share.evaluate(el => document.activeElement === el), true);
 
       await page.evaluate(() => { window.shareOutcome = 'NotAllowedError'; });
-      await nativeLink.click();
+      await share.click();
       await page.waitForFunction(() => document.querySelector('[role="dialog"]')?.innerText.includes('Le partage n’a pas pu démarrer'));
       await page.getByRole('button', { name: 'Copier le lien', exact: true }).click();
       const manual = page.locator('[data-share-manual]');
@@ -74,10 +72,8 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
 
       assert.equal(storyRequests, 0, 'browsing and link sharing must not generate a story');
       const beforeStory = await page.evaluate(() => window.shareCalls.length);
-      await share.click();
-      await dialog.getByRole('button', { name: 'Story Instagram', exact: true }).click();
+      await page.getByRole('button', { name: 'Story Instagram', exact: true }).click();
       await page.getByRole('button', { name: 'Instagram ou autre application…', exact: true }).waitFor();
-      assert.equal(await page.evaluate(() => Boolean(document.activeElement.closest('[role="dialog"]'))), true, 'story mode keeps focus inside the share menu');
       assert.equal(await page.evaluate(() => window.shareCalls.length), beforeStory);
       assert.equal(storyRequests, 1, 'story is requested only after the story entry is opened');
       await page.evaluate(() => { window.shareOutcome = 'success'; });
@@ -91,7 +87,7 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
       await page.keyboard.press('Escape');
       assert.equal(await dialog.count(), 0);
       assert.equal(await page.locator('[inert]').count(), 0);
-      assert.equal(await share.evaluate(el => document.activeElement === el), true);
+      assert.equal(await page.getByRole('button', { name: 'Story Instagram', exact: true }).evaluate(el => document.activeElement === el), true);
 
       await page.evaluate(() => Object.defineProperty(navigator, 'share', { configurable: true, value: undefined }));
       await share.click();
@@ -108,8 +104,7 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
       await page.keyboard.press('Escape');
       // No file-sharing support: save the generated story and import it manually.
       failStory = true;
-      await share.click();
-      await dialog.getByRole('button', { name: 'Story Instagram', exact: true }).click();
+      await page.getByRole('button', { name: 'Story Instagram', exact: true }).click();
       await page.getByRole('button', { name: 'Réessayer de préparer l’image', exact: true }).waitFor();
       assert.equal(await page.getByRole('button', { name: 'Enregistrer l’image', exact: true }).count(), 0);
       failStory = false;
@@ -130,14 +125,18 @@ for (const [engineName, engine] of [['Chromium', chromium], ['WebKit', webkit]])
       assert.equal(storyRequests, 3, 'one initial story, one failed explicit open and one explicit retry');
       withoutPhoto = true;
       await page.reload();
+      await share.waitFor();
+      await page.evaluate(() => Object.defineProperty(navigator, 'share', { configurable: true, value: undefined }));
+      assert.equal(await page.getByRole('button', { name: 'Story Instagram', exact: true }).count(), 0);
       await share.click();
       await dialog.waitFor();
-      assert.equal(await dialog.getByRole('button', { name: 'Story Instagram', exact: true }).count(), 0, 'a listing without a photo cannot offer a story');
-      assert.equal(storyRequests, 3);
+      assert.equal(await dialog.getByRole('button', { name: 'Copier le lien', exact: true }).isVisible(), true);
+      assert.equal(await page.getByRole('button', { name: 'Story Instagram', exact: true }).count(), 0);
+      assert.equal(storyRequests, 3, 'no story request from the photo-less listing');
       await page.keyboard.press('Escape');
       assert.deepEqual(errors, []);
       await page.close();
-      console.log(`PASS ${engineName} ${width}px: share menu entry, URL-only link, cancel/focus, error/copy, story file, unsupported fallback, keyboard (OS boundary simulated)`);
+      console.log(`PASS ${engineName} ${width}px: one-click native link, no intermediate menu, cancel/focus, error/copy, story file, unsupported fallback, no-photo story hidden, keyboard (OS boundary simulated)`);
     }
   } finally { await browser.close(); }
 }
