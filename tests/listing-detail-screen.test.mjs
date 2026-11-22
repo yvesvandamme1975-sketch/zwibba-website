@@ -655,6 +655,7 @@ test('buyer detail prioritises photos, price and compact seller before full deta
  const ordered = ['app-detail__gallery', 'app-detail__overview', 'app-detail__summary', 'app-detail__seller', 'data-contact-actions', 'app-detail__information', 'app-detail__safety-card'];
  for (let i = 1; i < ordered.length; i++) assert.ok(html.indexOf(ordered[i-1]) < html.indexOf(ordered[i]), ordered.join(' → '));
  assert.ok(html.indexOf('data-action="start-thread"') < html.indexOf('href="https://wa.me/'));
+ assert.match(html, /Story Instagram/);
  assert.ok(html.indexOf('Story Instagram') < html.indexOf('app-detail__gallery'));
  assert.match(html, /aria-label="Partager cette annonce"/);
 });

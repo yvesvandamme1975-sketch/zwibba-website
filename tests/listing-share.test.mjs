@@ -328,7 +328,7 @@ test('compact portrait shares a fresh short cache key and no text caption', asyn
 });
 
 
-test('story-enabled controller never generates a story before its explicit selection', async () => {
+test('opening the combined share menu never generates a story before its explicit selection', async () => {
   const fetched = [];
   const {controller, calls} = setup({fetchFn: async url => { fetched.push(url); return new Response(new Blob(['image'], {type:'image/png'})); }});
   await controller.open({slug:'velo', storyEnabled:true, shareImageUrl:'https://cdn.example/post.png', storyImageUrl:'https://cdn.example/story.png'});
